@@ -237,187 +237,207 @@ function parseXLS(file) {
 
 
 
+
 const omr = n => new Intl.NumberFormat("en-US",{minimumFractionDigits:3,maximumFractionDigits:3}).format(n||0);
 
-// ── Clock ─────────────────────────────────────────────────────────────────
-function Clock() {
+// ── useWindowSize ──────────────────────────────────────────────────────────
+function useWindowSize() {
+  const [size, setSize] = useState({ w: window.innerWidth, h: window.innerHeight });
+  useEffect(() => {
+    const fn = () => setSize({ w: window.innerWidth, h: window.innerHeight });
+    window.addEventListener("resize", fn);
+    return () => window.removeEventListener("resize", fn);
+  }, []);
+  return size;
+}
+
+// ── Clock ──────────────────────────────────────────────────────────────────
+function Clock({ small }) {
   const [t, setT] = useState(new Date());
-  useEffect(()=>{const id=setInterval(()=>setT(new Date()),1000);return()=>clearInterval(id);},[]);
-  const hh=String(t.getHours()).padStart(2,'0');
-  const mm=String(t.getMinutes()).padStart(2,'0');
-  const ss=String(t.getSeconds()).padStart(2,'0');
-  const days=['الأحد','الاثنين','الثلاثاء','الأربعاء','الخميس','الجمعة','السبت'];
-  const months=['يناير','فبراير','مارس','أبريل','مايو','يونيو','يوليو','أغسطس','سبتمبر','أكتوبر','نوفمبر','ديسمبر'];
+  useEffect(() => { const id = setInterval(() => setT(new Date()), 1000); return () => clearInterval(id); }, []);
+  const hh = String(t.getHours()).padStart(2,'0');
+  const mm = String(t.getMinutes()).padStart(2,'0');
+  const ss = String(t.getSeconds()).padStart(2,'0');
+  const days = ['الأحد','الاثنين','الثلاثاء','الأربعاء','الخميس','الجمعة','السبت'];
+  const months = ['يناير','فبراير','مارس','أبريل','مايو','يونيو','يوليو','أغسطس','سبتمبر','أكتوبر','نوفمبر','ديسمبر'];
   return (
-    <div style={{textAlign:"right"}}>
-      <div style={{fontSize:30,fontWeight:700,color:"#e85d20",letterSpacing:3,fontVariantNumeric:"tabular-nums",lineHeight:1}}>
+    <div style={{ textAlign:"right" }}>
+      <div style={{ fontSize: small?18:26, fontWeight:800, color:"#e85d20", letterSpacing:2, fontVariantNumeric:"tabular-nums", lineHeight:1 }}>
         {hh}:{mm}:{ss}
       </div>
-      <div style={{fontSize:13,color:"#555",marginTop:4,fontWeight:500}}>
+      {!small && <div style={{ fontSize:12, color:"#555", marginTop:3, fontWeight:600 }}>
         {days[t.getDay()]} {t.getDate()} {months[t.getMonth()]} {t.getFullYear()}
-      </div>
+      </div>}
     </div>
   );
 }
 
 // ── Upload ─────────────────────────────────────────────────────────────────
-function UploadBtn({onFile,uploading,success,error}) {
+function UploadBtn({ onFile, uploading, success, error, small }) {
   const ref = useRef(null);
   return (
-    <div
-      onClick={()=>!uploading&&ref.current?.click()}
-      onDrop={e=>{e.preventDefault();const f=e.dataTransfer.files?.[0];if(f)onFile(f);}}
-      onDragOver={e=>e.preventDefault()}
+    <div onClick={() => !uploading && ref.current?.click()}
+      onDrop={e => { e.preventDefault(); const f = e.dataTransfer.files?.[0]; if(f) onFile(f); }}
+      onDragOver={e => e.preventDefault()}
       style={{
-        border:`2px dashed ${success?"#16a34a":uploading?"#e85d20":"#ddd"}`,
-        borderRadius:14,padding:"10px 22px",cursor:uploading?"default":"pointer",
-        background:success?"#f0fdf4":uploading?"#fff7f3":"#fff",
-        textAlign:"center",minWidth:185,transition:"all 0.3s",
-      }}
-    >
-      <input ref={ref} type="file" accept=".xls,.xlsx" style={{display:"none"}}
-        onChange={e=>{const f=e.target.files?.[0];if(f)onFile(f);e.target.value="";}}/>
+        border: `2px dashed ${success?"#16a34a":uploading?"#e85d20":"#ddd"}`,
+        borderRadius:12, padding: small?"8px 14px":"10px 20px",
+        cursor: uploading?"default":"pointer",
+        background: success?"#f0fdf4":uploading?"#fff7f3":"#fff",
+        textAlign:"center", minWidth: small?140:175, transition:"all 0.3s"
+      }}>
+      <input ref={ref} type="file" accept=".xls,.xlsx" style={{ display:"none" }}
+        onChange={e => { const f = e.target.files?.[0]; if(f) onFile(f); e.target.value=""; }} />
       {uploading
-        ? <div style={{color:"#e85d20",fontSize:14,fontWeight:700}}>⏳ جاري التحليل...</div>
+        ? <div style={{ color:"#e85d20", fontSize:13, fontWeight:700 }}>⏳ جاري التحليل...</div>
         : success
-        ? <div style={{color:"#16a34a",fontSize:14,fontWeight:700}}>✅ تم التحديث</div>
+        ? <div style={{ color:"#16a34a", fontSize:13, fontWeight:700 }}>✅ تم التحديث</div>
         : <>
-            <div style={{fontSize:22}}>📂</div>
-            <div style={{fontSize:14,color:"#e85d20",fontWeight:700,marginTop:2}}>رفع ملف يومي</div>
-            <div style={{fontSize:12,color:"#999",marginTop:1}}>يستبدل البيانات تلقائياً</div>
+            <div style={{ fontSize:small?16:20 }}>📂</div>
+            <div style={{ fontSize:small?12:13, color:"#e85d20", fontWeight:700, marginTop:1 }}>رفع ملف يومي</div>
+            {!small && <div style={{ fontSize:11, color:"#999", marginTop:1 }}>يستبدل البيانات تلقائياً</div>}
           </>
       }
-      {error&&<div style={{color:"#dc2626",fontSize:11,marginTop:3,fontWeight:700}}>⚠ {error}</div>}
+      {error && <div style={{ color:"#dc2626", fontSize:10, marginTop:3, fontWeight:700 }}>⚠ {error}</div>}
     </div>
   );
 }
 
-// ── Stat pill ──────────────────────────────────────────────────────────────
-function StatPill({label, value, color}) {
+// ── AmountCell ─────────────────────────────────────────────────────────────
+function AmountCell({ label, value, color, isTotal, small }) {
   return (
-    <div style={{textAlign:"center",padding:"0 16px"}}>
-      <div style={{fontSize:15,color:"rgba(255,255,255,0.9)",fontWeight:800,marginBottom:6,letterSpacing:0.5}}>{label}</div>
-      <div style={{fontSize:24,fontWeight:900,color}}>{value}</div>
+    <div style={{ textAlign:"center", flex:1, padding: small?"4px 6px":"6px 10px" }}>
+      <div style={{ fontSize: small?11:13, color:"#333", fontWeight:800, marginBottom: small?3:5 }}>{label}</div>
+      <div style={{ fontSize: isTotal ? (small?17:22) : (small?14:19), fontWeight:900, color, lineHeight:1 }}>
+        {value}
+      </div>
     </div>
   );
 }
 
-// ── Region row ─────────────────────────────────────────────────────────────
-const COLORS = ["#e85d20","#c44b10","#d4601a","#b03808","#f07030"];
+// ── AmountRow ──────────────────────────────────────────────────────────────
+function AmountRow({ paid, adj, color, small }) {
+  return (
+    <div style={{ display:"flex", alignItems:"stretch", borderRadius:10, overflow:"hidden", border:"1px solid #f0ece8", background:"#fff" }}>
+      <AmountCell label="المدفوع"   value={omr(paid)}     color="#16a34a" small={small} />
+      <div style={{ width:1, background:"#f0ece8" }} />
+      <AmountCell label="التسويات"  value={omr(adj)}      color="#d97706" small={small} />
+      <div style={{ width:1, background:"#f0ece8" }} />
+      <AmountCell label="الإجمالي"  value={omr(paid+adj)} color={color}   isTotal small={small} />
+    </div>
+  );
+}
 
-function RegionRow({region, idx, open, onToggle}) {
-  const col = COLORS[idx % COLORS.length];
-  const maxV = region.collectors.length ? Math.max(...region.collectors.map(c=>c.paid+c.adj),1) : 1;
+// ── RegionRow ──────────────────────────────────────────────────────────────
+const RCOLS = ["#e85d20","#c44b10","#d4601a","#b03808","#f07030"];
+
+function RegionRow({ region, idx, open, onToggle, small }) {
+  const col = RCOLS[idx % RCOLS.length];
+  const maxV = region.collectors.length ? Math.max(...region.collectors.map(c => c.paid+c.adj), 1) : 1;
 
   return (
     <div style={{
-      borderRadius:16,overflow:"hidden",
-      boxShadow: open ? "0 4px 24px rgba(232,93,32,0.15)" : "0 2px 10px rgba(0,0,0,0.06)",
-      border: open ? `1.5px solid ${col}55` : "1.5px solid #f0ece8",
-      transition:"box-shadow 0.2s,border 0.2s",
-      background:"#fff"
+      borderRadius:14, overflow:"hidden",
+      boxShadow: open ? "0 4px 20px rgba(232,93,32,0.15)" : "0 2px 8px rgba(0,0,0,0.06)",
+      border: `1.5px solid ${open ? col+"55" : "#f0ece8"}`,
+      background:"#fff", transition:"all 0.2s"
     }}>
-      {/* ─ Row header ─ */}
+      {/* Header */}
       <div onClick={onToggle} style={{
-        display:"flex",alignItems:"center",gap:14,
-        padding:"16px 20px",cursor:"pointer",
+        display:"flex", alignItems:"center", gap: small?10:14,
+        padding: small?"12px 14px":"14px 18px",
+        cursor:"pointer", background: open ? `${col}08` : "#fff",
         borderBottom: open ? `2px solid ${col}22` : "none",
-        background: open ? `${col}08` : "#fff"
+        flexWrap: small?"wrap":"nowrap"
       }}>
-        {/* رقم + اسم */}
         <div style={{
-          width:40,height:40,borderRadius:12,background:col,flexShrink:0,
-          display:"flex",alignItems:"center",justifyContent:"center",
-          fontSize:18,fontWeight:700,color:"#fff"
+          width: small?34:40, height: small?34:40, borderRadius:11,
+          background:col, flexShrink:0,
+          display:"flex", alignItems:"center", justifyContent:"center",
+          fontSize: small?16:18, fontWeight:800, color:"#fff"
         }}>{idx+1}</div>
 
-        <div style={{flex:1,minWidth:0}}>
-          <div style={{fontSize:22,fontWeight:900,color:"#000",lineHeight:1.2}}>{region.nameAr}</div>
-          <div style={{fontSize:16,color:"#111",marginTop:4,fontWeight:700}}>{region.nameEn}</div>
+        <div style={{ flex:1, minWidth: small?120:160 }}>
+          <div style={{ fontSize: small?15:19, fontWeight:900, color:"#000", lineHeight:1.2 }}>{region.nameAr}</div>
+          <div style={{ fontSize: small?11:14, color:"#555", marginTop:3, fontWeight:700 }}>{region.nameEn}</div>
         </div>
 
-        {/* أرقام */}
-        <div style={{display:"flex",gap:0,alignItems:"stretch"}}>
-          {[["المدفوع","#16a34a",region.paid],["التسويات","#d97706",region.adj],["الإجمالي",col,region.paid+region.adj]].map(([lbl,clr,val],i)=>(
+        <div style={{ display:"flex", flex: small?1:0, gap:0, minWidth: small?0:460 }}>
+          {[["المدفوع","#16a34a",region.paid],["التسويات","#d97706",region.adj],["الإجمالي",col,region.paid+region.adj]].map(([lbl,clr,val],i) => (
             <div key={lbl} style={{
-              textAlign:"center",
-              width:160,
-              padding:"6px 0",
+              flex:1, textAlign:"center", padding: small?"4px 8px":"6px 14px",
               borderRight: i<2 ? "1.5px solid #f0ece8" : "none"
             }}>
-              <div style={{fontSize:13,color:"#333",fontWeight:800,marginBottom:5,letterSpacing:0.3}}>{lbl}</div>
-              <div style={{fontSize:20,fontWeight:900,color:clr}}>{omr(val)}</div>
+              <div style={{ fontSize: small?11:13, color:"#333", fontWeight:800, marginBottom:4 }}>{lbl}</div>
+              <div style={{ fontSize: i===2?(small?16:20):(small?13:18), fontWeight:900, color:clr, lineHeight:1 }}>{omr(val)}</div>
             </div>
           ))}
         </div>
 
-        {/* زر */}
         <div style={{
-          display:"flex",alignItems:"center",gap:6,flexShrink:0,
+          display:"flex", alignItems:"center", gap:5, flexShrink:0,
           background: open ? col : "#fff",
           color: open ? "#fff" : col,
-          border:`1.5px solid ${col}`,borderRadius:10,
-          padding:"8px 16px",fontSize:13,fontWeight:700,transition:"all 0.2s"
+          border: `1.5px solid ${col}`, borderRadius:9,
+          padding: small?"6px 10px":"8px 14px",
+          fontSize: small?12:13, fontWeight:800, transition:"all 0.2s", whiteSpace:"nowrap"
         }}>
-          {open ? "▲" : "▼"} المحصّلون ({region.collectors.length})
+          {open ? "▲" : "▼"} {small ? `(${region.collectors.length})` : `المحصّلون (${region.collectors.length})`}
         </div>
       </div>
 
-      {/* ─ Collectors table ─ */}
+      {/* Collectors */}
       {open && (
-        <div style={{padding:"12px 20px 16px",background:"#fffaf7"}}>
-          {/* header */}
+        <div style={{ padding: small?"10px 14px 14px":"12px 18px 16px", background:"#fffaf7" }}>
           <div style={{
             display:"grid",
-            gridTemplateColumns:"36px 1fr 130px 130px 140px 60px",
-            gap:8,padding:"8px 10px",
-            background:col,borderRadius:10,marginBottom:8
+            gridTemplateColumns: small ? "28px 1fr 90px 90px 100px" : "36px 1fr 130px 130px 140px 60px",
+            gap:6, padding:"8px 10px",
+            background:col, borderRadius:9, marginBottom:8
           }}>
-            {["#","اسم المحصّل","المدفوع","التسويات","الإجمالي","%"].map((h,i)=>(
-              <div key={i} style={{
-                fontSize:14,fontWeight:900,color:"#fff",letterSpacing:0.3,
-                textAlign: i>=2 ? "right" : "right"
-              }}>{h}</div>
+            {(small ? ["#","الاسم","مدفوع","تسوية","إجمالي"] : ["#","اسم المحصّل","المدفوع","التسويات","الإجمالي","%"]).map((h,i) => (
+              <div key={i} style={{ fontSize: small?11:13, fontWeight:900, color:"#fff", textAlign: i>=2?"right":"right" }}>{h}</div>
             ))}
           </div>
 
-          {/* rows */}
-          {region.collectors.map((c,i)=>{
+          {region.collectors.map((c,i) => {
             const ct = c.paid+c.adj;
             const pct = Math.round((ct/maxV)*100);
-            const bg = i%2===0 ? "#fff" : "#fdf8f5";
             return (
               <div key={i} style={{
                 display:"grid",
-                gridTemplateColumns:"36px 1fr 130px 130px 140px 60px",
-                gap:8,alignItems:"center",
-                padding:"10px 10px",borderRadius:8,background:bg,marginBottom:3
+                gridTemplateColumns: small ? "28px 1fr 90px 90px 100px" : "36px 1fr 130px 130px 140px 60px",
+                gap:6, alignItems:"center",
+                padding: small?"7px 10px":"9px 10px",
+                borderRadius:8,
+                background: i%2===0 ? "#fff" : "#fdf8f5",
+                marginBottom:3
               }}>
-                <div style={{fontSize:13,color:col,fontWeight:700}}>{i+1}</div>
-                <div style={{fontSize:15,color:"#000",fontWeight:800,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{c.name}</div>
-                <div style={{fontSize:14,color:"#16a34a",fontWeight:700,textAlign:"right"}}>{omr(c.paid)}</div>
-                <div style={{fontSize:14,color:"#d97706",fontWeight:700,textAlign:"right"}}>{omr(c.adj)}</div>
-                <div style={{fontSize:15,color:col,fontWeight:800,textAlign:"right"}}>{omr(ct)}</div>
-                <div style={{textAlign:"right"}}>
-                  <span style={{fontSize:12,color:"#fff",background:col,borderRadius:6,padding:"2px 7px",fontWeight:700}}>{pct}%</span>
-                </div>
+                <div style={{ fontSize:13, color:col, fontWeight:700 }}>{i+1}</div>
+                <div style={{ fontSize: small?12:14, color:"#000", fontWeight:700, overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap" }}>{c.name}</div>
+                <div style={{ fontSize: small?12:14, color:"#16a34a", fontWeight:800, textAlign:"right" }}>{omr(c.paid)}</div>
+                <div style={{ fontSize: small?12:14, color:"#d97706", fontWeight:800, textAlign:"right" }}>{omr(c.adj)}</div>
+                <div style={{ fontSize: small?13:15, color:col, fontWeight:900, textAlign:"right" }}>{omr(ct)}</div>
+                {!small && <div style={{ textAlign:"right" }}>
+                  <span style={{ fontSize:12, color:"#fff", background:col, borderRadius:6, padding:"2px 6px", fontWeight:700 }}>{pct}%</span>
+                </div>}
               </div>
             );
           })}
 
-          {/* subtotal */}
+          {/* Subtotal */}
           <div style={{
-            display:"grid",gridTemplateColumns:"36px 1fr 130px 130px 140px 60px",
-            gap:8,padding:"10px 10px",
-            borderTop:`2px solid ${col}33`,marginTop:6,
-            background:`${col}0a`,borderRadius:10
+            display:"grid",
+            gridTemplateColumns: small ? "28px 1fr 90px 90px 100px" : "36px 1fr 130px 130px 140px 60px",
+            gap:6, padding:"9px 10px",
+            borderTop: `2px solid ${col}33`, marginTop:6,
+            background:`${col}0a`, borderRadius:9
           }}>
-            <div/>
-            <div style={{fontSize:16,color:col,fontWeight:900}}>الإجمالي الكلي</div>
-            <div style={{fontSize:15,color:"#16a34a",fontWeight:800,textAlign:"right"}}>{omr(region.paid)}</div>
-            <div style={{fontSize:15,color:"#d97706",fontWeight:800,textAlign:"right"}}>{omr(region.adj)}</div>
-            <div style={{fontSize:16,color:col,fontWeight:900,textAlign:"right"}}>{omr(region.paid+region.adj)}</div>
-            <div/>
+            <div/><div style={{ fontSize: small?13:14, color:col, fontWeight:900 }}>الإجمالي</div>
+            <div style={{ fontSize: small?13:15, color:"#16a34a", fontWeight:900, textAlign:"right" }}>{omr(region.paid)}</div>
+            <div style={{ fontSize: small?13:15, color:"#d97706", fontWeight:900, textAlign:"right" }}>{omr(region.adj)}</div>
+            <div style={{ fontSize: small?14:16, color:col, fontWeight:900, textAlign:"right" }}>{omr(region.paid+region.adj)}</div>
+            {!small && <div/>}
           </div>
         </div>
       )}
@@ -425,72 +445,70 @@ function RegionRow({region, idx, open, onToggle}) {
   );
 }
 
-// ── Entity card (DC/HO) ────────────────────────────────────────────────────
-function EntityCard({name, paid, adj, color, rank}) {
-  const total = paid+adj;
+// ── EntityCard ─────────────────────────────────────────────────────────────
+function EntityCard({ name, paid, adj, color, rank, small }) {
   return (
     <div style={{
-      background:"#fff",borderRadius:14,
+      background:"#fff", borderRadius:13,
       border:"1.5px solid #f0ece8",
       boxShadow:"0 2px 10px rgba(0,0,0,0.05)",
-      padding:"16px 20px",
-      borderRight:`5px solid ${color}`,
-      display:"flex",alignItems:"center",justifyContent:"space-between",gap:12
+      padding: small?"12px 14px":"14px 18px",
+      borderRight: `5px solid ${color}`
     }}>
-      <div style={{display:"flex",alignItems:"center",gap:12}}>
+      <div style={{ display:"flex", alignItems:"center", gap:10, marginBottom:10 }}>
         <div style={{
-          width:36,height:36,borderRadius:10,background:color,flexShrink:0,
-          display:"flex",alignItems:"center",justifyContent:"center",
-          fontSize:16,fontWeight:700,color:"#fff"
+          width: small?30:36, height: small?30:36, borderRadius:9,
+          background:color, flexShrink:0,
+          display:"flex", alignItems:"center", justifyContent:"center",
+          fontSize: small?14:16, fontWeight:800, color:"#fff"
         }}>{rank}</div>
-        <div style={{fontSize:18,fontWeight:900,color:"#000"}}>{name}</div>
+        <div style={{ fontSize: small?14:17, fontWeight:900, color:"#000" }}>{name}</div>
       </div>
-      <div style={{display:"flex",gap:0,alignItems:"stretch"}}>
-        {[["المدفوع","#16a34a",paid],["التسويات","#d97706",adj],["الإجمالي",color,total]].map(([lbl,clr,val],i)=>(
-          <div key={lbl} style={{
-            textAlign:"center",
-            width:160,
-            padding:"6px 0",
-            borderRight: i<2 ? "1.5px solid #f0ece8" : "none"
-          }}>
-            <div style={{fontSize:13,color:"#333",fontWeight:800,marginBottom:5}}>{lbl}</div>
-            <div style={{fontSize:20,fontWeight:900,color:clr}}>{omr(val)}</div>
-          </div>
-        ))}
+      <AmountRow paid={paid} adj={adj} color={color} small={small} />
+    </div>
+  );
+}
+
+// ── SummaryCard ────────────────────────────────────────────────────────────
+function SummaryCard({ label, paid, adj, color, icon, pct, small }) {
+  return (
+    <div style={{
+      background:"#fff", borderRadius:15, overflow:"hidden",
+      boxShadow:"0 3px 14px rgba(0,0,0,0.07)",
+      border:"1.5px solid #f0ece8"
+    }}>
+      <div style={{ background:color, padding: small?"10px 14px":"13px 16px", display:"flex", justifyContent:"space-between", alignItems:"center" }}>
+        <div style={{ display:"flex", alignItems:"center", gap:8 }}>
+          <span style={{ fontSize: small?18:22 }}>{icon}</span>
+          <span style={{ fontSize: small?14:17, fontWeight:900, color:"#fff" }}>{label}</span>
+        </div>
+        <div style={{
+          background:"rgba(255,255,255,0.25)", borderRadius:20,
+          padding:"3px 10px", fontSize: small?13:15, fontWeight:800, color:"#fff"
+        }}>{pct}%</div>
+      </div>
+      <div style={{ padding: small?"10px 12px":"13px 14px" }}>
+        <AmountRow paid={paid} adj={adj} color={color} small={small} />
       </div>
     </div>
   );
 }
 
-// ── Summary card ────────────────────────────────────────────────────────────
-function SummaryCard({label, paid, adj, color, icon, pct}) {
+// ── SectionHeader ──────────────────────────────────────────────────────────
+function SectionHeader({ title, paid, adj, color, small }) {
   return (
     <div style={{
-      background:"#fff",borderRadius:16,overflow:"hidden",
-      boxShadow:"0 3px 14px rgba(0,0,0,0.07)",
-      border:"1.5px solid #f0ece8"
+      background: `linear-gradient(120deg,${color},${color}cc)`,
+      padding: small?"12px 14px":"14px 20px",
+      display:"flex", justifyContent:"space-between", alignItems:"center",
+      flexWrap:"wrap", gap:8
     }}>
-      {/* هيدر الكارد */}
-      <div style={{background:color,padding:"14px 18px",display:"flex",justifyContent:"space-between",alignItems:"center"}}>
-        <div style={{display:"flex",alignItems:"center",gap:10}}>
-          <span style={{fontSize:22}}>{icon}</span>
-          <span style={{fontSize:19,fontWeight:900,color:"#fff"}}>{label}</span>
-        </div>
-        <div style={{
-          background:"rgba(255,255,255,0.25)",borderRadius:20,
-          padding:"4px 14px",fontSize:15,fontWeight:700,color:"#fff"
-        }}>{pct}%</div>
-      </div>
-      {/* الأرقام — ثلاثة أعمدة بعرض موحّد */}
-      <div style={{display:"grid",gridTemplateColumns:"1fr 1fr 1fr",padding:"14px 10px 12px"}}>
-        {[["المدفوع","#16a34a",paid],["التسويات","#d97706",adj],["الإجمالي",color,paid+adj]].map(([lbl,clr,val],i)=>(
-          <div key={lbl} style={{
-            textAlign:"center",
-            borderRight: i<2 ? "1.5px solid #f0ece8" : "none",
-            padding:"4px 8px"
-          }}>
-            <div style={{fontSize:16,color:"#111",fontWeight:900,marginBottom:8,letterSpacing:0.2}}>{lbl}</div>
-            <div style={{fontSize:i===2?24:19,fontWeight:900,color:clr,lineHeight:1}}>{omr(val)}</div>
+      <div style={{ fontSize: small?15:19, fontWeight:900, color:"#fff" }}>{title}</div>
+      <div style={{ display:"flex", gap: small?14:24 }}>
+        {[["المدفوع","#fff",paid],["التسويات","#fde68a",adj],["الإجمالي","#fff",paid+adj]].map(([l,c,v]) => (
+          <div key={l} style={{ textAlign:"center" }}>
+            <div style={{ fontSize: small?11:13, color:"rgba(255,255,255,0.8)", fontWeight:700, marginBottom:2 }}>{l}</div>
+            <div style={{ fontSize: small?14:18, fontWeight:900, color:c }}>{omr(v)}</div>
           </div>
         ))}
       </div>
@@ -500,180 +518,166 @@ function SummaryCard({label, paid, adj, color, icon, pct}) {
 
 // ── MAIN ───────────────────────────────────────────────────────────────────
 export default function Dashboard() {
-  const [data, setData]           = useState(SEED);
+  const { w } = useWindowSize();
+  const isMobile  = w < 640;
+  const isTablet  = w >= 640 && w < 1024;
+  const isDesktop = w >= 1024;
+  const small = w < 768;
+
+  const [data, setData]         = useState(SEED);
   const [uploading, setUploading] = useState(false);
-  const [success, setSuccess]     = useState(false);
-  const [error, setError]         = useState(null);
+  const [success, setSuccess]   = useState(false);
+  const [error, setError]       = useState(null);
   const [openRegion, setOpenRegion] = useState(null);
 
   const handleFile = useCallback(async (file) => {
     setUploading(true); setError(null); setSuccess(false);
-    try {
-      const parsed = await parseXLS(file);
-      setData(parsed); setSuccess(true);
-      setTimeout(()=>setSuccess(false),5000);
-    } catch(e){ setError(e.message); }
+    try { const p = await parseXLS(file); setData(p); setSuccess(true); setTimeout(()=>setSuccess(false),5000); }
+    catch(e) { setError(e.message); }
     finally { setUploading(false); }
-  },[]);
+  }, []);
 
-  const govPaid=data.regions.reduce((s,r)=>s+r.paid,0);
-  const govAdj=data.regions.reduce((s,r)=>s+r.adj,0);
-  const dcPaid=data.debtCompanies.reduce((s,r)=>s+r.paid,0);
-  const dcAdj=data.debtCompanies.reduce((s,r)=>s+r.adj,0);
-  const hoPaid=data.headOffice.reduce((s,r)=>s+r.paid,0);
-  const hoAdj=data.headOffice.reduce((s,r)=>s+r.adj,0);
-  const gPaid=govPaid+dcPaid+hoPaid;
-  const gAdj=govAdj+dcAdj+hoAdj;
-  const gTotal=gPaid+gAdj;
+  const gPd = data.regions.reduce((s,r)=>s+r.paid,0);
+  const gAd = data.regions.reduce((s,r)=>s+r.adj,0);
+  const dPd = data.debtCompanies.reduce((s,r)=>s+r.paid,0);
+  const dAd = data.debtCompanies.reduce((s,r)=>s+r.adj,0);
+  const hPd = data.headOffice.reduce((s,r)=>s+r.paid,0);
+  const hAd = data.headOffice.reduce((s,r)=>s+r.adj,0);
+  const gTotal = gPd+gAd+dPd+dAd+hPd+hAd;
   const p = v => gTotal>0 ? ((v/gTotal)*100).toFixed(1) : "0";
+
+  const pad = isMobile ? "12px" : isTablet ? "16px" : "20px 24px";
 
   return (
     <div style={{
-      width:"100vw",height:"100vh",display:"flex",flexDirection:"column",
-      background:"#f5f0eb",
-      fontFamily:"'Cairo','Tajawal','Segoe UI',Tahoma,sans-serif",
-      direction:"rtl",color:"#111",overflow:"hidden"
+      minHeight:"100vh", background:"#f5f0eb",
+      fontFamily:"'Cairo','Tajawal','Segoe UI',sans-serif",
+      direction:"rtl", color:"#111"
     }}>
       <style>{`
-        @import url('https://fonts.googleapis.com/css2?family=Cairo:wght@400;500;600;700;800;900&family=Tajawal:wght@400;500;700;800;900&display=swap');
+        @import url('https://fonts.googleapis.com/css2?family=Cairo:wght@400;500;600;700;800;900&display=swap');
         * { box-sizing:border-box; margin:0; padding:0; }
-        ::-webkit-scrollbar { width:6px; }
+        ::-webkit-scrollbar { width:5px; }
         ::-webkit-scrollbar-thumb { background:#e8c0a8; border-radius:3px; }
-        ::-webkit-scrollbar-track { background:#f5f0eb; }
       `}</style>
 
       {/* ══ HEADER ══ */}
       <div style={{
-        background:"#fff",
-        borderBottom:"3px solid #e85d20",
-        padding:"12px 28px",
-        display:"flex",justifyContent:"space-between",alignItems:"center",gap:16,
-        flexShrink:0,
-        boxShadow:"0 3px 16px rgba(232,93,32,0.12)"
+        background:"#fff", borderBottom:"3px solid #e85d20",
+        padding: isMobile ? "10px 14px" : "12px 24px",
+        display:"flex", justifyContent:"space-between", alignItems:"center",
+        gap:12, boxShadow:"0 3px 16px rgba(232,93,32,0.1)",
+        position:"sticky", top:0, zIndex:100
       }}>
-        <div style={{display:"flex",alignItems:"center",gap:18}}>
-          <img src={LOGO} alt="ONEIC" style={{height:52,objectFit:"contain"}}/>
-          <div style={{width:2,height:52,background:"#ffe4d4",borderRadius:2}}/>
+        <div style={{ display:"flex", alignItems:"center", gap: isMobile?10:16 }}>
+          <img src={LOGO} alt="ONEIC" style={{ height: isMobile?36:48, objectFit:"contain" }} />
+          {!isMobile && <div style={{ width:2, height:48, background:"#ffe4d4", borderRadius:2 }} />}
           <div>
-            <div style={{fontSize:30,fontWeight:900,color:"#e85d20",lineHeight:1.1}}>
-              لوحة تحكم التحصيل
+            <div style={{ fontSize: isMobile?16:isTablet?20:26, fontWeight:900, color:"#e85d20", lineHeight:1.1 }}>
+              {isMobile ? "التحصيل" : "لوحة تحكم التحصيل"}
             </div>
-            <div style={{fontSize:14,color:"#222",fontWeight:700,marginTop:4}}>
-              Operations Dashboard &nbsp;·&nbsp; {data.totalRecords?.toLocaleString()} سجل &nbsp;·&nbsp; آخر تحديث: {data.uploadDate}
-            </div>
+            {!isMobile && <div style={{ fontSize:12, color:"#444", fontWeight:700, marginTop:3 }}>
+              Operations Dashboard · {data.totalRecords?.toLocaleString()} سجل · {data.uploadDate}
+            </div>}
           </div>
         </div>
-        <div style={{display:"flex",alignItems:"center",gap:24}}>
-          <UploadBtn onFile={handleFile} uploading={uploading} success={success} error={error}/>
-          <Clock/>
+        <div style={{ display:"flex", alignItems:"center", gap: isMobile?10:20 }}>
+          <UploadBtn onFile={handleFile} uploading={uploading} success={success} error={error} small={isMobile} />
+          <Clock small={isMobile} />
         </div>
       </div>
 
       {/* ══ BANNER ══ */}
       <div style={{
-        background:"linear-gradient(120deg,#e85d20 0%,#c44b10 60%,#a83808 100%)",
-        padding:"16px 28px",flexShrink:0,
-        display:"flex",justifyContent:"space-between",alignItems:"center",flexWrap:"wrap",gap:12,
+        background:"linear-gradient(120deg,#e85d20,#c44b10,#a83808)",
+        padding: isMobile?"14px":"16px 24px",
+        display:"flex", justifyContent:"space-between", alignItems:"center",
+        flexWrap:"wrap", gap:10,
         boxShadow:"0 4px 20px rgba(200,70,20,0.3)"
       }}>
         <div>
-          <div style={{fontSize:16,color:"rgba(255,255,255,0.9)",fontWeight:800,letterSpacing:2,marginBottom:6}}>
+          <div style={{ fontSize: small?11:13, color:"rgba(255,255,255,0.8)", fontWeight:700, letterSpacing:1.5, marginBottom:4 }}>
             إجمالي التحصيل الكلي
           </div>
-          <div style={{display:"flex",alignItems:"baseline",gap:8}}>
-            <span style={{fontSize:52,fontWeight:900,color:"#fff",letterSpacing:-1,lineHeight:1}}>{omr(gTotal)}</span>
-            <span style={{fontSize:20,color:"rgba(255,255,255,0.85)",fontWeight:700}}>OMR</span>
+          <div style={{ display:"flex", alignItems:"baseline", gap:6 }}>
+            <span style={{ fontSize: isMobile?28:isTablet?38:48, fontWeight:900, color:"#fff", letterSpacing:-1, lineHeight:1 }}>{omr(gTotal)}</span>
+            <span style={{ fontSize: small?14:18, color:"rgba(255,255,255,0.8)", fontWeight:700 }}>OMR</span>
           </div>
         </div>
-        <div style={{display:"flex",gap:4,alignItems:"stretch"}}>
-          <StatPill label="إجمالي المدفوع" value={omr(gPaid)} color="#fff"/>
-          <div style={{width:1,background:"rgba(255,255,255,0.2)"}}/>
-          <StatPill label="إجمالي التسويات" value={omr(gAdj)} color="#fde68a"/>
-          <div style={{width:1,background:"rgba(255,255,255,0.2)"}}/>
-          <StatPill label="عدد السجلات" value={data.totalRecords?.toLocaleString()} color="#bfdbfe"/>
+        <div style={{ display:"flex", gap: small?10:4, flexWrap:"wrap" }}>
+          {[["إجمالي المدفوع",omr(gPd+dPd+hPd),"#fff"],
+            ["إجمالي التسويات",omr(gAd+dAd+hAd),"#fde68a"],
+            ["عدد السجلات",data.totalRecords?.toLocaleString(),"#bfdbfe"]
+          ].map(([l,v,c]) => (
+            <div key={l} style={{ textAlign:"center", padding:`0 ${small?10:16}px`, borderRight: small?"none":"1px solid rgba(255,255,255,0.2)" }}>
+              <div style={{ fontSize: small?11:13, color:"rgba(255,255,255,0.8)", fontWeight:700, marginBottom:4 }}>{l}</div>
+              <div style={{ fontSize: small?16:22, fontWeight:900, color:c }}>{v}</div>
+            </div>
+          ))}
         </div>
       </div>
 
       {/* ══ BODY ══ */}
-      <div style={{flex:1,overflow:"auto",padding:"18px 24px 20px",minHeight:0}}>
+      <div style={{ padding:pad }}>
 
-        {/* ─ Summary cards ─ */}
-        <div style={{display:"grid",gridTemplateColumns:"repeat(3,1fr)",gap:16,marginBottom:20}}>
-          <SummaryCard label="المحافظات الخمس"  paid={govPaid} adj={govAdj} color="#e85d20" icon="🗺" pct={p(govPaid+govAdj)}/>
-          <SummaryCard label="شركات التحصيل"    paid={dcPaid}  adj={dcAdj}  color="#1a7a6b" icon="🏢" pct={p(dcPaid+dcAdj)}/>
-          <SummaryCard label="المكتب الرئيسي"   paid={hoPaid}  adj={hoAdj}  color="#6c3fa0" icon="🏛" pct={p(hoPaid+hoAdj)}/>
+        {/* Summary cards */}
+        <div style={{
+          display:"grid",
+          gridTemplateColumns: isMobile?"1fr":isTablet?"1fr 1fr":"repeat(3,1fr)",
+          gap: small?12:16, marginBottom: small?14:18
+        }}>
+          <SummaryCard label="المحافظات الخمس" paid={gPd} adj={gAd} color="#e85d20" icon="🗺" pct={p(gPd+gAd)} small={small}/>
+          <SummaryCard label="شركات التحصيل"   paid={dPd} adj={dAd} color="#1a7a6b" icon="🏢" pct={p(dPd+dAd)} small={small}/>
+          <SummaryCard label="المكتب الرئيسي"  paid={hPd} adj={hAd} color="#6c3fa0" icon="🏛" pct={p(hPd+hAd)} small={small}/>
         </div>
 
-        {/* ─ Regions section ─ */}
+        {/* Regions */}
         <div style={{
-          background:"#fff",borderRadius:18,
+          background:"#fff", borderRadius:16,
           boxShadow:"0 3px 18px rgba(0,0,0,0.07)",
-          border:"1.5px solid #f0ece8",marginBottom:18,overflow:"hidden"
+          border:"1.5px solid #f0ece8", marginBottom: small?14:18,
+          overflow:"hidden"
         }}>
-          {/* header */}
-          <div style={{
-            background:"linear-gradient(120deg,#e85d20,#c44b10)",
-            padding:"14px 22px",display:"flex",justifyContent:"space-between",alignItems:"center"
-          }}>
-            <div style={{fontSize:20,fontWeight:900,color:"#fff"}}>🗺 المحافظات الخمس</div>
-            <div style={{display:"flex",gap:24}}>
-              {[["المدفوع",omr(govPaid),"#fff"],["التسويات",omr(govAdj),"#fde68a"],["الإجمالي",omr(govPaid+govAdj),"#fff"]].map(([l,v,c])=>(
-                <div key={l} style={{textAlign:"center"}}>
-                  <div style={{fontSize:13,color:"rgba(255,255,255,0.85)",fontWeight:700,marginBottom:2}}>{l}</div>
-                  <div style={{fontSize:18,fontWeight:800,color:c}}>{v}</div>
-                </div>
-              ))}
-            </div>
-          </div>
-          {/* rows */}
-          <div style={{padding:"14px 16px",display:"flex",flexDirection:"column",gap:10}}>
-            {data.regions.map((r,i)=>(
+          <SectionHeader title="🗺 المحافظات الخمس" paid={gPd} adj={gAd} color="#e85d20" small={small}/>
+          <div style={{ padding: small?"10px":"14px 16px", display:"flex", flexDirection:"column", gap: small?8:10 }}>
+            {data.regions.map((r,i) => (
               <RegionRow key={r.id} region={r} idx={i}
                 open={openRegion===r.id}
-                onToggle={()=>setOpenRegion(openRegion===r.id?null:r.id)}
+                onToggle={() => setOpenRegion(openRegion===r.id?null:r.id)}
+                small={small}
               />
             ))}
           </div>
         </div>
 
-        {/* ─ DC + HO ─ */}
-        <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:18}}>
-
+        {/* DC + HO */}
+        <div style={{
+          display:"grid",
+          gridTemplateColumns: isMobile?"1fr":"1fr 1fr",
+          gap: small?12:18
+        }}>
           {/* DC */}
-          <div style={{background:"#fff",borderRadius:18,boxShadow:"0 3px 18px rgba(0,0,0,0.07)",border:"1.5px solid #f0ece8",overflow:"hidden"}}>
-            <div style={{background:"linear-gradient(120deg,#1a7a6b,#0f5a4d)",padding:"14px 22px",display:"flex",justifyContent:"space-between",alignItems:"center"}}>
-              <div style={{fontSize:20,fontWeight:900,color:"#fff"}}>🏢 شركات التحصيل</div>
-              <div style={{textAlign:"right"}}>
-                <div style={{fontSize:16,color:"rgba(255,255,255,0.9)",fontWeight:900,marginBottom:4}}>الإجمالي</div>
-                <div style={{fontSize:22,fontWeight:900,color:"#fff"}}>{omr(dcPaid+dcAdj)}</div>
-              </div>
-            </div>
-            <div style={{padding:"14px 16px",display:"flex",flexDirection:"column",gap:10}}>
-              {data.debtCompanies.map((c,i)=>(
-                <EntityCard key={c.name} name={c.name} paid={c.paid} adj={c.adj} color="#1a7a6b" rank={i+1}/>
+          <div style={{ background:"#fff", borderRadius:16, boxShadow:"0 3px 18px rgba(0,0,0,0.07)", border:"1.5px solid #f0ece8", overflow:"hidden" }}>
+            <SectionHeader title="🏢 شركات التحصيل" paid={dPd} adj={dAd} color="#1a7a6b" small={small}/>
+            <div style={{ padding: small?"10px":"14px 16px", display:"flex", flexDirection:"column", gap: small?8:10 }}>
+              {data.debtCompanies.map((c,i) => (
+                <EntityCard key={c.name} name={c.name} paid={c.paid} adj={c.adj} color="#1a7a6b" rank={i+1} small={small}/>
               ))}
             </div>
           </div>
 
           {/* HO */}
-          <div style={{background:"#fff",borderRadius:18,boxShadow:"0 3px 18px rgba(0,0,0,0.07)",border:"1.5px solid #f0ece8",overflow:"hidden"}}>
-            <div style={{background:"linear-gradient(120deg,#6c3fa0,#4e2a80)",padding:"14px 22px",display:"flex",justifyContent:"space-between",alignItems:"center"}}>
-              <div style={{fontSize:20,fontWeight:900,color:"#fff"}}>🏛 المكتب الرئيسي</div>
-              <div style={{textAlign:"right"}}>
-                <div style={{fontSize:16,color:"rgba(255,255,255,0.9)",fontWeight:900,marginBottom:4}}>الإجمالي</div>
-                <div style={{fontSize:22,fontWeight:900,color:"#fff"}}>{omr(hoPaid+hoAdj)}</div>
-              </div>
-            </div>
-            <div style={{padding:"14px 16px",display:"flex",flexDirection:"column",gap:10}}>
-              {data.headOffice.map((c,i)=>(
-                <EntityCard key={c.name} name={c.name} paid={c.paid} adj={c.adj} color="#6c3fa0" rank={i+1}/>
+          <div style={{ background:"#fff", borderRadius:16, boxShadow:"0 3px 18px rgba(0,0,0,0.07)", border:"1.5px solid #f0ece8", overflow:"hidden" }}>
+            <SectionHeader title="🏛 المكتب الرئيسي" paid={hPd} adj={hAd} color="#6c3fa0" small={small}/>
+            <div style={{ padding: small?"10px":"14px 16px", display:"flex", flexDirection:"column", gap: small?8:10 }}>
+              {data.headOffice.map((c,i) => (
+                <EntityCard key={c.name} name={c.name} paid={c.paid} adj={c.adj} color="#6c3fa0" rank={i+1} small={small}/>
               ))}
             </div>
           </div>
-
         </div>
 
-        <div style={{textAlign:"center",fontSize:12,color:"#bbb",paddingTop:16}}>
+        <div style={{ textAlign:"center", fontSize:11, color:"#bbb", paddingTop:16, paddingBottom:8 }}>
           ONEIC Operations Dashboard © 2026
         </div>
       </div>
