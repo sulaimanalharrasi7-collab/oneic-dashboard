@@ -489,8 +489,8 @@ function SummaryCard({label, paid, adj, color, icon, pct}) {
             borderRight: i<2 ? "1.5px solid #f0ece8" : "none",
             padding:"4px 8px"
           }}>
-            <div style={{fontSize:14,color:"#333",fontWeight:800,marginBottom:8,letterSpacing:0.2}}>{lbl}</div>
-            <div style={{fontSize:i===2?22:18,fontWeight:900,color:clr,lineHeight:1}}>{omr(val)}</div>
+            <div style={{fontSize:16,color:"#111",fontWeight:900,marginBottom:8,letterSpacing:0.2}}>{lbl}</div>
+            <div style={{fontSize:i===2?24:19,fontWeight:900,color:clr,lineHeight:1}}>{omr(val)}</div>
           </div>
         ))}
       </div>
