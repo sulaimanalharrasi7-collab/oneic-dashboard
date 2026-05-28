@@ -250,8 +250,8 @@ function Clock() {
   const dateStr = `${days[t.getDay()]} ${t.getDate()} ${months[t.getMonth()]} ${t.getFullYear()}`;
   return (
     <div style={{textAlign:"right",lineHeight:1.3}}>
-      <div style={{fontSize:26,fontWeight:800,color:"#e85d20",letterSpacing:2,fontVariantNumeric:"tabular-nums"}}>{hh}:{mm}:{ss}</div>
-      <div style={{fontSize:11,color:"#999",marginTop:1}}>{dateStr}</div>
+      <div style={{fontSize:28,fontWeight:900,color:"#e85d20",letterSpacing:2,fontVariantNumeric:"tabular-nums"}}>{hh}:{mm}:{ss}</div>
+      <div style={{fontSize:13,color:"#555",fontWeight:600,marginTop:2}}>{dateStr}</div>
     </div>
   );
 }
@@ -278,8 +278,8 @@ function UploadBtn({onFile,uploading,success,error}) {
         ? <div style={{color:"#16a34a",fontSize:13,fontWeight:700}}>✅ تم التحديث بنجاح</div>
         : <>
             <div style={{fontSize:22,marginBottom:2}}>📂</div>
-            <div style={{fontSize:12,color:"#e85d20",fontWeight:700}}>رفع ملف يومي</div>
-            <div style={{fontSize:10,color:"#bbb",marginTop:2}}>يستبدل البيانات تلقائياً</div>
+            <div style={{fontSize:14,color:"#e85d20",fontWeight:800}}>رفع ملف يومي</div>
+            <div style={{fontSize:12,color:"#888",fontWeight:600,marginTop:2}}>يستبدل البيانات تلقائياً</div>
           </>
       }
       {error && <div style={{color:"#dc2626",fontSize:10,marginTop:4,fontWeight:600}}>⚠ {error}</div>}
@@ -295,10 +295,10 @@ function SectionHeader({title, total, color}) {
       padding:"14px 20px",background:color,
       borderRadius:"14px 14px 0 0",borderBottom:`3px solid ${color==='#e85d20'?'#c44b10':color==='#1a7a6b'?'#155f56':'#5b3fa0'}`
     }}>
-      <div style={{fontSize:16,fontWeight:800,color:"#fff",letterSpacing:0.5}}>{title}</div>
+      <div style={{fontSize:18,fontWeight:900,color:"#fff",letterSpacing:0.5}}>{title}</div>
       <div style={{textAlign:"right"}}>
-        <div style={{fontSize:10,color:"rgba(255,255,255,0.7)",marginBottom:2}}>الإجمالي الكلي</div>
-        <div style={{fontSize:20,fontWeight:900,color:"#fff"}}>{omr(total)} <span style={{fontSize:11,opacity:0.75}}>OMR</span></div>
+        <div style={{fontSize:13,color:"rgba(255,255,255,0.85)",fontWeight:700,marginBottom:3}}>الإجمالي الكلي</div>
+        <div style={{fontSize:22,fontWeight:900,color:"#fff"}}>{omr(total)} <span style={{fontSize:13,opacity:0.85,fontWeight:700}}>OMR</span></div>
       </div>
     </div>
   );
@@ -308,7 +308,7 @@ function SectionHeader({title, total, color}) {
 function AmountRow({paid, adj, accentColor, big}) {
   const total = paid + adj;
   const fs = big ? 22 : 16;
-  const fss = big ? 12 : 10;
+  const fss = big ? 14 : 12;
   return (
     <div style={{display:"flex",gap:big?28:18,alignItems:"center"}}>
       <div style={{textAlign:"center"}}>
@@ -354,8 +354,8 @@ function RegionCard({region, idx, open, onToggle}) {
             fontSize:15,fontWeight:900,color:"#fff",flexShrink:0
           }}>{idx+1}</div>
           <div>
-            <div style={{fontSize:15,fontWeight:800,color:"#1a1a1a"}}>{region.nameAr}</div>
-            <div style={{fontSize:11,color:"#aaa",marginTop:1}}>{region.nameEn}</div>
+            <div style={{fontSize:17,fontWeight:900,color:"#111"}}>{region.nameAr}</div>
+            <div style={{fontSize:12,color:"#666",fontWeight:600,marginTop:2}}>{region.nameEn}</div>
           </div>
         </div>
         <div style={{display:"flex",alignItems:"center",gap:20}}>
@@ -363,7 +363,7 @@ function RegionCard({region, idx, open, onToggle}) {
           <div style={{
             background:open?col:"#fff7f3",color:open?"#fff":col,
             border:`1.5px solid ${col}`,borderRadius:8,
-            padding:"6px 14px",fontSize:12,fontWeight:700,cursor:"pointer",
+            padding:"8px 16px",fontSize:13,fontWeight:800,cursor:"pointer",
             whiteSpace:"nowrap",transition:"all 0.2s",flexShrink:0
           }}>
             {open ? "▲ إغلاق" : `▼ المحصّلون (${region.collectors.length})`}
@@ -378,7 +378,7 @@ function RegionCard({region, idx, open, onToggle}) {
             display:"grid",gridTemplateColumns:"28px 1fr 120px 120px 130px 70px",
             gap:8,padding:"10px 0 6px",
             borderBottom:"2px solid #ffe4d4",
-            fontSize:10,color:"#aaa",fontWeight:700,letterSpacing:0.5
+            fontSize:12,color:"#555",fontWeight:800,letterSpacing:0.5
           }}>
             <span>#</span><span>اسم المحصّل</span>
             <span style={{textAlign:"right"}}>المدفوع</span>
@@ -395,16 +395,16 @@ function RegionCard({region, idx, open, onToggle}) {
                 gap:8,alignItems:"center",padding:"8px 0",
                 borderBottom:"1px solid #faf0ea"
               }}>
-                <span style={{fontSize:11,color:"#ccc",fontWeight:600}}>{i+1}</span>
-                <span style={{fontSize:13,color:"#222",fontWeight:600,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{c.name}</span>
-                <span style={{fontSize:13,color:"#16a34a",fontWeight:700,textAlign:"right"}}>{omr(c.paid)}</span>
-                <span style={{fontSize:13,color:"#d97706",fontWeight:700,textAlign:"right"}}>{omr(c.adj)}</span>
-                <span style={{fontSize:14,color:col,fontWeight:800,textAlign:"right"}}>{omr(ct)}</span>
+                <span style={{fontSize:13,color:"#999",fontWeight:700}}>{i+1}</span>
+                <span style={{fontSize:14,color:"#111",fontWeight:700,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{c.name}</span>
+                <span style={{fontSize:14,color:"#16a34a",fontWeight:800,textAlign:"right"}}>{omr(c.paid)}</span>
+                <span style={{fontSize:14,color:"#d97706",fontWeight:800,textAlign:"right"}}>{omr(c.adj)}</span>
+                <span style={{fontSize:15,color:col,fontWeight:900,textAlign:"right"}}>{omr(ct)}</span>
                 <div style={{display:"flex",alignItems:"center",gap:4,justifyContent:"flex-end"}}>
                   <div style={{width:30,height:5,background:"#f0e0d8",borderRadius:3,overflow:"hidden"}}>
                     <div style={{width:pct+"%",height:"100%",background:col,borderRadius:3}}/>
                   </div>
-                  <span style={{fontSize:10,color:"#bbb",minWidth:24,textAlign:"right"}}>{pct}%</span>
+                  <span style={{fontSize:12,color:"#888",fontWeight:700,minWidth:28,textAlign:"right"}}>{pct}%</span>
                 </div>
               </div>
             );
@@ -414,10 +414,10 @@ function RegionCard({region, idx, open, onToggle}) {
             display:"grid",gridTemplateColumns:"28px 1fr 120px 120px 130px 70px",
             gap:8,padding:"10px 0 0",borderTop:`2px solid ${col}44`
           }}>
-            <span/><span style={{fontSize:12,color:col,fontWeight:800}}>الإجمالي</span>
-            <span style={{fontSize:13,color:"#16a34a",fontWeight:800,textAlign:"right"}}>{omr(region.paid)}</span>
-            <span style={{fontSize:13,color:"#d97706",fontWeight:800,textAlign:"right"}}>{omr(region.adj)}</span>
-            <span style={{fontSize:15,color:col,fontWeight:900,textAlign:"right"}}>{omr(region.paid+region.adj)}</span>
+            <span/><span style={{fontSize:14,color:col,fontWeight:900}}>الإجمالي</span>
+            <span style={{fontSize:15,color:"#16a34a",fontWeight:900,textAlign:"right"}}>{omr(region.paid)}</span>
+            <span style={{fontSize:15,color:"#d97706",fontWeight:900,textAlign:"right"}}>{omr(region.adj)}</span>
+            <span style={{fontSize:17,color:col,fontWeight:900,textAlign:"right"}}>{omr(region.paid+region.adj)}</span>
             <span/>
           </div>
         </div>
@@ -441,7 +441,7 @@ function EntityCard({name, paid, adj, color, rank}) {
           display:"flex",alignItems:"center",justifyContent:"center",
           fontSize:14,fontWeight:900,color:"#fff",flexShrink:0
         }}>{rank}</div>
-        <div style={{fontSize:14,fontWeight:700,color:"#1a1a1a"}}>{name}</div>
+        <div style={{fontSize:15,fontWeight:800,color:"#111"}}>{name}</div>
       </div>
       <AmountRow paid={paid} adj={adj} accentColor={color}/>
     </div>
@@ -461,26 +461,26 @@ function SummaryBox({label, paid, adj, color, icon, grandTotal}) {
       <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:14}}>
         <div style={{display:"flex",alignItems:"center",gap:8}}>
           <span style={{fontSize:20}}>{icon}</span>
-          <span style={{fontSize:14,fontWeight:700,color:"#333"}}>{label}</span>
+          <span style={{fontSize:16,fontWeight:800,color:"#222"}}>{label}</span>
         </div>
         <span style={{
           background:`${color}18`,color,border:`1px solid ${color}44`,
-          borderRadius:20,padding:"2px 10px",fontSize:12,fontWeight:700
+          borderRadius:20,padding:"3px 12px",fontSize:13,fontWeight:800
         }}>{pct}%</span>
       </div>
       <div style={{display:"flex",gap:16,marginBottom:12}}>
         <div style={{flex:1}}>
-          <div style={{fontSize:10,color:"#999",marginBottom:4,fontWeight:600}}>المدفوع</div>
+          <div style={{fontSize:13,color:"#555",marginBottom:5,fontWeight:700}}>المدفوع</div>
           <div style={{fontSize:16,fontWeight:800,color:"#16a34a"}}>{omr(paid)}</div>
         </div>
         <div style={{flex:1}}>
-          <div style={{fontSize:10,color:"#999",marginBottom:4,fontWeight:600}}>التسويات</div>
-          <div style={{fontSize:16,fontWeight:800,color:"#d97706"}}>{omr(adj)}</div>
+          <div style={{fontSize:13,color:"#555",marginBottom:5,fontWeight:700}}>التسويات</div>
+          <div style={{fontSize:18,fontWeight:800,color:"#d97706"}}>{omr(adj)}</div>
         </div>
       </div>
       <div style={{borderTop:`1px solid #f0f0f0`,paddingTop:10}}>
-        <div style={{fontSize:10,color:"#999",marginBottom:4,fontWeight:600}}>الإجمالي</div>
-        <div style={{fontSize:22,fontWeight:900,color}}>{omr(total)}</div>
+        <div style={{fontSize:13,color:"#555",marginBottom:5,fontWeight:700}}>الإجمالي</div>
+        <div style={{fontSize:26,fontWeight:900,color}}>{omr(total)}</div>
       </div>
       <div style={{marginTop:10,background:"#f5f5f5",borderRadius:6,height:7,overflow:"hidden"}}>
         <div style={{width:pct+"%",height:"100%",background:color,borderRadius:6,transition:"width 0.8s"}}/>
@@ -541,7 +541,7 @@ export default function Dashboard() {
         <div style={{display:"flex",alignItems:"center",gap:16}}>
           <img src={LOGO} alt="ONEIC" style={{height:48,objectFit:"contain"}}/>
           <div style={{borderRight:"2px solid #ffe4d4",paddingRight:16}}>
-            <div style={{fontSize:20,fontWeight:900,color:"#e85d20",letterSpacing:0.3}}>لوحة تحكم التحصيل</div>
+            <div style={{fontSize:24,fontWeight:900,color:"#e85d20",letterSpacing:0.3}}>لوحة تحكم التحصيل</div>
             <div style={{fontSize:11,color:"#aaa",marginTop:2}}>
               Operations Dashboard · {data.totalRecords?.toLocaleString()} سجل · آخر تحديث: {data.uploadDate}
             </div>
@@ -565,15 +565,15 @@ export default function Dashboard() {
             إجمالي التحصيل الكلي
           </div>
           <div style={{display:"flex",alignItems:"baseline",gap:10}}>
-            <span style={{fontSize:42,fontWeight:900,color:"#fff",letterSpacing:-1}}>{omr(grandTotal)}</span>
-            <span style={{fontSize:16,color:"rgba(255,255,255,0.65)"}}>OMR</span>
+            <span style={{fontSize:48,fontWeight:900,color:"#fff",letterSpacing:-1}}>{omr(grandTotal)}</span>
+            <span style={{fontSize:18,color:"rgba(255,255,255,0.8)",fontWeight:700}}>OMR</span>
           </div>
         </div>
         <div style={{display:"flex",gap:36}}>
           {[["💰 إجمالي مدفوع",grandPaid,"#fff"],["📊 إجمالي تسويات",grandAdj,"#fde68a"]].map(([l,v,c])=>(
             <div key={l} style={{textAlign:"center"}}>
-              <div style={{fontSize:11,color:"rgba(255,255,255,0.6)",marginBottom:5}}>{l}</div>
-              <div style={{fontSize:24,fontWeight:900,color:c}}>{omr(v)}</div>
+              <div style={{fontSize:13,color:"rgba(255,255,255,0.75)",fontWeight:700,marginBottom:5}}>{l}</div>
+              <div style={{fontSize:26,fontWeight:900,color:c}}>{omr(v)}</div>
             </div>
           ))}
         </div>
@@ -606,18 +606,18 @@ export default function Dashboard() {
               padding:"12px 24px",border:"1px solid #ffd4b8"
             }}>
               <div style={{textAlign:"center"}}>
-                <div style={{fontSize:10,color:"#aaa",fontWeight:700,marginBottom:3}}>إجمالي مدفوع المحافظات</div>
-                <div style={{fontSize:18,fontWeight:800,color:"#16a34a"}}>{omr(govPaid)}</div>
+                <div style={{fontSize:13,color:"#555",fontWeight:800,marginBottom:4}}>إجمالي مدفوع المحافظات</div>
+                <div style={{fontSize:20,fontWeight:900,color:"#16a34a"}}>{omr(govPaid)}</div>
               </div>
               <div style={{width:1,background:"#ffd4b8"}}/>
               <div style={{textAlign:"center"}}>
-                <div style={{fontSize:10,color:"#aaa",fontWeight:700,marginBottom:3}}>إجمالي تسويات المحافظات</div>
-                <div style={{fontSize:18,fontWeight:800,color:"#d97706"}}>{omr(govAdj)}</div>
+                <div style={{fontSize:13,color:"#555",fontWeight:800,marginBottom:4}}>إجمالي تسويات المحافظات</div>
+                <div style={{fontSize:20,fontWeight:900,color:"#d97706"}}>{omr(govAdj)}</div>
               </div>
               <div style={{width:1,background:"#ffd4b8"}}/>
               <div style={{textAlign:"center"}}>
-                <div style={{fontSize:10,color:"#aaa",fontWeight:700,marginBottom:3}}>الإجمالي الكلي للمحافظات</div>
-                <div style={{fontSize:20,fontWeight:900,color:"#e85d20"}}>{omr(govPaid+govAdj)}</div>
+                <div style={{fontSize:13,color:"#555",fontWeight:800,marginBottom:4}}>الإجمالي الكلي للمحافظات</div>
+                <div style={{fontSize:22,fontWeight:900,color:"#e85d20"}}>{omr(govPaid+govAdj)}</div>
               </div>
             </div>
           </div>
@@ -637,18 +637,18 @@ export default function Dashboard() {
             <div style={{padding:"0 16px 16px",display:"flex",justifyContent:"flex-end"}}>
               <div style={{display:"flex",gap:20,background:"#f0faf8",borderRadius:10,padding:"10px 20px",border:"1px solid #b2dfd8"}}>
                 <div style={{textAlign:"center"}}>
-                  <div style={{fontSize:10,color:"#aaa",fontWeight:700,marginBottom:2}}>إجمالي مدفوع</div>
-                  <div style={{fontSize:16,fontWeight:800,color:"#16a34a"}}>{omr(dcPaid)}</div>
+                  <div style={{fontSize:13,color:"#555",fontWeight:800,marginBottom:3}}>إجمالي مدفوع</div>
+                  <div style={{fontSize:18,fontWeight:900,color:"#16a34a"}}>{omr(dcPaid)}</div>
                 </div>
                 <div style={{width:1,background:"#b2dfd8"}}/>
                 <div style={{textAlign:"center"}}>
-                  <div style={{fontSize:10,color:"#aaa",fontWeight:700,marginBottom:2}}>إجمالي تسويات</div>
-                  <div style={{fontSize:16,fontWeight:800,color:"#d97706"}}>{omr(dcAdj)}</div>
+                  <div style={{fontSize:13,color:"#555",fontWeight:800,marginBottom:3}}>إجمالي تسويات</div>
+                  <div style={{fontSize:18,fontWeight:900,color:"#d97706"}}>{omr(dcAdj)}</div>
                 </div>
                 <div style={{width:1,background:"#b2dfd8"}}/>
                 <div style={{textAlign:"center"}}>
-                  <div style={{fontSize:10,color:"#aaa",fontWeight:700,marginBottom:2}}>الإجمالي</div>
-                  <div style={{fontSize:18,fontWeight:900,color:"#1a7a6b"}}>{omr(dcPaid+dcAdj)}</div>
+                  <div style={{fontSize:13,color:"#555",fontWeight:800,marginBottom:3}}>الإجمالي</div>
+                  <div style={{fontSize:20,fontWeight:900,color:"#1a7a6b"}}>{omr(dcPaid+dcAdj)}</div>
                 </div>
               </div>
             </div>
@@ -666,17 +666,17 @@ export default function Dashboard() {
               <div style={{display:"flex",gap:20,background:"#f8f4ff",borderRadius:10,padding:"10px 20px",border:"1px solid #d4b8f0"}}>
                 <div style={{textAlign:"center"}}>
                   <div style={{fontSize:10,color:"#aaa",fontWeight:700,marginBottom:2}}>إجمالي مدفوع</div>
-                  <div style={{fontSize:16,fontWeight:800,color:"#16a34a"}}>{omr(hoPaid)}</div>
+                  <div style={{fontSize:18,fontWeight:900,color:"#16a34a"}}>{omr(hoPaid)}</div>
                 </div>
                 <div style={{width:1,background:"#d4b8f0"}}/>
                 <div style={{textAlign:"center"}}>
                   <div style={{fontSize:10,color:"#aaa",fontWeight:700,marginBottom:2}}>إجمالي تسويات</div>
-                  <div style={{fontSize:16,fontWeight:800,color:"#d97706"}}>{omr(hoAdj)}</div>
+                  <div style={{fontSize:18,fontWeight:900,color:"#d97706"}}>{omr(hoAdj)}</div>
                 </div>
                 <div style={{width:1,background:"#d4b8f0"}}/>
                 <div style={{textAlign:"center"}}>
                   <div style={{fontSize:10,color:"#aaa",fontWeight:700,marginBottom:2}}>الإجمالي</div>
-                  <div style={{fontSize:18,fontWeight:900,color:"#6c3fa0"}}>{omr(hoPaid+hoAdj)}</div>
+                  <div style={{fontSize:20,fontWeight:900,color:"#6c3fa0"}}>{omr(hoPaid+hoAdj)}</div>
                 </div>
               </div>
             </div>
