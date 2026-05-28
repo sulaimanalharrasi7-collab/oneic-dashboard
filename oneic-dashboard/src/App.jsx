@@ -660,8 +660,8 @@ export default function Dashboard() {
             <div style={{background:"linear-gradient(120deg,#6c3fa0,#4e2a80)",padding:"14px 22px",display:"flex",justifyContent:"space-between",alignItems:"center"}}>
               <div style={{fontSize:20,fontWeight:900,color:"#fff"}}>🏛 المكتب الرئيسي</div>
               <div style={{textAlign:"right"}}>
-                <div style={{fontSize:11,color:"rgba(255,255,255,0.7)",marginBottom:2}}>الإجمالي</div>
-                <div style={{fontSize:20,fontWeight:900,color:"#fff"}}>{omr(hoPaid+hoAdj)}</div>
+                <div style={{fontSize:16,color:"rgba(255,255,255,0.9)",fontWeight:900,marginBottom:4}}>الإجمالي</div>
+                <div style={{fontSize:22,fontWeight:900,color:"#fff"}}>{omr(hoPaid+hoAdj)}</div>
               </div>
             </div>
             <div style={{padding:"14px 16px",display:"flex",flexDirection:"column",gap:10}}>
