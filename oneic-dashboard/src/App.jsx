@@ -296,8 +296,8 @@ function UploadBtn({onFile,uploading,success,error}) {
 function StatPill({label, value, color}) {
   return (
     <div style={{textAlign:"center",padding:"0 16px"}}>
-      <div style={{fontSize:12,color:"rgba(255,255,255,0.7)",fontWeight:600,marginBottom:4,letterSpacing:0.5}}>{label}</div>
-      <div style={{fontSize:20,fontWeight:700,color}}>{value}</div>
+      <div style={{fontSize:15,color:"rgba(255,255,255,0.9)",fontWeight:800,marginBottom:6,letterSpacing:0.5}}>{label}</div>
+      <div style={{fontSize:24,fontWeight:900,color}}>{value}</div>
     </div>
   );
 }
@@ -571,12 +571,12 @@ export default function Dashboard() {
         boxShadow:"0 4px 20px rgba(200,70,20,0.3)"
       }}>
         <div>
-          <div style={{fontSize:12,color:"rgba(255,255,255,0.7)",fontWeight:600,letterSpacing:2,marginBottom:4}}>
+          <div style={{fontSize:16,color:"rgba(255,255,255,0.9)",fontWeight:800,letterSpacing:2,marginBottom:6}}>
             إجمالي التحصيل الكلي
           </div>
           <div style={{display:"flex",alignItems:"baseline",gap:8}}>
-            <span style={{fontSize:44,fontWeight:800,color:"#fff",letterSpacing:-1,lineHeight:1}}>{omr(gTotal)}</span>
-            <span style={{fontSize:17,color:"rgba(255,255,255,0.75)",fontWeight:600}}>OMR</span>
+            <span style={{fontSize:52,fontWeight:900,color:"#fff",letterSpacing:-1,lineHeight:1}}>{omr(gTotal)}</span>
+            <span style={{fontSize:20,color:"rgba(255,255,255,0.85)",fontWeight:700}}>OMR</span>
           </div>
         </div>
         <div style={{display:"flex",gap:4,alignItems:"stretch"}}>
