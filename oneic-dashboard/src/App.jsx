@@ -550,9 +550,10 @@ export default function Dashboard() {
 
   return (
     <div style={{
-      minHeight:"100vh", background:"#f5f0eb",
+      height:"100vh", display:"flex", flexDirection:"column",
+      background:"#f5f0eb",
       fontFamily:"'Cairo','Tajawal','Segoe UI',sans-serif",
-      direction:"rtl", color:"#111"
+      direction:"rtl", color:"#111", overflow:"hidden"
     }}>
       <style>{`
         @import url('https://fonts.googleapis.com/css2?family=Cairo:wght@400;500;600;700;800;900&display=swap');
@@ -593,7 +594,8 @@ export default function Dashboard() {
         padding: isMobile?"14px":"16px 24px",
         display:"flex", justifyContent:"space-between", alignItems:"center",
         flexWrap:"wrap", gap:10,
-        boxShadow:"0 4px 20px rgba(200,70,20,0.3)"
+        boxShadow:"0 4px 20px rgba(200,70,20,0.3)",
+        flexShrink:0
       }}>
         <div>
           <div style={{ fontSize: small?11:13, color:"rgba(255,255,255,0.8)", fontWeight:700, letterSpacing:1.5, marginBottom:4 }}>
@@ -618,7 +620,7 @@ export default function Dashboard() {
       </div>
 
       {/* ══ BODY ══ */}
-      <div style={{ padding:pad }}>
+      <div style={{ padding:pad, flex:1, overflowY:"auto", overflowX:"hidden" }}>
 
         {/* Summary cards */}
         <div style={{
