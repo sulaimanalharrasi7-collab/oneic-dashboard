@@ -644,8 +644,8 @@ export default function Dashboard() {
             <div style={{background:"linear-gradient(120deg,#1a7a6b,#0f5a4d)",padding:"14px 22px",display:"flex",justifyContent:"space-between",alignItems:"center"}}>
               <div style={{fontSize:20,fontWeight:900,color:"#fff"}}>🏢 شركات التحصيل</div>
               <div style={{textAlign:"right"}}>
-                <div style={{fontSize:13,color:"rgba(255,255,255,0.85)",fontWeight:700,marginBottom:2}}>الإجمالي</div>
-                <div style={{fontSize:20,fontWeight:900,color:"#fff"}}>{omr(dcPaid+dcAdj)}</div>
+                <div style={{fontSize:16,color:"rgba(255,255,255,0.9)",fontWeight:900,marginBottom:4}}>الإجمالي</div>
+                <div style={{fontSize:22,fontWeight:900,color:"#fff"}}>{omr(dcPaid+dcAdj)}</div>
               </div>
             </div>
             <div style={{padding:"14px 16px",display:"flex",flexDirection:"column",gap:10}}>
