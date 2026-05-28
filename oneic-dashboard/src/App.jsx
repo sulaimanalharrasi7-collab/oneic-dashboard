@@ -333,18 +333,20 @@ function RegionRow({region, idx, open, onToggle}) {
 
         <div style={{flex:1,minWidth:0}}>
           <div style={{fontSize:22,fontWeight:900,color:"#000",lineHeight:1.2}}>{region.nameAr}</div>
-          <div style={{fontSize:13,color:"#555",marginTop:3,fontWeight:600}}>{region.nameEn}</div>
+          <div style={{fontSize:16,color:"#111",marginTop:4,fontWeight:700}}>{region.nameEn}</div>
         </div>
 
         {/* أرقام */}
         <div style={{display:"flex",gap:0,alignItems:"stretch"}}>
           {[["المدفوع","#16a34a",region.paid],["التسويات","#d97706",region.adj],["الإجمالي",col,region.paid+region.adj]].map(([lbl,clr,val],i)=>(
             <div key={lbl} style={{
-              textAlign:"center",padding:"6px 18px",
+              textAlign:"center",
+              width:160,
+              padding:"6px 0",
               borderRight: i<2 ? "1.5px solid #f0ece8" : "none"
             }}>
-              <div style={{fontSize:13,color:"#333",fontWeight:800,marginBottom:4,letterSpacing:0.3}}>{lbl}</div>
-              <div style={{fontSize:19,fontWeight:800,color:clr}}>{omr(val)}</div>
+              <div style={{fontSize:13,color:"#333",fontWeight:800,marginBottom:5,letterSpacing:0.3}}>{lbl}</div>
+              <div style={{fontSize:20,fontWeight:900,color:clr}}>{omr(val)}</div>
             </div>
           ))}
         </div>
@@ -446,11 +448,13 @@ function EntityCard({name, paid, adj, color, rank}) {
       <div style={{display:"flex",gap:0,alignItems:"stretch"}}>
         {[["المدفوع","#16a34a",paid],["التسويات","#d97706",adj],["الإجمالي",color,total]].map(([lbl,clr,val],i)=>(
           <div key={lbl} style={{
-            textAlign:"center",padding:"4px 16px",
+            textAlign:"center",
+            width:160,
+            padding:"6px 0",
             borderRight: i<2 ? "1.5px solid #f0ece8" : "none"
           }}>
-            <div style={{fontSize:13,color:"#333",fontWeight:800,marginBottom:4}}>{lbl}</div>
-            <div style={{fontSize:18,fontWeight:800,color:clr}}>{omr(val)}</div>
+            <div style={{fontSize:13,color:"#333",fontWeight:800,marginBottom:5}}>{lbl}</div>
+            <div style={{fontSize:20,fontWeight:900,color:clr}}>{omr(val)}</div>
           </div>
         ))}
       </div>
@@ -466,6 +470,7 @@ function SummaryCard({label, paid, adj, color, icon, pct}) {
       boxShadow:"0 3px 14px rgba(0,0,0,0.07)",
       border:"1.5px solid #f0ece8"
     }}>
+      {/* هيدر الكارد */}
       <div style={{background:color,padding:"14px 18px",display:"flex",justifyContent:"space-between",alignItems:"center"}}>
         <div style={{display:"flex",alignItems:"center",gap:10}}>
           <span style={{fontSize:22}}>{icon}</span>
@@ -473,18 +478,19 @@ function SummaryCard({label, paid, adj, color, icon, pct}) {
         </div>
         <div style={{
           background:"rgba(255,255,255,0.25)",borderRadius:20,
-          padding:"3px 12px",fontSize:14,fontWeight:700,color:"#fff"
+          padding:"4px 14px",fontSize:15,fontWeight:700,color:"#fff"
         }}>{pct}%</div>
       </div>
-      <div style={{padding:"14px 18px"}}>
+      {/* الأرقام — ثلاثة أعمدة بعرض موحّد */}
+      <div style={{display:"grid",gridTemplateColumns:"1fr 1fr 1fr",padding:"14px 10px 12px"}}>
         {[["المدفوع","#16a34a",paid],["التسويات","#d97706",adj],["الإجمالي",color,paid+adj]].map(([lbl,clr,val],i)=>(
           <div key={lbl} style={{
-            display:"flex",justifyContent:"space-between",alignItems:"center",
-            padding:"8px 0",
-            borderBottom: i<2 ? "1px solid #f5f0ec" : "none"
+            textAlign:"center",
+            borderRight: i<2 ? "1.5px solid #f0ece8" : "none",
+            padding:"4px 8px"
           }}>
-            <span style={{fontSize:15,color:"#111",fontWeight:800}}>{lbl}</span>
-            <span style={{fontSize:i===2?22:18,fontWeight:800,color:clr}}>{omr(val)}</span>
+            <div style={{fontSize:14,color:"#333",fontWeight:800,marginBottom:8,letterSpacing:0.2}}>{lbl}</div>
+            <div style={{fontSize:i===2?22:18,fontWeight:900,color:clr,lineHeight:1}}>{omr(val)}</div>
           </div>
         ))}
       </div>
