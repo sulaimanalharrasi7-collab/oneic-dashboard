@@ -455,7 +455,7 @@ function SummaryBox({label, paid, adj, color, icon, grandTotal}) {
   return (
     <div style={{
       background:"#fff",border:`1px solid #e5e7eb`,borderRadius:14,
-      padding:"18px 20px",borderTop:`4px solid ${color}`,
+      padding:"14px 18px",borderTop:`4px solid ${color}`,
       boxShadow:"0 2px 8px rgba(0,0,0,0.06)"
     }}>
       <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:14}}>
@@ -519,7 +519,8 @@ export default function Dashboard() {
 
   return (
     <div style={{
-      minHeight:"100vh",background:"#f8f4f1",
+      width:"100vw",height:"100vh",display:"flex",flexDirection:"column",
+      background:"#f8f4f1",overflow:"hidden",
       fontFamily:"'Segoe UI',Tahoma,Arial,sans-serif",direction:"rtl",color:"#1a1a1a"
     }}>
       <style>{`
@@ -535,7 +536,7 @@ export default function Dashboard() {
         background:"#fff",borderBottom:"2px solid #ffe4d4",
         padding:"12px 28px",display:"flex",justifyContent:"space-between",
         alignItems:"center",gap:16,boxShadow:"0 2px 12px rgba(232,93,32,0.08)",
-        position:"sticky",top:0,zIndex:100
+        flexShrink:0
       }}>
         <div style={{display:"flex",alignItems:"center",gap:16}}>
           <img src={LOGO} alt="ONEIC" style={{height:48,objectFit:"contain"}}/>
@@ -555,8 +556,8 @@ export default function Dashboard() {
       {/* ══ GRAND TOTAL BANNER ══ */}
       <div style={{
         background:"linear-gradient(135deg,#e85d20 0%,#c44b10 100%)",
-        padding:"20px 28px",display:"flex",justifyContent:"space-between",
-        alignItems:"center",flexWrap:"wrap",gap:16,
+        padding:"16px 28px",display:"flex",justifyContent:"space-between",
+        alignItems:"center",flexWrap:"wrap",gap:12,flexShrink:0,
         boxShadow:"0 4px 20px rgba(232,93,32,0.25)"
       }}>
         <div>
@@ -579,17 +580,17 @@ export default function Dashboard() {
       </div>
 
       {/* ══ BODY ══ */}
-      <div style={{padding:"24px 28px",maxWidth:1400,margin:"0 auto"}}>
+      <div style={{flex:1,overflow:"auto",padding:"16px 28px 20px",minHeight:0}}>
 
         {/* ─ Summary row ─ */}
-        <div style={{display:"grid",gridTemplateColumns:"repeat(3,1fr)",gap:18,marginBottom:28}}>
+        <div style={{display:"grid",gridTemplateColumns:"repeat(3,1fr)",gap:14,marginBottom:16}}>
           <SummaryBox label="المحافظات الخمس"  paid={govPaid} adj={govAdj} color="#e85d20" icon="🗺" grandTotal={grandTotal}/>
           <SummaryBox label="شركات التحصيل"    paid={dcPaid}  adj={dcAdj}  color="#1a7a6b" icon="🏢" grandTotal={grandTotal}/>
           <SummaryBox label="المكتب الرئيسي"   paid={hoPaid}  adj={hoAdj}  color="#6c3fa0" icon="🏛" grandTotal={grandTotal}/>
         </div>
 
         {/* ─ Regions ─ */}
-        <div style={{background:"#fff",borderRadius:16,boxShadow:"0 2px 16px rgba(0,0,0,0.07)",marginBottom:24,overflow:"hidden"}}>
+        <div style={{background:"#fff",borderRadius:16,boxShadow:"0 2px 16px rgba(0,0,0,0.07)",marginBottom:16,overflow:"hidden"}}>
           <SectionHeader title="🗺 المحافظات الخمس" total={govPaid+govAdj} color="#e85d20"/>
           <div style={{padding:"16px 16px 8px",display:"flex",flexDirection:"column",gap:10}}>
             {data.regions.map((r,i)=>(
