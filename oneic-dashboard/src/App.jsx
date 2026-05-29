@@ -388,57 +388,146 @@ function RegionRow({ region, idx, open, onToggle, small }) {
 
       {/* Collectors */}
       {open && (
-        <div style={{ padding: small?"10px 14px 14px":"12px 18px 16px", background:"#fffaf7" }}>
+        <div style={{ padding: small?"10px":"16px 20px 18px", background:"#fffaf7" }}>
+
+          {/* ── Header row ── */}
           <div style={{
             display:"grid",
-            gridTemplateColumns: small ? "28px 1fr 90px 90px 100px" : "36px 1fr 130px 130px 140px 60px",
-            gap:6, padding:"8px 10px",
-            background:col, borderRadius:9, marginBottom:8
+            gridTemplateColumns: small
+              ? "32px 1fr 100px 100px 110px"
+              : "40px 1fr 155px 155px 165px 70px",
+            gap:8, padding: small?"10px 12px":"12px 16px",
+            background:col, borderRadius:12, marginBottom:10
           }}>
-            {(small ? ["#","الاسم","مدفوع","تسوية","إجمالي"] : ["#","اسم المحصّل","المدفوع","التسويات","الإجمالي","%"]).map((h,i) => (
-              <div key={i} style={{ fontSize: small?11:13, fontWeight:900, color:"#fff", textAlign: i>=2?"right":"right" }}>{h}</div>
+            {(small
+              ? ["#","اسم المحصّل","المدفوع","التسويات","الإجمالي"]
+              : ["#","اسم المحصّل","المدفوع","التسويات","الإجمالي","%"]
+            ).map((h,i) => (
+              <div key={i} style={{
+                fontSize: small?13:15,
+                fontWeight:900, color:"#fff",
+                textAlign: i===1 ? "right" : "center",
+                letterSpacing:0.3
+              }}>{h}</div>
             ))}
           </div>
 
+          {/* ── Data rows ── */}
           {region.collectors.map((c,i) => {
             const ct = c.paid+c.adj;
             const pct = Math.round((ct/maxV)*100);
+            const isEven = i%2===0;
             return (
               <div key={i} style={{
                 display:"grid",
-                gridTemplateColumns: small ? "28px 1fr 90px 90px 100px" : "36px 1fr 130px 130px 140px 60px",
-                gap:6, alignItems:"center",
-                padding: small?"7px 10px":"9px 10px",
-                borderRadius:8,
-                background: i%2===0 ? "#fff" : "#fdf8f5",
-                marginBottom:3
+                gridTemplateColumns: small
+                  ? "32px 1fr 100px 100px 110px"
+                  : "40px 1fr 155px 155px 165px 70px",
+                gap:8, alignItems:"center",
+                padding: small?"10px 12px":"13px 16px",
+                borderRadius:10,
+                background: isEven ? "#fff" : "#fdf8f5",
+                marginBottom:4,
+                border: `1px solid ${isEven?"#f0ece8":"#f5ede6"}`,
+                boxShadow:"0 1px 4px rgba(0,0,0,0.04)"
               }}>
-                <div style={{ fontSize:13, color:col, fontWeight:700 }}>{i+1}</div>
-                <div style={{ fontSize: small?12:14, color:"#000", fontWeight:700, overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap" }}>{c.name}</div>
-                <div style={{ fontSize: small?12:14, color:"#16a34a", fontWeight:800, textAlign:"right" }}>{omr(c.paid)}</div>
-                <div style={{ fontSize: small?12:14, color:"#d97706", fontWeight:800, textAlign:"right" }}>{omr(c.adj)}</div>
-                <div style={{ fontSize: small?13:15, color:col, fontWeight:900, textAlign:"right" }}>{omr(ct)}</div>
-                {!small && <div style={{ textAlign:"right" }}>
-                  <span style={{ fontSize:12, color:"#fff", background:col, borderRadius:6, padding:"2px 6px", fontWeight:700 }}>{pct}%</span>
-                </div>}
+                {/* رقم المحصّل */}
+                <div style={{
+                  width: small?28:36, height: small?28:36,
+                  borderRadius:9, background:`${col}18`,
+                  border:`1.5px solid ${col}44`,
+                  display:"flex", alignItems:"center", justifyContent:"center",
+                  fontSize: small?13:15, color:col, fontWeight:900
+                }}>{i+1}</div>
+
+                {/* الاسم */}
+                <div style={{
+                  fontSize: small?14:17,
+                  color:"#000", fontWeight:800,
+                  overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap"
+                }}>{c.name}</div>
+
+                {/* المدفوع */}
+                <div style={{ textAlign:"center" }}>
+                  <div style={{ fontSize:10, color:"#888", fontWeight:700, marginBottom:2 }}>المدفوع</div>
+                  <div style={{ fontSize: small?14:17, color:"#16a34a", fontWeight:900 }}>{omr(c.paid)}</div>
+                </div>
+
+                {/* التسويات */}
+                <div style={{ textAlign:"center" }}>
+                  <div style={{ fontSize:10, color:"#888", fontWeight:700, marginBottom:2 }}>التسويات</div>
+                  <div style={{ fontSize: small?14:17, color:"#d97706", fontWeight:900 }}>{omr(c.adj)}</div>
+                </div>
+
+                {/* الإجمالي */}
+                <div style={{
+                  textAlign:"center",
+                  background:`${col}10`, borderRadius:8,
+                  padding:"6px 8px",
+                  border:`1px solid ${col}30`
+                }}>
+                  <div style={{ fontSize:10, color:"#888", fontWeight:700, marginBottom:2 }}>الإجمالي</div>
+                  <div style={{ fontSize: small?15:19, color:col, fontWeight:900 }}>{omr(ct)}</div>
+                </div>
+
+                {/* النسبة */}
+                {!small && (
+                  <div style={{ textAlign:"center" }}>
+                    <div style={{ fontSize:10, color:"#888", fontWeight:700, marginBottom:4 }}>النسبة</div>
+                    <div style={{
+                      background:col, color:"#fff", borderRadius:8,
+                      padding:"4px 8px", fontSize:14, fontWeight:900,
+                      display:"inline-block"
+                    }}>{pct}%</div>
+                  </div>
+                )}
               </div>
             );
           })}
 
-          {/* Subtotal */}
+          {/* ── Subtotal ── */}
           <div style={{
             display:"grid",
-            gridTemplateColumns: small ? "28px 1fr 90px 90px 100px" : "36px 1fr 130px 130px 140px 60px",
-            gap:6, padding:"9px 10px",
-            borderTop: `2px solid ${col}33`, marginTop:6,
-            background:`${col}0a`, borderRadius:9
+            gridTemplateColumns: small
+              ? "32px 1fr 100px 100px 110px"
+              : "40px 1fr 155px 155px 165px 70px",
+            gap:8, alignItems:"center",
+            padding: small?"12px":"14px 16px",
+            borderRadius:12, marginTop:8,
+            background:`linear-gradient(120deg,${col}15,${col}08)`,
+            border:`2px solid ${col}44`
           }}>
-            <div/><div style={{ fontSize: small?13:14, color:col, fontWeight:900 }}>الإجمالي</div>
-            <div style={{ fontSize: small?13:15, color:"#16a34a", fontWeight:900, textAlign:"right" }}>{omr(region.paid)}</div>
-            <div style={{ fontSize: small?13:15, color:"#d97706", fontWeight:900, textAlign:"right" }}>{omr(region.adj)}</div>
-            <div style={{ fontSize: small?14:16, color:col, fontWeight:900, textAlign:"right" }}>{omr(region.paid+region.adj)}</div>
+            <div style={{
+              width: small?28:36, height: small?28:36,
+              borderRadius:9, background:col,
+              display:"flex", alignItems:"center", justifyContent:"center",
+              fontSize: small?14:17
+            }}>Σ</div>
+            <div style={{ fontSize: small?15:18, color:col, fontWeight:900 }}>
+              الإجمالي الكلي
+              <div style={{ fontSize:12, color:"#888", fontWeight:600, marginTop:1 }}>
+                {region.collectors.length} محصّل
+              </div>
+            </div>
+            <div style={{ textAlign:"center" }}>
+              <div style={{ fontSize:10, color:"#888", fontWeight:700, marginBottom:2 }}>المدفوع</div>
+              <div style={{ fontSize: small?15:18, color:"#16a34a", fontWeight:900 }}>{omr(region.paid)}</div>
+            </div>
+            <div style={{ textAlign:"center" }}>
+              <div style={{ fontSize:10, color:"#888", fontWeight:700, marginBottom:2 }}>التسويات</div>
+              <div style={{ fontSize: small?15:18, color:"#d97706", fontWeight:900 }}>{omr(region.adj)}</div>
+            </div>
+            <div style={{
+              textAlign:"center", background:col,
+              borderRadius:10, padding:"8px",
+              border:`2px solid ${col}`
+            }}>
+              <div style={{ fontSize:10, color:"rgba(255,255,255,0.75)", fontWeight:700, marginBottom:2 }}>الإجمالي</div>
+              <div style={{ fontSize: small?16:20, color:"#fff", fontWeight:900 }}>{omr(region.paid+region.adj)}</div>
+            </div>
             {!small && <div/>}
           </div>
+
         </div>
       )}
     </div>
@@ -493,6 +582,7 @@ function SummaryCard({ label, paid, adj, color, icon, pct, small }) {
     </div>
   );
 }
+
 
 // ── SectionHeader ──────────────────────────────────────────────────────────
 function SectionHeader({ title, paid, adj, color, small }) {
@@ -560,7 +650,51 @@ export default function Dashboard() {
         * { box-sizing:border-box; margin:0; padding:0; }
         ::-webkit-scrollbar { width:5px; }
         ::-webkit-scrollbar-thumb { background:#e8c0a8; border-radius:3px; }
+
+        @media print {
+          @page {
+            size: A4 landscape;
+            margin: 10mm 8mm;
+          }
+          * { -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important; }
+          body { background: #fff !important; }
+
+          /* إخفاء عناصر لا تطبع */
+          button { display: none !important; }
+          input[type="file"] { display: none !important; }
+
+          /* الهيدر في الطباعة */
+          .no-print { display: none !important; }
+
+          /* إزالة overflow */
+          html, body, #root, div[style*="height:100vh"],
+          div[style*="overflow:hidden"], div[style*="overflow:auto"] {
+            height: auto !important;
+            overflow: visible !important;
+          }
+
+          /* تصغير padding */
+          div[style*="padding"] { padding: 6px !important; }
+
+          /* المحصّلون يظهرون دائماً في الطباعة */
+          .collectors-table { display: block !important; }
+
+          /* فاصل الصفحات */
+          .page-break { page-break-before: always; }
+
+          /* حجم الخط */
+          * { font-size: 85% !important; }
+        }
       `}</style>
+
+      {/* ══ PRINT HEADER — يظهر فقط عند الطباعة ══ */}
+      <div style={{display:"none"}} className="print-only">
+        <style>{`
+          @media print {
+            .print-only { display: flex !important; justifyContent: space-between; alignItems: center; padding: 6px 12px; borderBottom: 3px solid #e85d20; marginBottom: 8px; }
+          }
+        `}</style>
+      </div>
 
       {/* ══ HEADER ══ */}
       <div style={{
@@ -575,15 +709,31 @@ export default function Dashboard() {
           {!isMobile && <div style={{ width:2, height:48, background:"#ffe4d4", borderRadius:2 }} />}
           <div>
             <div style={{ fontSize: isMobile?16:isTablet?20:26, fontWeight:900, color:"#e85d20", lineHeight:1.1 }}>
-              {isMobile ? "التحصيل" : "لوحة تحكم التحصيل"}
+              {isMobile ? "إدارة الديون" : "لوحة تحكم إدارة تحصيل الديون"}
             </div>
             {!isMobile && <div style={{ fontSize:12, color:"#444", fontWeight:700, marginTop:3 }}>
-              Operations Dashboard · {data.totalRecords?.toLocaleString()} سجل · {data.uploadDate}
+              Debt Collection Management Dashboard · {data.totalRecords?.toLocaleString()} سجل · {data.uploadDate}
             </div>}
           </div>
         </div>
         <div style={{ display:"flex", alignItems:"center", gap: isMobile?10:20 }}>
           <UploadBtn onFile={handleFile} uploading={uploading} success={success} error={error} small={isMobile} />
+          <button
+            onClick={() => window.print()}
+            style={{
+              display:"flex", alignItems:"center", gap:6,
+              background:"#1e3a5f", color:"#fff",
+              border:"none", borderRadius:12,
+              padding: isMobile ? "8px 14px" : "10px 20px",
+              fontSize: isMobile ? 12 : 14,
+              fontWeight:800, cursor:"pointer",
+              fontFamily:"'Cairo',sans-serif",
+              boxShadow:"0 2px 8px rgba(30,58,95,0.3)",
+              whiteSpace:"nowrap", flexShrink:0
+            }}
+          >
+            🖨️ {isMobile ? "PDF" : "طباعة / PDF"}
+          </button>
           <Clock small={isMobile} />
         </div>
       </div>
