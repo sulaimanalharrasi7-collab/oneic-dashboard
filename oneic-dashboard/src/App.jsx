@@ -653,37 +653,106 @@ export default function Dashboard() {
 
         @media print {
           @page {
-            size: A4 landscape;
-            margin: 10mm 8mm;
+            size: A4 portrait;
+            margin: 8mm 8mm 8mm 8mm;
           }
-          * { -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important; }
-          body { background: #fff !important; }
 
-          /* إخفاء عناصر لا تطبع */
-          button { display: none !important; }
-          input[type="file"] { display: none !important; }
+          * {
+            -webkit-print-color-adjust: exact !important;
+            print-color-adjust: exact !important;
+            box-sizing: border-box !important;
+          }
 
-          /* الهيدر في الطباعة */
+          html, body {
+            width: 210mm !important;
+            margin: 0 !important;
+            padding: 0 !important;
+            background: #fff !important;
+          }
+
+          /* إخفاء عناصر التحكم */
+          button,
+          input[type="file"],
           .no-print { display: none !important; }
 
-          /* إزالة overflow */
-          html, body, #root, div[style*="height:100vh"],
-          div[style*="overflow:hidden"], div[style*="overflow:auto"] {
+          /* إلغاء overflow لكل العناصر */
+          #root,
+          #root > div,
+          #root > div > div {
             height: auto !important;
             overflow: visible !important;
+            width: 100% !important;
+            max-width: 194mm !important;
           }
 
-          /* تصغير padding */
-          div[style*="padding"] { padding: 6px !important; }
+          /* الهيدر */
+          #print-header {
+            display: flex !important;
+            justify-content: space-between !important;
+            align-items: center !important;
+            padding: 4mm 0 3mm !important;
+            border-bottom: 2px solid #e85d20 !important;
+            margin-bottom: 4mm !important;
+          }
 
-          /* المحصّلون يظهرون دائماً في الطباعة */
-          .collectors-table { display: block !important; }
+          /* البانر */
+          #print-banner {
+            padding: 3mm 4mm !important;
+            margin-bottom: 4mm !important;
+            border-radius: 6px !important;
+          }
 
-          /* فاصل الصفحات */
-          .page-break { page-break-before: always; }
+          /* بطاقات الملخص — 3 في صف */
+          #print-summary {
+            display: grid !important;
+            grid-template-columns: 1fr 1fr 1fr !important;
+            gap: 3mm !important;
+            margin-bottom: 4mm !important;
+            page-break-inside: avoid !important;
+          }
 
-          /* حجم الخط */
-          * { font-size: 85% !important; }
+          /* قسم المحافظات */
+          #print-regions {
+            margin-bottom: 4mm !important;
+            page-break-inside: avoid !important;
+          }
+
+          /* صف المحافظة الواحدة */
+          .region-row {
+            margin-bottom: 2mm !important;
+            page-break-inside: avoid !important;
+          }
+
+          /* جدول المحصّلين — تصغير */
+          .collectors-open {
+            font-size: 7pt !important;
+            page-break-inside: avoid !important;
+          }
+          .collectors-open > div { padding: 1mm 2mm !important; }
+
+          /* DC و HO جنباً */
+          #print-dc-ho {
+            display: grid !important;
+            grid-template-columns: 1fr 1fr !important;
+            gap: 3mm !important;
+            page-break-inside: avoid !important;
+          }
+
+          /* تصغير عام ذكي */
+          body { font-size: 8pt !important; }
+          h1, h2 { font-size: 10pt !important; }
+
+          /* فاصل صفحة قبل DC/HO */
+          #print-dc-ho { page-break-before: auto !important; }
+
+          /* إخفاء الساعة والتاريخ المتحرك */
+          #clock-section { display: none !important; }
+
+          /* إظهار print header */
+          #print-header { display: flex !important; }
+
+          /* إخفاء الهيدر الأصلي */
+          #main-header { display: none !important; }
         }
       `}</style>
 
@@ -696,8 +765,23 @@ export default function Dashboard() {
         `}</style>
       </div>
 
+      {/* ══ PRINT HEADER — يظهر فقط عند الطباعة ══ */}
+      <div id="print-header" style={{display:"none",justifyContent:"space-between",alignItems:"center",padding:"3mm 0",borderBottom:"2px solid #e85d20",marginBottom:"3mm"}}>
+        <div style={{display:"flex",alignItems:"center",gap:10}}>
+          <img src={LOGO} alt="ONEIC" style={{height:40,objectFit:"contain"}}/>
+          <div>
+            <div style={{fontSize:14,fontWeight:900,color:"#e85d20"}}>لوحة تحكم إدارة تحصيل الديون</div>
+            <div style={{fontSize:9,color:"#555"}}>Debt Collection Management Dashboard · تاريخ التقرير: {data.uploadDate} · {data.totalRecords?.toLocaleString()} سجل</div>
+          </div>
+        </div>
+        <div style={{textAlign:"right",fontSize:9,color:"#555"}}>
+          <div>تاريخ الطباعة: {new Date().toLocaleDateString("ar-OM")}</div>
+          <div style={{fontWeight:700,color:"#e85d20",fontSize:11}}>ONEIC © 2026</div>
+        </div>
+      </div>
+
       {/* ══ HEADER ══ */}
-      <div style={{
+      <div id="main-header" style={{
         background:"#fff", borderBottom:"3px solid #e85d20",
         padding: isMobile ? "10px 14px" : "12px 24px",
         display:"flex", justifyContent:"space-between", alignItems:"center",
@@ -734,12 +818,12 @@ export default function Dashboard() {
           >
             🖨️ {isMobile ? "PDF" : "طباعة / PDF"}
           </button>
-          <Clock small={isMobile} />
+          <div id="clock-section"><Clock small={isMobile} /></div>
         </div>
       </div>
 
       {/* ══ BANNER ══ */}
-      <div style={{
+      <div id="print-banner" style={{
         background:"linear-gradient(120deg,#e85d20,#c44b10,#a83808)",
         padding: isMobile?"14px":"16px 24px",
         display:"flex", justifyContent:"space-between", alignItems:"center",
@@ -773,7 +857,7 @@ export default function Dashboard() {
       <div style={{ padding:pad, flex:1, overflowY:"auto", overflowX:"hidden" }}>
 
         {/* Summary cards */}
-        <div style={{
+        <div id="print-summary" style={{
           display:"grid",
           gridTemplateColumns: isMobile?"1fr":isTablet?"1fr 1fr":"repeat(3,1fr)",
           gap: small?12:16, marginBottom: small?14:18
@@ -784,7 +868,7 @@ export default function Dashboard() {
         </div>
 
         {/* Regions */}
-        <div style={{
+        <div id="print-regions" style={{
           background:"#fff", borderRadius:16,
           boxShadow:"0 3px 18px rgba(0,0,0,0.07)",
           border:"1.5px solid #f0ece8", marginBottom: small?14:18,
@@ -803,7 +887,7 @@ export default function Dashboard() {
         </div>
 
         {/* DC + HO */}
-        <div style={{
+        <div id="print-dc-ho" style={{
           display:"grid",
           gridTemplateColumns: isMobile?"1fr":"1fr 1fr",
           gap: small?12:18
