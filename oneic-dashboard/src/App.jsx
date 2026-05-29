@@ -306,7 +306,7 @@ function UploadBtn({ onFile, uploading, success, error, small }) {
 // ── AmountCell ─────────────────────────────────────────────────────────────
 function AmountCell({ label, value, color, isTotal, small }) {
   return (
-    <div style={{ textAlign:"center", flex:1, padding: small?"4px 6px":"6px 10px" }}>
+    <div className="amount-cell" style={{ textAlign:"center", flex:1, padding: small?"4px 6px":"6px 10px" }}>
       <div style={{ fontSize: small?11:13, color:"#333", fontWeight:800, marginBottom: small?3:5 }}>{label}</div>
       <div style={{ fontSize: isTotal ? (small?17:22) : (small?14:19), fontWeight:900, color, lineHeight:1 }}>
         {value}
@@ -318,7 +318,7 @@ function AmountCell({ label, value, color, isTotal, small }) {
 // ── AmountRow ──────────────────────────────────────────────────────────────
 function AmountRow({ paid, adj, color, small }) {
   return (
-    <div style={{ display:"flex", alignItems:"stretch", borderRadius:10, overflow:"hidden", border:"1px solid #f0ece8", background:"#fff" }}>
+    <div className="amount-row" style={{ display:"flex", alignItems:"stretch", borderRadius:10, overflow:"hidden", border:"1px solid #f0ece8", background:"#fff" }}>
       <AmountCell label="المدفوع"   value={omr(paid)}     color="#16a34a" small={small} />
       <div style={{ width:1, background:"#f0ece8" }} />
       <AmountCell label="التسويات"  value={omr(adj)}      color="#d97706" small={small} />
@@ -336,7 +336,7 @@ function RegionRow({ region, idx, open, onToggle, small }) {
   const maxV = region.collectors.length ? Math.max(...region.collectors.map(c => c.paid+c.adj), 1) : 1;
 
   return (
-    <div style={{
+    <div className="region-card" style={{
       borderRadius:14, overflow:"hidden",
       boxShadow: open ? "0 4px 20px rgba(232,93,32,0.15)" : "0 2px 8px rgba(0,0,0,0.06)",
       border: `1.5px solid ${open ? col+"55" : "#f0ece8"}`,
@@ -358,11 +358,11 @@ function RegionRow({ region, idx, open, onToggle, small }) {
         }}>{idx+1}</div>
 
         <div style={{ flex:1, minWidth: small?120:160 }}>
-          <div style={{ fontSize: small?15:19, fontWeight:900, color:"#000", lineHeight:1.2 }}>{region.nameAr}</div>
-          <div style={{ fontSize: small?11:14, color:"#555", marginTop:3, fontWeight:700 }}>{region.nameEn}</div>
+          <div className="region-name" style={{ fontSize: small?15:19, fontWeight:900, color:"#000", lineHeight:1.2 }}>{region.nameAr}</div>
+          <div className="region-name-en" style={{ fontSize: small?11:14, color:"#555", marginTop:3, fontWeight:700 }}>{region.nameEn}</div>
         </div>
 
-        <div style={{ display:"flex", flex: small?1:0, gap:0, minWidth: small?0:460 }}>
+        <div className="region-amounts" style={{ display:"flex", flex: small?1:0, gap:0, minWidth: small?0:460 }}>
           {[["المدفوع","#16a34a",region.paid],["التسويات","#d97706",region.adj],["الإجمالي",col,region.paid+region.adj]].map(([lbl,clr,val],i) => (
             <div key={lbl} style={{
               flex:1, textAlign:"center", padding: small?"4px 8px":"6px 14px",
@@ -374,7 +374,7 @@ function RegionRow({ region, idx, open, onToggle, small }) {
           ))}
         </div>
 
-        <div style={{
+        <div className="toggle-btn" style={{
           display:"flex", alignItems:"center", gap:5, flexShrink:0,
           background: open ? col : "#fff",
           color: open ? "#fff" : col,
@@ -543,7 +543,7 @@ function EntityCard({ name, paid, adj, color, rank, small }) {
       boxShadow:"0 2px 10px rgba(0,0,0,0.05)",
       padding: small?"12px 14px":"14px 18px",
       borderRight: `5px solid ${color}`
-    }}>
+    }} className="entity-card">
       <div style={{ display:"flex", alignItems:"center", gap:10, marginBottom:10 }}>
         <div style={{
           width: small?30:36, height: small?30:36, borderRadius:9,
@@ -551,7 +551,7 @@ function EntityCard({ name, paid, adj, color, rank, small }) {
           display:"flex", alignItems:"center", justifyContent:"center",
           fontSize: small?14:16, fontWeight:800, color:"#fff"
         }}>{rank}</div>
-        <div style={{ fontSize: small?14:17, fontWeight:900, color:"#000" }}>{name}</div>
+        <div className="entity-name" style={{ fontSize: small?14:17, fontWeight:900, color:"#000" }}>{name}</div>
       </div>
       <AmountRow paid={paid} adj={adj} color={color} small={small} />
     </div>
@@ -654,105 +654,163 @@ export default function Dashboard() {
         @media print {
           @page {
             size: A4 portrait;
-            margin: 8mm 8mm 8mm 8mm;
+            margin: 12mm 10mm;
           }
 
-          * {
+          /* ── إعدادات أساسية ── */
+          *, *::before, *::after {
             -webkit-print-color-adjust: exact !important;
             print-color-adjust: exact !important;
             box-sizing: border-box !important;
           }
 
           html, body {
-            width: 210mm !important;
+            width: 190mm !important;
+            font-size: 9pt !important;
+            background: #fff !important;
             margin: 0 !important;
             padding: 0 !important;
-            background: #fff !important;
           }
 
-          /* إخفاء عناصر التحكم */
+          /* ── إخفاء عناصر التحكم ── */
           button,
-          input[type="file"],
-          .no-print { display: none !important; }
+          input,
+          #clock-section,
+          #main-header { display: none !important; }
 
-          /* إلغاء overflow لكل العناصر */
-          #root,
-          #root > div,
-          #root > div > div {
+          /* ── إصلاح overflow ── */
+          #root, #root > div, #root > div > div {
             height: auto !important;
+            min-height: 0 !important;
             overflow: visible !important;
-            width: 100% !important;
-            max-width: 194mm !important;
+            width: 190mm !important;
           }
 
-          /* الهيدر */
+          /* ── إظهار print header ── */
           #print-header {
             display: flex !important;
             justify-content: space-between !important;
             align-items: center !important;
-            padding: 4mm 0 3mm !important;
+            padding-bottom: 3mm !important;
+            margin-bottom: 3mm !important;
             border-bottom: 2px solid #e85d20 !important;
-            margin-bottom: 4mm !important;
           }
 
-          /* البانر */
+          /* ── البانر ── */
           #print-banner {
-            padding: 3mm 4mm !important;
+            padding: 4mm 5mm !important;
             margin-bottom: 4mm !important;
             border-radius: 6px !important;
           }
+          #print-banner * { font-size: inherit !important; }
+          #print-banner span:first-child { font-size: 22pt !important; font-weight: 900 !important; }
 
-          /* بطاقات الملخص — 3 في صف */
+          /* ── بطاقات الملخص الثلاث ── */
           #print-summary {
             display: grid !important;
-            grid-template-columns: 1fr 1fr 1fr !important;
-            gap: 3mm !important;
+            grid-template-columns: 62mm 62mm 62mm !important;
+            gap: 2mm !important;
             margin-bottom: 4mm !important;
             page-break-inside: avoid !important;
+            width: 190mm !important;
           }
+          #print-summary > div {
+            width: 62mm !important;
+            overflow: hidden !important;
+            border-radius: 6px !important;
+          }
+          #print-summary > div > div:first-child {
+            padding: 3mm 4mm !important;
+          }
+          #print-summary > div > div:last-child {
+            padding: 3mm 4mm !important;
+          }
+          #print-summary .amount-cell {
+            padding: 2mm 3mm !important;
+          }
+          #print-summary .amount-cell div:first-child { font-size: 8pt !important; }
+          #print-summary .amount-cell div:last-child  { font-size: 11pt !important; }
 
-          /* قسم المحافظات */
+          /* ── قسم المحافظات ── */
           #print-regions {
             margin-bottom: 4mm !important;
+            width: 190mm !important;
             page-break-inside: avoid !important;
           }
-
-          /* صف المحافظة الواحدة */
-          .region-row {
+          #print-regions > div:first-child {
+            padding: 3mm 4mm !important;
+            border-radius: 6px 6px 0 0 !important;
+          }
+          /* كل صف محافظة */
+          #print-regions .region-card {
             margin-bottom: 2mm !important;
+            border-radius: 6px !important;
+            overflow: hidden !important;
             page-break-inside: avoid !important;
           }
-
-          /* جدول المحصّلين — تصغير */
-          .collectors-open {
-            font-size: 7pt !important;
-            page-break-inside: avoid !important;
+          #print-regions .region-card > div:first-child {
+            padding: 2mm 3mm !important;
+            flex-wrap: nowrap !important;
           }
-          .collectors-open > div { padding: 1mm 2mm !important; }
+          /* الأرقام في صف المحافظة — عرض موحّد */
+          #print-regions .region-amounts {
+            display: flex !important;
+            flex-wrap: nowrap !important;
+          }
+          #print-regions .region-amounts > div {
+            width: 42mm !important;
+            padding: 2mm 3mm !important;
+          }
+          #print-regions .region-amounts div div:first-child { font-size: 7pt !important; }
+          #print-regions .region-amounts div div:last-child  { font-size: 11pt !important; }
+          /* زر المحصّلون — إخفاء */
+          #print-regions .toggle-btn { display: none !important; }
+          /* اسم المحافظة */
+          #print-regions .region-name { font-size: 11pt !important; }
+          #print-regions .region-name-en { font-size: 8pt !important; }
 
-          /* DC و HO جنباً */
+          /* ── DC + HO ── */
           #print-dc-ho {
             display: grid !important;
-            grid-template-columns: 1fr 1fr !important;
-            gap: 3mm !important;
+            grid-template-columns: 93mm 93mm !important;
+            gap: 4mm !important;
+            width: 190mm !important;
+            page-break-before: auto !important;
             page-break-inside: avoid !important;
           }
+          #print-dc-ho > div {
+            width: 93mm !important;
+            overflow: hidden !important;
+            border-radius: 6px !important;
+          }
+          /* هيدر DC/HO */
+          #print-dc-ho > div > div:first-child {
+            padding: 3mm 4mm !important;
+          }
+          /* بطاقات الشركات */
+          #print-dc-ho .entity-card {
+            padding: 2mm 3mm !important;
+            margin-bottom: 2mm !important;
+            border-radius: 4px !important;
+          }
+          #print-dc-ho .entity-card .entity-name { font-size: 9pt !important; }
+          #print-dc-ho .entity-card .amount-row > div > div:first-child { font-size: 7pt !important; }
+          #print-dc-ho .entity-card .amount-row > div > div:last-child  { font-size: 10pt !important; }
 
-          /* تصغير عام ذكي */
-          body { font-size: 8pt !important; }
-          h1, h2 { font-size: 10pt !important; }
+          /* ── منع قطع الأرقام ── */
+          .amount-cell, .entity-card, #print-summary > div,
+          #print-regions .region-card { overflow: hidden !important; }
 
-          /* فاصل صفحة قبل DC/HO */
-          #print-dc-ho { page-break-before: auto !important; }
-
-          /* إخفاء الساعة والتاريخ المتحرك */
-          #clock-section { display: none !important; }
-
-          /* إظهار print header */
-          #print-header { display: flex !important; }
-
-          /* إخفاء الهيدر الأصلي */
-          #main-header { display: none !important; }
+          /* ── فوتر ── */
+          #print-footer {
+            display: block !important;
+            text-align: center !important;
+            font-size: 8pt !important;
+            color: #888 !important;
+            margin-top: 4mm !important;
+            padding-top: 2mm !important;
+            border-top: 1px solid #ddd !important;
+          }
         }
       `}</style>
 
@@ -913,8 +971,8 @@ export default function Dashboard() {
           </div>
         </div>
 
-        <div style={{ textAlign:"center", fontSize:11, color:"#bbb", paddingTop:16, paddingBottom:8 }}>
-          ONEIC Operations Dashboard © 2026
+        <div id="print-footer" style={{ textAlign:"center", fontSize:11, color:"#bbb", paddingTop:16, paddingBottom:8 }}>
+          ONEIC — لوحة تحكم إدارة تحصيل الديون © 2026 · {data.uploadDate}
         </div>
       </div>
     </div>
