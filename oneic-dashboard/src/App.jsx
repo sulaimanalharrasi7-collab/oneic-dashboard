@@ -1050,24 +1050,33 @@ export default function Dashboard() {
   const [openRegion, setOpenRegion] = useState(null);
   const [pending, setPending]   = useState(null);
   const [verified, setVerified] = useState(false);
+  const [showSettings, setShowSettings] = useState(false);
+  const [binId, setBinId]       = useState(() => { try { return localStorage.getItem('oneic_bin_id')||''; } catch(e){return '';} });
+  const [apiKey, setApiKey]     = useState(() => { try { return localStorage.getItem('oneic_api_key')||''; } catch(e){return '';} });
 
-  // ── تحميل من السيرفر أولاً ثم localStorage كـ fallback ───────────────────
+  // ── تحميل من JSONbin أولاً ثم localStorage كـ fallback ───────────────────
   useEffect(() => {
     async function load() {
-      // محاولة السيرفر
-      try {
-        const res = await fetch('/api/data');
-        if (res.ok) {
-          const json = await res.json();
-          if (json.exists && json.data?.regions?.length > 0) {
-            setData(json.data);
-            // تحديث localStorage
-            try { localStorage.setItem('oneic_dashboard_data', JSON.stringify(json.data)); } catch(e) {}
-            setLoadingServer(false);
-            return;
+      const BIN_ID = localStorage.getItem('oneic_bin_id') || '';
+      const API_KEY = localStorage.getItem('oneic_api_key') || '';
+      
+      if (BIN_ID && API_KEY) {
+        try {
+          const res = await fetch(`https://api.jsonbin.io/v3/b/${BIN_ID}/latest`, {
+            headers: { 'X-Master-Key': API_KEY }
+          });
+          if (res.ok) {
+            const json = await res.json();
+            const d = json.record;
+            if (d?.regions?.length > 0) {
+              setData(d);
+              try { localStorage.setItem('oneic_dashboard_data', JSON.stringify(d)); } catch(e) {}
+              setLoadingServer(false);
+              return;
+            }
           }
-        }
-      } catch(e) { console.warn('Server unavailable, using localStorage'); }
+        } catch(e) { console.warn('JSONbin unavailable'); }
+      }
       // fallback: localStorage
       try {
         const saved = localStorage.getItem('oneic_dashboard_data');
@@ -1104,30 +1113,41 @@ export default function Dashboard() {
              + newData.headOffice.reduce((s,r)=>s+r.adj,0);
     const dataToSave = { ...newData, grandPaid: gp, grandAdj: ga };
 
-    // ── رفع للسيرفر + localStorage ──────────────────────────────────────
+    // ── رفع لـ JSONbin + localStorage ───────────────────────────────────
     setUploading(true);
-    try {
-      const res = await fetch('/api/data', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(dataToSave)
-      });
-      if (res.ok) {
-        const json = await res.json();
+    const BIN_ID = localStorage.getItem('oneic_bin_id') || '';
+    const API_KEY = localStorage.getItem('oneic_api_key') || '';
+    
+    if (BIN_ID && API_KEY) {
+      try {
+        const res = await fetch(`https://api.jsonbin.io/v3/b/${BIN_ID}`, {
+          method: 'PUT',
+          headers: { 
+            'Content-Type': 'application/json',
+            'X-Master-Key': API_KEY
+          },
+          body: JSON.stringify(dataToSave)
+        });
+        if (res.ok) {
+          try {
+            localStorage.setItem('oneic_dashboard_data', JSON.stringify(dataToSave));
+            localStorage.setItem('oneic_last_update', new Date().toISOString());
+          } catch(e) {}
+        }
+      } catch(e) {
         try {
           localStorage.setItem('oneic_dashboard_data', JSON.stringify(dataToSave));
-          localStorage.setItem('oneic_last_update', json.savedAt || new Date().toISOString());
-        } catch(e) {}
-      } else {
-        throw new Error('Server ' + res.status);
+          localStorage.setItem('oneic_last_update', new Date().toISOString());
+        } catch(e2) {}
       }
-    } catch(e) {
-      // fallback localStorage فقط
+    } else {
+      // بدون JSONbin — localStorage فقط
       try {
         localStorage.setItem('oneic_dashboard_data', JSON.stringify(dataToSave));
         localStorage.setItem('oneic_last_update', new Date().toISOString());
-      } catch(e2) {}
-    } finally { setUploading(false); }
+      } catch(e) {}
+    }
+    setUploading(false);
 
     setData(dataToSave);
     setPending(null);
@@ -1161,6 +1181,53 @@ export default function Dashboard() {
       direction:"rtl", color:"#111", overflow:"hidden"
     }}>
       <VerifyModal pending={pending} onConfirm={confirmData} onReject={rejectData}/>
+
+      {/* ── نافذة إعدادات المزامنة ── */}
+      {showSettings && (
+        <div style={{position:"fixed",inset:0,background:"rgba(0,0,0,0.6)",display:"flex",alignItems:"center",justifyContent:"center",zIndex:9998,padding:16,direction:"rtl"}}>
+          <div style={{background:"#fff",borderRadius:20,width:"100%",maxWidth:480,padding:28,boxShadow:"0 20px 60px rgba(0,0,0,0.3)"}}>
+            <div style={{fontSize:18,fontWeight:900,color:"#1e3a5f",marginBottom:6}}>⚙️ إعدادات المزامنة</div>
+            <div style={{fontSize:12,color:"#888",marginBottom:20}}>
+              أنشئ حساباً مجانياً على <a href="https://jsonbin.io" target="_blank" rel="noreferrer" style={{color:"#e85d20"}}>jsonbin.io</a> ← أنشئ Bin جديد ← انسخ الـ ID والـ API Key
+            </div>
+            <div style={{marginBottom:14}}>
+              <div style={{fontSize:13,fontWeight:700,color:"#333",marginBottom:6}}>Bin ID</div>
+              <input
+                value={binId}
+                onChange={e=>setBinId(e.target.value)}
+                placeholder="مثال: 64abc123..."
+                style={{width:"100%",padding:"10px 14px",border:"1.5px solid #e5e7eb",borderRadius:10,fontSize:13,fontFamily:"monospace",direction:"ltr"}}
+              />
+            </div>
+            <div style={{marginBottom:20}}>
+              <div style={{fontSize:13,fontWeight:700,color:"#333",marginBottom:6}}>Master API Key</div>
+              <input
+                value={apiKey}
+                onChange={e=>setApiKey(e.target.value)}
+                placeholder="$2b$10$..."
+                type="password"
+                style={{width:"100%",padding:"10px 14px",border:"1.5px solid #e5e7eb",borderRadius:10,fontSize:13,fontFamily:"monospace",direction:"ltr"}}
+              />
+            </div>
+            <div style={{display:"flex",gap:10}}>
+              <button
+                onClick={() => {
+                  try {
+                    localStorage.setItem('oneic_bin_id', binId);
+                    localStorage.setItem('oneic_api_key', apiKey);
+                  } catch(e) {}
+                  setShowSettings(false);
+                }}
+                style={{flex:1,background:"#16a34a",color:"#fff",border:"none",borderRadius:12,padding:"12px",fontSize:14,fontWeight:900,cursor:"pointer",fontFamily:"'Cairo',sans-serif"}}
+              >✅ حفظ الإعدادات</button>
+              <button
+                onClick={() => setShowSettings(false)}
+                style={{flex:1,background:"#f5f0eb",color:"#555",border:"1px solid #ddd",borderRadius:12,padding:"12px",fontSize:14,fontWeight:700,cursor:"pointer",fontFamily:"'Cairo',sans-serif"}}
+              >إلغاء</button>
+            </div>
+          </div>
+        </div>
+      )}
       <style>{`
         @import url('https://fonts.googleapis.com/css2?family=Cairo:wght@400;500;600;700;800;900&display=swap');
         * { box-sizing:border-box; margin:0; padding:0; }
@@ -1333,6 +1400,53 @@ export default function Dashboard() {
       {/* ══ PRINT HEADER — يظهر فقط عند الطباعة ══ */}
       <div style={{display:"none"}} className="print-only">
         <VerifyModal pending={pending} onConfirm={confirmData} onReject={rejectData}/>
+
+      {/* ── نافذة إعدادات المزامنة ── */}
+      {showSettings && (
+        <div style={{position:"fixed",inset:0,background:"rgba(0,0,0,0.6)",display:"flex",alignItems:"center",justifyContent:"center",zIndex:9998,padding:16,direction:"rtl"}}>
+          <div style={{background:"#fff",borderRadius:20,width:"100%",maxWidth:480,padding:28,boxShadow:"0 20px 60px rgba(0,0,0,0.3)"}}>
+            <div style={{fontSize:18,fontWeight:900,color:"#1e3a5f",marginBottom:6}}>⚙️ إعدادات المزامنة</div>
+            <div style={{fontSize:12,color:"#888",marginBottom:20}}>
+              أنشئ حساباً مجانياً على <a href="https://jsonbin.io" target="_blank" rel="noreferrer" style={{color:"#e85d20"}}>jsonbin.io</a> ← أنشئ Bin جديد ← انسخ الـ ID والـ API Key
+            </div>
+            <div style={{marginBottom:14}}>
+              <div style={{fontSize:13,fontWeight:700,color:"#333",marginBottom:6}}>Bin ID</div>
+              <input
+                value={binId}
+                onChange={e=>setBinId(e.target.value)}
+                placeholder="مثال: 64abc123..."
+                style={{width:"100%",padding:"10px 14px",border:"1.5px solid #e5e7eb",borderRadius:10,fontSize:13,fontFamily:"monospace",direction:"ltr"}}
+              />
+            </div>
+            <div style={{marginBottom:20}}>
+              <div style={{fontSize:13,fontWeight:700,color:"#333",marginBottom:6}}>Master API Key</div>
+              <input
+                value={apiKey}
+                onChange={e=>setApiKey(e.target.value)}
+                placeholder="$2b$10$..."
+                type="password"
+                style={{width:"100%",padding:"10px 14px",border:"1.5px solid #e5e7eb",borderRadius:10,fontSize:13,fontFamily:"monospace",direction:"ltr"}}
+              />
+            </div>
+            <div style={{display:"flex",gap:10}}>
+              <button
+                onClick={() => {
+                  try {
+                    localStorage.setItem('oneic_bin_id', binId);
+                    localStorage.setItem('oneic_api_key', apiKey);
+                  } catch(e) {}
+                  setShowSettings(false);
+                }}
+                style={{flex:1,background:"#16a34a",color:"#fff",border:"none",borderRadius:12,padding:"12px",fontSize:14,fontWeight:900,cursor:"pointer",fontFamily:"'Cairo',sans-serif"}}
+              >✅ حفظ الإعدادات</button>
+              <button
+                onClick={() => setShowSettings(false)}
+                style={{flex:1,background:"#f5f0eb",color:"#555",border:"1px solid #ddd",borderRadius:12,padding:"12px",fontSize:14,fontWeight:700,cursor:"pointer",fontFamily:"'Cairo',sans-serif"}}
+              >إلغاء</button>
+            </div>
+          </div>
+        </div>
+      )}
       <style>{`
           @media print {
             .print-only { display: flex !important; justifyContent: space-between; alignItems: center; padding: 6px 12px; borderBottom: 3px solid #e85d20; marginBottom: 8px; }
@@ -1390,6 +1504,16 @@ export default function Dashboard() {
         </div>
         <div style={{ display:"flex", alignItems:"center", gap: isMobile?10:20 }}>
           <UploadBtn onFile={handleFile} uploading={uploading} success={success} error={error} small={isMobile} />
+          <button
+            onClick={() => setShowSettings(s=>!s)}
+            title="إعدادات المزامنة"
+            style={{
+              background: binId ? "#16a34a" : "#f97316",
+              color:"#fff", border:"none", borderRadius:10,
+              padding:"8px 14px", fontSize:13, fontWeight:800,
+              cursor:"pointer", fontFamily:"'Cairo',sans-serif", flexShrink:0
+            }}
+          >{binId ? "🔗 متصل" : "⚙️ مزامنة"}</button>
           {!isMobile && (
             <button
               title="مسح البيانات المحفوظة والعودة للبيانات الافتراضية"
