@@ -928,14 +928,16 @@ function handlePrint(data) {
 
   const sectionCard = (label,paid,adj,color,icon) => `
     <div style="border-radius:10px;overflow:hidden;border:1.5px solid #f0ece8">
-      <div style="background:${color};padding:3mm 4mm;display:flex;justify-content:space-between;align-items:center">
-        <span style="font-size:11pt;font-weight:900;color:#fff">${icon} ${label}</span>
-        <div style="display:flex;gap:5mm">
+      <div style="background:${color};padding:2.5mm 3mm">
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:2mm">
+          <span style="font-size:10pt;font-weight:900;color:#fff">${icon} ${label}</span>
+        </div>
+        <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:2mm">
           ${[["المدفوع",omr(paid),"#fff"],["التسويات",omr(adj),"#fde68a"],["الإجمالي",omr(paid+adj),"#fff"]].map(([l,v,c])=>`
-          <div style="text-align:center">
-            <div style="font-size:7pt;color:rgba(255,255,255,0.7);font-weight:700;margin-bottom:1mm">${l}</div>
-            <div style="font-size:10pt;font-weight:900;color:${c}">${v}</div>
-          </div>`).join('<div style="width:1px;background:rgba(255,255,255,0.2)"></div>')}
+          <div style="text-align:center;background:rgba(255,255,255,0.12);border-radius:5px;padding:1.5mm 2mm">
+            <div style="font-size:7pt;color:rgba(255,255,255,0.75);font-weight:700;margin-bottom:1mm">${l}</div>
+            <div style="font-size:9.5pt;font-weight:900;color:${c};word-break:break-all">${v}</div>
+          </div>`).join('')}
         </div>
       </div>
     </div>`;
@@ -945,7 +947,7 @@ function handlePrint(data) {
     <div class="page">
       ${pageHeader('الملخص العام', 'General Summary')}
       ${summaryBanner()}
-      <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:4mm;margin-bottom:5mm">
+      <div style="display:grid;grid-template-columns:62mm 62mm 62mm;gap:3mm;margin-bottom:5mm;width:190mm">
         ${sectionCard('المحافظات الخمس',govPaid,govAdj,'#e85d20','🗺')}
         ${sectionCard('شركات التحصيل',dcPaid,dcAdj,'#1a7a6b','🏢')}
         ${sectionCard('المكتب الرئيسي',hoPaid,hoAdj,'#6c3fa0','🏛')}
