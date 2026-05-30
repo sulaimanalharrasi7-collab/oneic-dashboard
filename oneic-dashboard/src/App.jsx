@@ -886,22 +886,22 @@ function handlePrint(data) {
 
   const pageHeader = (title, subtitle='') => `
     <div style="display:flex;justify-content:space-between;align-items:center;
-      padding-bottom:4mm;border-bottom:3px solid #e85d20;margin-bottom:5mm">
-      <div style="display:flex;align-items:center;gap:12px">
-        <img src="${LOGO_B64}" style="height:44px;object-fit:contain">
-        <div>
-          <div style="font-size:13pt;font-weight:900;color:#e85d20">لوحة تحكم إدارة تحصيل الديون</div>
-          <div style="font-size:8pt;color:#555;margin-top:2px">
-            Debt Collection Management Dashboard &nbsp;·&nbsp; ${(data.totalRecords||0).toLocaleString()} سجل &nbsp;·&nbsp; ${data.uploadDate||''}
-          </div>
-        </div>
-      </div>
-      <div style="text-align:left">
+      padding-bottom:4mm;border-bottom:3px solid #e85d20;margin-bottom:5mm;direction:rtl">
+      <div style="text-align:right">
         <div style="font-size:18pt;font-weight:900;color:#1e3a5f">${title}</div>
         ${subtitle ? `<div style="font-size:9pt;color:#888;margin-top:2px">${subtitle}</div>` : ''}
         <div style="font-size:8pt;color:#aaa;margin-top:2px">
           ${new Date().toLocaleDateString('ar-OM')} &nbsp;·&nbsp; ONEIC © 2026
         </div>
+      </div>
+      <div style="display:flex;align-items:center;gap:12px">
+        <div style="text-align:left">
+          <div style="font-size:13pt;font-weight:900;color:#e85d20">لوحة تحكم إدارة تحصيل الديون</div>
+          <div style="font-size:8pt;color:#555;margin-top:2px">
+            Debt Collection Management Dashboard &nbsp;·&nbsp; ${(data.totalRecords||0).toLocaleString()} سجل &nbsp;·&nbsp; ${data.uploadDate||''}
+          </div>
+        </div>
+        <img src="${LOGO_B64}" style="height:44px;object-fit:contain">
       </div>
     </div>`;
 
