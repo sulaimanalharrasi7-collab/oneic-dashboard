@@ -294,6 +294,10 @@ function parseXLS(file) {
 
 
 
+// ── إعدادات المزامنة ──────────────────────────────────────────────────────
+const JSONBIN_ID  = "6a1addbc21f9ee59d29dad67";
+const JSONBIN_KEY = "$2a$10$iGKOshaaDAnJWlKtVW9LhuJFN9ocrQXgvZ8adXsXPZntwjlkhZ0FO";
+
 const omr = n => new Intl.NumberFormat("en-US",{minimumFractionDigits:3,maximumFractionDigits:3}).format(n||0);
 
 
@@ -1054,30 +1058,25 @@ export default function Dashboard() {
   const [binId, setBinId]       = useState(() => { try { return localStorage.getItem('oneic_bin_id')||''; } catch(e){return '';} });
   const [apiKey, setApiKey]     = useState(() => { try { return localStorage.getItem('oneic_api_key')||''; } catch(e){return '';} });
 
-  // ── تحميل من JSONbin أولاً ثم localStorage كـ fallback ───────────────────
+  // ── تحميل من JSONbin عند فتح الصفحة ──────────────────────────────────────
   useEffect(() => {
     async function load() {
-      const BIN_ID = localStorage.getItem('oneic_bin_id') || '';
-      const API_KEY = localStorage.getItem('oneic_api_key') || '';
-      
-      if (BIN_ID && API_KEY) {
-        try {
-          const res = await fetch(`https://api.jsonbin.io/v3/b/${BIN_ID}/latest`, {
-            headers: { 'X-Master-Key': API_KEY }
-          });
-          if (res.ok) {
-            const json = await res.json();
-            const d = json.record;
-            if (d?.regions?.length > 0) {
-              setData(d);
-              try { localStorage.setItem('oneic_dashboard_data', JSON.stringify(d)); } catch(e) {}
-              setLoadingServer(false);
-              return;
-            }
+      try {
+        const res = await fetch(
+          `https://api.jsonbin.io/v3/b/${JSONBIN_ID}/latest`,
+          { headers: { 'X-Master-Key': JSONBIN_KEY, 'X-Bin-Meta': 'false' } }
+        );
+        if (res.ok) {
+          const d = await res.json();
+          if (d?.regions?.length > 0) {
+            setData(d);
+            try { localStorage.setItem('oneic_dashboard_data', JSON.stringify(d)); } catch(e) {}
+            setLoadingServer(false);
+            return;
           }
-        } catch(e) { console.warn('JSONbin unavailable'); }
-      }
-      // fallback: localStorage
+        }
+      } catch(e) { console.warn('JSONbin unavailable, using localStorage'); }
+      // fallback localStorage
       try {
         const saved = localStorage.getItem('oneic_dashboard_data');
         if (saved) {
@@ -1115,38 +1114,29 @@ export default function Dashboard() {
 
     // ── رفع لـ JSONbin + localStorage ───────────────────────────────────
     setUploading(true);
-    const BIN_ID = localStorage.getItem('oneic_bin_id') || '';
-    const API_KEY = localStorage.getItem('oneic_api_key') || '';
-    
-    if (BIN_ID && API_KEY) {
-      try {
-        const res = await fetch(`https://api.jsonbin.io/v3/b/${BIN_ID}`, {
+    try {
+      const res = await fetch(
+        `https://api.jsonbin.io/v3/b/${JSONBIN_ID}`,
+        {
           method: 'PUT',
-          headers: { 
+          headers: {
             'Content-Type': 'application/json',
-            'X-Master-Key': API_KEY
+            'X-Master-Key': JSONBIN_KEY
           },
           body: JSON.stringify(dataToSave)
-        });
-        if (res.ok) {
-          try {
-            localStorage.setItem('oneic_dashboard_data', JSON.stringify(dataToSave));
-            localStorage.setItem('oneic_last_update', new Date().toISOString());
-          } catch(e) {}
         }
-      } catch(e) {
-        try {
-          localStorage.setItem('oneic_dashboard_data', JSON.stringify(dataToSave));
-          localStorage.setItem('oneic_last_update', new Date().toISOString());
-        } catch(e2) {}
+      );
+      if (res.ok) {
+        console.log('✅ Saved to JSONbin');
       }
-    } else {
-      // بدون JSONbin — localStorage فقط
-      try {
-        localStorage.setItem('oneic_dashboard_data', JSON.stringify(dataToSave));
-        localStorage.setItem('oneic_last_update', new Date().toISOString());
-      } catch(e) {}
+    } catch(e) {
+      console.warn('JSONbin save failed:', e);
     }
+    // حفظ احتياطي محلي دائماً
+    try {
+      localStorage.setItem('oneic_dashboard_data', JSON.stringify(dataToSave));
+      localStorage.setItem('oneic_last_update', new Date().toISOString());
+    } catch(e) {}
     setUploading(false);
 
     setData(dataToSave);
