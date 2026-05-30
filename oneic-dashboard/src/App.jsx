@@ -1051,35 +1051,18 @@ export default function Dashboard() {
   const [pending, setPending]   = useState(null);
   const [verified, setVerified] = useState(false);
 
-  // ── تحميل البيانات من السيرفر عند فتح الصفحة ─────────────────────────────
+  // ── تحميل البيانات من localStorage عند فتح الصفحة ────────────────────────
   useEffect(() => {
-    async function loadFromServer() {
-      try {
-        const res = await fetch('/api/data', { method: 'GET' });
-        if (res.ok) {
-          const json = await res.json();
-          if (json.exists && json.data && json.data.regions && json.data.regions.length > 0) {
-            setData(json.data);
-            console.log('✅ Loaded from server:', json.data.uploadDate);
-          }
+    try {
+      const saved = localStorage.getItem('oneic_dashboard_data');
+      if (saved) {
+        const parsed = JSON.parse(saved);
+        if (parsed && parsed.regions && parsed.regions.length > 0 && parsed.grandPaid > 0) {
+          setData(parsed);
         }
-      } catch(e) {
-        console.warn('Server load error, using local/seed data:', e);
-        // fallback: localStorage
-        try {
-          const saved = localStorage.getItem('oneic_dashboard_data');
-          if (saved) {
-            const parsed = JSON.parse(saved);
-            if (parsed && parsed.regions && parsed.regions.length > 0) {
-              setData(parsed);
-            }
-          }
-        } catch(e2) {}
-      } finally {
-        setLoadingServer(false);
       }
-    }
-    loadFromServer();
+    } catch(e) { console.warn('Load error:', e); }
+    setLoadingServer(false);
   }, []);
 
   const handleFile = useCallback(async (file) => {
@@ -1105,35 +1088,11 @@ export default function Dashboard() {
              + newData.headOffice.reduce((s,r)=>s+r.adj,0);
     const dataToSave = { ...newData, grandPaid: gp, grandAdj: ga };
 
-    // ── رفع للسيرفر ──────────────────────────────────────────────────────
-    setUploading(true);
+    // ── حفظ في localStorage ──────────────────────────────────────────────
     try {
-      const res = await fetch('/api/data', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(dataToSave)
-      });
-      if (res.ok) {
-        const json = await res.json();
-        console.log('✅ Saved to server:', json.savedAt);
-        // حفظ احتياطي في localStorage أيضاً
-        try {
-          localStorage.setItem('oneic_dashboard_data', JSON.stringify(dataToSave));
-          localStorage.setItem('oneic_last_update', json.savedAt || new Date().toISOString());
-        } catch(e) {}
-      } else {
-        throw new Error('Server error: ' + res.status);
-      }
-    } catch(e) {
-      console.warn('Server save failed, saved locally only:', e);
-      // fallback: localStorage فقط
-      try {
-        localStorage.setItem('oneic_dashboard_data', JSON.stringify(dataToSave));
-        localStorage.setItem('oneic_last_update', new Date().toISOString());
-      } catch(e2) {}
-    } finally {
-      setUploading(false);
-    }
+      localStorage.setItem('oneic_dashboard_data', JSON.stringify(dataToSave));
+      localStorage.setItem('oneic_last_update', new Date().toISOString());
+    } catch(e) { console.warn('Save error:', e); }
 
     setData(dataToSave);
     setPending(null);
@@ -1380,8 +1339,8 @@ export default function Dashboard() {
               Debt Collection Management Dashboard · {data.totalRecords?.toLocaleString()} سجل · {data.uploadDate}
             </div>}
             {!isMobile && <div style={{ fontSize:10, color:"#16a34a", fontWeight:700, marginTop:2, display:"flex", alignItems:"center", gap:4 }}>
-              <span>{loadingServer ? "🔄" : "🌐"}</span>
-              <span>{loadingServer ? "جاري التحميل من السيرفر..." : (() => {
+              <span>{"💾"}</span>
+              <span>{(() => {
                 try {
                   const t = localStorage.getItem('oneic_last_update');
                   if (t) {
@@ -1399,11 +1358,9 @@ export default function Dashboard() {
           {!isMobile && (
             <button
               title="مسح البيانات المحفوظة والعودة للبيانات الافتراضية"
-              onClick={async () => {
+              onClick={() => {
                 if (window.confirm('هل تريد مسح البيانات المحفوظة والعودة للبيانات الأصلية؟')) {
                   try { localStorage.removeItem('oneic_dashboard_data'); localStorage.removeItem('oneic_last_update'); } catch(e){}
-                  // مسح من السيرفر أيضاً
-                  try { await fetch('/api/data', { method: 'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify(SEED) }); } catch(e){}
                   setData(SEED);
                 }
               }}
