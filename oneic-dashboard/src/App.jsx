@@ -788,20 +788,56 @@ function SummaryCard({ label, paid, adj, color, icon, pct, small }) {
     <div style={{
       background:"#fff", borderRadius:15, overflow:"hidden",
       boxShadow:"0 3px 14px rgba(0,0,0,0.07)",
-      border:"1.5px solid #f0ece8"
+      border:"1.5px solid #f0ece8",
+      minWidth:0
     }}>
-      <div style={{ background:color, padding: small?"10px 14px":"13px 16px", display:"flex", justifyContent:"space-between", alignItems:"center" }}>
-        <div style={{ display:"flex", alignItems:"center", gap:8 }}>
-          <span style={{ fontSize: small?18:22 }}>{icon}</span>
-          <span style={{ fontSize: small?14:17, fontWeight:900, color:"#fff" }}>{label}</span>
+      {/* هيدر البطاقة */}
+      <div style={{
+        background:color,
+        padding: small?"10px 12px":"13px 14px",
+        display:"flex", justifyContent:"space-between",
+        alignItems:"center", gap:6, flexWrap:"wrap"
+      }}>
+        <div style={{ display:"flex", alignItems:"center", gap:6, minWidth:0 }}>
+          <span style={{ fontSize: small?16:20, flexShrink:0 }}>{icon}</span>
+          <span style={{
+            fontSize: small?13:15, fontWeight:900, color:"#fff",
+            lineHeight:1.2, wordBreak:"keep-all"
+          }}>{label}</span>
         </div>
         <div style={{
           background:"rgba(255,255,255,0.25)", borderRadius:20,
-          padding:"3px 10px", fontSize: small?13:15, fontWeight:800, color:"#fff"
+          padding:"2px 8px", fontSize: small?12:13,
+          fontWeight:800, color:"#fff", flexShrink:0
         }}>{pct}%</div>
       </div>
-      <div style={{ padding: small?"10px 12px":"13px 14px" }}>
-        <AmountRow paid={paid} adj={adj} color={color} small={small} />
+      {/* الأرقام */}
+      <div style={{ padding: small?"10px":"12px" }}>
+        <div style={{
+          display:"grid", gridTemplateColumns:"1fr 1fr 1fr",
+          gap:0, border:"1px solid #f0ece8",
+          borderRadius:10, overflow:"hidden"
+        }}>
+          {[["المدفوع","#16a34a",paid],["التسويات","#d97706",adj],["الإجمالي",color,paid+adj]].map(([lbl,clr,val],i)=>(
+            <div key={lbl} style={{
+              textAlign:"center",
+              padding: small?"6px 4px":"8px 6px",
+              borderRight: i<2 ? "1px solid #f0ece8" : "none",
+              minWidth:0, overflow:"hidden"
+            }}>
+              <div style={{
+                fontSize: small?10:12,
+                color:"#333", fontWeight:800,
+                marginBottom:4, whiteSpace:"nowrap"
+              }}>{lbl}</div>
+              <div style={{
+                fontSize: small?13:15,
+                fontWeight:900, color:clr,
+                lineHeight:1, wordBreak:"break-all"
+              }}>{omr(val)}</div>
+            </div>
+          ))}
+        </div>
       </div>
     </div>
   );
