@@ -1041,13 +1041,46 @@ export default function Dashboard() {
   const isDesktop = w >= 1024;
   const small = w < 768;
 
-  const [data, setData]         = useState(SEED);
+  // ── تحميل البيانات من API عند البداية ───────────────────────────────────
+  const [data, setData] = useState(SEED);
+  const [loadingServer, setLoadingServer] = useState(true);
   const [uploading, setUploading] = useState(false);
   const [success, setSuccess]   = useState(false);
   const [error, setError]       = useState(null);
   const [openRegion, setOpenRegion] = useState(null);
-  const [pending, setPending]   = useState(null);   // بيانات معلّقة للتحقق
-  const [verified, setVerified] = useState(false);  // تم التحقق
+  const [pending, setPending]   = useState(null);
+  const [verified, setVerified] = useState(false);
+
+  // ── تحميل البيانات من السيرفر عند فتح الصفحة ─────────────────────────────
+  useEffect(() => {
+    async function loadFromServer() {
+      try {
+        const res = await fetch('/api/data', { method: 'GET' });
+        if (res.ok) {
+          const json = await res.json();
+          if (json.exists && json.data && json.data.regions && json.data.regions.length > 0) {
+            setData(json.data);
+            console.log('✅ Loaded from server:', json.data.uploadDate);
+          }
+        }
+      } catch(e) {
+        console.warn('Server load error, using local/seed data:', e);
+        // fallback: localStorage
+        try {
+          const saved = localStorage.getItem('oneic_dashboard_data');
+          if (saved) {
+            const parsed = JSON.parse(saved);
+            if (parsed && parsed.regions && parsed.regions.length > 0) {
+              setData(parsed);
+            }
+          }
+        } catch(e2) {}
+      } finally {
+        setLoadingServer(false);
+      }
+    }
+    loadFromServer();
+  }, []);
 
   const handleFile = useCallback(async (file) => {
     setUploading(true); setError(null); setSuccess(false); setPending(null);
@@ -1060,10 +1093,49 @@ export default function Dashboard() {
     finally { setUploading(false); }
   }, []);
 
-  // ── تأكيد البيانات بعد التحقق ──
-  const confirmData = useCallback(() => {
+  // ── تأكيد البيانات ورفعها للسيرفر ──────────────────────────────────────
+  const confirmData = useCallback(async () => {
     if (!pending) return;
-    setData(pending.data);
+    const newData = pending.data;
+    const gp = newData.regions.reduce((s,r)=>s+r.paid,0)
+             + newData.debtCompanies.reduce((s,r)=>s+r.paid,0)
+             + newData.headOffice.reduce((s,r)=>s+r.paid,0);
+    const ga = newData.regions.reduce((s,r)=>s+r.adj,0)
+             + newData.debtCompanies.reduce((s,r)=>s+r.adj,0)
+             + newData.headOffice.reduce((s,r)=>s+r.adj,0);
+    const dataToSave = { ...newData, grandPaid: gp, grandAdj: ga };
+
+    // ── رفع للسيرفر ──────────────────────────────────────────────────────
+    setUploading(true);
+    try {
+      const res = await fetch('/api/data', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(dataToSave)
+      });
+      if (res.ok) {
+        const json = await res.json();
+        console.log('✅ Saved to server:', json.savedAt);
+        // حفظ احتياطي في localStorage أيضاً
+        try {
+          localStorage.setItem('oneic_dashboard_data', JSON.stringify(dataToSave));
+          localStorage.setItem('oneic_last_update', json.savedAt || new Date().toISOString());
+        } catch(e) {}
+      } else {
+        throw new Error('Server error: ' + res.status);
+      }
+    } catch(e) {
+      console.warn('Server save failed, saved locally only:', e);
+      // fallback: localStorage فقط
+      try {
+        localStorage.setItem('oneic_dashboard_data', JSON.stringify(dataToSave));
+        localStorage.setItem('oneic_last_update', new Date().toISOString());
+      } catch(e2) {}
+    } finally {
+      setUploading(false);
+    }
+
+    setData(dataToSave);
     setPending(null);
     setSuccess(true);
     setTimeout(()=>setSuccess(false), 5000);
@@ -1307,10 +1379,43 @@ export default function Dashboard() {
             {!isMobile && <div style={{ fontSize:12, color:"#444", fontWeight:700, marginTop:3 }}>
               Debt Collection Management Dashboard · {data.totalRecords?.toLocaleString()} سجل · {data.uploadDate}
             </div>}
+            {!isMobile && <div style={{ fontSize:10, color:"#16a34a", fontWeight:700, marginTop:2, display:"flex", alignItems:"center", gap:4 }}>
+              <span>{loadingServer ? "🔄" : "🌐"}</span>
+              <span>{loadingServer ? "جاري التحميل من السيرفر..." : (() => {
+                try {
+                  const t = localStorage.getItem('oneic_last_update');
+                  if (t) {
+                    const d = new Date(t);
+                    return `محفوظ على السيرفر · ${d.toLocaleDateString('ar-OM')} ${d.toLocaleTimeString('ar-OM',{hour:'2-digit',minute:'2-digit'})}`;
+                  }
+                } catch(e) {}
+                return 'متصل بالسيرفر';
+              })()}</span>
+            </div>}
           </div>
         </div>
         <div style={{ display:"flex", alignItems:"center", gap: isMobile?10:20 }}>
           <UploadBtn onFile={handleFile} uploading={uploading} success={success} error={error} small={isMobile} />
+          {!isMobile && (
+            <button
+              title="مسح البيانات المحفوظة والعودة للبيانات الافتراضية"
+              onClick={async () => {
+                if (window.confirm('هل تريد مسح البيانات المحفوظة والعودة للبيانات الأصلية؟')) {
+                  try { localStorage.removeItem('oneic_dashboard_data'); localStorage.removeItem('oneic_last_update'); } catch(e){}
+                  // مسح من السيرفر أيضاً
+                  try { await fetch('/api/data', { method: 'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify(SEED) }); } catch(e){}
+                  setData(SEED);
+                }
+              }}
+              style={{
+                background:"transparent", color:"#aaa",
+                border:"1px solid #ddd", borderRadius:8,
+                padding:"6px 10px", fontSize:11, fontWeight:700,
+                cursor:"pointer", fontFamily:"'Cairo',sans-serif",
+                whiteSpace:"nowrap", flexShrink:0, title:"مسح"
+              }}
+            >🗑</button>
+          )}
           <button
             onClick={() => handlePrint(data)}
             style={{
