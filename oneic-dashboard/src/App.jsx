@@ -1051,18 +1051,34 @@ export default function Dashboard() {
   const [pending, setPending]   = useState(null);
   const [verified, setVerified] = useState(false);
 
-  // ── تحميل البيانات من localStorage عند فتح الصفحة ────────────────────────
+  // ── تحميل من السيرفر أولاً ثم localStorage كـ fallback ───────────────────
   useEffect(() => {
-    try {
-      const saved = localStorage.getItem('oneic_dashboard_data');
-      if (saved) {
-        const parsed = JSON.parse(saved);
-        if (parsed && parsed.regions && parsed.regions.length > 0 && parsed.grandPaid > 0) {
-          setData(parsed);
+    async function load() {
+      // محاولة السيرفر
+      try {
+        const res = await fetch('/api/data');
+        if (res.ok) {
+          const json = await res.json();
+          if (json.exists && json.data?.regions?.length > 0) {
+            setData(json.data);
+            // تحديث localStorage
+            try { localStorage.setItem('oneic_dashboard_data', JSON.stringify(json.data)); } catch(e) {}
+            setLoadingServer(false);
+            return;
+          }
         }
-      }
-    } catch(e) { console.warn('Load error:', e); }
-    setLoadingServer(false);
+      } catch(e) { console.warn('Server unavailable, using localStorage'); }
+      // fallback: localStorage
+      try {
+        const saved = localStorage.getItem('oneic_dashboard_data');
+        if (saved) {
+          const parsed = JSON.parse(saved);
+          if (parsed?.regions?.length > 0) setData(parsed);
+        }
+      } catch(e) {}
+      setLoadingServer(false);
+    }
+    load();
   }, []);
 
   const handleFile = useCallback(async (file) => {
@@ -1088,11 +1104,30 @@ export default function Dashboard() {
              + newData.headOffice.reduce((s,r)=>s+r.adj,0);
     const dataToSave = { ...newData, grandPaid: gp, grandAdj: ga };
 
-    // ── حفظ في localStorage ──────────────────────────────────────────────
+    // ── رفع للسيرفر + localStorage ──────────────────────────────────────
+    setUploading(true);
     try {
-      localStorage.setItem('oneic_dashboard_data', JSON.stringify(dataToSave));
-      localStorage.setItem('oneic_last_update', new Date().toISOString());
-    } catch(e) { console.warn('Save error:', e); }
+      const res = await fetch('/api/data', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(dataToSave)
+      });
+      if (res.ok) {
+        const json = await res.json();
+        try {
+          localStorage.setItem('oneic_dashboard_data', JSON.stringify(dataToSave));
+          localStorage.setItem('oneic_last_update', json.savedAt || new Date().toISOString());
+        } catch(e) {}
+      } else {
+        throw new Error('Server ' + res.status);
+      }
+    } catch(e) {
+      // fallback localStorage فقط
+      try {
+        localStorage.setItem('oneic_dashboard_data', JSON.stringify(dataToSave));
+        localStorage.setItem('oneic_last_update', new Date().toISOString());
+      } catch(e2) {}
+    } finally { setUploading(false); }
 
     setData(dataToSave);
     setPending(null);
