@@ -140,19 +140,36 @@ const SEED = {
   ]
 };
 
-function decodeUTF16LE(buffer) {
-  // Manual UTF-16-LE decode — works in ALL browsers including Safari
+function detectAndDecode(buffer) {
   const bytes = new Uint8Array(buffer);
-  // Skip BOM prefix (first 5 bytes in this file format)
-  let start = 0;
-  if (bytes[0] === 0x20 || bytes[0] === 0x09 || bytes[0] === 0x0D) start = 5;
-  else if (bytes[0] === 0xFF && bytes[1] === 0xFE) start = 2;
-  let result = "";
-  for (let i = start; i + 1 < bytes.length; i += 2) {
-    const code = bytes[i] | (bytes[i + 1] << 8);
-    result += String.fromCharCode(code);
+  // فحص نوع الـ encoding تلقائياً
+  // UTF-16-LE: كل حرف ASCII يكون بايتان (الثاني صفر)
+  // نفحص أول 20 بايت بعد الـ header
+  let nullCount = 0;
+  const checkStart = Math.min(10, bytes.length);
+  for (let i = checkStart; i < Math.min(checkStart + 40, bytes.length); i += 2) {
+    if (bytes[i + 1] === 0) nullCount++;
   }
-  return result;
+  const isUTF16 = nullCount > 8; // أكثر من 8 أصفار = UTF-16-LE
+
+  if (isUTF16) {
+    // UTF-16-LE — تخطى أول 5 بايتات
+    let start = 5;
+    let result = "";
+    for (let i = start; i + 1 < bytes.length; i += 2) {
+      const code = bytes[i] | (bytes[i + 1] << 8);
+      result += String.fromCharCode(code);
+    }
+    return result;
+  } else {
+    // Latin-1 / ASCII — تخطى أول 5 بايتات وأزل BOM
+    let result = "";
+    for (let i = 5; i < bytes.length; i++) {
+      result += String.fromCharCode(bytes[i]);
+    }
+    // إزالة BOM إذا موجود في البداية
+    return result.replace(/^\xff\xfe/, '').replace(/^ÿþ/, '');
+  }
 }
 
 function parseXLS(file) {
@@ -160,27 +177,25 @@ function parseXLS(file) {
     const reader = new FileReader();
     reader.onload = (e) => {
       try {
-        let text;
-        try {
-          // Try native TextDecoder first
-          text = new TextDecoder("utf-16-le").decode(new Uint8Array(e.target.result).slice(5));
-        } catch (_) {
-          // Fallback: manual decode
-          text = decodeUTF16LE(e.target.result);
-        }
+        // كشف تلقائي للـ encoding وقراءة الملف
+        const text = detectAndDecode(e.target.result);
         const lines = text.split(/\r?\n/).filter(l => l.trim());
         if (lines.length < 2) return reject(new Error("الملف فارغ"));
-        const headers = lines[0].split("\t").map(h => h.trim().replace(/^\uFEFF/, ""));
+        const headers = lines[0].split("\t").map(h => 
+          h.trim()
+           .replace(/^\uFEFF/, '')
+           .replace(/^ÿþ/, '')
+           .replace(/^\xff\xfe/, '')
+           .replace(/[\x00-\x08\x0B\x0C\x0E-\x1F]/g, '')
+           .trim()
+        );
         const rows = lines.slice(1).filter(l => l.trim()).map(line => {
           const v = line.split("\t");
           const o = {}; headers.forEach((h, i) => o[h] = v[i] || ""); return o;
         });
         const n = v => parseFloat(v) || 0;
         const regMap = {}, dcMap = {}, hoMap = {};
-        const DC_FILTER = ["Compass Risk Support Services", "Matrix Debt Collection", "National Center"];
-        const HO_FILTER = ["Legal- DR. Sarhaan", "Documentation legal"];
-        const HO_LABELS = { "Legal- DR. Sarhaan": "Legal - DR. Sarhaan", "Documentation legal ": "Documentation Legal", "Documentation legal": "Documentation Legal" };
-        const REG_AR = {
+                const REG_AR = {
           "Dhofar": "ظفار", "Dhofar ": "ظفار",
           "Musandam, Al Burimai and Al Dahirah": "مسندم، البريمي والظاهرة",
           "MUSCAT AND AL DAKHILIYAH": "مسقط والداخلية",
@@ -194,14 +209,13 @@ function parseXLS(file) {
           const col  = (row["Collector"] || "").trim();
           const branch = (row["Branch"] || "").trim();
           if (region === "Debt Collection Company") {
-            const match = DC_FILTER.find(d => branch.includes(d.split(" ")[0]));
-            if (match) {
-              if (!dcMap[match]) dcMap[match] = { paid: 0, adj: 0 };
-              dcMap[match].paid += paid; dcMap[match].adj += adj;
-            }
+            const key = branch.trim() || "Unknown";
+            if (!dcMap[key]) dcMap[key] = { paid: 0, adj: 0 };
+            dcMap[key].paid += paid; dcMap[key].adj += adj;
           } else if (region === "Head Office") {
-            const match = HO_FILTER.find(h => col.toLowerCase().includes(h.toLowerCase().split(" ")[0]));
-            const key = HO_LABELS[col] || (col.toLowerCase().includes("legal") && col.toLowerCase().includes("dr") ? "Legal - DR. Sarhaan" : col.toLowerCase().includes("doc") ? "Documentation Legal" : null);
+            const key = col.toLowerCase().includes("dr") ? "Legal - DR. Sarhaan"
+                       : col.toLowerCase().includes("doc") ? "Documentation Legal"
+                       : null;
             if (key) {
               if (!hoMap[key]) hoMap[key] = { paid: 0, adj: 0 };
               hoMap[key].paid += paid; hoMap[key].adj += adj;
@@ -224,8 +238,14 @@ function parseXLS(file) {
             .map(([nm,d]) => ({name: nm, paid: d.paid, adj: d.adj}))
             .sort((a,b) => (b.paid+b.adj)-(a.paid+a.adj))
         }));
-        const debtCompanies = DC_FILTER.map(nm => dcMap[nm] ? {name: nm, ...dcMap[nm]} : {name: nm, paid:0, adj:0});
-        const headOffice = ["Legal - DR. Sarhaan","Documentation Legal"].map(nm => hoMap[nm] ? {name:nm,...hoMap[nm]}:{name:nm,paid:0,adj:0});
+        // كل شركات DC مرتبة بالإجمالي
+        const debtCompanies = Object.entries(dcMap)
+          .map(([nm,d]) => ({name: nm.trim(), paid: d.paid, adj: d.adj}))
+          .sort((a,b) => (b.paid+b.adj)-(a.paid+a.adj));
+        // المكتب الرئيسي
+        const headOffice = ["Legal - DR. Sarhaan","Documentation Legal"]
+          .map(nm => hoMap[nm] ? {name:nm,...hoMap[nm]} : {name:nm, paid:0, adj:0})
+          .filter(c => c.paid > 0 || c.adj > 0);
         resolve({ uploadDate: new Date().toISOString().split("T")[0], totalRecords: rows.length, regions, debtCompanies, headOffice });
       } catch(err) { reject(err); }
     };
