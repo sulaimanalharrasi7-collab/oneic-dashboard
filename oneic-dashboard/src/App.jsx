@@ -142,33 +142,71 @@ const SEED = {
 
 function detectAndDecode(buffer) {
   const bytes = new Uint8Array(buffer);
-  // فحص نوع الـ encoding تلقائياً
-  // UTF-16-LE: كل حرف ASCII يكون بايتان (الثاني صفر)
-  // نفحص أول 20 بايت بعد الـ header
-  let nullCount = 0;
-  const checkStart = Math.min(10, bytes.length);
-  for (let i = checkStart; i < Math.min(checkStart + 40, bytes.length); i += 2) {
-    if (bytes[i + 1] === 0) nullCount++;
-  }
-  const isUTF16 = nullCount > 8; // أكثر من 8 أصفار = UTF-16-LE
 
-  if (isUTF16) {
-    // UTF-16-LE — تخطى أول 5 بايتات
-    let start = 5;
-    let result = "";
-    for (let i = start; i + 1 < bytes.length; i += 2) {
-      const code = bytes[i] | (bytes[i + 1] << 8);
-      result += String.fromCharCode(code);
+  // ── ابحث عن BOM (FF FE) في أول 10 بايتات ─────────────────────────────
+  let bomPos = -1;
+  for (let i = 0; i < Math.min(10, bytes.length - 1); i++) {
+    if (bytes[i] === 0xFF && bytes[i+1] === 0xFE) { bomPos = i; break; }
+  }
+
+  if (bomPos >= 0) {
+    // ── UTF-16-LE مع BOM — استخدم TextDecoder الأسرع ──────────────────
+    try {
+      const decoder = new TextDecoder("utf-16-le");
+      // تخطى BOM (بايتان)
+      const slice = buffer.slice(bomPos + 2);
+      return decoder.decode(slice);
+    } catch(e) {
+      // fallback manual
+      const start = bomPos + 2;
+      const chars = [];
+      for (let i = start; i + 1 < bytes.length; i += 2) {
+        const c = bytes[i] | (bytes[i+1] << 8);
+        if (c !== 0) chars.push(String.fromCharCode(c));
+      }
+      return chars.join('');
     }
-    return result;
-  } else {
-    // Latin-1 / ASCII — تخطى أول 5 بايتات وأزل BOM
-    let result = "";
-    for (let i = 5; i < bytes.length; i++) {
-      result += String.fromCharCode(bytes[i]);
+  }
+
+  // ── فحص UTF-16-LE بدون BOM ──────────────────────────────────────────────
+  // فحص 50 بايت بعد تخطي المسافات
+  let scanStart = 0;
+  while (scanStart < 10 && bytes[scanStart] === 0x20) scanStart++;
+  let nullCount = 0;
+  for (let i = scanStart; i < Math.min(scanStart + 50, bytes.length - 1); i += 2) {
+    if (bytes[i] !== 0 && bytes[i+1] === 0) nullCount++;
+  }
+
+  if (nullCount > 5) {
+    try {
+      const decoder = new TextDecoder("utf-16-le");
+      // تخطى المسافات الأولى فقط (بدون BOM)
+      const slice = buffer.slice(scanStart);
+      const text = decoder.decode(slice);
+      // إزالة BOM character إن وجد
+      return text.replace(/^\uFEFF/, '');
+    } catch(e) {
+      const chars = [];
+      for (let i = scanStart; i + 1 < bytes.length; i += 2) {
+        const c = bytes[i] | (bytes[i+1] << 8);
+        if (c !== 0 && c !== 0xFEFF) chars.push(String.fromCharCode(c));
+      }
+      return chars.join('');
     }
-    // إزالة BOM إذا موجود في البداية
-    return result.replace(/^\xff\xfe/, '').replace(/^ÿþ/, '');
+  }
+
+  // ── Latin-1 / UTF-8 ────────────────────────────────────────────────────
+  try {
+    const decoder = new TextDecoder("utf-8");
+    let start = 0;
+    while (start < 10 && (bytes[start] === 0x20 || bytes[start] === 0xEF || bytes[start] === 0xBB || bytes[start] === 0xBF)) start++;
+    return decoder.decode(buffer.slice(start));
+  } catch(e) {
+    let start = 0;
+    while (start < 10 && bytes[start] === 0x20) start++;
+    const chars = [];
+    for (let i = start; i < bytes.length; i++) chars.push(String.fromCharCode(bytes[i]));
+    return chars.join('').replace(/^[ÿþÿþï»¿]+/, '');
   }
 }
 
@@ -182,11 +220,9 @@ function parseXLS(file) {
         const lines = text.split(/\r?\n/).filter(l => l.trim());
         if (lines.length < 2) return reject(new Error("الملف فارغ"));
         const headers = lines[0].split("\t").map(h => 
-          h.trim()
-           .replace(/^\uFEFF/, '')
-           .replace(/^ÿþ/, '')
-           .replace(/^\xff\xfe/, '')
-           .replace(/[\x00-\x08\x0B\x0C\x0E-\x1F]/g, '')
+          h.replace(/\uFEFF/g, '')
+           .replace(/ÿþ/g, '')
+           .replace(/\r/g, '')
            .trim()
         );
         const rows = lines.slice(1).filter(l => l.trim()).map(line => {
@@ -259,6 +295,170 @@ function parseXLS(file) {
 
 
 const omr = n => new Intl.NumberFormat("en-US",{minimumFractionDigits:3,maximumFractionDigits:3}).format(n||0);
+
+
+// ── VerifyModal — نافذة التحقق الذكي ─────────────────────────────────────────
+function VerifyModal({ pending, onConfirm, onReject }) {
+  if (!pending) return null;
+  const d = pending.data;
+  const omr = n => new Intl.NumberFormat("en-US",{minimumFractionDigits:3,maximumFractionDigits:3}).format(n||0);
+
+  const govPaid = d.regions.reduce((s,r)=>s+r.paid,0);
+  const govAdj  = d.regions.reduce((s,r)=>s+r.adj,0);
+  const dcPaid  = d.debtCompanies.reduce((s,r)=>s+r.paid,0);
+  const dcAdj   = d.debtCompanies.reduce((s,r)=>s+r.adj,0);
+  const hoPaid  = d.headOffice.reduce((s,r)=>s+r.paid,0);
+  const hoAdj   = d.headOffice.reduce((s,r)=>s+r.adj,0);
+  const grand   = govPaid+govAdj+dcPaid+dcAdj+hoPaid+hoAdj;
+  const gPaid   = govPaid+dcPaid+hoPaid;
+  const gAdj    = govAdj+dcAdj+hoAdj;
+
+  // فحص المنطق
+  const checks = [
+    { ok: d.totalRecords > 1000,   label: "عدد السجلات",    val: `${d.totalRecords?.toLocaleString()} سجل`, expect: "> 1,000" },
+    { ok: gPaid > 100000,          label: "إجمالي المدفوع",  val: omr(gPaid),  expect: "> 100,000 OMR" },
+    { ok: gAdj >= 0,               label: "إجمالي التسويات", val: omr(gAdj),   expect: ">= 0" },
+    { ok: d.regions.length === 5,  label: "المحافظات",       val: `${d.regions.length} منطقة`, expect: "5 مناطق" },
+    { ok: d.debtCompanies.length >= 3, label: "شركات التحصيل", val: `${d.debtCompanies.length} شركة`, expect: ">= 3 شركات" },
+    { ok: d.headOffice.length >= 1,label: "المكتب الرئيسي",  val: `${d.headOffice.length} قسم`, expect: ">= 1" },
+  ];
+
+  const allOk = checks.every(c => c.ok);
+  const failCount = checks.filter(c => !c.ok).length;
+
+  return (
+    <div style={{
+      position:"fixed", inset:0, background:"rgba(0,0,0,0.7)",
+      display:"flex", alignItems:"center", justifyContent:"center",
+      zIndex:9999, padding:"16px", direction:"rtl"
+    }}>
+      <div style={{
+        background:"#fff", borderRadius:20, width:"100%", maxWidth:580,
+        overflow:"hidden", boxShadow:"0 20px 60px rgba(0,0,0,0.4)"
+      }}>
+
+        {/* ── Header ── */}
+        <div style={{
+          background: allOk ? "linear-gradient(120deg,#1e3a5f,#2d5a8e)" : "linear-gradient(120deg,#dc2626,#b91c1c)",
+          padding:"18px 24px"
+        }}>
+          <div style={{fontSize:18,fontWeight:900,color:"#fff",marginBottom:3}}>
+            {allOk ? "✅ تحقق من البيانات قبل التطبيق" : "⚠️ تحذير — يوجد مشاكل في الملف"}
+          </div>
+          <div style={{fontSize:12,color:"rgba(255,255,255,0.7)",fontWeight:600}}>
+            {pending.fileName} &nbsp;·&nbsp; {pending.fileSize} MB &nbsp;·&nbsp; {d.uploadDate}
+          </div>
+        </div>
+
+        {/* ── الإجمالي الكبير ── */}
+        <div style={{
+          background:"#f8f4f1", padding:"14px 24px",
+          borderBottom:"1px solid #f0ece8",
+          display:"flex", justifyContent:"space-between", alignItems:"center"
+        }}>
+          <div>
+            <div style={{fontSize:11,color:"#888",fontWeight:700,marginBottom:3}}>إجمالي التحصيل الكلي في هذا الملف</div>
+            <div style={{fontSize:28,fontWeight:900,color:"#1e3a5f"}}>{omr(grand)} <span style={{fontSize:13,color:"#999"}}>OMR</span></div>
+          </div>
+          <div style={{display:"flex",gap:20}}>
+            <div style={{textAlign:"center"}}>
+              <div style={{fontSize:10,color:"#888",fontWeight:700,marginBottom:3}}>مدفوع</div>
+              <div style={{fontSize:16,fontWeight:800,color:"#16a34a"}}>{omr(gPaid)}</div>
+            </div>
+            <div style={{textAlign:"center"}}>
+              <div style={{fontSize:10,color:"#888",fontWeight:700,marginBottom:3}}>تسويات</div>
+              <div style={{fontSize:16,fontWeight:800,color:"#d97706"}}>{omr(gAdj)}</div>
+            </div>
+          </div>
+        </div>
+
+        {/* ── قائمة التحقق ── */}
+        <div style={{padding:"14px 24px"}}>
+          <div style={{fontSize:12,color:"#555",fontWeight:800,marginBottom:10,letterSpacing:0.5}}>
+            فحص تلقائي للبيانات:
+          </div>
+          {checks.map((c,i) => (
+            <div key={i} style={{
+              display:"flex", justifyContent:"space-between", alignItems:"center",
+              padding:"8px 12px", marginBottom:5, borderRadius:8,
+              background: c.ok ? "#f0fdf4" : "#fef2f2",
+              border: `1px solid ${c.ok ? "#bbf7d0" : "#fecaca"}`
+            }}>
+              <div style={{display:"flex",alignItems:"center",gap:8}}>
+                <span style={{fontSize:16}}>{c.ok ? "✅" : "❌"}</span>
+                <span style={{fontSize:13,color:"#333",fontWeight:700}}>{c.label}</span>
+                <span style={{fontSize:11,color:"#888"}}>({c.expect})</span>
+              </div>
+              <span style={{
+                fontSize:13, fontWeight:800,
+                color: c.ok ? "#16a34a" : "#dc2626"
+              }}>{c.val}</span>
+            </div>
+          ))}
+        </div>
+
+        {/* ── تفصيل الأقسام ── */}
+        <div style={{padding:"0 24px 14px"}}>
+          <div style={{fontSize:12,color:"#555",fontWeight:800,marginBottom:8,letterSpacing:0.5}}>
+            تفصيل الأقسام:
+          </div>
+          <div style={{display:"grid",gridTemplateColumns:"1fr 1fr 1fr",gap:8}}>
+            {[
+              ["🗺 المحافظات","#e85d20",govPaid+govAdj,govPaid,govAdj],
+              ["🏢 شركات التحصيل","#1a7a6b",dcPaid+dcAdj,dcPaid,dcAdj],
+              ["🏛 المكتب الرئيسي","#6c3fa0",hoPaid+hoAdj,hoPaid,hoAdj],
+            ].map(([label,color,tot,pd,adj]) => (
+              <div key={label} style={{
+                background:"#fafafa", borderRadius:10,
+                padding:"10px", border:`1.5px solid ${color}22`,
+                borderTop:`3px solid ${color}`
+              }}>
+                <div style={{fontSize:11,fontWeight:800,color:"#333",marginBottom:6}}>{label}</div>
+                <div style={{fontSize:12,fontWeight:900,color,marginBottom:4}}>{omr(tot)}</div>
+                <div style={{fontSize:10,color:"#16a34a",fontWeight:700}}>مدفوع: {omr(pd)}</div>
+                <div style={{fontSize:10,color:"#d97706",fontWeight:700}}>تسوية: {omr(adj)}</div>
+              </div>
+            ))}
+          </div>
+        </div>
+
+        {/* ── أزرار التأكيد ── */}
+        {!allOk && (
+          <div style={{
+            margin:"0 24px 14px", padding:"10px 14px",
+            background:"#fef2f2", borderRadius:10, border:"1px solid #fecaca"
+          }}>
+            <div style={{fontSize:12,color:"#dc2626",fontWeight:700}}>
+              ⚠️ يوجد {failCount} مشكلة في الملف — تأكد من صحة الملف قبل التطبيق
+            </div>
+          </div>
+        )}
+
+        <div style={{
+          display:"flex", gap:12, padding:"0 24px 20px"
+        }}>
+          <button onClick={onConfirm} style={{
+            flex:1, background: allOk ? "#16a34a" : "#d97706",
+            color:"#fff", border:"none", borderRadius:12,
+            padding:"13px", fontSize:15, fontWeight:900,
+            cursor:"pointer", fontFamily:"'Cairo',sans-serif"
+          }}>
+            {allOk ? "✅ تأكيد وتطبيق البيانات" : "⚠️ تطبيق رغم المشاكل"}
+          </button>
+          <button onClick={onReject} style={{
+            flex:1, background:"#f5f0eb", color:"#dc2626",
+            border:"2px solid #fecaca", borderRadius:12,
+            padding:"13px", fontSize:15, fontWeight:900,
+            cursor:"pointer", fontFamily:"'Cairo',sans-serif"
+          }}>
+            ❌ إلغاء وابقِ القديم
+          </button>
+        </div>
+
+      </div>
+    </div>
+  );
+}
 
 // ── useWindowSize ──────────────────────────────────────────────────────────
 function useWindowSize() {
@@ -846,12 +1046,34 @@ export default function Dashboard() {
   const [success, setSuccess]   = useState(false);
   const [error, setError]       = useState(null);
   const [openRegion, setOpenRegion] = useState(null);
+  const [pending, setPending]   = useState(null);   // بيانات معلّقة للتحقق
+  const [verified, setVerified] = useState(false);  // تم التحقق
 
   const handleFile = useCallback(async (file) => {
-    setUploading(true); setError(null); setSuccess(false);
-    try { const p = await parseXLS(file); setData(p); setSuccess(true); setTimeout(()=>setSuccess(false),5000); }
+    setUploading(true); setError(null); setSuccess(false); setPending(null);
+    try {
+      const p = await parseXLS(file);
+      // ── عرض نافذة التحقق قبل تطبيق البيانات ──
+      setPending({ data: p, fileName: file.name, fileSize: (file.size/1024/1024).toFixed(1) });
+    }
     catch(e) { setError(e.message); }
     finally { setUploading(false); }
+  }, []);
+
+  // ── تأكيد البيانات بعد التحقق ──
+  const confirmData = useCallback(() => {
+    if (!pending) return;
+    setData(pending.data);
+    setPending(null);
+    setSuccess(true);
+    setTimeout(()=>setSuccess(false), 5000);
+  }, [pending]);
+
+  // ── رفض البيانات ──
+  const rejectData = useCallback(() => {
+    setPending(null);
+    setError("تم إلغاء الرفع — البيانات القديمة لا تزال نشطة");
+    setTimeout(()=>setError(null), 4000);
   }, []);
 
   const gPd = data.regions.reduce((s,r)=>s+r.paid,0);
@@ -872,6 +1094,7 @@ export default function Dashboard() {
       fontFamily:"'Cairo','Tajawal','Segoe UI',sans-serif",
       direction:"rtl", color:"#111", overflow:"hidden"
     }}>
+      <VerifyModal pending={pending} onConfirm={confirmData} onReject={rejectData}/>
       <style>{`
         @import url('https://fonts.googleapis.com/css2?family=Cairo:wght@400;500;600;700;800;900&display=swap');
         * { box-sizing:border-box; margin:0; padding:0; }
@@ -1043,7 +1266,8 @@ export default function Dashboard() {
 
       {/* ══ PRINT HEADER — يظهر فقط عند الطباعة ══ */}
       <div style={{display:"none"}} className="print-only">
-        <style>{`
+        <VerifyModal pending={pending} onConfirm={confirmData} onReject={rejectData}/>
+      <style>{`
           @media print {
             .print-only { display: flex !important; justifyContent: space-between; alignItems: center; padding: 6px 12px; borderBottom: 3px solid #e85d20; marginBottom: 8px; }
           }
