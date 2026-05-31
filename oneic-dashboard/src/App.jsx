@@ -6458,84 +6458,67 @@ function BulkPaymentSection({ bulk, small }) {
     try {
       const parsed = await parseBulkPayment(file);
 
-      // ── دمج البيانات الجديدة مع القديمة ──────────────────────────────────
-      setBulkData(prev => {
-        const existing = prev || bulkData;
-        if (!existing || !existing.daily || existing.daily.length === 0) {
-          // لا يوجد بيانات سابقة — استخدم الجديدة فقط
-          try { localStorage.setItem('oneic_bulk_data', JSON.stringify(parsed)); } catch(e){}
-          return parsed;
-        }
+      // ── دمج مع البيانات المحفوظة ─────────────────────────────────────────
+      let existing = null;
+      try {
+        const saved = localStorage.getItem('oneic_bulk_data');
+        if (saved) existing = JSON.parse(saved);
+      } catch(e) {}
 
-        // ── دمج الأيام ────────────────────────────────────────────────────
+      let final = parsed;
+
+      if (existing && existing.daily && existing.daily.length > 0) {
+        // دمج الأيام
         const dayMap = {};
-        // أضف الأيام القديمة أولاً
         (existing.daily||[]).forEach(d => { dayMap[d.date] = {...d}; });
-        // أضف/استبدل بالأيام الجديدة
         (parsed.daily||[]).forEach(d => { dayMap[d.date] = {...d}; });
         const mergedDaily = Object.values(dayMap).sort((a,b)=>a.date.localeCompare(b.date));
 
-        // ── دمج المناطق ───────────────────────────────────────────────────
+        // دمج المناطق
         const regMap = {};
         (existing.byRegion||[]).forEach(r => { regMap[r.nameEn||r.nameAr] = {...r}; });
         (parsed.byRegion||[]).forEach(r => {
           const key = r.nameEn||r.nameAr;
-          if (regMap[key]) {
-            regMap[key].paid  += r.paid;
-            regMap[key].adj   += r.adj;
-            regMap[key].count += r.count;
-          } else { regMap[key] = {...r}; }
+          if (regMap[key]) { regMap[key].paid+=r.paid; regMap[key].adj+=r.adj; regMap[key].count+=r.count; }
+          else regMap[key] = {...r};
         });
-        const mergedRegions = Object.values(regMap).sort((a,b)=>(b.paid+b.adj)-(a.paid+a.adj));
 
-        // ── دمج المحصّلين ─────────────────────────────────────────────────
+        // دمج المحصّلين
         const colMap = {};
-        (existing.topCollectors||[]).forEach(c => { colMap[c.name+'||'+(c.regionEn||c.region||'')] = {...c}; });
+        (existing.topCollectors||[]).forEach(c => { colMap[c.name+'|'+(c.region||'')] = {...c}; });
         (parsed.topCollectors||[]).forEach(c => {
-          const key = c.name+'||'+(c.regionEn||c.region||'');
-          if (colMap[key]) {
-            colMap[key].paid  += c.paid;
-            colMap[key].adj   += c.adj;
-            colMap[key].count += c.count;
-          } else { colMap[key] = {...c}; }
+          const key = c.name+'|'+(c.region||'');
+          if (colMap[key]) { colMap[key].paid+=c.paid; colMap[key].adj+=c.adj; colMap[key].count+=c.count; }
+          else colMap[key] = {...c};
         });
-        const mergedCollectors = Object.values(colMap)
-          .sort((a,b)=>(b.paid+b.adj)-(a.paid+a.adj))
-          .slice(0,30);
 
-        // ── دمج dailyDetail ───────────────────────────────────────────────
+        // دمج dailyDetail
         const detailMap = { ...(existing.dailyDetail||{}) };
-        Object.entries(parsed.dailyDetail||{}).forEach(([date, cols]) => {
-          detailMap[date] = cols; // الأيام الجديدة تستبدل القديمة بنفس التاريخ
-        });
+        Object.entries(parsed.dailyDetail||{}).forEach(([date,cols]) => { detailMap[date] = cols; });
 
-        // ── الإجماليات المدمجة ────────────────────────────────────────────
         const totalPaid = mergedDaily.reduce((s,d)=>s+d.paid,0);
         const totalAdj  = mergedDaily.reduce((s,d)=>s+d.adj,0);
         const allDates  = mergedDaily.map(d=>d.date).sort();
         const avgDaily  = mergedDaily.length ? totalPaid/mergedDaily.length : 0;
         const bestDay   = mergedDaily.reduce((a,b)=>(a.paid+a.adj)>(b.paid+b.adj)?a:b, mergedDaily[0]||{});
-        const worstDay  = mergedDaily.reduce((a,b)=>(a.paid+a.adj)<(b.paid+b.adj)?a:b, mergedDaily[0]||{});
 
-        const merged = {
-          fileName: `${existing.fileName||''} + ${parsed.fileName||''}`.trim().replace(/^\+\s*/,''),
+        final = {
+          fileName: (existing.fileName||'') + ' + ' + (parsed.fileName||''),
           uploadedAt: new Date().toISOString(),
           dateRange: { from: allDates[0]||'', to: allDates[allDates.length-1]||'' },
           totalPaid, totalAdj,
           totalRecords: mergedDaily.reduce((s,d)=>s+d.count,0),
           daily: mergedDaily,
-          byRegion: mergedRegions,
-          topCollectors: mergedCollectors,
+          byRegion: Object.values(regMap).sort((a,b)=>(b.paid+b.adj)-(a.paid+a.adj)),
+          topCollectors: Object.values(colMap).sort((a,b)=>(b.paid+b.adj)-(a.paid+a.adj)).slice(0,30),
           dailyDetail: detailMap,
-          stats: { avgDaily, bestDay, worstDay,
-                   activeDays: mergedDaily.length,
-                   totalCollectors: mergedCollectors.length }
+          stats: { avgDaily, bestDay, activeDays: mergedDaily.length,
+                   totalCollectors: Object.keys(colMap).length }
         };
+      }
 
-        try { localStorage.setItem('oneic_bulk_data', JSON.stringify(merged)); } catch(e){}
-        return merged;
-      });
-
+      try { localStorage.setItem('oneic_bulk_data', JSON.stringify(final)); } catch(e){}
+      setBulkData(final);
       setSelectedDate(null);
       setBulkSuccess(true);
       setTimeout(()=>setBulkSuccess(false), 4000);
