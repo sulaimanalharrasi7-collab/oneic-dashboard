@@ -360,23 +360,21 @@ const omr = n => new Intl.NumberFormat("en-US",{minimumFractionDigits:3,maximumF
 
 // ── BulkPaymentSection ────────────────────────────────────────────────────────
 function BulkPaymentSection({ bulk, small }) {
-  const [activeTab, setActiveTab]     = useState('daily');
+  const [activeTab, setActiveTab]       = useState('daily');
   const [selectedDate, setSelectedDate] = useState(null);
   const [bulkUploading, setBulkUploading] = useState(false);
-  const [bulkSuccess, setBulkSuccess] = useState(false);
-  const [bulkError, setBulkError]     = useState(null);
-  const [bulkData, setBulkData]       = useState(bulk);
+  const [bulkSuccess, setBulkSuccess]   = useState(false);
+  const [bulkError, setBulkError]       = useState(null);
+  const [bulkData, setBulkData]         = useState(bulk);
   const fileRef = useRef(null);
 
   const handleBulkFile = async (file) => {
     setBulkUploading(true); setBulkError(null);
     try {
       const parsed = await parseBulkPayment(file);
-      setBulkData(parsed);
-      setSelectedDate(null);
+      setBulkData(parsed); setSelectedDate(null);
       try { localStorage.setItem('oneic_bulk_data', JSON.stringify(parsed)); } catch(e){}
-      setBulkSuccess(true);
-      setTimeout(()=>setBulkSuccess(false), 4000);
+      setBulkSuccess(true); setTimeout(()=>setBulkSuccess(false),4000);
     } catch(e) { setBulkError(e.message); }
     finally { setBulkUploading(false); }
   };
@@ -384,344 +382,425 @@ function BulkPaymentSection({ bulk, small }) {
   useEffect(() => {
     try {
       const saved = localStorage.getItem('oneic_bulk_data');
-      if (saved) { const p = JSON.parse(saved); if (p?.daily?.length>0) setBulkData(p); }
+      if (saved) { const p=JSON.parse(saved); if(p?.daily?.length>0) setBulkData(p); }
     } catch(e) {}
   }, []);
 
   const d = bulkData;
   if (!d) return null;
 
-  const omr = n => new Intl.NumberFormat("en-US",{minimumFractionDigits:3,maximumFractionDigits:3}).format(n||0);
-  const maxDaily = d.daily?.length ? Math.max(...d.daily.map(x=>x.paid+x.adj), 1) : 1;
-  const maxReg   = d.byRegion?.length ? Math.max(...d.byRegion.map(x=>x.paid+x.adj), 1) : 1;
-  const maxCol   = d.topCollectors?.length ? Math.max(...d.topCollectors.map(x=>x.paid+x.adj), 1) : 1;
+  const fmt = n => new Intl.NumberFormat("en-US",{minimumFractionDigits:3,maximumFractionDigits:3}).format(n||0);
+  const maxDaily  = d.daily?.length ? Math.max(...d.daily.map(x=>x.paid+x.adj),1) : 1;
+  const maxCol    = d.topCollectors?.length ? Math.max(...d.topCollectors.map(x=>x.paid+x.adj),1) : 1;
+  const maxReg    = d.byRegion?.length ? Math.max(...d.byRegion.map(x=>x.paid+x.adj),1) : 1;
 
   // بيانات اليوم المختار
-  const selDay     = selectedDate ? d.daily?.find(x=>x.date===selectedDate) : null;
-  const selCollectors = selectedDate && d.dailyDetail
-    ? (d.dailyDetail[selectedDate] || []) : [];
-  const selRegions = selectedDate && d.dailyRegion
-    ? (d.dailyRegion[selectedDate] || []) : [];
+  const selDay         = selectedDate ? d.daily?.find(x=>x.date===selectedDate) : null;
+  const selCollectors  = selectedDate && d.dailyDetail ? (d.dailyDetail[selectedDate]||[]) : [];
 
-  const tabs = [
-    {id:'daily',    label:'📅 يومي'},
-    {id:'region',   label:'🗺 المناطق'},
-    {id:'collector',label:'👤 المحصّلون'},
-  ];
+  // تجميع المناطق لليوم المختار
+  const selRegions = selCollectors.reduce((acc,c)=>{
+    const ar = c.region||c.nameEn||'';
+    if(!acc[ar]) acc[ar]={nameEn:ar,paid:0,adj:0,count:0};
+    acc[ar].paid+=c.paid; acc[ar].adj+=c.adj; acc[ar].count+=c.count;
+    return acc;
+  },{});
+  const selRegionArr = Object.values(selRegions).sort((a,b)=>(b.paid+b.adj)-(a.paid+a.adj));
+
+  const REG_COLORS_MAP = {
+    'Debt Collection Company':'#1a7a6b','Head Office':'#6c3fa0','Legal ':'#6c3fa0','Legal':'#6c3fa0',
+    'MUSCAT AND AL DAKHILIYAH':'#e85d20','South and North Al Batinah':'#c44b10',
+    'North and South Al Shaurqiah and Al Wasatah':'#d4601a',
+    'Musandam, Al Burimai and Al Dahirah':'#b03808','Dhofar':'#f07030','Dhofar ':'#f07030',
+  };
+  const REG_AR_MAP = {
+    'Debt Collection Company':'شركات التحصيل','Head Office':'المكتب الرئيسي',
+    'Legal ':'المكتب الرئيسي','Legal':'المكتب الرئيسي',
+    'MUSCAT AND AL DAKHILIYAH':'مسقط والداخلية',
+    'South and North Al Batinah':'الباطنة','North and South Al Shaurqiah and Al Wasatah':'الشرقية والوسطى',
+    'Musandam, Al Burimai and Al Dahirah':'مسندم والبريمي','Dhofar':'ظفار','Dhofar ':'ظفار',
+  };
+
+  const tabs = [{id:'daily',label:'📅 يومي'},{id:'region',label:'🗺 المناطق'},{id:'collector',label:'👤 المحصّلون'}];
 
   return (
-    <div style={{
-      background:"#fff", borderRadius:16,
-      boxShadow:"0 3px 18px rgba(0,0,0,0.07)",
-      border:"1.5px solid #f0ece8",
-      marginBottom:18, overflow:"hidden"
-    }}>
+    <div style={{background:"#fff",borderRadius:16,boxShadow:"0 3px 18px rgba(0,0,0,0.07)",
+      border:"1.5px solid #f0ece8",marginBottom:18,overflow:"hidden"}}>
 
-      {/* ── Header ── */}
-      <div style={{background:"linear-gradient(120deg,#1e3a5f,#2d5a8e)", padding:small?"12px 14px":"14px 20px"}}>
+      {/* ══ HEADER ══ */}
+      <div style={{background:"linear-gradient(120deg,#1e3a5f,#2d5a8e)",padding:small?"12px 14px":"14px 20px"}}>
         <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",flexWrap:"wrap",gap:10}}>
           <div>
             <div style={{fontSize:small?15:18,fontWeight:900,color:"#fff"}}>💳 Bulk Payment Report</div>
             <div style={{fontSize:11,color:"rgba(255,255,255,0.6)",marginTop:2}}>
               {d.dateRange?.from} → {d.dateRange?.to} &nbsp;·&nbsp; {d.totalRecords?.toLocaleString()} دفعة
-              {d.fileName && <span> &nbsp;·&nbsp; {d.fileName}</span>}
+              {d.fileName&&<span> &nbsp;·&nbsp; {d.fileName}</span>}
             </div>
           </div>
-          <div
-            onClick={()=>!bulkUploading&&fileRef.current?.click()}
+          <div onClick={()=>!bulkUploading&&fileRef.current?.click()}
             onDrop={e=>{e.preventDefault();const f=e.dataTransfer.files?.[0];if(f)handleBulkFile(f);}}
             onDragOver={e=>e.preventDefault()}
-            style={{
-              border:`1.5px dashed ${bulkSuccess?"#22c55e":bulkUploading?"#60a5fa":"rgba(255,255,255,0.4)"}`,
-              borderRadius:10,padding:"8px 16px",cursor:"pointer",
+            style={{border:`1.5px dashed ${bulkSuccess?"#22c55e":bulkUploading?"#60a5fa":"rgba(255,255,255,0.4)"}`,
+              borderRadius:10,padding:"8px 14px",cursor:"pointer",
               background:bulkSuccess?"rgba(34,197,94,0.15)":"rgba(255,255,255,0.08)",
-              textAlign:"center",minWidth:150
-            }}
-          >
+              textAlign:"center",minWidth:145}}>
             <input ref={fileRef} type="file" accept=".xlsx,.xls" style={{display:"none"}}
               onChange={e=>{const f=e.target.files?.[0];if(f)handleBulkFile(f);e.target.value="";}}/>
-            {bulkUploading ? <div style={{color:"#60a5fa",fontSize:12,fontWeight:700}}>⏳ جاري التحليل...</div>
-             : bulkSuccess  ? <div style={{color:"#22c55e",fontSize:12,fontWeight:700}}>✅ تم التحديث</div>
-             : <><div style={{fontSize:16}}>📂</div>
-                <div style={{fontSize:11,color:"#fff",fontWeight:700}}>رفع Bulk Payment</div>
-                <div style={{fontSize:10,color:"rgba(255,255,255,0.5)",marginTop:1}}>.xlsx يومي</div></>}
+            {bulkUploading?<div style={{color:"#60a5fa",fontSize:12,fontWeight:700}}>⏳ جاري التحليل...</div>
+             :bulkSuccess?<div style={{color:"#22c55e",fontSize:12,fontWeight:700}}>✅ تم التحديث</div>
+             :<><div style={{fontSize:16}}>📂</div>
+               <div style={{fontSize:11,color:"#fff",fontWeight:700}}>رفع Bulk Payment</div>
+               <div style={{fontSize:10,color:"rgba(255,255,255,0.5)",marginTop:1}}>.xlsx يومي</div></>}
             {bulkError&&<div style={{color:"#f87171",fontSize:10,marginTop:3}}>⚠ {bulkError}</div>}
           </div>
         </div>
+
         {/* إجماليات */}
-        <div style={{display:"grid",gridTemplateColumns:"repeat(3,1fr)",gap:10,marginTop:12}}>
-          {[["إجمالي المدفوع",omr(d.totalPaid),"#86efac"],
-            ["إجمالي التسويات",omr(d.totalAdj),"#fde68a"],
-            ["الإجمالي الكلي",omr(d.totalPaid+d.totalAdj),"#fff"]
-          ].map(([l,v,c])=>(
-            <div key={l} style={{background:"rgba(255,255,255,0.1)",borderRadius:10,padding:"8px 12px",textAlign:"center"}}>
-              <div style={{fontSize:10,color:"rgba(255,255,255,0.65)",fontWeight:700,marginBottom:4}}>{l}</div>
-              <div style={{fontSize:small?14:17,fontWeight:900,color:c}}>{v}</div>
-            </div>
-          ))}
+        <div style={{display:"grid",gridTemplateColumns:"repeat(3,1fr)",gap:8,marginTop:12}}>
+          {[["إجمالي المدفوع",fmt(d.totalPaid),"#86efac"],
+            ["إجمالي التسويات",fmt(d.totalAdj),"#fde68a"],
+            ["الإجمالي الكلي",fmt(d.totalPaid+d.totalAdj),"#fff"]].map(([l,v,c])=>(
+            <div key={l} style={{background:"rgba(255,255,255,0.1)",borderRadius:10,padding:"8px 10px",textAlign:"center"}}>
+              <div style={{fontSize:10,color:"rgba(255,255,255,0.65)",fontWeight:700,marginBottom:3}}>{l}</div>
+              <div style={{fontSize:small?13:16,fontWeight:900,color:c}}>{v}</div>
+            </div>))}
         </div>
+
+        {/* إحصاءات ذكية */}
+        {d.stats&&(
+          <div style={{display:"grid",gridTemplateColumns:small?"1fr 1fr":"repeat(4,1fr)",
+            gap:0,marginTop:10,borderTop:"1px solid rgba(255,255,255,0.15)",paddingTop:10}}>
+            {[["📅 أيام نشطة",d.stats.activeDays+" يوم",""],
+              ["👤 محصّلون",d.stats.totalCollectors+" محصّل",""],
+              ["🏆 أفضل يوم",d.stats.bestDay?.date?.slice(5)||"—",fmt(d.stats.bestDay?.paid||0)],
+              ["📈 متوسط يومي",fmt(d.stats.avgDaily||0),"OMR"],
+            ].map(([l,v,s])=>(
+              <div key={l} style={{textAlign:"center",padding:"4px",borderLeft:"1px solid rgba(255,255,255,0.1)"}}>
+                <div style={{fontSize:9,color:"rgba(255,255,255,0.55)",fontWeight:700}}>{l}</div>
+                <div style={{fontSize:13,fontWeight:900,color:"#fff"}}>{v}</div>
+                {s&&<div style={{fontSize:9,color:"rgba(255,255,255,0.45)"}}>{s}</div>}
+              </div>))}
+          </div>
+        )}
       </div>
 
-      {/* ── إحصاءات ذكية ── */}
-      {d.stats && (
-        <div style={{
-          display:"grid",
-          gridTemplateColumns: small?"1fr 1fr":"repeat(4,1fr)",
-          gap:0, borderBottom:"1px solid rgba(255,255,255,0.1)",
-          background:"rgba(0,0,0,0.15)"
-        }}>
-          {[
-            ["📅 أيام نشطة", d.stats.activeDays, "يوم"],
-            ["👤 محصّلون", d.stats.totalCollectors, "محصّل"],
-            ["🏆 أفضل يوم", d.stats.bestDay?.date?.slice(5)||'—', omr(d.stats.bestDay?.paid||0)],
-            ["📈 متوسط يومي", omr(d.stats.avgDaily||0), "OMR"],
-          ].map(([l,v,sub])=>(
-            <div key={l} style={{textAlign:"center",padding:"8px 4px",borderLeft:"1px solid rgba(255,255,255,0.1)"}}>
-              <div style={{fontSize:9,color:"rgba(255,255,255,0.6)",fontWeight:700,marginBottom:2}}>{l}</div>
-              <div style={{fontSize:14,fontWeight:900,color:"#fff"}}>{v}</div>
-              <div style={{fontSize:9,color:"rgba(255,255,255,0.5)"}}>{sub}</div>
-            </div>
-          ))}
-        </div>
-      )}
-
-      {/* ── Tabs ── */}
+      {/* ══ TABS ══ */}
       <div style={{display:"flex",borderBottom:"2px solid #f0ece8",background:"#fafafa"}}>
         {tabs.map(t=>(
-          <button key={t.id} onClick={()=>{setActiveTab(t.id);setSelectedDate(null);}} style={{
+          <button key={t.id} onClick={()=>{setActiveTab(t.id);if(t.id!=='daily')setSelectedDate(null);}} style={{
             flex:1,padding:"10px 6px",border:"none",cursor:"pointer",
             background:activeTab===t.id?"#fff":"transparent",
             color:activeTab===t.id?"#1e3a5f":"#888",
-            fontWeight:activeTab===t.id?800:600,
-            fontSize:small?12:13,fontFamily:"'Cairo',sans-serif",
+            fontWeight:activeTab===t.id?800:600,fontSize:small?12:13,
+            fontFamily:"'Cairo',sans-serif",
             borderBottom:activeTab===t.id?"2px solid #1e3a5f":"2px solid transparent",
-            transition:"all 0.2s"
-          }}>{t.label}</button>
+            transition:"all 0.2s"}}>{t.label}</button>
         ))}
       </div>
 
-      {/* ── Content ── */}
+      {/* ══ CONTENT ══ */}
       <div style={{padding:small?"12px":"16px 20px"}}>
 
         {/* ══ تبويب يومي ══ */}
-        {activeTab==='daily' && (
+        {activeTab==='daily'&&(
           <div>
             {/* رسم بياني قابل للنقر */}
-            <div style={{fontSize:12,color:"#555",fontWeight:700,marginBottom:8}}>
-              اضغط على أي يوم لعرض تفاصيل المحصّلين 👇
+            <div style={{fontSize:12,color:"#555",fontWeight:700,marginBottom:8,display:"flex",justifyContent:"space-between",alignItems:"center"}}>
+              <span>اضغط على أي يوم لعرض تفاصيله الكاملة 👇</span>
+              {selectedDate&&<button onClick={()=>setSelectedDate(null)} style={{background:"#f5f0eb",border:"1px solid #ddd",borderRadius:8,padding:"3px 10px",cursor:"pointer",fontSize:11,color:"#888"}}>✕ إلغاء الاختيار</button>}
             </div>
-            <div style={{display:"flex",alignItems:"flex-end",gap:3,height:130,marginBottom:4,borderBottom:"1px solid #f0ece8",overflowX:"auto"}}>
+
+            {/* bars */}
+            <div style={{display:"flex",alignItems:"flex-end",gap:3,height:110,marginBottom:4,borderBottom:"2px solid #f0ece8",overflowX:"auto",paddingBottom:2}}>
               {(d.daily||[]).map((day,i)=>{
                 const total=day.paid+day.adj;
                 const pct=(total/maxDaily)*100;
-                const isSelected=selectedDate===day.date;
+                const isSel=selectedDate===day.date;
                 const isMax=total===maxDaily;
-                return (
-                  <div key={i} onClick={()=>setSelectedDate(selectedDate===day.date?null:day.date)}
+                return(
+                  <div key={i} onClick={()=>setSelectedDate(isSel?null:day.date)}
                     style={{display:"flex",flexDirection:"column",alignItems:"center",gap:2,
-                      minWidth:small?22:30,flex:"0 0 auto",cursor:"pointer"}}>
-                    <div style={{fontSize:8,color:isSelected?"#e85d20":"#888",fontWeight:isSelected?800:600,textAlign:"center",lineHeight:1.2}}>
-                      {total>0?omr(total).slice(0,6):''}
+                      minWidth:small?20:26,flex:"0 0 auto",cursor:"pointer",
+                      padding:"2px",borderRadius:4,
+                      background:isSel?"rgba(232,93,32,0.1)":"transparent",
+                      border:isSel?"1px solid #e85d20":"1px solid transparent"}}>
+                    <div style={{fontSize:7,color:isSel?"#e85d20":"#aaa",fontWeight:isSel?800:500,textAlign:"center",lineHeight:1}}>
+                      {total>500?fmt(total).slice(0,5):''}
                     </div>
-                    <div style={{
-                      width:"100%",height:Math.max(pct,3)+"%",minHeight:4,
-                      background:isSelected?"#e85d20":isMax?"#1e3a5f":"#93c5fd",
-                      borderRadius:"4px 4px 0 0",
-                      border:isSelected?"2px solid #c44b10":"none",
-                      transition:"all 0.2s"
-                    }}/>
-                  </div>
-                );
+                    <div style={{width:"100%",height:Math.max(pct,3)+"%",minHeight:4,
+                      background:isSel?"#e85d20":isMax?"#1e3a5f":"#93c5fd",
+                      borderRadius:"3px 3px 0 0",transition:"all 0.2s"}}/>
+                  </div>);
               })}
             </div>
-            {/* تسميات التواريخ */}
+            {/* dates */}
             <div style={{display:"flex",gap:3,overflowX:"auto",marginBottom:14}}>
               {(d.daily||[]).map((day,i)=>(
                 <div key={i} onClick={()=>setSelectedDate(selectedDate===day.date?null:day.date)}
-                  style={{minWidth:small?22:30,flex:"0 0 auto",textAlign:"center",
+                  style={{minWidth:small?20:26,flex:"0 0 auto",textAlign:"center",
                     fontSize:8,cursor:"pointer",fontWeight:700,
                     color:selectedDate===day.date?"#e85d20":"#aaa"}}>
                   {day.date.slice(8)}
-                </div>
-              ))}
+                </div>))}
             </div>
 
-            {/* ── تفاصيل اليوم المختار ── */}
-            {selectedDate && selDay && (
-              <div style={{
-                background:"linear-gradient(135deg,#fff7f3,#fff)",
-                border:"2px solid #e85d20",
-                borderRadius:14,padding:"14px 16px",marginBottom:14
-              }}>
+            {/* ══ تفاصيل اليوم المختار ══ */}
+            {selectedDate&&selDay&&(
+              <div style={{border:"2px solid #e85d20",borderRadius:16,overflow:"hidden",marginBottom:14,animation:"fadeUp 0.3s ease"}}>
+
                 {/* هيدر اليوم */}
-                <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:12,flexWrap:"wrap",gap:8}}>
-                  <div>
-                    <div style={{fontSize:16,fontWeight:900,color:"#e85d20"}}>📅 {selectedDate}</div>
-                    <div style={{fontSize:12,color:"#888",marginTop:2}}>{selDay.count} دفعة في هذا اليوم</div>
-                  </div>
-                  <div style={{display:"flex",gap:16}}>
-                    {[["المدفوع",omr(selDay.paid),"#16a34a"],["التسويات",omr(selDay.adj),"#d97706"],["الإجمالي",omr(selDay.paid+selDay.adj),"#e85d20"]].map(([l,v,c])=>(
-                      <div key={l} style={{textAlign:"center"}}>
-                        <div style={{fontSize:10,color:"#888",fontWeight:700,marginBottom:3}}>{l}</div>
-                        <div style={{fontSize:16,fontWeight:900,color:c}}>{v}</div>
+                <div style={{background:"linear-gradient(120deg,#e85d20,#c44b10)",padding:"14px 18px"}}>
+                  <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",flexWrap:"wrap",gap:10}}>
+                    <div>
+                      <div style={{fontSize:18,fontWeight:900,color:"#fff"}}>📅 {selectedDate}</div>
+                      <div style={{fontSize:11,color:"rgba(255,255,255,0.7)",marginTop:2}}>
+                        {selDay.count} دفعة &nbsp;·&nbsp; {selCollectors.length} محصّل &nbsp;·&nbsp; {selRegionArr.length} منطقة
                       </div>
-                    ))}
+                    </div>
+                    <div style={{display:"flex",gap:16}}>
+                      {[["المدفوع",fmt(selDay.paid),"#86efac"],
+                        ["التسويات",fmt(selDay.adj),"#fde68a"],
+                        ["الإجمالي",fmt(selDay.paid+selDay.adj),"#fff"]].map(([l,v,c])=>(
+                        <div key={l} style={{textAlign:"center"}}>
+                          <div style={{fontSize:10,color:"rgba(255,255,255,0.7)",marginBottom:3}}>{l}</div>
+                          <div style={{fontSize:16,fontWeight:900,color:c}}>{v}</div>
+                        </div>))}
+                    </div>
                   </div>
-                  <button onClick={()=>setSelectedDate(null)} style={{
-                    background:"#fff",border:"1px solid #ddd",borderRadius:8,
-                    padding:"4px 10px",cursor:"pointer",fontSize:12,color:"#888"
-                  }}>✕ إغلاق</button>
                 </div>
 
-                {/* المحصّلون في هذا اليوم */}
-                {selCollectors.length > 0 ? (
-                  <div>
-                    <div style={{fontSize:12,fontWeight:800,color:"#333",marginBottom:8}}>
-                      👤 المحصّلون في هذا اليوم ({selCollectors.length})
-                    </div>
-                    <div style={{
-                      display:"grid",gridTemplateColumns:"28px 1fr 100px 110px 120px",
-                      gap:6,padding:"6px 10px",
-                      background:"#e85d20",borderRadius:8,marginBottom:6
-                    }}>
-                      {["#","المحصّل","المنطقة","المدفوع","الإجمالي"].map((h,i)=>(
-                        <div key={i} style={{fontSize:11,fontWeight:800,color:"#fff"}}>{h}</div>
-                      ))}
-                    </div>
-                    {selCollectors.map((c,i)=>(
-                      <div key={i} style={{
-                        display:"grid",gridTemplateColumns:"28px 1fr 100px 110px 120px",
-                        gap:6,alignItems:"center",padding:"8px 10px",
-                        background:i%2===0?"#fff":"#fff7f3",
-                        borderRadius:7,marginBottom:3,border:"1px solid #fde8d8"
-                      }}>
-                        <div style={{fontSize:12,color:"#e85d20",fontWeight:700}}>{i+1}</div>
-                        <div style={{fontSize:13,fontWeight:700,color:"#000",overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{c.collector}</div>
-                        <div style={{fontSize:11,color:"#888",overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{c.region?.replace('Debt Collection Company','DC')?.replace('MUSCAT AND AL DAKHILIYAH','مسقط')}</div>
-                        <div style={{fontSize:13,fontWeight:800,color:"#16a34a"}}>{omr(c.paid)}</div>
-                        <div style={{fontSize:14,fontWeight:900,color:"#e85d20"}}>{omr(c.paid+c.adj)}</div>
+                {/* تبويبات اليوم */}
+                {(() => {
+                  const [dayTab, setDayTab] = useState('collectors');
+                  return (
+                    <div>
+                      <div style={{display:"flex",background:"#fff7f3",borderBottom:"1px solid #fde8d8"}}>
+                        {[['collectors','👤 المحصّلون'],['regions','🗺 المناطق'],['transactions','📋 الدفعات']].map(([id,label])=>(
+                          <button key={id} onClick={()=>setDayTab(id)} style={{
+                            flex:1,padding:"8px 4px",border:"none",cursor:"pointer",
+                            background:dayTab===id?"#fff":"transparent",
+                            color:dayTab===id?"#e85d20":"#888",
+                            fontWeight:dayTab===id?800:600,fontSize:small?11:12,
+                            fontFamily:"'Cairo',sans-serif",
+                            borderBottom:dayTab===id?"2px solid #e85d20":"2px solid transparent"}}>
+                            {label}
+                          </button>))}
                       </div>
-                    ))}
-                  </div>
-                ) : (
-                  <div style={{textAlign:"center",color:"#aaa",fontSize:13,padding:"20px 0"}}>
-                    ℹ️ ارفع ملف Bulk Payment جديد لعرض تفاصيل المحصّلين
-                  </div>
-                )}
+
+                      <div style={{padding:"12px 16px",maxHeight:400,overflowY:"auto"}}>
+
+                        {/* ── المحصّلون ── */}
+                        {dayTab==='collectors'&&(
+                          <div>
+                            <div style={{display:"grid",gridTemplateColumns:"28px 1fr 90px 100px 110px",
+                              gap:6,padding:"6px 8px",background:"#e85d20",borderRadius:8,marginBottom:8}}>
+                              {["#","المحصّل","المنطقة","المدفوع","الإجمالي"].map((h,i)=>(
+                                <div key={i} style={{fontSize:11,fontWeight:800,color:"#fff"}}>{h}</div>))}
+                            </div>
+                            {selCollectors.map((c,i)=>{
+                              const col=REG_COLORS_MAP[c.region]||'#888';
+                              return(
+                              <div key={i} style={{
+                                display:"grid",gridTemplateColumns:"28px 1fr 90px 100px 110px",
+                                gap:6,alignItems:"center",padding:"8px",
+                                background:i%2===0?"#fff":"#fff7f3",
+                                borderRadius:8,marginBottom:3,border:"1px solid #fde8d8"}}>
+                                <div style={{width:22,height:22,borderRadius:6,background:"#e85d2020",
+                                  border:"1px solid #e85d2044",display:"flex",alignItems:"center",
+                                  justifyContent:"center",fontSize:11,fontWeight:800,color:"#e85d20"}}>{i+1}</div>
+                                <div>
+                                  <div style={{fontSize:13,fontWeight:800,color:"#000",overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{c.collector}</div>
+                                  {c.branch&&<div style={{fontSize:10,color:"#888"}}>{c.branch}</div>}
+                                </div>
+                                <div style={{fontSize:11,color:col,fontWeight:700,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>
+                                  {REG_AR_MAP[c.region]||c.region}
+                                </div>
+                                <div style={{fontSize:13,fontWeight:800,color:"#16a34a"}}>{fmt(c.paid)}</div>
+                                <div style={{fontSize:14,fontWeight:900,color:"#e85d20"}}>{fmt(c.paid+c.adj)}</div>
+                              </div>);})}
+                          </div>
+                        )}
+
+                        {/* ── المناطق ── */}
+                        {dayTab==='regions'&&(
+                          <div>
+                            <div style={{display:"grid",gridTemplateColumns:"1fr 120px 120px 130px 60px",
+                              gap:6,padding:"6px 8px",background:"#e85d20",borderRadius:8,marginBottom:8}}>
+                              {["المنطقة","المدفوع","التسويات","الإجمالي","دفعات"].map((h,i)=>(
+                                <div key={i} style={{fontSize:11,fontWeight:800,color:"#fff",textAlign:i>0?"center":"right"}}>{h}</div>))}
+                            </div>
+                            {selRegionArr.map((r,i)=>{
+                              const col=REG_COLORS_MAP[r.nameEn]||'#888';
+                              return(
+                              <div key={i} style={{
+                                display:"grid",gridTemplateColumns:"1fr 120px 120px 130px 60px",
+                                gap:6,alignItems:"center",padding:"10px",
+                                background:i%2===0?"#fff":"#fff7f3",
+                                borderRadius:8,marginBottom:4,
+                                border:`1px solid #fde8d8`,borderRight:`4px solid ${col}`}}>
+                                <div>
+                                  <div style={{fontSize:14,fontWeight:800,color:"#000"}}>{REG_AR_MAP[r.nameEn]||r.nameEn}</div>
+                                  <div style={{fontSize:10,color:"#888"}}>{r.nameEn}</div>
+                                </div>
+                                <div style={{textAlign:"center",fontSize:13,fontWeight:800,color:"#16a34a"}}>{fmt(r.paid)}</div>
+                                <div style={{textAlign:"center",fontSize:13,fontWeight:800,color:"#d97706"}}>{fmt(r.adj)}</div>
+                                <div style={{textAlign:"center",fontSize:14,fontWeight:900,color:col}}>{fmt(r.paid+r.adj)}</div>
+                                <div style={{textAlign:"center"}}>
+                                  <span style={{background:`${col}22`,color:col,borderRadius:6,padding:"2px 6px",fontSize:11,fontWeight:700}}>{r.count}</span>
+                                </div>
+                              </div>);})}
+                          </div>
+                        )}
+
+                        {/* ── الدفعات التفصيلية ── */}
+                        {dayTab==='transactions'&&(
+                          <div>
+                            <div style={{fontSize:11,color:"#888",marginBottom:8}}>
+                              {selCollectors.reduce((s,c)=>s+c.count,0)} دفعة إجمالية
+                            </div>
+                            <div style={{display:"grid",gridTemplateColumns:"1fr 1fr 100px 110px",
+                              gap:6,padding:"6px 8px",background:"#e85d20",borderRadius:8,marginBottom:8}}>
+                              {["المحصّل","المنطقة/الفرع","المدفوع","الإجمالي"].map((h,i)=>(
+                                <div key={i} style={{fontSize:11,fontWeight:800,color:"#fff"}}>{h}</div>))}
+                            </div>
+                            {selCollectors.map((c,i)=>
+                              (c.debtors||[]).map((deb,j)=>(
+                              <div key={`${i}-${j}`} style={{
+                                display:"grid",gridTemplateColumns:"1fr 1fr 100px 110px",
+                                gap:6,alignItems:"center",padding:"7px 8px",
+                                background:i%2===0?"#fff":"#fff7f3",
+                                borderRadius:7,marginBottom:2,border:"1px solid #fde8d8"}}>
+                                <div>
+                                  <div style={{fontSize:12,fontWeight:700,color:"#000"}}>{c.collector}</div>
+                                  <div style={{fontSize:10,color:"#888",overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{deb.name}</div>
+                                </div>
+                                <div>
+                                  <div style={{fontSize:11,color:REG_COLORS_MAP[c.region]||'#888',fontWeight:700}}>{REG_AR_MAP[c.region]||c.region}</div>
+                                  {c.branch&&<div style={{fontSize:10,color:"#aaa"}}>{c.branch}</div>}
+                                </div>
+                                <div style={{fontSize:13,fontWeight:800,color:"#16a34a"}}>{fmt(deb.paid)}</div>
+                                <div style={{fontSize:13,fontWeight:800,color:"#e85d20"}}>{fmt(deb.paid+deb.adj)}</div>
+                              </div>))
+                            )}
+                          </div>
+                        )}
+
+                      </div>
+                    </div>
+                  );
+                })()}
               </div>
             )}
 
             {/* جدول يومي */}
-            <div style={{maxHeight:280,overflowY:"auto"}}>
+            <div style={{maxHeight:260,overflowY:"auto"}}>
               <div style={{display:"grid",gridTemplateColumns:"110px 1fr 130px 80px",gap:6,
                 padding:"6px 10px",background:"#1e3a5f",borderRadius:8,marginBottom:6}}>
                 {["التاريخ","شريط","المبلغ","عدد"].map((h,i)=>(
-                  <div key={i} style={{fontSize:11,fontWeight:800,color:"#fff",textAlign:i>=2?"center":"right"}}>{h}</div>
-                ))}
+                  <div key={i} style={{fontSize:11,fontWeight:800,color:"#fff",textAlign:i>=2?"center":"right"}}>{h}</div>))}
               </div>
               {[...(d.daily||[])].reverse().map((day,i)=>{
                 const total=day.paid+day.adj;
-                const isSelected=selectedDate===day.date;
-                return (
-                  <div key={i} onClick={()=>setSelectedDate(selectedDate===day.date?null:day.date)}
-                    style={{
-                      display:"grid",gridTemplateColumns:"110px 1fr 130px 80px",
-                      gap:6,alignItems:"center",padding:"8px 10px",
-                      background:isSelected?"#fff7f3":i%2===0?"#fff":"#f8f4f1",
-                      borderRadius:8,marginBottom:3,
-                      border:isSelected?"1.5px solid #e85d20":"1px solid #f0ece8",
-                      cursor:"pointer",transition:"all 0.2s"
-                    }}>
-                    <div style={{fontSize:13,fontWeight:isSelected?900:700,color:isSelected?"#e85d20":"#111"}}>
-                      {day.date}
-                    </div>
-                    <div style={{background:"#f0ece8",borderRadius:4,height:8,overflow:"hidden"}}>
-                      <div style={{width:(total/maxDaily*100)+"%",height:"100%",
-                        background:isSelected?"#e85d20":"#1e3a5f",borderRadius:4}}/>
-                    </div>
-                    <div style={{fontSize:13,fontWeight:800,color:"#16a34a",textAlign:"center"}}>{omr(total)}</div>
-                    <div style={{fontSize:12,fontWeight:700,color:"#888",textAlign:"center"}}>{day.count}</div>
+                const isSel=selectedDate===day.date;
+                return(
+                <div key={i} onClick={()=>setSelectedDate(isSel?null:day.date)}
+                  style={{display:"grid",gridTemplateColumns:"110px 1fr 130px 80px",
+                    gap:6,alignItems:"center",padding:"8px 10px",
+                    background:isSel?"#fff7f3":i%2===0?"#fff":"#f8f4f1",
+                    borderRadius:8,marginBottom:3,
+                    border:isSel?"1.5px solid #e85d20":"1px solid #f0ece8",
+                    cursor:"pointer",transition:"all 0.15s"}}>
+                  <div style={{fontSize:13,fontWeight:isSel?900:700,color:isSel?"#e85d20":"#111"}}>{day.date}</div>
+                  <div style={{background:"#f0ece8",borderRadius:4,height:7,overflow:"hidden"}}>
+                    <div style={{width:(total/maxDaily*100)+"%",height:"100%",
+                      background:isSel?"#e85d20":"#1e3a5f",borderRadius:4}}/>
                   </div>
-                );
-              })}
+                  <div style={{fontSize:13,fontWeight:800,color:"#16a34a",textAlign:"center"}}>{fmt(total)}</div>
+                  <div style={{fontSize:12,fontWeight:700,color:"#888",textAlign:"center"}}>{day.count}</div>
+                </div>);})}
             </div>
           </div>
         )}
 
         {/* ══ تبويب المناطق ══ */}
-        {activeTab==='region' && (
+        {activeTab==='region'&&(
           <div>
-            {(d.byRegion||[]).map((r,i)=>(
+            <div style={{display:"grid",gridTemplateColumns:small?"1fr":"28px 1fr 120px 120px 130px 55px",
+              gap:8,padding:"7px 10px",background:"#1e3a5f",borderRadius:8,marginBottom:8}}>
+              {(small?["المنطقة","الإجمالي"]:["#","المنطقة","المدفوع","التسويات","الإجمالي","دفعات"]).map((h,i)=>(
+                <div key={i} style={{fontSize:11,fontWeight:800,color:"#fff",textAlign:i>=2?"center":"right"}}>{h}</div>))}
+            </div>
+            {(d.byRegion||[]).map((r,i)=>{
+              const col=r.color||REG_COLORS_MAP[r.nameEn]||'#888';
+              return(
               <div key={i} style={{
-                display:"grid",gridTemplateColumns:small?"1fr":"1fr 120px 120px 140px 60px",
-                gap:8,alignItems:"center",padding:"12px 14px",
-                background:i%2===0?"#fff":"#f8f4f1",
-                borderRadius:10,marginBottom:6,
-                border:`1px solid #f0ece8`,
-                borderRight:`4px solid ${r.color||'#888'}`
-              }}>
+                display:"grid",gridTemplateColumns:small?"1fr":"28px 1fr 120px 120px 130px 55px",
+                gap:8,alignItems:"center",padding:"11px 10px",
+                background:i%2===0?"#fff":"#f8f4f1",borderRadius:10,
+                marginBottom:5,border:`1px solid #f0ece8`,borderRight:`4px solid ${col}`}}>
+                {!small&&<div style={{width:24,height:24,borderRadius:6,background:`${col}22`,
+                  border:`1px solid ${col}44`,display:"flex",alignItems:"center",
+                  justifyContent:"center",fontSize:11,fontWeight:800,color:col}}>{i+1}</div>}
                 <div>
-                  <div style={{fontSize:15,fontWeight:800,color:"#000"}}>{r.nameAr}</div>
-                  {!small&&<div style={{fontSize:11,color:"#888",marginTop:2}}>{r.nameEn} · {r.count} دفعة</div>}
+                  <div style={{fontSize:15,fontWeight:900,color:"#000"}}>{r.nameAr||REG_AR_MAP[r.nameEn]||r.nameEn}</div>
+                  {!small&&<div style={{fontSize:11,color:"#888",marginTop:1}}>{r.nameEn} · {r.count} دفعة</div>}
                 </div>
                 {!small&&<>
                   <div style={{textAlign:"center"}}>
                     <div style={{fontSize:10,color:"#555",fontWeight:700,marginBottom:3}}>المدفوع</div>
-                    <div style={{fontSize:14,fontWeight:800,color:"#16a34a"}}>{omr(r.paid)}</div>
+                    <div style={{fontSize:14,fontWeight:800,color:"#16a34a"}}>{fmt(r.paid)}</div>
                   </div>
                   <div style={{textAlign:"center"}}>
                     <div style={{fontSize:10,color:"#555",fontWeight:700,marginBottom:3}}>التسويات</div>
-                    <div style={{fontSize:14,fontWeight:800,color:"#d97706"}}>{omr(r.adj)}</div>
+                    <div style={{fontSize:14,fontWeight:800,color:"#d97706"}}>{fmt(r.adj)}</div>
                   </div>
                 </>}
-                <div style={{textAlign:"center",background:`${r.color||'#888'}15`,borderRadius:8,padding:"6px"}}>
+                <div style={{background:`${col}12`,borderRadius:8,padding:"6px",textAlign:"center"}}>
                   <div style={{fontSize:10,color:"#555",fontWeight:700,marginBottom:2}}>الإجمالي</div>
-                  <div style={{fontSize:small?15:17,fontWeight:900,color:r.color||'#888'}}>{omr(r.paid+r.adj)}</div>
+                  <div style={{fontSize:small?15:17,fontWeight:900,color:col}}>{fmt(r.paid+r.adj)}</div>
                 </div>
                 <div style={{textAlign:"center"}}>
-                  <span style={{fontSize:11,background:`${r.color||'#888'}22`,color:r.color||'#888',borderRadius:6,padding:"3px 8px",fontWeight:700}}>{r.count}</span>
+                  <span style={{fontSize:11,background:`${col}20`,color:col,borderRadius:6,padding:"3px 7px",fontWeight:700}}>{r.count}</span>
                 </div>
-              </div>
-            ))}
+              </div>);})}
           </div>
         )}
 
         {/* ══ تبويب المحصّلون ══ */}
-        {activeTab==='collector' && (
+        {activeTab==='collector'&&(
           <div>
-            <div style={{display:"grid",gridTemplateColumns:"28px 1fr 130px 130px 50px",
-              gap:6,padding:"6px 10px",background:"#1e3a5f",borderRadius:8,marginBottom:8}}>
-              {["#","المحصّل","المدفوع","الإجمالي","عدد"].map((h,i)=>(
-                <div key={i} style={{fontSize:11,fontWeight:800,color:"#fff",textAlign:i>=2?"center":"right"}}>{h}</div>
-              ))}
+            <div style={{display:"grid",gridTemplateColumns:"28px 1fr 90px 120px 120px 50px",
+              gap:6,padding:"7px 10px",background:"#1e3a5f",borderRadius:8,marginBottom:8}}>
+              {["#","المحصّل","المنطقة","المدفوع","الإجمالي","عدد"].map((h,i)=>(
+                <div key={i} style={{fontSize:11,fontWeight:800,color:"#fff",textAlign:i>=2?"center":"right"}}>{h}</div>))}
             </div>
             {(d.topCollectors||[]).map((c,i)=>{
               const total=c.paid+c.adj;
               const pct=Math.round((total/maxCol)*100);
-              return (
-                <div key={i} style={{marginBottom:6}}>
-                  <div style={{
-                    display:"grid",gridTemplateColumns:"28px 1fr 130px 130px 50px",
-                    gap:6,alignItems:"center",padding:"9px 10px",
-                    background:i%2===0?"#fff":"#f8f4f1",
-                    borderRadius:8,border:"1px solid #f0ece8"
-                  }}>
-                    <div style={{width:24,height:24,borderRadius:7,background:"#1e3a5f22",
-                      border:"1px solid #1e3a5f44",display:"flex",alignItems:"center",
-                      justifyContent:"center",fontSize:11,fontWeight:800,color:"#1e3a5f"}}>{i+1}</div>
-                    <div>
-                      <div style={{fontSize:13,fontWeight:700,color:"#000",overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{c.name}</div>
-                      <div style={{height:4,background:"#f0ece8",borderRadius:2,marginTop:3,overflow:"hidden"}}>
-                        <div style={{width:pct+"%",height:"100%",background:"#1e3a5f",borderRadius:2}}/>
-                      </div>
-                    </div>
-                    <div style={{textAlign:"center",fontSize:13,fontWeight:800,color:"#16a34a"}}>{omr(c.paid)}</div>
-                    <div style={{textAlign:"center",fontSize:14,fontWeight:900,color:"#1e3a5f"}}>{omr(total)}</div>
-                    <div style={{textAlign:"center",fontSize:12,fontWeight:700,color:"#888"}}>{c.count}</div>
+              const col=REG_COLORS_MAP[c.regionEn||'']||'#1e3a5f';
+              return(
+              <div key={i} style={{
+                display:"grid",gridTemplateColumns:"28px 1fr 90px 120px 120px 50px",
+                gap:6,alignItems:"center",padding:"9px 10px",
+                background:i%2===0?"#fff":"#f8f4f1",
+                borderRadius:9,marginBottom:4,border:"1px solid #f0ece8",
+                borderRight:`3px solid ${col}`}}>
+                <div style={{width:24,height:24,borderRadius:6,background:`${col}18`,
+                  border:`1px solid ${col}40`,display:"flex",alignItems:"center",
+                  justifyContent:"center",fontSize:11,fontWeight:800,color:col}}>{i+1}</div>
+                <div>
+                  <div style={{fontSize:13,fontWeight:800,color:"#000",overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{c.name}</div>
+                  <div style={{height:4,background:"#f0ece8",borderRadius:2,marginTop:3,overflow:"hidden"}}>
+                    <div style={{width:pct+"%",height:"100%",background:col,borderRadius:2}}/>
                   </div>
                 </div>
-              );
-            })}
+                <div style={{textAlign:"center",fontSize:10,color:col,fontWeight:700,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>
+                  {c.region}
+                </div>
+                <div style={{textAlign:"center",fontSize:13,fontWeight:800,color:"#16a34a"}}>{fmt(c.paid)}</div>
+                <div style={{textAlign:"center",fontSize:14,fontWeight:900,color:col}}>{fmt(total)}</div>
+                <div style={{textAlign:"center",fontSize:11,fontWeight:700,color:"#888"}}>{c.count}</div>
+              </div>);})}
           </div>
         )}
 
@@ -729,6 +808,7 @@ function BulkPaymentSection({ bulk, small }) {
     </div>
   );
 }
+
 
 
 // ── HistoryModal — السجل التاريخي والمقارنة ──────────────────────────────────
