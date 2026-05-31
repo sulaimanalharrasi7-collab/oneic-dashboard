@@ -6289,13 +6289,26 @@ function BulkPaymentSection({ bulk, small }) {
       border:"1.5px solid #f0ece8",marginBottom:18,overflow:"hidden"}}>
 
       {/* ══ HEADER ══ */}
-      <div style={{background:"linear-gradient(120deg,#1e3a5f,#2d5a8e)",padding:small?"12px 14px":"14px 20px"}}>
-        <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",flexWrap:"wrap",gap:10}}>
-          <div>
-            <div style={{fontSize:small?15:18,fontWeight:900,color:"#fff"}}>💳 Bulk Payment Report</div>
-            <div style={{fontSize:11,color:"rgba(255,255,255,0.6)",marginTop:2}}>
-              {d.dateRange?.from} → {d.dateRange?.to} &nbsp;·&nbsp; {d.totalRecords?.toLocaleString()} دفعة
-              {d.fileName&&<span> &nbsp;·&nbsp; {d.fileName}</span>}
+      <div style={{background:"linear-gradient(135deg,#1e3a5f 0%,#2d5a8e 50%,#1e3a5f 100%)",padding:small?"14px 16px":"18px 24px"}}>
+        <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",flexWrap:"wrap",gap:12}}>
+          <div style={{display:"flex",alignItems:"center",gap:14}}>
+            <div style={{
+              width:48,height:48,borderRadius:14,
+              background:"rgba(255,255,255,0.15)",
+              border:"1.5px solid rgba(255,255,255,0.25)",
+              display:"flex",alignItems:"center",justifyContent:"center",
+              fontSize:24,flexShrink:0
+            }}>💳</div>
+            <div>
+              <div style={{fontSize:small?16:22,fontWeight:900,color:"#fff",letterSpacing:0.3}}>
+                Bulk Payment Report
+              </div>
+              <div style={{fontSize:11,color:"rgba(255,255,255,0.55)",marginTop:3,display:"flex",gap:8,flexWrap:"wrap"}}>
+                <span>📅 {d.dateRange?.from} → {d.dateRange?.to}</span>
+                <span>·</span>
+                <span>📋 {d.totalRecords?.toLocaleString()} دفعة</span>
+                {d.fileName&&<><span>·</span><span>📁 {d.fileName}</span></>}
+              </div>
             </div>
           </div>
           <div onClick={()=>!bulkUploading&&fileRef.current?.click()}
@@ -6317,45 +6330,59 @@ function BulkPaymentSection({ bulk, small }) {
         </div>
 
         {/* إجماليات */}
-        <div style={{display:"grid",gridTemplateColumns:"repeat(3,1fr)",gap:8,marginTop:12}}>
-          {[["إجمالي المدفوع",fmt(d.totalPaid),"#86efac"],
-            ["إجمالي التسويات",fmt(d.totalAdj),"#fde68a"],
-            ["الإجمالي الكلي",fmt(d.totalPaid+d.totalAdj),"#fff"]].map(([l,v,c])=>(
-            <div key={l} style={{background:"rgba(255,255,255,0.1)",borderRadius:10,padding:"8px 10px",textAlign:"center"}}>
-              <div style={{fontSize:10,color:"rgba(255,255,255,0.65)",fontWeight:700,marginBottom:3}}>{l}</div>
-              <div style={{fontSize:small?13:16,fontWeight:900,color:c}}>{v}</div>
+        <div style={{display:"grid",gridTemplateColumns:"repeat(3,1fr)",gap:10,marginTop:14}}>
+          {[["💰 إجمالي المدفوع",fmt(d.totalPaid),"#86efac","#16a34a"],
+            ["📊 إجمالي التسويات",fmt(d.totalAdj),"#fde68a","#d97706"],
+            ["🏆 الإجمالي الكلي",fmt(d.totalPaid+d.totalAdj),"#fff","#fff"]].map(([l,v,c,b])=>(
+            <div key={l} style={{
+              background:"rgba(255,255,255,0.1)",
+              border:"1px solid rgba(255,255,255,0.15)",
+              borderRadius:12,padding:"12px 10px",textAlign:"center"
+            }}>
+              <div style={{fontSize:small?10:12,color:"rgba(255,255,255,0.65)",fontWeight:700,marginBottom:6}}>{l}</div>
+              <div style={{fontSize:small?16:22,fontWeight:900,color:c,lineHeight:1}}>{v}</div>
+              <div style={{fontSize:10,color:"rgba(255,255,255,0.4)",marginTop:3}}>OMR</div>
             </div>))}
         </div>
 
         {/* إحصاءات ذكية */}
         {d.stats&&(
           <div style={{display:"grid",gridTemplateColumns:small?"1fr 1fr":"repeat(4,1fr)",
-            gap:0,marginTop:10,borderTop:"1px solid rgba(255,255,255,0.15)",paddingTop:10}}>
-            {[["📅 أيام نشطة",d.stats.activeDays+" يوم",""],
-              ["👤 محصّلون",d.stats.totalCollectors+" محصّل",""],
-              ["🏆 أفضل يوم",d.stats.bestDay?.date?.slice(5)||"—",fmt(d.stats.bestDay?.paid||0)],
-              ["📈 متوسط يومي",fmt(d.stats.avgDaily||0),"OMR"],
-            ].map(([l,v,s])=>(
-              <div key={l} style={{textAlign:"center",padding:"4px",borderLeft:"1px solid rgba(255,255,255,0.1)"}}>
-                <div style={{fontSize:9,color:"rgba(255,255,255,0.55)",fontWeight:700}}>{l}</div>
-                <div style={{fontSize:13,fontWeight:900,color:"#fff"}}>{v}</div>
-                {s&&<div style={{fontSize:9,color:"rgba(255,255,255,0.45)"}}>{s}</div>}
+            gap:8,marginTop:14,borderTop:"1px solid rgba(255,255,255,0.15)",paddingTop:14}}>
+            {[
+              ["📅 أيام نشطة", d.stats.activeDays, "يوم", "#bfdbfe"],
+              ["👤 المحصّلون",  d.stats.totalCollectors, "محصّل", "#d9f99d"],
+              ["🏆 أفضل يوم",  d.stats.bestDay?.date?.slice(5)||"—", fmt(d.stats.bestDay?.paid||0)+" OMR", "#fde68a"],
+              ["📈 متوسط يومي", fmt(d.stats.avgDaily||0), "OMR", "#e9d5ff"],
+            ].map(([l,v,s,c])=>(
+              <div key={l} style={{
+                textAlign:"center",padding:"10px 8px",
+                background:"rgba(255,255,255,0.08)",
+                border:"1px solid rgba(255,255,255,0.12)",
+                borderRadius:10
+              }}>
+                <div style={{fontSize:10,color:"rgba(255,255,255,0.6)",fontWeight:700,marginBottom:4}}>{l}</div>
+                <div style={{fontSize:small?16:20,fontWeight:900,color:c,lineHeight:1}}>{v}</div>
+                <div style={{fontSize:10,color:"rgba(255,255,255,0.45)",marginTop:3}}>{s}</div>
               </div>))}
           </div>
         )}
       </div>
 
       {/* ══ TABS ══ */}
-      <div style={{display:"flex",borderBottom:"2px solid #f0ece8",background:"#fafafa"}}>
+      <div style={{display:"flex",borderBottom:"2px solid #f0ece8",background:"#f8f9fc",padding:"0 8px"}}>
         {tabs.map(t=>(
           <button key={t.id} onClick={()=>{setActiveTab(t.id);if(t.id!=='daily')setSelectedDate(null);}} style={{
-            flex:1,padding:"10px 6px",border:"none",cursor:"pointer",
-            background:activeTab===t.id?"#fff":"transparent",
-            color:activeTab===t.id?"#1e3a5f":"#888",
-            fontWeight:activeTab===t.id?800:600,fontSize:small?12:13,
+            flex:1,padding:"13px 6px",border:"none",cursor:"pointer",
+            background:"transparent",
+            color:activeTab===t.id?"#1e3a5f":"#999",
+            fontWeight:activeTab===t.id?900:600,
+            fontSize:small?13:15,
             fontFamily:"'Cairo',sans-serif",
-            borderBottom:activeTab===t.id?"2px solid #1e3a5f":"2px solid transparent",
-            transition:"all 0.2s"}}>{t.label}</button>
+            borderBottom:activeTab===t.id?"3px solid #1e3a5f":"3px solid transparent",
+            transition:"all 0.2s",
+            letterSpacing:0.3
+          }}>{t.label}</button>
         ))}
       </div>
 
