@@ -6787,12 +6787,19 @@ function BulkPaymentSection({ bulk, small }) {
     try {
       const parsed = await parseBulkPayment(file);
 
-      // ── دمج مع البيانات المحفوظة ─────────────────────────────────────────
+      // ── قراءة البيانات المحفوظة (localStorage أولاً، ثم state الحالية) ────
       let existing = null;
       try {
         const saved = localStorage.getItem('oneic_bulk_data');
-        if (saved) existing = JSON.parse(saved);
+        if (saved) {
+          const p = JSON.parse(saved);
+          if (p?.daily?.length > 0) existing = p;
+        }
       } catch(e) {}
+      // إذا لم يجد في localStorage، استخدم الـ state الحالية
+      if (!existing && bulkData?.daily?.length > 0 && bulkData !== BULK_SEED) {
+        existing = bulkData;
+      }
 
       let final = parsed;
 
@@ -6846,7 +6853,21 @@ function BulkPaymentSection({ bulk, small }) {
         };
       }
 
+      // ── حفظ محلي ─────────────────────────────────────────────────────────
       try { localStorage.setItem('oneic_bulk_data', JSON.stringify(final)); } catch(e){}
+
+      // ── رفع للـ JSONbin ────────────────────────────────────────────────────
+      try {
+        await fetch(`https://api.jsonbin.io/v3/b/${JSONBIN_ID}`, {
+          method: 'PUT',
+          headers: {
+            'Content-Type': 'application/json',
+            'X-Master-Key': JSONBIN_KEY
+          },
+          body: JSON.stringify({ bulk: final })
+        });
+      } catch(e) { console.warn('JSONbin bulk upload failed:', e); }
+
       setBulkData(final);
       setSelectedDate(null);
       setBulkSuccess(true);
@@ -6856,10 +6877,29 @@ function BulkPaymentSection({ bulk, small }) {
   };
 
   useEffect(() => {
-    try {
-      const saved = localStorage.getItem('oneic_bulk_data');
-      if (saved) { const p=JSON.parse(saved); if(p?.daily?.length>0) setBulkData(p); }
-    } catch(e) {}
+    async function loadBulk() {
+      // أولاً: جرّب JSONbin
+      try {
+        const res = await fetch(`https://api.jsonbin.io/v3/b/${JSONBIN_ID}/latest`, {
+          headers: { 'X-Master-Key': JSONBIN_KEY, 'X-Bin-Meta': 'false' }
+        });
+        if (res.ok) {
+          const json = await res.json();
+          const d = json.bulk || json;
+          if (d?.daily?.length > 0) {
+            setBulkData(d);
+            try { localStorage.setItem('oneic_bulk_data', JSON.stringify(d)); } catch(e) {}
+            return;
+          }
+        }
+      } catch(e) { console.warn('JSONbin load failed, using localStorage'); }
+      // ثانياً: localStorage
+      try {
+        const saved = localStorage.getItem('oneic_bulk_data');
+        if (saved) { const p=JSON.parse(saved); if(p?.daily?.length>0) setBulkData(p); }
+      } catch(e) {}
+    }
+    loadBulk();
   }, []);
 
   const d = bulkData;
