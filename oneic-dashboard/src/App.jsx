@@ -6286,6 +6286,335 @@ function handleBulkPrint(d, filterFrom, filterTo) {
   setTimeout(()=>w.print(), 2000);
 }
 
+
+// ── useWindowSize ──────────────────────────────────────────────────────────
+function useWindowSize() {
+  const [size, setSize] = useState({ w: window.innerWidth, h: window.innerHeight });
+  useEffect(() => {
+    const fn = () => setSize({ w: window.innerWidth, h: window.innerHeight });
+    window.addEventListener("resize", fn);
+    return () => window.removeEventListener("resize", fn);
+  }, []);
+  return size;
+}
+
+// ── Clock ──────────────────────────────────────────────────────────────────
+function Clock({ small }) {
+  const [t, setT] = useState(new Date());
+  useEffect(()=>{const id=setInterval(()=>setT(new Date()),1000);return()=>clearInterval(id);},[]);
+  const hh=String(t.getHours()).padStart(2,'0');
+  const mm=String(t.getMinutes()).padStart(2,'0');
+  const ss=String(t.getSeconds()).padStart(2,'0');
+  const days=['الأحد','الاثنين','الثلاثاء','الأربعاء','الخميس','الجمعة','السبت'];
+  const months=['يناير','فبراير','مارس','أبريل','مايو','يونيو','يوليو','أغسطس','سبتمبر','أكتوبر','نوفمبر','ديسمبر'];
+  return (
+    <div style={{textAlign:"right"}}>
+      <div style={{fontSize:small?18:26,fontWeight:800,color:"#e85d20",letterSpacing:2,fontVariantNumeric:"tabular-nums",lineHeight:1}}>
+        {hh}:{mm}:{ss}
+      </div>
+      {!small&&<div style={{fontSize:13,color:"#555",marginTop:4,fontWeight:600}}>
+        {days[t.getDay()]} {t.getDate()} {months[t.getMonth()]} {t.getFullYear()}
+      </div>}
+    </div>
+  );
+}
+
+// ── UploadBtn ─────────────────────────────────────────────────────────────
+function UploadBtn({onFile,uploading,success,error,small}) {
+  const ref = useRef(null);
+  return (
+    <div onClick={()=>!uploading&&ref.current?.click()}
+      onDrop={e=>{e.preventDefault();const f=e.dataTransfer.files?.[0];if(f)onFile(f);}}
+      onDragOver={e=>e.preventDefault()}
+      style={{border:`2px dashed ${success?"#16a34a":uploading?"#e85d20":"#ddd"}`,
+        borderRadius:12,padding:small?"8px 14px":"10px 20px",cursor:uploading?"default":"pointer",
+        background:success?"#f0fdf4":uploading?"#fff7f3":"#fff",
+        textAlign:"center",minWidth:small?140:175,transition:"all 0.3s"}}>
+      <input ref={ref} type="file" accept=".xls,.xlsx" style={{display:"none"}}
+        onChange={e=>{const f=e.target.files?.[0];if(f)onFile(f);e.target.value="";}}/>
+      {uploading?<div style={{color:"#e85d20",fontSize:13,fontWeight:700}}>⏳ جاري التحليل...</div>
+       :success?<div style={{color:"#16a34a",fontSize:13,fontWeight:700}}>✅ تم التحديث</div>
+       :<><div style={{fontSize:small?16:20}}>📂</div>
+          <div style={{fontSize:small?12:13,color:"#e85d20",fontWeight:700,marginTop:1}}>رفع ملف يومي</div>
+          {!small&&<div style={{fontSize:11,color:"#999",marginTop:1}}>يستبدل البيانات تلقائياً</div>}
+        </>}
+      {error&&<div style={{color:"#dc2626",fontSize:10,marginTop:3,fontWeight:700}}>⚠ {error}</div>}
+    </div>
+  );
+}
+
+// ── AmountCell ─────────────────────────────────────────────────────────────
+function AmountCell({label,value,color,isTotal,small}) {
+  return (
+    <div className="amount-cell" style={{textAlign:"center",flex:1,padding:small?"4px 6px":"6px 10px"}}>
+      <div style={{fontSize:small?11:13,color:"#333",fontWeight:800,marginBottom:small?3:5}}>{label}</div>
+      <div style={{fontSize:isTotal?(small?17:22):(small?14:19),fontWeight:900,color,lineHeight:1}}>{value}</div>
+    </div>
+  );
+}
+
+// ── AmountRow ──────────────────────────────────────────────────────────────
+function AmountRow({paid,adj,color,small}) {
+  return (
+    <div className="amount-row" style={{display:"flex",alignItems:"stretch",borderRadius:10,overflow:"hidden",border:"1px solid #f0ece8",background:"#fff"}}>
+      <AmountCell label="المدفوع"  value={omr(paid)}     color="#16a34a" small={small}/>
+      <div style={{width:1,background:"#f0ece8"}}/>
+      <AmountCell label="التسويات" value={omr(adj)}      color="#d97706" small={small}/>
+      <div style={{width:1,background:"#f0ece8"}}/>
+      <AmountCell label="الإجمالي" value={omr(paid+adj)} color={color}   isTotal small={small}/>
+    </div>
+  );
+}
+
+// ── SectionHeader ──────────────────────────────────────────────────────────
+function SectionHeader({title,paid,adj,color,small}) {
+  return (
+    <div style={{background:`linear-gradient(120deg,${color},${color}cc)`,
+      padding:small?"12px 14px":"14px 20px",
+      display:"flex",justifyContent:"space-between",alignItems:"center",flexWrap:"wrap",gap:8}}>
+      <div style={{fontSize:small?15:19,fontWeight:900,color:"#fff"}}>{title}</div>
+      <div style={{display:"flex",gap:small?14:24}}>
+        {[["المدفوع",omr(paid),"#fff"],["التسويات",omr(adj),"#fde68a"],["الإجمالي",omr(paid+adj),"#fff"]].map(([l,v,c])=>(
+          <div key={l} style={{textAlign:"center"}}>
+            <div style={{fontSize:small?11:13,color:"rgba(255,255,255,0.8)",fontWeight:700,marginBottom:2}}>{l}</div>
+            <div style={{fontSize:small?14:18,fontWeight:900,color:c}}>{v}</div>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+// ── EntityCard ─────────────────────────────────────────────────────────────
+function EntityCard({name,paid,adj,color,rank,small}) {
+  return (
+    <div className="entity-card" style={{background:"#fff",borderRadius:13,
+      border:"1.5px solid #f0ece8",boxShadow:"0 2px 10px rgba(0,0,0,0.05)",
+      padding:small?"12px 14px":"14px 18px",borderRight:`5px solid ${color}`}}>
+      <div style={{display:"flex",alignItems:"center",gap:10,marginBottom:10}}>
+        <div style={{width:small?30:36,height:small?30:36,borderRadius:9,background:color,flexShrink:0,
+          display:"flex",alignItems:"center",justifyContent:"center",fontSize:small?14:16,fontWeight:800,color:"#fff"}}>{rank}</div>
+        <div className="entity-name" style={{fontSize:small?14:17,fontWeight:900,color:"#000"}}>{name}</div>
+      </div>
+      <AmountRow paid={paid} adj={adj} color={color} small={small}/>
+    </div>
+  );
+}
+
+// ── SummaryCard ────────────────────────────────────────────────────────────
+function SummaryCard({label,paid,adj,color,icon,pct,small}) {
+  return (
+    <div style={{background:"#fff",borderRadius:15,overflow:"hidden",
+      boxShadow:"0 3px 14px rgba(0,0,0,0.07)",border:"1.5px solid #f0ece8",minWidth:0}}>
+      <div style={{background:color,padding:small?"10px 12px":"13px 14px",
+        display:"flex",justifyContent:"space-between",alignItems:"center",gap:6,flexWrap:"wrap"}}>
+        <div style={{display:"flex",alignItems:"center",gap:6,minWidth:0}}>
+          <span style={{fontSize:small?16:20,flexShrink:0}}>{icon}</span>
+          <span style={{fontSize:small?13:15,fontWeight:900,color:"#fff",lineHeight:1.2,wordBreak:"keep-all"}}>{label}</span>
+        </div>
+        <div style={{background:"rgba(255,255,255,0.25)",borderRadius:20,
+          padding:"2px 8px",fontSize:small?12:13,fontWeight:800,color:"#fff",flexShrink:0}}>{pct}%</div>
+      </div>
+      <div style={{padding:small?"10px":"12px"}}>
+        <div style={{display:"grid",gridTemplateColumns:"1fr 1fr 1fr",gap:0,
+          border:"1px solid #f0ece8",borderRadius:10,overflow:"hidden"}}>
+          {[["المدفوع","#16a34a",paid],["التسويات","#d97706",adj],["الإجمالي",color,paid+adj]].map(([lbl,clr,val],i)=>(
+            <div key={lbl} style={{textAlign:"center",padding:small?"6px 4px":"8px 6px",
+              borderRight:i<2?"1px solid #f0ece8":"none",minWidth:0,overflow:"hidden"}}>
+              <div style={{fontSize:small?10:12,color:"#333",fontWeight:800,marginBottom:4,whiteSpace:"nowrap"}}>{lbl}</div>
+              <div style={{fontSize:small?13:15,fontWeight:900,color:clr,lineHeight:1,wordBreak:"break-all"}}>{omr(val)}</div>
+            </div>
+          ))}
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// ── RegionRow ──────────────────────────────────────────────────────────────
+const RCOLS = ["#e85d20","#c44b10","#d4601a","#b03808","#f07030"];
+
+function RegionRow({region,idx,open,onToggle,small}) {
+  const col = RCOLS[idx%RCOLS.length];
+  const maxV = region.collectors?.length ? Math.max(...region.collectors.map(c=>c.paid+c.adj),1) : 1;
+  return (
+    <div className="region-card" style={{borderRadius:14,overflow:"hidden",
+      boxShadow:open?"0 4px 20px rgba(232,93,32,0.15)":"0 2px 8px rgba(0,0,0,0.06)",
+      border:`1.5px solid ${open?col+"55":"#f0ece8"}`,background:"#fff",transition:"all 0.2s"}}>
+      <div onClick={onToggle} style={{display:"flex",alignItems:"center",gap:small?10:14,
+        padding:small?"12px 14px":"14px 18px",cursor:"pointer",
+        background:open?`${col}08`:"#fff",borderBottom:open?`2px solid ${col}22`:"none",flexWrap:small?"wrap":"nowrap"}}>
+        <div style={{width:small?34:40,height:small?34:40,borderRadius:11,background:col,flexShrink:0,
+          display:"flex",alignItems:"center",justifyContent:"center",fontSize:small?16:18,fontWeight:800,color:"#fff"}}>{idx+1}</div>
+        <div style={{flex:1,minWidth:small?120:160}}>
+          <div className="region-name" style={{fontSize:small?15:19,fontWeight:900,color:"#000",lineHeight:1.2}}>{region.nameAr}</div>
+          <div className="region-name-en" style={{fontSize:small?11:14,color:"#555",marginTop:3,fontWeight:700}}>{region.nameEn}</div>
+        </div>
+        <div className="region-amounts" style={{display:"flex",flex:small?1:0,gap:0,minWidth:small?0:460}}>
+          {[["المدفوع","#16a34a",region.paid],["التسويات","#d97706",region.adj],["الإجمالي",col,region.paid+region.adj]].map(([lbl,clr,val],i)=>(
+            <div key={lbl} style={{flex:1,textAlign:"center",padding:small?"4px 8px":"6px 14px",borderRight:i<2?"1.5px solid #f0ece8":"none"}}>
+              <div style={{fontSize:small?11:13,color:"#333",fontWeight:800,marginBottom:4,letterSpacing:0.3}}>{lbl}</div>
+              <div style={{fontSize:i===2?(small?16:20):(small?13:18),fontWeight:900,color:clr,lineHeight:1}}>{omr(val)}</div>
+            </div>
+          ))}
+        </div>
+        <div className="toggle-btn" style={{display:"flex",alignItems:"center",gap:5,flexShrink:0,
+          background:open?col:"#fff",color:open?"#fff":col,
+          border:`1.5px solid ${col}`,borderRadius:9,
+          padding:small?"6px 10px":"8px 14px",fontSize:small?12:13,fontWeight:800,
+          transition:"all 0.2s",whiteSpace:"nowrap"}}>
+          {open?"▲":"▼"} {small?`(${region.collectors?.length||0})`:`المحصّلون (${region.collectors?.length||0})`}
+        </div>
+      </div>
+      {open&&(
+        <div style={{padding:small?"10px":"16px 20px 18px",background:"#fffaf7"}}>
+          <div style={{display:"grid",gridTemplateColumns:small?"32px 1fr 100px 100px 110px":"40px 1fr 155px 155px 165px 70px",
+            gap:8,padding:small?"10px 12px":"12px 16px",background:col,borderRadius:12,marginBottom:8}}>
+            {(small?["#","اسم المحصّل","المدفوع","التسويات","الإجمالي"]:["#","اسم المحصّل","المدفوع","التسويات","الإجمالي","%"]).map((h,i)=>(
+              <div key={i} style={{fontSize:small?13:15,fontWeight:900,color:"#fff",letterSpacing:0.3}}>{h}</div>))}
+          </div>
+          {(region.collectors||[]).map((c,i)=>{
+            const ct=c.paid+c.adj;
+            const pct=Math.round((ct/maxV)*100);
+            return(
+            <div key={i} style={{display:"grid",gridTemplateColumns:small?"32px 1fr 100px 100px 110px":"40px 1fr 155px 155px 165px 70px",
+              gap:8,alignItems:"center",padding:small?"10px 12px":"13px 16px",
+              borderRadius:10,background:i%2===0?"#fff":"#fdf8f5",marginBottom:4,
+              border:`1px solid ${i%2===0?"#f0ece8":"#f5ede6"}`,boxShadow:"0 1px 4px rgba(0,0,0,0.04)"}}>
+              <div style={{width:small?28:36,height:small?28:36,borderRadius:9,background:`${col}18`,
+                border:`1.5px solid ${col}44`,display:"flex",alignItems:"center",
+                justifyContent:"center",fontSize:small?13:15,color:col,fontWeight:900}}>{i+1}</div>
+              <div style={{fontSize:small?14:17,color:"#000",fontWeight:800,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{c.name}</div>
+              <div style={{textAlign:"center"}}>
+                <div style={{fontSize:10,color:"#888",fontWeight:700,marginBottom:2}}>المدفوع</div>
+                <div style={{fontSize:small?14:17,color:"#16a34a",fontWeight:900}}>{omr(c.paid)}</div>
+              </div>
+              <div style={{textAlign:"center"}}>
+                <div style={{fontSize:10,color:"#888",fontWeight:700,marginBottom:2}}>التسويات</div>
+                <div style={{fontSize:small?14:17,color:"#d97706",fontWeight:900}}>{omr(c.adj)}</div>
+              </div>
+              <div style={{textAlign:"center",background:`${col}10`,borderRadius:8,padding:"6px 8px",border:`1px solid ${col}30`}}>
+                <div style={{fontSize:10,color:"#888",fontWeight:700,marginBottom:2}}>الإجمالي</div>
+                <div style={{fontSize:small?15:19,color:col,fontWeight:900}}>{omr(ct)}</div>
+              </div>
+              {!small&&<div style={{textAlign:"center"}}>
+                <div style={{fontSize:10,color:"#888",fontWeight:700,marginBottom:4}}>النسبة</div>
+                <div style={{background:col,color:"#fff",borderRadius:8,padding:"4px 8px",fontSize:14,fontWeight:900,display:"inline-block"}}>{pct}%</div>
+              </div>}
+            </div>);
+          })}
+          <div style={{display:"grid",gridTemplateColumns:small?"32px 1fr 100px 100px 110px":"40px 1fr 155px 155px 165px 70px",
+            gap:8,alignItems:"center",padding:small?"12px":"14px 16px",
+            borderRadius:12,marginTop:8,background:`linear-gradient(120deg,${col}15,${col}08)`,border:`2px solid ${col}44`}}>
+            <div style={{width:small?28:36,height:small?28:36,borderRadius:9,background:col,
+              display:"flex",alignItems:"center",justifyContent:"center",fontSize:small?14:17,color:"#fff",fontWeight:900}}>Σ</div>
+            <div style={{fontSize:small?15:18,color:col,fontWeight:900}}>
+              الإجمالي الكلي
+              <div style={{fontSize:12,color:"#888",fontWeight:600,marginTop:1}}>{region.collectors?.length||0} محصّل</div>
+            </div>
+            <div style={{textAlign:"center"}}>
+              <div style={{fontSize:10,color:"#888",fontWeight:700,marginBottom:2}}>المدفوع</div>
+              <div style={{fontSize:small?15:18,color:"#16a34a",fontWeight:900}}>{omr(region.paid)}</div>
+            </div>
+            <div style={{textAlign:"center"}}>
+              <div style={{fontSize:10,color:"#888",fontWeight:700,marginBottom:2}}>التسويات</div>
+              <div style={{fontSize:small?15:18,color:"#d97706",fontWeight:900}}>{omr(region.adj)}</div>
+            </div>
+            <div style={{textAlign:"center",background:col,borderRadius:10,padding:"8px",border:`2px solid ${col}`}}>
+              <div style={{fontSize:10,color:"rgba(255,255,255,0.75)",fontWeight:700,marginBottom:2}}>الإجمالي</div>
+              <div style={{fontSize:small?16:20,color:"#fff",fontWeight:900}}>{omr(region.paid+region.adj)}</div>
+            </div>
+            {!small&&<div/>}
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
+// ── VerifyModal ────────────────────────────────────────────────────────────
+function VerifyModal({pending,onConfirm,onReject}) {
+  if (!pending) return null;
+  const d = pending.data;
+  const omrV = n => new Intl.NumberFormat("en-US",{minimumFractionDigits:3,maximumFractionDigits:3}).format(n||0);
+  const govPaid=d.regions?.reduce((s,r)=>s+r.paid,0)||0;
+  const govAdj =d.regions?.reduce((s,r)=>s+r.adj,0)||0;
+  const dcPaid =d.debtCompanies?.reduce((s,r)=>s+r.paid,0)||0;
+  const dcAdj  =d.debtCompanies?.reduce((s,r)=>s+r.adj,0)||0;
+  const hoPaid =d.headOffice?.reduce((s,r)=>s+r.paid,0)||0;
+  const hoAdj  =d.headOffice?.reduce((s,r)=>s+r.adj,0)||0;
+  const grand  =govPaid+govAdj+dcPaid+dcAdj+hoPaid+hoAdj;
+  const gPaid  =govPaid+dcPaid+hoPaid;
+  const gAdj   =govAdj+dcAdj+hoAdj;
+  const checks=[
+    {ok:d.totalRecords>1000,label:"عدد السجلات",val:`${d.totalRecords?.toLocaleString()} سجل`,expect:"> 1,000"},
+    {ok:gPaid>100000,label:"إجمالي المدفوع",val:omrV(gPaid),expect:"> 100,000 OMR"},
+    {ok:gAdj>=0,label:"إجمالي التسويات",val:omrV(gAdj),expect:">= 0"},
+    {ok:d.regions?.length===5,label:"المحافظات",val:`${d.regions?.length} منطقة`,expect:"5 مناطق"},
+    {ok:d.debtCompanies?.length>=3,label:"شركات التحصيل",val:`${d.debtCompanies?.length} شركة`,expect:">= 3 شركات"},
+    {ok:d.headOffice?.length>=1,label:"المكتب الرئيسي",val:`${d.headOffice?.length} قسم`,expect:">= 1"},
+  ];
+  const allOk=checks.every(c=>c.ok);
+  return (
+    <div style={{position:"fixed",inset:0,background:"rgba(0,0,0,0.7)",display:"flex",
+      alignItems:"center",justifyContent:"center",zIndex:9999,padding:"16px",direction:"rtl"}}>
+      <div style={{background:"#fff",borderRadius:20,width:"100%",maxWidth:560,
+        overflow:"hidden",boxShadow:"0 20px 60px rgba(0,0,0,0.4)"}}>
+        <div style={{background:allOk?"linear-gradient(120deg,#1e3a5f,#2d5a8e)":"linear-gradient(120deg,#dc2626,#b91c1c)",padding:"18px 24px"}}>
+          <div style={{fontSize:18,fontWeight:900,color:"#fff",marginBottom:3}}>
+            {allOk?"✅ تحقق من البيانات قبل التطبيق":"⚠️ تحذير — يوجد مشاكل"}
+          </div>
+          <div style={{fontSize:12,color:"rgba(255,255,255,0.7)",fontWeight:600}}>
+            {pending.fileName} · {pending.fileSize} MB · {d.uploadDate}
+          </div>
+        </div>
+        <div style={{background:"#f8f4f1",padding:"14px 24px",borderBottom:"1px solid #f0ece8",
+          display:"flex",justifyContent:"space-between",alignItems:"center"}}>
+          <div>
+            <div style={{fontSize:11,color:"#888",fontWeight:700,marginBottom:3}}>الإجمالي الكلي</div>
+            <div style={{fontSize:26,fontWeight:900,color:"#1e3a5f"}}>{omrV(grand)} <span style={{fontSize:13,color:"#999"}}>OMR</span></div>
+          </div>
+          <div style={{display:"flex",gap:16}}>
+            {[["مدفوع",omrV(gPaid),"#16a34a"],["تسويات",omrV(gAdj),"#d97706"]].map(([l,v,c])=>(
+              <div key={l} style={{textAlign:"center"}}>
+                <div style={{fontSize:10,color:"#888",fontWeight:700,marginBottom:3}}>{l}</div>
+                <div style={{fontSize:15,fontWeight:800,color:c}}>{v}</div>
+              </div>))}
+          </div>
+        </div>
+        <div style={{padding:"14px 24px"}}>
+          <div style={{fontSize:12,color:"#555",fontWeight:800,marginBottom:10}}>فحص تلقائي:</div>
+          {checks.map((c,i)=>(
+            <div key={i} style={{display:"flex",justifyContent:"space-between",alignItems:"center",
+              padding:"8px 12px",marginBottom:5,borderRadius:8,
+              background:c.ok?"#f0fdf4":"#fef2f2",border:`1px solid ${c.ok?"#bbf7d0":"#fecaca"}`}}>
+              <div style={{display:"flex",alignItems:"center",gap:8}}>
+                <span style={{fontSize:16}}>{c.ok?"✅":"❌"}</span>
+                <span style={{fontSize:13,color:"#333",fontWeight:700}}>{c.label}</span>
+                <span style={{fontSize:11,color:"#888"}}>({c.expect})</span>
+              </div>
+              <span style={{fontSize:13,fontWeight:800,color:c.ok?"#16a34a":"#dc2626"}}>{c.val}</span>
+            </div>
+          ))}
+        </div>
+        <div style={{display:"flex",gap:12,padding:"0 24px 20px"}}>
+          <button onClick={onConfirm} style={{flex:1,background:allOk?"#16a34a":"#d97706",
+            color:"#fff",border:"none",borderRadius:12,padding:"13px",fontSize:15,
+            fontWeight:900,cursor:"pointer",fontFamily:"'Cairo',sans-serif"}}>
+            {allOk?"✅ تأكيد وتطبيق":"⚠️ تطبيق رغم المشاكل"}
+          </button>
+          <button onClick={onReject} style={{flex:1,background:"#f5f0eb",color:"#dc2626",
+            border:"2px solid #fecaca",borderRadius:12,padding:"13px",fontSize:15,
+            fontWeight:900,cursor:"pointer",fontFamily:"'Cairo',sans-serif"}}>
+            ❌ إلغاء
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+
 // ── DayDetail — تفاصيل اليوم المختار ────────────────────────────────────────
 function DayDetail({ date, day, collectors, regions, fmt, small, onClose, REG_COLORS_MAP, REG_AR_MAP }) {
   const [dayTab, setDayTab] = useState('collectors');
