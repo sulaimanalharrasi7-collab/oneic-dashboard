@@ -6221,6 +6221,8 @@ function DayDetail({ date, day, collectors, regions, fmt, small, onClose, REG_CO
 function BulkPaymentSection({ bulk, small }) {
   const [activeTab, setActiveTab]       = useState('daily');
   const [selectedDate, setSelectedDate] = useState(null);
+  const [filterFrom, setFilterFrom]     = useState('');
+  const [filterTo, setFilterTo]         = useState('');
   const [bulkUploading, setBulkUploading] = useState(false);
   const [bulkSuccess, setBulkSuccess]   = useState(false);
   const [bulkError, setBulkError]       = useState(null);
@@ -6363,15 +6365,76 @@ function BulkPaymentSection({ bulk, small }) {
         {/* ══ تبويب يومي ══ */}
         {activeTab==='daily'&&(
           <div>
+            {/* ── فلتر الفترة الزمنية ── */}
+            <div style={{
+              display:"flex",alignItems:"center",gap:10,
+              padding:"12px 14px",background:"#f8f4f1",
+              borderRadius:12,marginBottom:14,flexWrap:"wrap"
+            }}>
+              <span style={{fontSize:13,fontWeight:800,color:"#333"}}>📅 تحديد الفترة:</span>
+              <div style={{display:"flex",alignItems:"center",gap:8,flex:1,flexWrap:"wrap"}}>
+                <div style={{display:"flex",alignItems:"center",gap:6}}>
+                  <span style={{fontSize:12,color:"#666",fontWeight:700}}>من:</span>
+                  <input type="date"
+                    value={filterFrom}
+                    onChange={e=>{setFilterFrom(e.target.value);setSelectedDate(null);}}
+                    style={{padding:"6px 10px",borderRadius:8,border:"1.5px solid #e5e7eb",
+                      fontSize:13,fontFamily:"'Cairo',sans-serif",color:"#111",cursor:"pointer"}}
+                  />
+                </div>
+                <div style={{display:"flex",alignItems:"center",gap:6}}>
+                  <span style={{fontSize:12,color:"#666",fontWeight:700}}>إلى:</span>
+                  <input type="date"
+                    value={filterTo}
+                    onChange={e=>{setFilterTo(e.target.value);setSelectedDate(null);}}
+                    style={{padding:"6px 10px",borderRadius:8,border:"1.5px solid #e5e7eb",
+                      fontSize:13,fontFamily:"'Cairo',sans-serif",color:"#111",cursor:"pointer"}}
+                  />
+                </div>
+                {(filterFrom||filterTo) && (
+                  <button onClick={()=>{setFilterFrom('');setFilterTo('');setSelectedDate(null);}}
+                    style={{background:"#e85d20",color:"#fff",border:"none",borderRadius:8,
+                      padding:"6px 14px",fontSize:12,fontWeight:700,cursor:"pointer",
+                      fontFamily:"'Cairo',sans-serif"}}>
+                    ✕ مسح الفلتر
+                  </button>
+                )}
+              </div>
+              {(filterFrom||filterTo) && (() => {
+                const filtered = (d.daily||[]).filter(x=>
+                  (!filterFrom||x.date>=filterFrom) && (!filterTo||x.date<=filterTo)
+                );
+                const total = filtered.reduce((s,x)=>s+x.paid+x.adj,0);
+                const count = filtered.reduce((s,x)=>s+x.count,0);
+                return (
+                  <div style={{display:"flex",gap:16,padding:"6px 12px",
+                    background:"#1e3a5f",borderRadius:10,flexWrap:"wrap"}}>
+                    <div style={{textAlign:"center"}}>
+                      <div style={{fontSize:10,color:"rgba(255,255,255,0.65)",fontWeight:700}}>أيام في الفترة</div>
+                      <div style={{fontSize:16,fontWeight:900,color:"#fff"}}>{filtered.length}</div>
+                    </div>
+                    <div style={{textAlign:"center"}}>
+                      <div style={{fontSize:10,color:"rgba(255,255,255,0.65)",fontWeight:700}}>دفعات</div>
+                      <div style={{fontSize:16,fontWeight:900,color:"#bfdbfe"}}>{count}</div>
+                    </div>
+                    <div style={{textAlign:"center"}}>
+                      <div style={{fontSize:10,color:"rgba(255,255,255,0.65)",fontWeight:700}}>إجمالي الفترة</div>
+                      <div style={{fontSize:16,fontWeight:900,color:"#86efac"}}>{fmt(total)}</div>
+                    </div>
+                  </div>
+                );
+              })()}
+            </div>
+
             {/* رسم بياني قابل للنقر */}
             <div style={{fontSize:12,color:"#555",fontWeight:700,marginBottom:8,display:"flex",justifyContent:"space-between",alignItems:"center"}}>
               <span>اضغط على أي يوم لعرض تفاصيله الكاملة 👇</span>
-              {selectedDate&&<button onClick={()=>setSelectedDate(null)} style={{background:"#f5f0eb",border:"1px solid #ddd",borderRadius:8,padding:"3px 10px",cursor:"pointer",fontSize:11,color:"#888"}}>✕ إلغاء الاختيار</button>}
+              {selectedDate&&<button onClick={()=>setSelectedDate(null)} style={{background:"#f5f0eb",border:"1px solid #ddd",borderRadius:8,padding:"4px 12px",cursor:"pointer",fontSize:12,color:"#888",fontWeight:700}}>✕ إلغاء الاختيار</button>}
             </div>
 
             {/* bars */}
-            <div style={{display:"flex",alignItems:"flex-end",gap:3,height:110,marginBottom:4,borderBottom:"2px solid #f0ece8",overflowX:"auto",paddingBottom:2}}>
-              {(d.daily||[]).map((day,i)=>{
+            <div style={{display:"flex",alignItems:"flex-end",gap:3,height:130,marginBottom:4,borderBottom:"2px solid #f0ece8",overflowX:"auto",paddingBottom:2}}>
+              {(d.daily||[]).filter(x=>(!filterFrom||x.date>=filterFrom)&&(!filterTo||x.date<=filterTo)).map((day,i)=>{
                 const total=day.paid+day.adj;
                 const pct=(total/maxDaily)*100;
                 const isSel=selectedDate===day.date;
@@ -6394,7 +6457,7 @@ function BulkPaymentSection({ bulk, small }) {
             </div>
             {/* dates */}
             <div style={{display:"flex",gap:3,overflowX:"auto",marginBottom:14}}>
-              {(d.daily||[]).map((day,i)=>(
+              {(d.daily||[]).filter(x=>(!filterFrom||x.date>=filterFrom)&&(!filterTo||x.date<=filterTo)).map((day,i)=>(
                 <div key={i} onClick={()=>setSelectedDate(selectedDate===day.date?null:day.date)}
                   style={{minWidth:small?20:26,flex:"0 0 auto",textAlign:"center",
                     fontSize:8,cursor:"pointer",fontWeight:700,
@@ -6451,7 +6514,7 @@ function BulkPaymentSection({ bulk, small }) {
                 {["التاريخ","شريط","المبلغ","عدد"].map((h,i)=>(
                   <div key={i} style={{fontSize:11,fontWeight:800,color:"#fff",textAlign:i>=2?"center":"right"}}>{h}</div>))}
               </div>
-              {[...(d.daily||[])].reverse().map((day,i)=>{
+              {[...(d.daily||[])].filter(x=>(!filterFrom||x.date>=filterFrom)&&(!filterTo||x.date<=filterTo)).reverse().map((day,i)=>{
                 const total=day.paid+day.adj;
                 const isSel=selectedDate===day.date;
                 return(
@@ -6462,13 +6525,13 @@ function BulkPaymentSection({ bulk, small }) {
                     borderRadius:8,marginBottom:3,
                     border:isSel?"1.5px solid #e85d20":"1px solid #f0ece8",
                     cursor:"pointer",transition:"all 0.15s"}}>
-                  <div style={{fontSize:13,fontWeight:isSel?900:700,color:isSel?"#e85d20":"#111"}}>{day.date}</div>
+                  <div style={{fontSize:15,fontWeight:isSel?900:700,color:isSel?"#e85d20":"#111"}}>{day.date}</div>
                   <div style={{background:"#f0ece8",borderRadius:4,height:7,overflow:"hidden"}}>
                     <div style={{width:(total/maxDaily*100)+"%",height:"100%",
                       background:isSel?"#e85d20":"#1e3a5f",borderRadius:4}}/>
                   </div>
-                  <div style={{fontSize:13,fontWeight:800,color:"#16a34a",textAlign:"center"}}>{fmt(total)}</div>
-                  <div style={{fontSize:12,fontWeight:700,color:"#888",textAlign:"center"}}>{day.count}</div>
+                  <div style={{fontSize:16,fontWeight:900,color:"#16a34a",textAlign:"center"}}>{fmt(total)}</div>
+                  <div style={{fontSize:13,fontWeight:700,color:"#888",textAlign:"center"}}>{day.count}</div>
                 </div>);})}
             </div>
           </div>
