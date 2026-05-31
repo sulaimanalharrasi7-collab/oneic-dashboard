@@ -359,6 +359,163 @@ const omr = n => new Intl.NumberFormat("en-US",{minimumFractionDigits:3,maximumF
 
 
 // ── BulkPaymentSection ────────────────────────────────────────────────────────
+
+// ── DayDetail — تفاصيل اليوم المختار ────────────────────────────────────────
+function DayDetail({ date, day, collectors, regions, fmt, small, onClose, REG_COLORS_MAP, REG_AR_MAP }) {
+  const [dayTab, setDayTab] = useState('collectors');
+  return (
+    <div style={{border:"2px solid #e85d20",borderRadius:16,overflow:"hidden",marginBottom:14}}>
+      {/* هيدر اليوم */}
+      <div style={{background:"linear-gradient(120deg,#e85d20,#c44b10)",padding:"14px 18px"}}>
+        <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",flexWrap:"wrap",gap:10}}>
+          <div>
+            <div style={{fontSize:18,fontWeight:900,color:"#fff"}}>📅 {date}</div>
+            <div style={{fontSize:11,color:"rgba(255,255,255,0.7)",marginTop:2}}>
+              {day.count} دفعة &nbsp;·&nbsp; {collectors.length} محصّل &nbsp;·&nbsp; {regions.length} منطقة
+            </div>
+          </div>
+          <div style={{display:"flex",gap:16,alignItems:"center"}}>
+            {[["المدفوع",fmt(day.paid),"#86efac"],
+              ["التسويات",fmt(day.adj),"#fde68a"],
+              ["الإجمالي",fmt(day.paid+day.adj),"#fff"]].map(([l,v,c])=>(
+              <div key={l} style={{textAlign:"center"}}>
+                <div style={{fontSize:10,color:"rgba(255,255,255,0.7)",marginBottom:3}}>{l}</div>
+                <div style={{fontSize:16,fontWeight:900,color:c}}>{v}</div>
+              </div>))}
+            <button onClick={onClose} style={{background:"rgba(255,255,255,0.2)",border:"none",
+              borderRadius:8,padding:"6px 12px",cursor:"pointer",color:"#fff",fontSize:13,fontWeight:700}}>
+              ✕
+            </button>
+          </div>
+        </div>
+      </div>
+
+      {/* تبويبات داخلية */}
+      <div style={{display:"flex",background:"#fff7f3",borderBottom:"1px solid #fde8d8"}}>
+        {[['collectors','👤 المحصّلون ('+collectors.length+')'],
+          ['regions','🗺 المناطق ('+regions.length+')'],
+          ['transactions','📋 الدفعات']].map(([id,label])=>(
+          <button key={id} onClick={()=>setDayTab(id)} style={{
+            flex:1,padding:"9px 4px",border:"none",cursor:"pointer",
+            background:dayTab===id?"#fff":"transparent",
+            color:dayTab===id?"#e85d20":"#888",
+            fontWeight:dayTab===id?800:600,fontSize:small?11:13,
+            fontFamily:"'Cairo',sans-serif",
+            borderBottom:dayTab===id?"2px solid #e85d20":"2px solid transparent",
+            transition:"all 0.2s"
+          }}>{label}</button>
+        ))}
+      </div>
+
+      <div style={{padding:"14px 16px",maxHeight:420,overflowY:"auto"}}>
+
+        {/* ── المحصّلون ── */}
+        {dayTab==='collectors'&&(
+          <div>
+            <div style={{display:"grid",gridTemplateColumns:"28px 1fr 90px 110px 120px",
+              gap:6,padding:"7px 10px",background:"#e85d20",borderRadius:10,marginBottom:8}}>
+              {["#","المحصّل","المنطقة","المدفوع","الإجمالي"].map((h,i)=>(
+                <div key={i} style={{fontSize:11,fontWeight:800,color:"#fff"}}>{h}</div>))}
+            </div>
+            {collectors.map((c,i)=>{
+              const col=REG_COLORS_MAP[c.region]||'#888';
+              return(
+              <div key={i} style={{
+                display:"grid",gridTemplateColumns:"28px 1fr 90px 110px 120px",
+                gap:6,alignItems:"center",padding:"9px 10px",
+                background:i%2===0?"#fff":"#fff7f3",
+                borderRadius:9,marginBottom:3,border:"1px solid #fde8d8",
+                borderRight:`3px solid ${col}`}}>
+                <div style={{width:22,height:22,borderRadius:6,background:`${col}20`,
+                  border:`1px solid ${col}40`,display:"flex",alignItems:"center",
+                  justifyContent:"center",fontSize:11,fontWeight:800,color:col}}>{i+1}</div>
+                <div>
+                  <div style={{fontSize:13,fontWeight:800,color:"#000",overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{c.collector}</div>
+                  {c.branch&&<div style={{fontSize:10,color:"#888"}}>{c.branch}</div>}
+                </div>
+                <div style={{fontSize:11,color:col,fontWeight:700,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>
+                  {REG_AR_MAP[c.region]||c.region}
+                </div>
+                <div style={{fontSize:13,fontWeight:800,color:"#16a34a"}}>{fmt(c.paid)}</div>
+                <div style={{fontSize:14,fontWeight:900,color:"#e85d20"}}>{fmt(c.paid+c.adj)}</div>
+              </div>);})}
+          </div>
+        )}
+
+        {/* ── المناطق ── */}
+        {dayTab==='regions'&&(
+          <div>
+            <div style={{display:"grid",gridTemplateColumns:"1fr 130px 130px 140px 60px",
+              gap:6,padding:"7px 10px",background:"#e85d20",borderRadius:10,marginBottom:8}}>
+              {["المنطقة","المدفوع","التسويات","الإجمالي","دفعات"].map((h,i)=>(
+                <div key={i} style={{fontSize:11,fontWeight:800,color:"#fff",textAlign:i>0?"center":"right"}}>{h}</div>))}
+            </div>
+            {regions.map((r,i)=>{
+              const col=REG_COLORS_MAP[r.nameEn]||'#888';
+              return(
+              <div key={i} style={{
+                display:"grid",gridTemplateColumns:"1fr 130px 130px 140px 60px",
+                gap:6,alignItems:"center",padding:"11px 10px",
+                background:i%2===0?"#fff":"#fff7f3",borderRadius:9,marginBottom:4,
+                border:"1px solid #fde8d8",borderRight:`4px solid ${col}`}}>
+                <div>
+                  <div style={{fontSize:15,fontWeight:900,color:"#000"}}>{REG_AR_MAP[r.nameEn]||r.nameEn}</div>
+                  <div style={{fontSize:10,color:"#888"}}>{r.nameEn}</div>
+                </div>
+                <div style={{textAlign:"center",fontSize:14,fontWeight:800,color:"#16a34a"}}>{fmt(r.paid)}</div>
+                <div style={{textAlign:"center",fontSize:14,fontWeight:800,color:"#d97706"}}>{fmt(r.adj)}</div>
+                <div style={{textAlign:"center",background:`${col}12`,borderRadius:8,padding:"5px"}}>
+                  <div style={{fontSize:15,fontWeight:900,color:col}}>{fmt(r.paid+r.adj)}</div>
+                </div>
+                <div style={{textAlign:"center"}}>
+                  <span style={{background:`${col}22`,color:col,borderRadius:6,
+                    padding:"2px 7px",fontSize:12,fontWeight:700}}>{r.count}</span>
+                </div>
+              </div>);})}
+          </div>
+        )}
+
+        {/* ── الدفعات التفصيلية ── */}
+        {dayTab==='transactions'&&(
+          <div>
+            <div style={{fontSize:12,color:"#888",fontWeight:700,marginBottom:10}}>
+              إجمالي الدفعات: {collectors.reduce((s,c)=>s+c.count,0)}
+            </div>
+            <div style={{display:"grid",gridTemplateColumns:"1fr 1fr 110px 120px",
+              gap:6,padding:"7px 10px",background:"#e85d20",borderRadius:10,marginBottom:8}}>
+              {["المحصّل / المدين","المنطقة / الفرع","المدفوع","الإجمالي"].map((h,i)=>(
+                <div key={i} style={{fontSize:11,fontWeight:800,color:"#fff"}}>{h}</div>))}
+            </div>
+            {collectors.map((c,i)=>
+              (c.debtors||[]).map((deb,j)=>{
+                const col=REG_COLORS_MAP[c.region]||'#888';
+                return(
+                <div key={`${i}-${j}`} style={{
+                  display:"grid",gridTemplateColumns:"1fr 1fr 110px 120px",
+                  gap:6,alignItems:"center",padding:"8px 10px",
+                  background:i%2===0?"#fff":"#fff7f3",
+                  borderRadius:8,marginBottom:3,border:"1px solid #fde8d8"}}>
+                  <div>
+                    <div style={{fontSize:12,fontWeight:800,color:"#000"}}>{c.collector}</div>
+                    <div style={{fontSize:10,color:"#888",overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{deb.name}</div>
+                  </div>
+                  <div>
+                    <div style={{fontSize:11,color:col,fontWeight:700}}>{REG_AR_MAP[c.region]||c.region}</div>
+                    {c.branch&&<div style={{fontSize:10,color:"#aaa"}}>{c.branch}</div>}
+                  </div>
+                  <div style={{fontSize:13,fontWeight:800,color:"#16a34a"}}>{fmt(deb.paid)}</div>
+                  <div style={{fontSize:14,fontWeight:900,color:"#e85d20"}}>{fmt(deb.paid+deb.adj)}</div>
+                </div>);
+              })
+            )}
+          </div>
+        )}
+
+      </div>
+    </div>
+  );
+}
+
 function BulkPaymentSection({ bulk, small }) {
   const [activeTab, setActiveTab]       = useState('daily');
   const [selectedDate, setSelectedDate] = useState(null);
@@ -569,127 +726,20 @@ function BulkPaymentSection({ bulk, small }) {
                   </div>
                 </div>
 
-                {/* تبويبات اليوم */}
-                {(() => {
-                  const [dayTab, setDayTab] = useState('collectors');
-                  return (
-                    <div>
-                      <div style={{display:"flex",background:"#fff7f3",borderBottom:"1px solid #fde8d8"}}>
-                        {[['collectors','👤 المحصّلون'],['regions','🗺 المناطق'],['transactions','📋 الدفعات']].map(([id,label])=>(
-                          <button key={id} onClick={()=>setDayTab(id)} style={{
-                            flex:1,padding:"8px 4px",border:"none",cursor:"pointer",
-                            background:dayTab===id?"#fff":"transparent",
-                            color:dayTab===id?"#e85d20":"#888",
-                            fontWeight:dayTab===id?800:600,fontSize:small?11:12,
-                            fontFamily:"'Cairo',sans-serif",
-                            borderBottom:dayTab===id?"2px solid #e85d20":"2px solid transparent"}}>
-                            {label}
-                          </button>))}
-                      </div>
-
-                      <div style={{padding:"12px 16px",maxHeight:400,overflowY:"auto"}}>
-
-                        {/* ── المحصّلون ── */}
-                        {dayTab==='collectors'&&(
-                          <div>
-                            <div style={{display:"grid",gridTemplateColumns:"28px 1fr 90px 100px 110px",
-                              gap:6,padding:"6px 8px",background:"#e85d20",borderRadius:8,marginBottom:8}}>
-                              {["#","المحصّل","المنطقة","المدفوع","الإجمالي"].map((h,i)=>(
-                                <div key={i} style={{fontSize:11,fontWeight:800,color:"#fff"}}>{h}</div>))}
-                            </div>
-                            {selCollectors.map((c,i)=>{
-                              const col=REG_COLORS_MAP[c.region]||'#888';
-                              return(
-                              <div key={i} style={{
-                                display:"grid",gridTemplateColumns:"28px 1fr 90px 100px 110px",
-                                gap:6,alignItems:"center",padding:"8px",
-                                background:i%2===0?"#fff":"#fff7f3",
-                                borderRadius:8,marginBottom:3,border:"1px solid #fde8d8"}}>
-                                <div style={{width:22,height:22,borderRadius:6,background:"#e85d2020",
-                                  border:"1px solid #e85d2044",display:"flex",alignItems:"center",
-                                  justifyContent:"center",fontSize:11,fontWeight:800,color:"#e85d20"}}>{i+1}</div>
-                                <div>
-                                  <div style={{fontSize:13,fontWeight:800,color:"#000",overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{c.collector}</div>
-                                  {c.branch&&<div style={{fontSize:10,color:"#888"}}>{c.branch}</div>}
-                                </div>
-                                <div style={{fontSize:11,color:col,fontWeight:700,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>
-                                  {REG_AR_MAP[c.region]||c.region}
-                                </div>
-                                <div style={{fontSize:13,fontWeight:800,color:"#16a34a"}}>{fmt(c.paid)}</div>
-                                <div style={{fontSize:14,fontWeight:900,color:"#e85d20"}}>{fmt(c.paid+c.adj)}</div>
-                              </div>);})}
-                          </div>
-                        )}
-
-                        {/* ── المناطق ── */}
-                        {dayTab==='regions'&&(
-                          <div>
-                            <div style={{display:"grid",gridTemplateColumns:"1fr 120px 120px 130px 60px",
-                              gap:6,padding:"6px 8px",background:"#e85d20",borderRadius:8,marginBottom:8}}>
-                              {["المنطقة","المدفوع","التسويات","الإجمالي","دفعات"].map((h,i)=>(
-                                <div key={i} style={{fontSize:11,fontWeight:800,color:"#fff",textAlign:i>0?"center":"right"}}>{h}</div>))}
-                            </div>
-                            {selRegionArr.map((r,i)=>{
-                              const col=REG_COLORS_MAP[r.nameEn]||'#888';
-                              return(
-                              <div key={i} style={{
-                                display:"grid",gridTemplateColumns:"1fr 120px 120px 130px 60px",
-                                gap:6,alignItems:"center",padding:"10px",
-                                background:i%2===0?"#fff":"#fff7f3",
-                                borderRadius:8,marginBottom:4,
-                                border:`1px solid #fde8d8`,borderRight:`4px solid ${col}`}}>
-                                <div>
-                                  <div style={{fontSize:14,fontWeight:800,color:"#000"}}>{REG_AR_MAP[r.nameEn]||r.nameEn}</div>
-                                  <div style={{fontSize:10,color:"#888"}}>{r.nameEn}</div>
-                                </div>
-                                <div style={{textAlign:"center",fontSize:13,fontWeight:800,color:"#16a34a"}}>{fmt(r.paid)}</div>
-                                <div style={{textAlign:"center",fontSize:13,fontWeight:800,color:"#d97706"}}>{fmt(r.adj)}</div>
-                                <div style={{textAlign:"center",fontSize:14,fontWeight:900,color:col}}>{fmt(r.paid+r.adj)}</div>
-                                <div style={{textAlign:"center"}}>
-                                  <span style={{background:`${col}22`,color:col,borderRadius:6,padding:"2px 6px",fontSize:11,fontWeight:700}}>{r.count}</span>
-                                </div>
-                              </div>);})}
-                          </div>
-                        )}
-
-                        {/* ── الدفعات التفصيلية ── */}
-                        {dayTab==='transactions'&&(
-                          <div>
-                            <div style={{fontSize:11,color:"#888",marginBottom:8}}>
-                              {selCollectors.reduce((s,c)=>s+c.count,0)} دفعة إجمالية
-                            </div>
-                            <div style={{display:"grid",gridTemplateColumns:"1fr 1fr 100px 110px",
-                              gap:6,padding:"6px 8px",background:"#e85d20",borderRadius:8,marginBottom:8}}>
-                              {["المحصّل","المنطقة/الفرع","المدفوع","الإجمالي"].map((h,i)=>(
-                                <div key={i} style={{fontSize:11,fontWeight:800,color:"#fff"}}>{h}</div>))}
-                            </div>
-                            {selCollectors.map((c,i)=>
-                              (c.debtors||[]).map((deb,j)=>(
-                              <div key={`${i}-${j}`} style={{
-                                display:"grid",gridTemplateColumns:"1fr 1fr 100px 110px",
-                                gap:6,alignItems:"center",padding:"7px 8px",
-                                background:i%2===0?"#fff":"#fff7f3",
-                                borderRadius:7,marginBottom:2,border:"1px solid #fde8d8"}}>
-                                <div>
-                                  <div style={{fontSize:12,fontWeight:700,color:"#000"}}>{c.collector}</div>
-                                  <div style={{fontSize:10,color:"#888",overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{deb.name}</div>
-                                </div>
-                                <div>
-                                  <div style={{fontSize:11,color:REG_COLORS_MAP[c.region]||'#888',fontWeight:700}}>{REG_AR_MAP[c.region]||c.region}</div>
-                                  {c.branch&&<div style={{fontSize:10,color:"#aaa"}}>{c.branch}</div>}
-                                </div>
-                                <div style={{fontSize:13,fontWeight:800,color:"#16a34a"}}>{fmt(deb.paid)}</div>
-                                <div style={{fontSize:13,fontWeight:800,color:"#e85d20"}}>{fmt(deb.paid+deb.adj)}</div>
-                              </div>))
-                            )}
-                          </div>
-                        )}
-
-                      </div>
-                    </div>
-                  );
-                })()}
               </div>
+            )}
+            {selectedDate&&selDay&&(
+              <DayDetail
+                date={selectedDate}
+                day={selDay}
+                collectors={selCollectors}
+                regions={selRegionArr}
+                fmt={fmt}
+                small={small}
+                onClose={()=>setSelectedDate(null)}
+                REG_COLORS_MAP={REG_COLORS_MAP}
+                REG_AR_MAP={REG_AR_MAP}
+              />
             )}
 
             {/* جدول يومي */}
