@@ -9444,7 +9444,7 @@ export default function Dashboard() {
     const ga = newData.regions.reduce((s,r)=>s+r.adj,0)
              + newData.debtCompanies.reduce((s,r)=>s+r.adj,0)
              + newData.headOffice.reduce((s,r)=>s+r.adj,0);
-    const dataToSave = { ...newData, grandPaid: gp, grandAdj: ga };
+    const dataToSave = { ...newData, grandPaid: gp, grandAdj: ga, uploadedAt: new Date().toISOString() };
 
     // ── رفع لـ JSONbin + localStorage ───────────────────────────────────
     setUploading(true);
