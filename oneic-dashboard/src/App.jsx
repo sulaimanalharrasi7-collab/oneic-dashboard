@@ -6775,19 +6775,64 @@ function DayDetail({ date, day, collectors, regions, fmt, small, onClose, REG_CO
 // ── AnalyticsModal — لوحة التحليل البياني ────────────────────────────────────
 function AnalyticsModal({ bulk, onClose, small }) {
   const [activeChart, setActiveChart] = useState('trend');
+  const [filterYear,  setFilterYear]  = useState('all');
+  const [filterMonth, setFilterMonth] = useState('all');
   const d = bulk;
   if (!d) return null;
+
+  // ─── استخراج السنوات والأشهر المتاحة ──────────────────────────────────────
+  const allDailyRaw = d.daily || [];
+  const years  = [...new Set(allDailyRaw.map(x=>x.date.slice(0,4)))].sort();
+  const months = filterYear==='all'
+    ? [...new Set(allDailyRaw.map(x=>x.date.slice(0,7)))].sort()
+    : [...new Set(allDailyRaw.filter(x=>x.date.startsWith(filterYear)).map(x=>x.date.slice(0,7)))].sort();
+  const MONTH_AR = {
+    '01':'يناير','02':'فبراير','03':'مارس','04':'أبريل',
+    '05':'مايو','06':'يونيو','07':'يوليو','08':'أغسطس',
+    '09':'سبتمبر','10':'أكتوبر','11':'نوفمبر','12':'ديسمبر'
+  };
 
   const fmt = n => new Intl.NumberFormat("en-US",{minimumFractionDigits:3,maximumFractionDigits:3}).format(n||0);
   const fmtK = n => n >= 1000 ? (n/1000).toFixed(1)+'K' : n.toFixed(0);
 
-  // ─ حسابات ذكية ──────────────────────────────────────────────────────────────
-  const daily   = [...(d.daily||[])].sort((a,b)=>a.date.localeCompare(b.date));
-  const regions  = [...(d.byRegion||[])].sort((a,b)=>(b.paid+b.adj)-(a.paid+a.adj));
-  const collectors = [...(d.topCollectors||[])].sort((a,b)=>(b.paid+b.adj)-(a.paid+a.adj)).slice(0,10);
+  // ─ تصفية البيانات حسب الفلتر ───────────────────────────────────────────────
+  const daily = allDailyRaw.filter(x=>{
+    if (filterYear!=='all' && !x.date.startsWith(filterYear)) return false;
+    if (filterMonth!=='all' && !x.date.startsWith(filterMonth)) return false;
+    return true;
+  }).sort((a,b)=>a.date.localeCompare(b.date));
 
-  const totalPaid = d.totalPaid||0;
-  const totalAdj  = d.totalAdj||0;
+  // إعادة حساب المناطق والمحصّلين بناءً على الفلتر
+  const filteredDates = new Set(daily.map(x=>x.date));
+  const isFiltered = filterYear!=='all' || filterMonth!=='all';
+
+  // إذا يوجد dailyDetail، نبني بيانات مفلترة للمناطق والمحصّلين
+  let filteredRegionMap = {};
+  let filteredCollectorMap = {};
+  if (isFiltered && d.dailyDetail) {
+    Object.entries(d.dailyDetail).forEach(([date, cols])=>{
+      if (!filteredDates.has(date)) return;
+      cols.forEach(c=>{
+        const reg = c.region||'';
+        if (!filteredRegionMap[reg]) filteredRegionMap[reg]={nameEn:reg,nameAr:reg,paid:0,adj:0,count:0,color:'#888'};
+        filteredRegionMap[reg].paid+=c.paid; filteredRegionMap[reg].adj+=c.adj; filteredRegionMap[reg].count+=c.count;
+        const ck=c.collector+'||'+reg;
+        if (!filteredCollectorMap[ck]) filteredCollectorMap[ck]={name:c.collector,region:reg,paid:0,adj:0,count:0};
+        filteredCollectorMap[ck].paid+=c.paid; filteredCollectorMap[ck].adj+=c.adj; filteredCollectorMap[ck].count+=c.count;
+      });
+    });
+  }
+
+  const regions = isFiltered && Object.keys(filteredRegionMap).length>0
+    ? Object.values(filteredRegionMap).sort((a,b)=>(b.paid+b.adj)-(a.paid+a.adj))
+    : [...(d.byRegion||[])].sort((a,b)=>(b.paid+b.adj)-(a.paid+a.adj));
+
+  const collectors = isFiltered && Object.keys(filteredCollectorMap).length>0
+    ? Object.values(filteredCollectorMap).sort((a,b)=>(b.paid+b.adj)-(a.paid+a.adj)).slice(0,10)
+    : [...(d.topCollectors||[])].sort((a,b)=>(b.paid+b.adj)-(a.paid+a.adj)).slice(0,10);
+
+  const totalPaid  = daily.reduce((s,x)=>s+x.paid,0);
+  const totalAdj   = daily.reduce((s,x)=>s+x.adj,0);
   const grandTotal = totalPaid + totalAdj;
   const avgDaily   = daily.length ? grandTotal/daily.length : 0;
   const bestDay    = daily.reduce((a,b)=>(a.paid+a.adj)>(b.paid+b.adj)?a:b, daily[0]||{});
@@ -6945,9 +6990,67 @@ function AnalyticsModal({ bulk, onClose, small }) {
             </div>
           </div>
 
+          {/* ── فلتر الفترة ── */}
+          <div style={{
+            display:"flex",alignItems:"center",gap:8,marginTop:12,
+            padding:"10px 12px",background:"rgba(255,255,255,0.1)",
+            borderRadius:12,border:"1px solid rgba(255,255,255,0.2)",
+            flexWrap:"wrap"
+          }}>
+            <span style={{fontSize:12,color:"rgba(255,255,255,0.8)",fontWeight:800,whiteSpace:"nowrap"}}>
+              🗓 الفترة:
+            </span>
+            {/* السنة */}
+            <select value={filterYear} onChange={e=>{setFilterYear(e.target.value);setFilterMonth('all');}}
+              style={{padding:"5px 10px",borderRadius:8,border:"1px solid rgba(255,255,255,0.3)",
+                background:"rgba(255,255,255,0.15)",color:"#fff",fontSize:12,fontWeight:700,
+                fontFamily:"'Cairo',sans-serif",cursor:"pointer",outline:"none"}}>
+              <option value="all" style={{color:"#000"}}>كل السنوات</option>
+              {years.map(y=><option key={y} value={y} style={{color:"#000"}}>{y}</option>)}
+            </select>
+            {/* الشهر */}
+            <select value={filterMonth} onChange={e=>setFilterMonth(e.target.value)}
+              style={{padding:"5px 10px",borderRadius:8,border:"1px solid rgba(255,255,255,0.3)",
+                background:"rgba(255,255,255,0.15)",color:"#fff",fontSize:12,fontWeight:700,
+                fontFamily:"'Cairo',sans-serif",cursor:"pointer",outline:"none"}}>
+              <option value="all" style={{color:"#000"}}>كل الأشهر</option>
+              {months.map(m=><option key={m} value={m} style={{color:"#000"}}>
+                {MONTH_AR[m.slice(5)] || m.slice(5)} {m.slice(0,4)}
+              </option>)}
+            </select>
+            {/* أزرار سريعة */}
+            <div style={{display:"flex",gap:6,flexWrap:"wrap"}}>
+              {[
+                {label:"هذا الشهر", action:()=>{
+                  const now=new Date(); const y=now.getFullYear().toString();
+                  const m=String(now.getMonth()+1).padStart(2,'0');
+                  setFilterYear(y); setFilterMonth(y+'-'+m);
+                }},
+                {label:"آخر 3 أشهر", action:()=>{
+                  const now=new Date(); const y=now.getFullYear().toString();
+                  setFilterYear(y); setFilterMonth('all');
+                }},
+                {label:"الكل", action:()=>{setFilterYear('all');setFilterMonth('all');}},
+              ].map(btn=>(
+                <button key={btn.label} onClick={btn.action} style={{
+                  background:"rgba(255,255,255,0.2)",color:"#fff",border:"none",
+                  borderRadius:7,padding:"4px 10px",fontSize:11,fontWeight:700,
+                  cursor:"pointer",fontFamily:"'Cairo',sans-serif",
+                  whiteSpace:"nowrap"
+                }}>{btn.label}</button>
+              ))}
+            </div>
+            {(filterYear!=='all'||filterMonth!=='all') && (
+              <div style={{marginRight:"auto",background:"rgba(255,255,255,0.15)",
+                borderRadius:8,padding:"4px 10px",fontSize:11,color:"#fff"}}>
+                📅 {daily.length} يوم · {grandTotal>0?(grandTotal/1000).toFixed(1)+'K':'0'} OMR
+              </div>
+            )}
+          </div>
+
           {/* KPI شريط */}
           <div style={{display:"grid",gridTemplateColumns:small?"1fr 1fr":"repeat(4,1fr)",
-            gap:8,marginTop:14,borderTop:"1px solid rgba(255,255,255,0.15)",paddingTop:14}}>
+            gap:8,marginTop:10,borderTop:"1px solid rgba(255,255,255,0.15)",paddingTop:10}}>
             {[
               ["💰 إجمالي المدفوع", fmt(totalPaid), "#86efac"],
               ["📊 التسويات", fmt(totalAdj), "#fde68a"],
