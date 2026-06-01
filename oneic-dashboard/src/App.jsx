@@ -1817,6 +1817,41 @@ function RegionRow({ region, idx, open, onToggle, small }) {
 }
 
 // ── VerifyModal ───────────────────────────────────────────────────────────────
+// ── MilestoneToast ────────────────────────────────────────────────────────────
+function MilestoneToast({ badge, onClose }) {
+  useEffect(() => {
+    if (!badge) return;
+    const t = setTimeout(onClose, 6000);
+    return () => clearTimeout(t);
+  }, [badge]);
+  if (!badge) return null;
+  return (
+    <div style={{position:'fixed',bottom:24,right:24,zIndex:99999,direction:'rtl',maxWidth:360,width:'calc(100% - 48px)'}}>
+      <div style={{background:`linear-gradient(135deg,${badge.color||'#1e3a5f'},${badge.color||'#1e3a5f'}dd)`,
+        borderRadius:18,padding:'18px 20px',boxShadow:'0 8px 32px rgba(0,0,0,0.3)',
+        border:'2px solid rgba(255,255,255,0.3)',display:'flex',alignItems:'center',gap:14}}>
+        <div style={{width:56,height:56,borderRadius:16,background:'rgba(255,255,255,0.25)',
+          display:'flex',alignItems:'center',justifyContent:'center',fontSize:28,flexShrink:0}}>
+          {badge.icon||'🎉'}
+        </div>
+        <div style={{flex:1}}>
+          <div style={{fontSize:15,fontWeight:900,color:'#fff',marginBottom:4}}>{badge.label}</div>
+          <div style={{fontSize:12,color:'rgba(255,255,255,0.85)',lineHeight:1.5}}>{badge.msg}</div>
+          {badge.value > 0 && (
+            <div style={{fontSize:18,fontWeight:900,color:'#fff',marginTop:6}}>
+              {new Intl.NumberFormat('en-US',{minimumFractionDigits:3}).format(badge.value)} OMR
+            </div>
+          )}
+        </div>
+        <button onClick={onClose} style={{background:'rgba(255,255,255,0.2)',border:'none',
+          borderRadius:8,width:28,height:28,cursor:'pointer',fontSize:14,color:'#fff',
+          display:'flex',alignItems:'center',justifyContent:'center',flexShrink:0}}>✕</button>
+      </div>
+    </div>
+  );
+}
+
+
 function VerifyModal({ pending, onConfirm, onReject }) {
   if (!pending) return null;
   const d = pending.data;
