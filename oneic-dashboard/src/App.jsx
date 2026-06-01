@@ -6066,62 +6066,64 @@ async function syncFetch(binId, key) {
   try {
     const res = await fetch(`https://api.jsonbin.io/v3/b/${binId}/latest`, {
       headers: { 'X-Master-Key': JSONBIN_KEY, 'X-Bin-Meta': 'false' },
-      cache: 'no-store'   // ✅ لا cache — دائماً أحدث نسخة
+      cache: 'no-store'
     });
-    if (!res.ok) throw new Error('fetch failed');
+    if (!res.ok) throw new Error('fetch failed ' + res.status);
     const json = await res.json();
-    const data = json[key] || json;
-    if (data && typeof data === 'object') {
-      // ✅ حفّظ محلياً مع timestamp
-      try {
-        localStorage.setItem(key, JSON.stringify({
-          data, syncedAt: Date.now()
-        }));
-      } catch(e){}
+    // البيانات قد تكون مباشرة أو داخل key
+    const data = (json && json[key] && typeof json[key] === 'object' && !json[key].record)
+      ? json[key]
+      : (json && json.record ? null : json);
+    if (data && typeof data === 'object' && Object.keys(data).length > 2) {
+      // حفظ محلي للـ fallback فقط
+      try { localStorage.setItem(key, JSON.stringify({ data, syncedAt: Date.now() })); } catch(e){}
       return data;
     }
   } catch(e) {
-    console.warn('syncFetch failed, using cache:', e.message);
+    console.warn('syncFetch failed:', e.message);
   }
   // fallback: localStorage
   try {
-    const cached = localStorage.getItem(key);
-    if (cached) {
-      const parsed = JSON.parse(cached);
-      return parsed.data || parsed; // يدعم الصيغتين
-    }
+    const raw = localStorage.getItem(key);
+    if (raw) { const p = JSON.parse(raw); return p.data || (p.daily || p.regions ? p : null); }
   } catch(e){}
   return null;
 }
 
 // ── رفع البيانات لـ JSONbin ────────────────────────────────────────────────
 async function syncPush(binId, key, data) {
-  const payload = { [key]: data, _syncedAt: new Date().toISOString() };
+  // ── حفظ محلي دائماً فوراً ─────────────────────────────────────────────────
   try {
-    const res = await fetch(`https://api.jsonbin.io/v3/b/${binId}`, {
+    localStorage.setItem(key, JSON.stringify({ data, syncedAt: Date.now() }));
+  } catch(e){}
+
+  // ── قراءة JSONbin الحالي أولاً ثم دمج ثم كتابة ────────────────────────────
+  try {
+    // 1) اقرأ الكل الموجود
+    const getRes = await fetch(`https://api.jsonbin.io/v3/b/${binId}/latest`, {
+      headers: { 'X-Master-Key': JSONBIN_KEY, 'X-Bin-Meta': 'false' },
+      cache: 'no-store'
+    });
+    let existing = {};
+    if (getRes.ok) {
+      try { existing = await getRes.json(); } catch(e){ existing = {}; }
+    }
+    // 2) دمج المفتاح الجديد مع الموجود (لا تمسح المفاتيح الأخرى)
+    const payload = {
+      ...existing,
+      [key]: data,
+      _syncedAt: new Date().toISOString()
+    };
+    // 3) اكتب الكل
+    const putRes = await fetch(`https://api.jsonbin.io/v3/b/${binId}`, {
       method: 'PUT',
-      headers: {
-        'Content-Type': 'application/json',
-        'X-Master-Key': JSONBIN_KEY
-      },
+      headers: { 'Content-Type': 'application/json', 'X-Master-Key': JSONBIN_KEY },
       body: JSON.stringify(payload)
     });
-    if (!res.ok) throw new Error('push failed');
-    // ✅ حفّظ محلياً بعد النجاح
-    try {
-      localStorage.setItem(key, JSON.stringify({
-        data, syncedAt: Date.now()
-      }));
-    } catch(e){}
+    if (!putRes.ok) throw new Error('push failed ' + putRes.status);
     return true;
   } catch(e) {
     console.warn('syncPush failed:', e.message);
-    // ✅ احفظ محلياً على الأقل
-    try {
-      localStorage.setItem(key, JSON.stringify({
-        data, syncedAt: Date.now()
-      }));
-    } catch(e){}
     return false;
   }
 }
@@ -7997,6 +7999,8 @@ function BulkPaymentSection({ bulk, small }) {
   const [bulkError, setBulkError]       = useState(null);
   const [bulkData, setBulkData]         = useState(bulk);
   const [showAnalytics, setShowAnalytics] = useState(false);
+  const [lastSync, setLastSync]           = useState(null);
+  const [syncing, setSyncing]             = useState(false);
   const fileRef = useRef(null);
 
   const handleBulkFile = async (file) => {
@@ -8101,11 +8105,12 @@ function BulkPaymentSection({ bulk, small }) {
       const remote = await syncFetch(JSONBIN_ID, SYNC_KEY_BULK);
       if (remote?.daily?.length > 0) {
         setBulkData(remote);
+        setLastSync(new Date());
         return;
       }
       // fallback: localStorage أو SEED
       const local = readLocal(SYNC_KEY_BULK);
-      if (local?.daily?.length > 0) setBulkData(local);
+      if (local?.daily?.length > 0) { setBulkData(local); setLastSync(new Date()); }
     }
     loadBulk();
 
@@ -8186,15 +8191,20 @@ function BulkPaymentSection({ bulk, small }) {
               <div style={{fontSize:small?16:22,fontWeight:900,color:"#fff",letterSpacing:0.3}}>
                 Bulk Payment Report
               </div>
-              <div style={{fontSize:11,color:"rgba(255,255,255,0.55)",marginTop:3,display:"flex",gap:8,flexWrap:"wrap"}}>
+              <div style={{fontSize:11,color:"rgba(255,255,255,0.55)",marginTop:3,display:"flex",gap:8,flexWrap:"wrap",alignItems:"center"}}>
                 <span>📅 {d.dateRange?.from} → {d.dateRange?.to}</span>
                 <span>·</span>
                 <span>📋 {d.totalRecords?.toLocaleString()} دفعة</span>
                 {d.fileName&&<><span>·</span><span>📁 {d.fileName}</span></>}
-                {d.uploadedAt&&<><span>·</span>
-                  <span style={{color:"#86efac",fontWeight:700}}>
-                    🔄 {new Date(d.uploadedAt).toLocaleString('ar-OM',{dateStyle:'short',timeStyle:'short'})}
-                  </span></>}
+                {lastSync&&(
+                  <span style={{
+                    background:"rgba(134,239,172,0.2)",color:"#86efac",
+                    borderRadius:6,padding:"1px 8px",fontWeight:700,
+                    border:"1px solid rgba(134,239,172,0.3)"
+                  }}>
+                    ✅ مزامنة: {lastSync.toLocaleTimeString('ar-OM',{hour:'2-digit',minute:'2-digit'})}
+                  </span>
+                )}
               </div>
             </div>
           </div>
@@ -9359,7 +9369,7 @@ export default function Dashboard() {
   // ── تحميل البيانات من API عند البداية ───────────────────────────────────
   const [data, setData] = useState(SEED);
   const [loadingServer, setLoadingServer] = useState(true);
-  const [syncStatus, setSyncStatus]       = useState('idle'); // idle | syncing | synced
+  const [syncStatus, setSyncStatus]       = useState('idle'); // idle | syncing | synced | error
   const [badge, setBadge]               = useState(null);
   const [bulkBadge, setBulkBadge]       = useState(null);
   const [milestoneBadge, setMilestoneBadge] = useState(null);
