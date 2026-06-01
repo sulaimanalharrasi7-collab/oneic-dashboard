@@ -6076,6 +6076,52 @@ function saveLocal(key, data) {
   try { localStorage.setItem(key, JSON.stringify({ data, savedAt: Date.now() })); } catch(e){}
 }
 
+// ── Export كل البيانات كملف JSON ─────────────────────────────────────────────
+function exportAllData() {
+  try {
+    const bulk = readLocal('oneic_bulk_data');
+    const dash = readLocal('oneic_dash_data');
+    const hist = (() => { try { return JSON.parse(localStorage.getItem('oneic_history')||'[]'); } catch(e){return[];} })();
+    const payload = {
+      oneic_bulk_data: bulk, oneic_dash_data: dash, oneic_history: hist,
+      _exportedAt: new Date().toISOString(), _version: '1.0'
+    };
+    const blob = new Blob([JSON.stringify(payload,null,2)],{type:'application/json'});
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href=url; a.download='oneic_data_'+new Date().toISOString().slice(0,10)+'.json';
+    document.body.appendChild(a); a.click(); document.body.removeChild(a);
+    URL.revokeObjectURL(url); return true;
+  } catch(e) { alert('فشل التصدير: '+e.message); return false; }
+}
+
+// ── Import من ملف JSON ────────────────────────────────────────────────────────
+function importAllData(file, onSuccess, onError) {
+  const reader = new FileReader();
+  reader.onload = (e) => {
+    try {
+      const data = JSON.parse(e.target.result);
+      let imported = [];
+      if (data.oneic_bulk_data?.daily?.length > 0) {
+        saveLocal('oneic_bulk_data', data.oneic_bulk_data);
+        imported.push('Bulk Payment');
+      }
+      if (data.oneic_dash_data?.regions?.length > 0) {
+        saveLocal('oneic_dash_data', data.oneic_dash_data);
+        imported.push('بيانات المشروع');
+      }
+      if (data.oneic_history?.length > 0) {
+        try { localStorage.setItem('oneic_history', JSON.stringify(data.oneic_history)); } catch(ex){}
+        imported.push('السجل التاريخي');
+      }
+      onSuccess?.(data, imported);
+    } catch(ex) { onError?.(ex.message); }
+  };
+  reader.onerror = () => onError?.('فشل قراءة الملف');
+  reader.readAsText(file);
+}
+
+
 // GitHub API — قراءة
 async function ghFetch(key) {
   if (!GH_TOKEN) return null;
@@ -9993,6 +10039,47 @@ export default function Dashboard() {
         </div>
         <div style={{ display:"flex", alignItems:"center", gap: isMobile?10:20 }}>
           <UploadBtn onFile={handleFile} uploading={uploading} success={success} error={error} small={isMobile} />
+
+          {/* ── أزرار Export/Import ── */}
+          <button onClick={()=>{
+              const ok = exportAllData();
+              if(ok) alert('✅ تم تصدير البيانات. ارسل الملف لأي جهاز ثم استورده منه');
+            }}
+            title="تصدير البيانات"
+            style={{
+              background:"#1e3a5f",color:"#fff",border:"none",
+              borderRadius:10,padding:isMobile?"8px":"8px 14px",
+              fontSize:isMobile?13:13,fontWeight:800,cursor:"pointer",
+              fontFamily:"'Cairo',sans-serif"
+            }}>
+            💾 {!isMobile&&"تصدير"}
+          </button>
+          <button onClick={()=>document.getElementById('oneic-import-file').click()}
+            title="استيراد البيانات من جهاز آخر"
+            style={{
+              background:"#e85d20",color:"#fff",border:"none",
+              borderRadius:10,padding:isMobile?"8px":"8px 14px",
+              fontSize:isMobile?13:13,fontWeight:800,cursor:"pointer",
+              fontFamily:"'Cairo',sans-serif"
+            }}>
+            📂 {!isMobile&&"استيراد"}
+          </button>
+          <input id="oneic-import-file" type="file" accept=".json" style={{display:"none"}}
+            onChange={e=>{
+              const f=e.target.files?.[0]; if(!f) return;
+              importAllData(f,
+                (d, imported) => {
+                  if(d.oneic_bulk_data?.daily?.length>0) setBulkDataMain(d.oneic_bulk_data);
+                  if(d.oneic_dash_data?.regions?.length>0) { setData(d.oneic_dash_data); }
+                  if(d.oneic_history?.length>0) setHistory(d.oneic_history);
+                  alert('✅ تم الاستيراد! استُعيدت: '+imported.join(', '));
+                },
+                (err) => alert('❌ فشل الاستيراد: '+err)
+              );
+              e.target.value='';
+            }}
+          />
+
           <button
             onClick={() => setShowHistory(s=>!s)}
             title="السجل التاريخي"
