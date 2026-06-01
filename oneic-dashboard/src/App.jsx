@@ -6771,6 +6771,592 @@ function DayDetail({ date, day, collectors, regions, fmt, small, onClose, REG_CO
   );
 }
 
+
+// ── AnalyticsModal — لوحة التحليل البياني ────────────────────────────────────
+function AnalyticsModal({ bulk, onClose, small }) {
+  const [activeChart, setActiveChart] = useState('trend');
+  const d = bulk;
+  if (!d) return null;
+
+  const fmt = n => new Intl.NumberFormat("en-US",{minimumFractionDigits:3,maximumFractionDigits:3}).format(n||0);
+  const fmtK = n => n >= 1000 ? (n/1000).toFixed(1)+'K' : n.toFixed(0);
+
+  // ─ حسابات ذكية ──────────────────────────────────────────────────────────────
+  const daily   = [...(d.daily||[])].sort((a,b)=>a.date.localeCompare(b.date));
+  const regions  = [...(d.byRegion||[])].sort((a,b)=>(b.paid+b.adj)-(a.paid+a.adj));
+  const collectors = [...(d.topCollectors||[])].sort((a,b)=>(b.paid+b.adj)-(a.paid+a.adj)).slice(0,10);
+
+  const totalPaid = d.totalPaid||0;
+  const totalAdj  = d.totalAdj||0;
+  const grandTotal = totalPaid + totalAdj;
+  const avgDaily   = daily.length ? grandTotal/daily.length : 0;
+  const bestDay    = daily.reduce((a,b)=>(a.paid+a.adj)>(b.paid+b.adj)?a:b, daily[0]||{});
+  const worstDay   = daily.reduce((a,b)=>(a.paid+a.adj)<(b.paid+b.adj)?a:b, daily[0]||{});
+
+  // مؤشرات النمو
+  const lastHalf = daily.slice(Math.floor(daily.length/2));
+  const firstHalf = daily.slice(0, Math.floor(daily.length/2));
+  const lastHalfTotal = lastHalf.reduce((s,x)=>s+x.paid+x.adj,0);
+  const firstHalfTotal = firstHalf.reduce((s,x)=>s+x.paid+x.adj,0);
+  const growthRate = firstHalfTotal > 0 ? ((lastHalfTotal-firstHalfTotal)/firstHalfTotal*100) : 0;
+
+  // ─ ألوان المناطق ────────────────────────────────────────────────────────────
+  const REG_COLORS = {
+    'شركات التحصيل':'#1a7a6b','المكتب الرئيسي':'#6c3fa0',
+    'مسقط والداخلية':'#e85d20','الباطنة الشمالية والجنوبية':'#c44b10',
+    'الباطنة':'#c44b10','الشرقية والوسطى':'#d4601a',
+    'مسندم والبريمي':'#b03808','ظفار':'#f07030',
+  };
+  const getRegColor = (r) => REG_COLORS[r.nameAr||r.nameEn] || r.color || '#888';
+
+  // ─ SVG Charts ───────────────────────────────────────────────────────────────
+  const maxDaily = daily.length ? Math.max(...daily.map(x=>x.paid+x.adj), 1) : 1;
+  const maxReg   = regions.length ? Math.max(...regions.map(x=>x.paid+x.adj), 1) : 1;
+  const maxCol   = collectors.length ? Math.max(...collectors.map(x=>x.paid+x.adj), 1) : 1;
+
+  // Line chart path
+  const W=680, H=200, PX=48, PY=20;
+  const chartW = W-PX*2, chartH = H-PY*2;
+  const pts = daily.map((d,i)=>{
+    const x = PX + (i/(daily.length-1||1))*chartW;
+    const y = PY + chartH - ((d.paid+d.adj)/maxDaily)*chartH;
+    return [x,y];
+  });
+  const linePath = pts.map((p,i)=>i===0?`M${p[0]},${p[1]}`:`L${p[0]},${p[1]}`).join(' ');
+  const areaPath = pts.length ? `${linePath} L${pts[pts.length-1][0]},${PY+chartH} L${pts[0][0]},${PY+chartH} Z` : '';
+
+  // طباعة اللوحة
+  const handlePrintChart = () => {
+    const w = window.open('','_blank','width=1100,height=800');
+    const regBars = regions.map((r,i)=>{
+      const pct = Math.round(((r.paid+r.adj)/maxReg)*100);
+      const col = getRegColor(r);
+      return `<div style="margin-bottom:10px">
+        <div style="display:flex;justify-content:space-between;margin-bottom:4px;direction:rtl">
+          <span style="font-size:13px;font-weight:700;color:#000">${r.nameAr||r.nameEn}</span>
+          <span style="font-size:13px;font-weight:800;color:${col}">${fmt(r.paid+r.adj)} OMR</span>
+        </div>
+        <div style="background:#f0ece8;border-radius:6px;height:14px;overflow:hidden">
+          <div style="width:${pct}%;height:100%;background:${col};border-radius:6px"></div>
+        </div>
+      </div>`;
+    }).join('');
+
+    w.document.write(`<!DOCTYPE html><html lang="ar" dir="rtl">
+    <head><meta charset="UTF-8"><title>تقرير التحليل — ${d.dateRange?.from} → ${d.dateRange?.to}</title>
+    <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;700;800;900&display=swap" rel="stylesheet">
+    <style>*{box-sizing:border-box;margin:0;padding:0;-webkit-print-color-adjust:exact!important;print-color-adjust:exact!important}
+    body{font-family:'Cairo',sans-serif;background:#f5f0eb;direction:rtl}
+    .page{width:210mm;min-height:297mm;margin:8mm auto;background:#fff;padding:12mm;box-shadow:0 4px 32px rgba(0,0,0,.15);page-break-after:always}
+    @media print{@page{size:A4;margin:0}body{background:#fff}.page{margin:0;padding:10mm;box-shadow:none}.no-print{display:none!important}}</style></head>
+    <body>
+    <button class="no-print" onclick="window.print()" style="position:fixed;top:10px;left:10px;background:#1e3a5f;color:#fff;border:none;border-radius:10px;padding:10px 24px;font-size:14px;font-weight:800;cursor:pointer;z-index:999">🖨️ طباعة PDF</button>
+    <div class="page">
+      <div style="display:flex;justify-content:space-between;align-items:center;border-bottom:3px solid #1e3a5f;padding-bottom:8mm;margin-bottom:6mm">
+        <div>
+          <div style="font-size:20pt;font-weight:900;color:#1e3a5f">📊 تقرير التحليل البياني</div>
+          <div style="font-size:10pt;color:#888;margin-top:3px">${d.dateRange?.from} → ${d.dateRange?.to} · ${d.totalRecords?.toLocaleString()} دفعة · ONEIC © 2026</div>
+        </div>
+      </div>
+      <div style="background:linear-gradient(120deg,#1e3a5f,#2d5a8e);border-radius:12px;padding:6mm;margin-bottom:6mm">
+        <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:4mm">
+          ${[['💰 إجمالي المدفوع',fmt(totalPaid),'#86efac'],['📊 التسويات',fmt(totalAdj),'#fde68a'],
+             ['📈 المتوسط اليومي',fmt(avgDaily),'#e9d5ff'],['🏆 أفضل يوم',fmt(bestDay.paid+bestDay.adj||0),'#fff']
+          ].map(([l,v,c])=>`<div style="text-align:center;background:rgba(255,255,255,0.1);border-radius:8px;padding:3mm">
+            <div style="font-size:9pt;color:rgba(255,255,255,0.7);font-weight:700;margin-bottom:2mm">${l}</div>
+            <div style="font-size:14pt;font-weight:900;color:${c}">${v}</div>
+          </div>`).join('')}
+        </div>
+      </div>
+      <div style="margin-bottom:6mm">
+        <div style="font-size:13pt;font-weight:900;color:#1e3a5f;margin-bottom:4mm">🗺 التوزيع بالمنطقة</div>
+        ${regBars}
+      </div>
+      <div>
+        <div style="font-size:13pt;font-weight:900;color:#1e3a5f;margin-bottom:4mm">👤 أعلى 10 محصّلين</div>
+        <table style="width:100%;border-collapse:collapse">
+          <thead><tr style="background:#1e3a5f">
+            <th style="padding:2.5mm 3mm;color:#fff;font-size:9pt;text-align:right">#</th>
+            <th style="padding:2.5mm 3mm;color:#fff;font-size:9pt;text-align:right">المحصّل</th>
+            <th style="padding:2.5mm 3mm;color:#fff;font-size:9pt;text-align:center">المدفوع</th>
+            <th style="padding:2.5mm 3mm;color:#fff;font-size:9pt;text-align:center">الإجمالي</th>
+            <th style="padding:2.5mm 3mm;color:#fff;font-size:9pt;text-align:center">دفعات</th>
+          </tr></thead>
+          <tbody>${collectors.map((c,i)=>`<tr style="background:${i%2===0?'#fff':'#f8f4f1'}">
+            <td style="padding:2.5mm;font-size:10pt;color:#888">${i+1}</td>
+            <td style="padding:2.5mm;font-size:11pt;font-weight:800;color:#000">${c.name}</td>
+            <td style="padding:2.5mm;text-align:center;font-size:11pt;font-weight:800;color:#16a34a">${fmt(c.paid)}</td>
+            <td style="padding:2.5mm;text-align:center;font-size:12pt;font-weight:900;color:#1e3a5f">${fmt(c.paid+c.adj)}</td>
+            <td style="padding:2.5mm;text-align:center;font-size:11pt;color:#555">${c.count}</td>
+          </tr>`).join('')}</tbody>
+        </table>
+      </div>
+    </div></body></html>`);
+    w.document.close();
+    setTimeout(()=>w.print(), 2000);
+  };
+
+  const tabs = [
+    {id:'trend', label:'📈 الاتجاه اليومي'},
+    {id:'region', label:'🗺 المناطق'},
+    {id:'collector', label:'🏆 المحصّلون'},
+    {id:'kpi', label:'📊 المؤشرات'},
+  ];
+
+  return (
+    <div style={{position:"fixed",inset:0,background:"rgba(0,0,0,0.8)",
+      display:"flex",alignItems:"center",justifyContent:"center",
+      zIndex:9999,padding:16,direction:"rtl"}}>
+      <div style={{
+        background:"#fff",borderRadius:20,width:"100%",
+        maxWidth:small?400:960,maxHeight:"92vh",
+        overflow:"hidden",display:"flex",flexDirection:"column",
+        boxShadow:"0 24px 80px rgba(0,0,0,0.5)"
+      }}>
+
+        {/* ── Header ── */}
+        <div style={{background:"linear-gradient(135deg,#1e3a5f,#2d5a8e)",padding:"18px 24px",flexShrink:0}}>
+          <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",flexWrap:"wrap",gap:12}}>
+            <div style={{display:"flex",alignItems:"center",gap:14}}>
+              <div style={{width:48,height:48,borderRadius:14,background:"rgba(255,255,255,0.15)",
+                border:"1.5px solid rgba(255,255,255,0.25)",display:"flex",alignItems:"center",
+                justifyContent:"center",fontSize:26}}>📊</div>
+              <div>
+                <div style={{fontSize:20,fontWeight:900,color:"#fff"}}>لوحة التحليل البياني</div>
+                <div style={{fontSize:11,color:"rgba(255,255,255,0.6)",marginTop:3}}>
+                  {d.dateRange?.from} → {d.dateRange?.to} &nbsp;·&nbsp; {d.totalRecords?.toLocaleString()} دفعة
+                  {growthRate !== 0 && <span style={{
+                    marginRight:8,color:growthRate>0?"#86efac":"#fca5a5",fontWeight:800
+                  }}>{growthRate>0?"▲":"▼"} {Math.abs(growthRate).toFixed(1)}% نمو</span>}
+                </div>
+              </div>
+            </div>
+            <div style={{display:"flex",gap:10,alignItems:"center"}}>
+              <button onClick={handlePrintChart} style={{
+                background:"rgba(255,255,255,0.15)",color:"#fff",
+                border:"1.5px solid rgba(255,255,255,0.3)",
+                borderRadius:10,padding:"8px 16px",fontSize:13,fontWeight:800,
+                cursor:"pointer",fontFamily:"'Cairo',sans-serif"
+              }}>🖨️ تصدير PDF</button>
+              <button onClick={onClose} style={{
+                background:"rgba(255,255,255,0.15)",color:"#fff",border:"none",
+                borderRadius:10,padding:"8px 14px",fontSize:16,cursor:"pointer",fontWeight:700
+              }}>✕</button>
+            </div>
+          </div>
+
+          {/* KPI شريط */}
+          <div style={{display:"grid",gridTemplateColumns:small?"1fr 1fr":"repeat(4,1fr)",
+            gap:8,marginTop:14,borderTop:"1px solid rgba(255,255,255,0.15)",paddingTop:14}}>
+            {[
+              ["💰 إجمالي المدفوع", fmt(totalPaid), "#86efac"],
+              ["📊 التسويات", fmt(totalAdj), "#fde68a"],
+              ["📈 متوسط يومي", fmt(avgDaily), "#e9d5ff"],
+              ["🏆 أفضل يوم", (bestDay.date||'').slice(5)+' · '+fmtK(bestDay.paid+bestDay.adj||0), "#fff"],
+            ].map(([l,v,c])=>(
+              <div key={l} style={{textAlign:"center",padding:"10px",
+                background:"rgba(255,255,255,0.08)",border:"1px solid rgba(255,255,255,0.12)",borderRadius:10}}>
+                <div style={{fontSize:10,color:"rgba(255,255,255,0.6)",fontWeight:700,marginBottom:4}}>{l}</div>
+                <div style={{fontSize:small?14:18,fontWeight:900,color:c,lineHeight:1}}>{v}</div>
+              </div>
+            ))}
+          </div>
+        </div>
+
+        {/* ── Tabs ── */}
+        <div style={{display:"flex",borderBottom:"2px solid #f0ece8",background:"#f8f9fc",padding:"0 8px",flexShrink:0}}>
+          {tabs.map(t=>(
+            <button key={t.id} onClick={()=>setActiveChart(t.id)} style={{
+              flex:1,padding:"12px 6px",border:"none",cursor:"pointer",
+              background:"transparent",color:activeChart===t.id?"#1e3a5f":"#999",
+              fontWeight:activeChart===t.id?900:600,fontSize:small?11:14,
+              fontFamily:"'Cairo',sans-serif",
+              borderBottom:activeChart===t.id?"3px solid #1e3a5f":"3px solid transparent",
+              transition:"all 0.2s"
+            }}>{t.label}</button>
+          ))}
+        </div>
+
+        {/* ── Content ── */}
+        <div style={{flex:1,overflow:"auto",padding:small?"12px":"20px 24px"}}>
+
+          {/* ══ الاتجاه اليومي ══ */}
+          {activeChart==='trend' && (
+            <div>
+              <div style={{fontSize:13,color:"#555",fontWeight:700,marginBottom:12}}>
+                الدفعات اليومية — من {d.dateRange?.from} إلى {d.dateRange?.to}
+              </div>
+
+              {/* Line chart SVG */}
+              <div style={{background:"#f8fafc",borderRadius:14,padding:"16px 8px 8px",
+                border:"1px solid #e8f0fe",marginBottom:20,overflowX:"auto"}}>
+                <svg viewBox={`0 0 ${W} ${H+40}`} width="100%" style={{display:"block",minWidth:400}}>
+                  {/* Grid lines */}
+                  {[0,0.25,0.5,0.75,1].map(r=>(
+                    <g key={r}>
+                      <line x1={PX} y1={PY+chartH*(1-r)} x2={W-PX} y2={PY+chartH*(1-r)}
+                        stroke="#e8f0fe" strokeWidth="1" strokeDasharray="4,4"/>
+                      <text x={PX-6} y={PY+chartH*(1-r)+4} textAnchor="end"
+                        fontSize="9" fill="#999" fontFamily="Cairo">
+                        {fmtK(maxDaily*r)}
+                      </text>
+                    </g>
+                  ))}
+
+                  {/* Area fill */}
+                  {areaPath && <path d={areaPath} fill="url(#areaGrad)" opacity="0.3"/>}
+
+                  {/* Line */}
+                  {linePath && <path d={linePath} fill="none" stroke="#1e3a5f" strokeWidth="2.5"
+                    strokeLinejoin="round" strokeLinecap="round"/>}
+
+                  {/* Gradient def */}
+                  <defs>
+                    <linearGradient id="areaGrad" x1="0" y1="0" x2="0" y2="1">
+                      <stop offset="0%" stopColor="#1e3a5f" stopOpacity="0.4"/>
+                      <stop offset="100%" stopColor="#1e3a5f" stopOpacity="0"/>
+                    </linearGradient>
+                  </defs>
+
+                  {/* Data points */}
+                  {pts.map(([x,y],i)=>{
+                    const day = daily[i];
+                    const total = day.paid+day.adj;
+                    const isBest = total === maxDaily;
+                    return (
+                      <g key={i}>
+                        <circle cx={x} cy={y} r={isBest?7:4}
+                          fill={isBest?"#e85d20":"#1e3a5f"}
+                          stroke="#fff" strokeWidth="2"/>
+                        {isBest && (
+                          <text x={x} y={y-14} textAnchor="middle"
+                            fontSize="9" fill="#e85d20" fontWeight="bold" fontFamily="Cairo">
+                            🏆 {fmtK(total)}
+                          </text>
+                        )}
+                      </g>
+                    );
+                  })}
+
+                  {/* Date labels */}
+                  {daily.map((day,i)=>{
+                    const [x] = pts[i]||[0];
+                    return (
+                      <text key={i} x={x} y={PY+chartH+22}
+                        textAnchor="middle" fontSize="9" fill="#555"
+                        fontWeight="700" fontFamily="Cairo">
+                        {day.date.slice(5)}
+                      </text>
+                    );
+                  })}
+                </svg>
+              </div>
+
+              {/* ملخص أسبوعي */}
+              <div style={{display:"grid",gridTemplateColumns:"repeat(3,1fr)",gap:12,marginBottom:16}}>
+                {[
+                  ["📅 أيام نشطة", daily.length+" يوم", "#1e3a5f"],
+                  ["⬆️ أعلى يوم", (bestDay.date||'').slice(5)+" · "+fmt(bestDay.paid+bestDay.adj||0), "#e85d20"],
+                  ["📉 أدنى يوم", (worstDay.date||'').slice(5)+" · "+fmt(worstDay.paid+worstDay.adj||0), "#888"],
+                ].map(([l,v,c])=>(
+                  <div key={l} style={{background:"#f8f4f1",borderRadius:12,padding:"14px",textAlign:"center",border:"1px solid #f0ece8"}}>
+                    <div style={{fontSize:11,color:"#888",fontWeight:700,marginBottom:6}}>{l}</div>
+                    <div style={{fontSize:14,fontWeight:900,color:c}}>{v}</div>
+                  </div>
+                ))}
+              </div>
+
+              {/* جدول تفصيلي */}
+              <div style={{maxHeight:220,overflowY:"auto"}}>
+                <div style={{display:"grid",gridTemplateColumns:"110px 1fr 130px 130px 60px",
+                  gap:6,padding:"8px 10px",background:"#1e3a5f",borderRadius:8,marginBottom:6}}>
+                  {["التاريخ","التقدم","المدفوع","الإجمالي","عدد"].map((h,i)=>(
+                    <div key={i} style={{fontSize:12,fontWeight:800,color:"#fff",textAlign:i>=2?"center":"right"}}>{h}</div>
+                  ))}
+                </div>
+                {[...daily].reverse().map((day,i)=>{
+                  const total=day.paid+day.adj;
+                  const pct=(total/maxDaily*100);
+                  return(
+                  <div key={i} style={{
+                    display:"grid",gridTemplateColumns:"110px 1fr 130px 130px 60px",
+                    gap:6,alignItems:"center",padding:"9px 10px",
+                    background:i%2===0?"#fff":"#f8f4f1",
+                    borderRadius:8,marginBottom:3,border:"1px solid #f0ece8"
+                  }}>
+                    <div style={{fontSize:14,fontWeight:800,color:"#111"}}>{day.date}</div>
+                    <div style={{background:"#f0ece8",borderRadius:4,height:8,overflow:"hidden"}}>
+                      <div style={{width:pct+"%",height:"100%",
+                        background:`linear-gradient(90deg,#1e3a5f,#2d5a8e)`,borderRadius:4}}/>
+                    </div>
+                    <div style={{fontSize:14,fontWeight:800,color:"#16a34a",textAlign:"center"}}>{fmt(day.paid)}</div>
+                    <div style={{fontSize:15,fontWeight:900,color:"#1e3a5f",textAlign:"center"}}>{fmt(total)}</div>
+                    <div style={{textAlign:"center"}}>
+                      <span style={{background:"#1e3a5f22",color:"#1e3a5f",borderRadius:6,
+                        padding:"2px 7px",fontSize:12,fontWeight:700}}>{day.count}</span>
+                    </div>
+                  </div>);
+                })}
+              </div>
+            </div>
+          )}
+
+          {/* ══ المناطق ══ */}
+          {activeChart==='region' && (
+            <div>
+              <div style={{fontSize:13,color:"#555",fontWeight:700,marginBottom:16}}>
+                توزيع المدفوعات حسب المنطقة
+              </div>
+
+              {/* SVG Donut Chart */}
+              <div style={{display:"flex",gap:24,alignItems:"center",marginBottom:20,flexWrap:"wrap"}}>
+                <svg viewBox="0 0 200 200" width={small?160:200} style={{flexShrink:0}}>
+                  {(() => {
+                    let offset = -90;
+                    return regions.map((r,i)=>{
+                      const pct = (r.paid+r.adj)/grandTotal;
+                      const angle = pct * 360;
+                      const rad = Math.PI/180;
+                      const r1=80, r2=50, cx=100, cy=100;
+                      const x1=cx+r1*Math.cos((offset)*rad);
+                      const y1=cy+r1*Math.sin((offset)*rad);
+                      const x2=cx+r1*Math.cos((offset+angle)*rad);
+                      const y2=cy+r1*Math.sin((offset+angle)*rad);
+                      const x3=cx+r2*Math.cos((offset+angle)*rad);
+                      const y3=cy+r2*Math.sin((offset+angle)*rad);
+                      const x4=cx+r2*Math.cos((offset)*rad);
+                      const y4=cy+r2*Math.sin((offset)*rad);
+                      const large = angle>180?1:0;
+                      const col = getRegColor(r);
+                      const path = `M${x1},${y1} A${r1},${r1} 0 ${large},1 ${x2},${y2} L${x3},${y3} A${r2},${r2} 0 ${large},0 ${x4},${y4} Z`;
+                      offset += angle;
+                      return <path key={i} d={path} fill={col} stroke="#fff" strokeWidth="2"/>;
+                    });
+                  })()}
+                  <text x="100" y="96" textAnchor="middle" fontSize="11" fill="#1e3a5f"
+                    fontWeight="900" fontFamily="Cairo">الإجمالي</text>
+                  <text x="100" y="112" textAnchor="middle" fontSize="9" fill="#555"
+                    fontFamily="Cairo">{fmtK(grandTotal)}</text>
+                </svg>
+
+                {/* Legend */}
+                <div style={{flex:1,minWidth:180}}>
+                  {regions.map((r,i)=>{
+                    const col = getRegColor(r);
+                    const pct = Math.round((r.paid+r.adj)/grandTotal*100);
+                    return(
+                    <div key={i} style={{display:"flex",alignItems:"center",gap:10,
+                      padding:"8px 10px",borderRadius:8,marginBottom:6,
+                      background:"#f8f4f1",border:`1px solid #f0ece8`,
+                      borderRight:`4px solid ${col}`}}>
+                      <div style={{flex:1}}>
+                        <div style={{fontSize:13,fontWeight:800,color:"#000"}}>{r.nameAr||r.nameEn}</div>
+                        <div style={{fontSize:11,color:"#888"}}>{r.count} دفعة</div>
+                      </div>
+                      <div style={{textAlign:"left"}}>
+                        <div style={{fontSize:14,fontWeight:900,color:col}}>{fmt(r.paid+r.adj)}</div>
+                        <div style={{fontSize:12,fontWeight:700,color:"#888"}}>{pct}%</div>
+                      </div>
+                    </div>);
+                  })}
+                </div>
+              </div>
+
+              {/* Bar chart للمناطق */}
+              <div style={{background:"#f8fafc",borderRadius:12,padding:"16px",border:"1px solid #e8f0fe"}}>
+                {regions.map((r,i)=>{
+                  const pct=(r.paid+r.adj)/maxReg*100;
+                  const col=getRegColor(r);
+                  return(
+                  <div key={i} style={{marginBottom:14}}>
+                    <div style={{display:"flex",justifyContent:"space-between",marginBottom:5}}>
+                      <span style={{fontSize:13,fontWeight:800,color:"#000"}}>{r.nameAr||r.nameEn}</span>
+                      <span style={{fontSize:13,fontWeight:900,color:col}}>{fmt(r.paid+r.adj)} OMR</span>
+                    </div>
+                    <div style={{background:"#e8f0fe",borderRadius:6,height:12,overflow:"hidden",position:"relative"}}>
+                      <div style={{
+                        width:pct+"%",height:"100%",
+                        background:`linear-gradient(90deg,${col},${col}aa)`,
+                        borderRadius:6,transition:"width 0.8s ease"
+                      }}/>
+                    </div>
+                    <div style={{display:"flex",justifyContent:"space-between",marginTop:3}}>
+                      <span style={{fontSize:10,color:"#888"}}>مدفوع: {fmt(r.paid)}</span>
+                      <span style={{fontSize:10,color:"#888"}}>تسويات: {fmt(r.adj)}</span>
+                    </div>
+                  </div>);
+                })}
+              </div>
+            </div>
+          )}
+
+          {/* ══ المحصّلون ══ */}
+          {activeChart==='collector' && (
+            <div>
+              <div style={{fontSize:13,color:"#555",fontWeight:700,marginBottom:16}}>
+                أعلى {collectors.length} محصّلين خلال الفترة
+              </div>
+
+              {/* Top 3 podium */}
+              <div style={{display:"flex",justifyContent:"center",alignItems:"flex-end",
+                gap:12,marginBottom:24,direction:"ltr"}}>
+                {[1,0,2].map(rank=>{
+                  const c = collectors[rank];
+                  if (!c) return null;
+                  const heights=[90,110,75];
+                  const colors=["#c0c0c0","#ffd700","#cd7f32"];
+                  const labels=["🥈 ثانٍ","🥇 أول","🥉 ثالث"];
+                  return(
+                  <div key={rank} style={{textAlign:"center",flex:1,maxWidth:160}}>
+                    <div style={{fontSize:10,color:"#888",fontWeight:700,marginBottom:4}}>{labels[rank]}</div>
+                    <div style={{fontSize:12,fontWeight:800,color:"#000",
+                      marginBottom:6,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>
+                      {c.name}
+                    </div>
+                    <div style={{fontSize:13,fontWeight:900,color:"#1e3a5f",marginBottom:6}}>
+                      {fmt(c.paid+c.adj)}
+                    </div>
+                    <div style={{
+                      height:heights[rank],
+                      background:`linear-gradient(180deg,${colors[rank]},${colors[rank]}88)`,
+                      borderRadius:"8px 8px 0 0",
+                      border:`2px solid ${colors[rank]}`,
+                      display:"flex",alignItems:"center",justifyContent:"center",
+                      fontSize:24
+                    }}>{["🥈","🥇","🥉"][rank]}</div>
+                  </div>);
+                })}
+              </div>
+
+              {/* قائمة كاملة */}
+              <div style={{maxHeight:280,overflowY:"auto"}}>
+                <div style={{display:"grid",gridTemplateColumns:"30px 1fr 80px 120px 50px",
+                  gap:6,padding:"8px 10px",background:"#1e3a5f",borderRadius:8,marginBottom:6}}>
+                  {["#","المحصّل","المنطقة","الإجمالي","عدد"].map((h,i)=>(
+                    <div key={i} style={{fontSize:12,fontWeight:800,color:"#fff",textAlign:i>=2?"center":"right"}}>{h}</div>
+                  ))}
+                </div>
+                {collectors.map((c,i)=>{
+                  const total=c.paid+c.adj;
+                  const pct=Math.round(total/maxCol*100);
+                  const medals=["🥇","🥈","🥉"];
+                  return(
+                  <div key={i} style={{
+                    display:"grid",gridTemplateColumns:"30px 1fr 80px 120px 50px",
+                    gap:6,alignItems:"center",padding:"10px",
+                    background:i%2===0?"#fff":"#f8f4f1",
+                    borderRadius:8,marginBottom:4,border:"1px solid #f0ece8"
+                  }}>
+                    <div style={{textAlign:"center",fontSize:i<3?18:13,fontWeight:800,
+                      color:["#ffd700","#c0c0c0","#cd7f32","#555"][Math.min(i,3)]}}>
+                      {i<3?medals[i]:i+1}
+                    </div>
+                    <div>
+                      <div style={{fontSize:13,fontWeight:800,color:"#000",
+                        overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{c.name}</div>
+                      <div style={{height:4,background:"#f0ece8",borderRadius:2,marginTop:4,overflow:"hidden"}}>
+                        <div style={{width:pct+"%",height:"100%",
+                          background:"linear-gradient(90deg,#1e3a5f,#2d5a8e)",borderRadius:2}}/>
+                      </div>
+                    </div>
+                    <div style={{textAlign:"center",fontSize:10,color:"#888",
+                      overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>
+                      {c.region}
+                    </div>
+                    <div style={{textAlign:"center",fontSize:15,fontWeight:900,color:"#1e3a5f"}}>{fmt(total)}</div>
+                    <div style={{textAlign:"center"}}>
+                      <span style={{background:"#1e3a5f22",color:"#1e3a5f",borderRadius:6,
+                        padding:"2px 6px",fontSize:12,fontWeight:700}}>{c.count}</span>
+                    </div>
+                  </div>);
+                })}
+              </div>
+            </div>
+          )}
+
+          {/* ══ مؤشرات الأداء ══ */}
+          {activeChart==='kpi' && (
+            <div>
+              <div style={{fontSize:13,color:"#555",fontWeight:700,marginBottom:16}}>
+                مؤشرات الأداء الرئيسية — KPIs
+              </div>
+
+              {/* البطاقات الرئيسية */}
+              <div style={{display:"grid",gridTemplateColumns:small?"1fr":"1fr 1fr",gap:14,marginBottom:20}}>
+                {[
+                  {icon:"💰",title:"إجمالي المدفوع",value:fmt(totalPaid),sub:"OMR",color:"#16a34a",bg:"#f0fdf4"},
+                  {icon:"📊",title:"إجمالي التسويات",value:fmt(totalAdj),sub:"OMR",color:"#d97706",bg:"#fffbeb"},
+                  {icon:"🏆",title:"الإجمالي الكلي",value:fmt(grandTotal),sub:"OMR",color:"#1e3a5f",bg:"#eff6ff"},
+                  {icon:"📈",title:"المتوسط اليومي",value:fmt(avgDaily),sub:"OMR/يوم",color:"#7c3aed",bg:"#f5f3ff"},
+                  {icon:"📅",title:"أيام نشطة",value:daily.length,sub:"من إجمالي الأيام",color:"#0369a1",bg:"#f0f9ff"},
+                  {icon:"👤",title:"عدد المحصّلين",value:collectors.length,sub:"محصّل نشط",color:"#be185d",bg:"#fdf2f8"},
+                  {icon:"📋",title:"إجمالي الدفعات",value:(d.totalRecords||0).toLocaleString(),sub:"دفعة",color:"#065f46",bg:"#ecfdf5"},
+                  {icon:growthRate>=0?"📈":"📉",title:"معدل النمو",value:Math.abs(growthRate).toFixed(1)+"%",
+                    sub:growthRate>=0?"نمو إيجابي ✅":"تراجع ⚠️",
+                    color:growthRate>=0?"#16a34a":"#dc2626",
+                    bg:growthRate>=0?"#f0fdf4":"#fef2f2"},
+                ].map((kpi,i)=>(
+                  <div key={i} style={{
+                    background:kpi.bg,borderRadius:14,padding:"16px 18px",
+                    border:`1.5px solid ${kpi.color}22`,
+                    display:"flex",alignItems:"center",gap:16
+                  }}>
+                    <div style={{
+                      width:50,height:50,borderRadius:14,
+                      background:`${kpi.color}18`,
+                      display:"flex",alignItems:"center",justifyContent:"center",
+                      fontSize:24,flexShrink:0
+                    }}>{kpi.icon}</div>
+                    <div>
+                      <div style={{fontSize:11,color:"#888",fontWeight:700,marginBottom:4}}>{kpi.title}</div>
+                      <div style={{fontSize:22,fontWeight:900,color:kpi.color,lineHeight:1}}>{kpi.value}</div>
+                      <div style={{fontSize:10,color:"#aaa",marginTop:3}}>{kpi.sub}</div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+
+              {/* توزيع بالنسبة المئوية */}
+              <div style={{background:"#f8f4f1",borderRadius:14,padding:"16px",border:"1px solid #f0ece8"}}>
+                <div style={{fontSize:13,fontWeight:800,color:"#333",marginBottom:12}}>
+                  📊 توزيع المدفوعات بالنسبة المئوية
+                </div>
+                <div style={{height:24,background:"#f0ece8",borderRadius:12,overflow:"hidden",
+                  display:"flex",marginBottom:10}}>
+                  {regions.map((r,i)=>{
+                    const pct=(r.paid+r.adj)/grandTotal*100;
+                    const col=getRegColor(r);
+                    return pct>1 && (
+                      <div key={i} title={`${r.nameAr}: ${pct.toFixed(1)}%`}
+                        style={{width:pct+"%",background:col,height:"100%",
+                          borderLeft:i>0?"1px solid rgba(255,255,255,0.4)":""}}/>
+                    );
+                  })}
+                </div>
+                <div style={{display:"flex",flexWrap:"wrap",gap:8}}>
+                  {regions.map((r,i)=>{
+                    const pct=(r.paid+r.adj)/grandTotal*100;
+                    const col=getRegColor(r);
+                    return pct>1 && (
+                      <div key={i} style={{display:"flex",alignItems:"center",gap:5}}>
+                        <div style={{width:10,height:10,borderRadius:3,background:col,flexShrink:0}}/>
+                        <span style={{fontSize:11,color:"#555",fontWeight:700}}>
+                          {r.nameAr||r.nameEn} {pct.toFixed(1)}%
+                        </span>
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
+            </div>
+          )}
+
+        </div>
+      </div>
+    </div>
+  );
+}
+
 function BulkPaymentSection({ bulk, small }) {
   const [activeTab, setActiveTab]       = useState('daily');
   const [selectedDate, setSelectedDate] = useState(null);
@@ -6780,6 +7366,7 @@ function BulkPaymentSection({ bulk, small }) {
   const [bulkSuccess, setBulkSuccess]   = useState(false);
   const [bulkError, setBulkError]       = useState(null);
   const [bulkData, setBulkData]         = useState(bulk);
+  const [showAnalytics, setShowAnalytics] = useState(false);
   const fileRef = useRef(null);
 
   const handleBulkFile = async (file) => {
@@ -6940,6 +7527,7 @@ function BulkPaymentSection({ bulk, small }) {
   const tabs = [{id:'daily',label:'📅 يومي'},{id:'region',label:'🗺 المناطق'},{id:'collector',label:'👤 المحصّلون'}];
 
   return (
+    <>
     <div style={{background:"#fff",borderRadius:16,boxShadow:"0 3px 18px rgba(0,0,0,0.07)",
       border:"1.5px solid #f0ece8",marginBottom:18,overflow:"hidden"}}>
 
@@ -6967,6 +7555,15 @@ function BulkPaymentSection({ bulk, small }) {
             </div>
           </div>
           <div style={{display:"flex",gap:10,alignItems:"center"}}>
+          <button onClick={()=>setShowAnalytics(true)} style={{
+            background:"linear-gradient(120deg,rgba(255,255,255,0.25),rgba(255,255,255,0.15))",
+            color:"#fff",border:"1.5px solid rgba(255,255,255,0.5)",
+            borderRadius:10,padding:"8px 16px",
+            fontSize:13,fontWeight:800,cursor:"pointer",
+            fontFamily:"'Cairo',sans-serif",
+            display:"flex",alignItems:"center",gap:6,
+            whiteSpace:"nowrap",boxShadow:"0 2px 8px rgba(0,0,0,0.2)"
+          }}>📊 {small?"تحليل":"التحليل البياني"}</button>
           <button onClick={()=>handleBulkPrint(bulkData,filterFrom,filterTo)} style={{
             background:"rgba(255,255,255,0.15)",color:"#fff",
             border:"1.5px solid rgba(255,255,255,0.3)",
@@ -7328,6 +7925,8 @@ function BulkPaymentSection({ bulk, small }) {
 
       </div>
     </div>
+    {showAnalytics&&<AnalyticsModal bulk={bulkData} onClose={()=>setShowAnalytics(false)} small={small}/>}
+    </>
   );
 }
 
