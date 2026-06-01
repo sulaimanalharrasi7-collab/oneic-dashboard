@@ -6052,8 +6052,37 @@ function parseXLS(file) {
 
 
 // ── إعدادات المزامنة ──────────────────────────────────────────────────────
-const JSONBIN_ID  = "6a1addbc21f9ee59d29dad67";
-const JSONBIN_KEY = "$2a$10$iGKOshaaDAnJWlKtVW9LhuJFN9ocrQXgvZ8adXsXPZntwjlkhZ0FO";
+const SUPABASE_URL = "https://itdgfrrnghmolevucxkq.supabase.co";
+const SUPABASE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Iml0ZGdmcnJuZ2htb2xldXZjeGtxIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzk1MTg3MDUsImV4cCI6MjA5NTA5NDcwNX0.Ej_0vX-3x05hmZ4M_1mRQVC2Y01Mrw622IL1W4YjusA";
+
+// ── Supabase helpers ──────────────────────────────────────────────────────────
+async function sbGet(table) {
+  const res = await fetch(
+    `${SUPABASE_URL}/rest/v1/${table}?select=*&order=id.desc&limit=1`,
+    { headers: { apikey: SUPABASE_KEY, Authorization: `Bearer ${SUPABASE_KEY}` } }
+  );
+  if (!res.ok) throw new Error(await res.text());
+  const rows = await res.json();
+  return rows[0] || null;
+}
+
+async function sbUpsert(table, payload) {
+  const res = await fetch(
+    `${SUPABASE_URL}/rest/v1/${table}`,
+    {
+      method: 'POST',
+      headers: {
+        apikey: SUPABASE_KEY,
+        Authorization: `Bearer ${SUPABASE_KEY}`,
+        'Content-Type': 'application/json',
+        Prefer: 'resolution=merge-duplicates,return=representation'
+      },
+      body: JSON.stringify(payload)
+    }
+  );
+  if (!res.ok) throw new Error(await res.text());
+  return await res.json();
+}
 
 const omr = n => new Intl.NumberFormat("en-US",{minimumFractionDigits:3,maximumFractionDigits:3}).format(n||0);
 
@@ -6771,6 +6800,816 @@ function DayDetail({ date, day, collectors, regions, fmt, small, onClose, REG_CO
   );
 }
 
+
+// ── AnalyticsModal — لوحة التحليل البياني ────────────────────────────────────
+function AnalyticsModal({ bulk, onClose, small }) {
+  const [activeChart, setActiveChart] = useState('trend');
+  const [filterYear,  setFilterYear]  = useState('all');
+  const [filterMonth, setFilterMonth] = useState('all');
+  const [filterFrom,  setFilterFrom]  = useState('');
+  const [filterTo,    setFilterTo]    = useState('');
+  const d = bulk;
+  if (!d) return null;
+
+  // ─── استخراج السنوات والأشهر المتاحة ──────────────────────────────────────
+  const allDailyRaw = [...(d.daily||[])].sort((a,b)=>a.date.localeCompare(b.date));
+  const years  = [...new Set(allDailyRaw.map(x=>x.date.slice(0,4)))].sort();
+  const months = filterYear==='all'
+    ? [...new Set(allDailyRaw.map(x=>x.date.slice(0,7)))].sort()
+    : [...new Set(allDailyRaw.filter(x=>x.date.startsWith(filterYear)).map(x=>x.date.slice(0,7)))].sort();
+  const MONTH_AR = {
+    '01':'يناير','02':'فبراير','03':'مارس','04':'أبريل',
+    '05':'مايو','06':'يونيو','07':'يوليو','08':'أغسطس',
+    '09':'سبتمبر','10':'أكتوبر','11':'نوفمبر','12':'ديسمبر'
+  };
+  // reset day filter when year/month changes
+  const clearDayFilter = () => { setFilterFrom(''); setFilterTo(''); };
+
+  const fmt = n => new Intl.NumberFormat("en-US",{minimumFractionDigits:3,maximumFractionDigits:3}).format(n||0);
+  const fmtK = n => n >= 1000 ? (n/1000).toFixed(1)+'K' : n.toFixed(0);
+
+  // ─ تصفية البيانات حسب الفلتر ───────────────────────────────────────────────
+  const daily = allDailyRaw.filter(x=>{
+    if (filterYear!=='all' && !x.date.startsWith(filterYear)) return false;
+    if (filterMonth!=='all' && !x.date.startsWith(filterMonth)) return false;
+    if (filterFrom && x.date < filterFrom) return false;
+    if (filterTo   && x.date > filterTo)   return false;
+    return true;
+  });
+
+  // إعادة حساب المناطق والمحصّلين بناءً على الفلتر
+  const filteredDates = new Set(daily.map(x=>x.date));
+  const isFiltered = filterYear!=='all' || filterMonth!=='all';
+
+  // إذا يوجد dailyDetail، نبني بيانات مفلترة للمناطق والمحصّلين
+  let filteredRegionMap = {};
+  let filteredCollectorMap = {};
+  if (isFiltered && d.dailyDetail) {
+    Object.entries(d.dailyDetail).forEach(([date, cols])=>{
+      if (!filteredDates.has(date)) return;
+      cols.forEach(c=>{
+        const reg = c.region||'';
+        if (!filteredRegionMap[reg]) filteredRegionMap[reg]={nameEn:reg,nameAr:reg,paid:0,adj:0,count:0,color:'#888'};
+        filteredRegionMap[reg].paid+=c.paid; filteredRegionMap[reg].adj+=c.adj; filteredRegionMap[reg].count+=c.count;
+        const ck=c.collector+'||'+reg;
+        if (!filteredCollectorMap[ck]) filteredCollectorMap[ck]={name:c.collector,region:reg,paid:0,adj:0,count:0};
+        filteredCollectorMap[ck].paid+=c.paid; filteredCollectorMap[ck].adj+=c.adj; filteredCollectorMap[ck].count+=c.count;
+      });
+    });
+  }
+
+  const regions = isFiltered && Object.keys(filteredRegionMap).length>0
+    ? Object.values(filteredRegionMap).sort((a,b)=>(b.paid+b.adj)-(a.paid+a.adj))
+    : [...(d.byRegion||[])].sort((a,b)=>(b.paid+b.adj)-(a.paid+a.adj));
+
+  const collectors = isFiltered && Object.keys(filteredCollectorMap).length>0
+    ? Object.values(filteredCollectorMap).sort((a,b)=>(b.paid+b.adj)-(a.paid+a.adj)).slice(0,10)
+    : [...(d.topCollectors||[])].sort((a,b)=>(b.paid+b.adj)-(a.paid+a.adj)).slice(0,10);
+
+  const totalPaid  = daily.reduce((s,x)=>s+x.paid,0);
+  const totalAdj   = daily.reduce((s,x)=>s+x.adj,0);
+  const grandTotal = totalPaid + totalAdj;
+  const avgDaily   = daily.length ? grandTotal/daily.length : 0;
+  const bestDay    = daily.reduce((a,b)=>(a.paid+a.adj)>(b.paid+b.adj)?a:b, daily[0]||{});
+  const worstDay   = daily.reduce((a,b)=>(a.paid+a.adj)<(b.paid+b.adj)?a:b, daily[0]||{});
+
+  // مؤشرات النمو
+  const lastHalf = daily.slice(Math.floor(daily.length/2));
+  const firstHalf = daily.slice(0, Math.floor(daily.length/2));
+  const lastHalfTotal = lastHalf.reduce((s,x)=>s+x.paid+x.adj,0);
+  const firstHalfTotal = firstHalf.reduce((s,x)=>s+x.paid+x.adj,0);
+  const growthRate = firstHalfTotal > 0 ? ((lastHalfTotal-firstHalfTotal)/firstHalfTotal*100) : 0;
+
+  // ─ ألوان المناطق ────────────────────────────────────────────────────────────
+  const REG_COLORS = {
+    'شركات التحصيل':'#1a7a6b','المكتب الرئيسي':'#6c3fa0',
+    'مسقط والداخلية':'#e85d20','الباطنة الشمالية والجنوبية':'#c44b10',
+    'الباطنة':'#c44b10','الشرقية والوسطى':'#d4601a',
+    'مسندم والبريمي':'#b03808','ظفار':'#f07030',
+  };
+  const getRegColor = (r) => REG_COLORS[r.nameAr||r.nameEn] || r.color || '#888';
+
+  // ─ SVG Charts ───────────────────────────────────────────────────────────────
+  const maxDaily = daily.length ? Math.max(...daily.map(x=>x.paid+x.adj), 1) : 1;
+  const maxReg   = regions.length ? Math.max(...regions.map(x=>x.paid+x.adj), 1) : 1;
+  const maxCol   = collectors.length ? Math.max(...collectors.map(x=>x.paid+x.adj), 1) : 1;
+
+  // Line chart path
+  const W=680, H=200, PX=48, PY=20;
+  const chartW = W-PX*2, chartH = H-PY*2;
+  const pts = daily.map((d,i)=>{
+    const x = PX + (i/(daily.length-1||1))*chartW;
+    const y = PY + chartH - ((d.paid+d.adj)/maxDaily)*chartH;
+    return [x,y];
+  });
+  const linePath = pts.map((p,i)=>i===0?`M${p[0]},${p[1]}`:`L${p[0]},${p[1]}`).join(' ');
+  const areaPath = pts.length ? `${linePath} L${pts[pts.length-1][0]},${PY+chartH} L${pts[0][0]},${PY+chartH} Z` : '';
+
+  // طباعة اللوحة الكاملة — جميع التبويبات
+  const handlePrintChart = () => {
+    const omrP = n => new Intl.NumberFormat("en-US",{minimumFractionDigits:3,maximumFractionDigits:3}).format(n||0);
+    const fmtKP = n => n>=1000?(n/1000).toFixed(1)+'K':n.toFixed(1);
+    const periodLabel = filterFrom||filterTo
+      ? `${filterFrom||daily[0]?.date||''} → ${filterTo||daily[daily.length-1]?.date||''}`
+      : filterMonth!=='all'
+      ? `${MONTH_AR[filterMonth.slice(5)]} ${filterMonth.slice(0,4)}`
+      : filterYear!=='all' ? `سنة ${filterYear}` : `${d.dateRange?.from} → ${d.dateRange?.to}`;
+
+    const regBarsHTML = regions.map((r,i)=>{
+      const pct=Math.round(((r.paid+r.adj)/Math.max(...regions.map(x=>x.paid+x.adj),1))*100);
+      const col=getRegColor(r);
+      return `<div style="margin-bottom:12px">
+        <div style="display:flex;justify-content:space-between;margin-bottom:4px;direction:rtl">
+          <span style="font-size:13px;font-weight:800;color:#000">${r.nameAr||r.nameEn}</span>
+          <div style="display:flex;gap:16px">
+            <span style="font-size:11px;color:#16a34a">مدفوع: ${omrP(r.paid)}</span>
+            <span style="font-size:11px;color:#d97706">تسويات: ${omrP(r.adj)}</span>
+            <span style="font-size:13px;font-weight:900;color:${col}">${omrP(r.paid+r.adj)}</span>
+          </div>
+        </div>
+        <div style="background:#f0ece8;border-radius:6px;height:14px;overflow:hidden">
+          <div style="width:${pct}%;height:100%;background:${col};border-radius:6px"></div>
+        </div>
+      </div>`;
+    }).join('');
+
+    const collectorsHTML = collectors.map((c,i)=>{
+      const total=c.paid+c.adj;
+      const pct=Math.round((total/Math.max(...collectors.map(x=>x.paid+x.adj),1))*100);
+      const medals=["🥇","🥈","🥉"];
+      return `<tr style="background:${i%2===0?'#fff':'#f8f4f1'}">
+        <td style="padding:2.5mm 3mm;font-size:14px;text-align:center">${i<3?medals[i]:i+1}</td>
+        <td style="padding:2.5mm 3mm;font-size:12px;font-weight:800;color:#000">${c.name}</td>
+        <td style="padding:2.5mm 3mm;font-size:11px;color:#555">${c.region||''}</td>
+        <td style="padding:2.5mm 3mm;text-align:center;font-size:12px;font-weight:800;color:#16a34a">${omrP(c.paid)}</td>
+        <td style="padding:2.5mm 3mm;text-align:center;font-size:13px;font-weight:900;color:#1e3a5f">${omrP(total)}</td>
+        <td style="padding:2.5mm 3mm;text-align:center;font-size:11px;color:#555">${c.count}</td>
+      </tr>`;
+    }).join('');
+
+    const dailyHTML = [...daily].reverse().map((day,i)=>{
+      const total=day.paid+day.adj;
+      return `<tr style="background:${i%2===0?'#fff':'#f8f4f1'}">
+        <td style="padding:2.5mm 3mm;font-size:11px;color:#888">${i+1}</td>
+        <td style="padding:2.5mm 3mm;font-size:13px;font-weight:800;color:#111">${day.date}</td>
+        <td style="padding:2.5mm 3mm;text-align:center;font-size:12px;font-weight:800;color:#16a34a">${omrP(day.paid)}</td>
+        <td style="padding:2.5mm 3mm;text-align:center;font-size:12px;font-weight:800;color:#d97706">${omrP(day.adj)}</td>
+        <td style="padding:2.5mm 3mm;text-align:center;font-size:13px;font-weight:900;color:#1e3a5f">${omrP(total)}</td>
+        <td style="padding:2.5mm 3mm;text-align:center;font-size:11px;color:#555">${day.count}</td>
+      </tr>`;
+    }).join('');
+
+    const pageHeader = `<div style="display:flex;justify-content:space-between;align-items:center;
+      border-bottom:3px solid #1e3a5f;padding-bottom:6mm;margin-bottom:6mm;direction:rtl">
+      <div>
+        <div style="font-size:18pt;font-weight:900;color:#1e3a5f">📊 تقرير التحليل البياني</div>
+        <div style="font-size:9pt;color:#888;margin-top:3px">${periodLabel} · ${daily.length} يوم نشط · ${d.totalRecords?.toLocaleString()} دفعة</div>
+      </div>
+      <div style="text-align:left;font-size:9pt;color:#888">
+        <div>تاريخ الطباعة: ${new Date().toLocaleDateString('ar-OM')}</div>
+        <div style="font-weight:800;color:#1e3a5f">ONEIC © 2026</div>
+      </div>
+    </div>`;
+
+    const summaryBanner = `<div style="background:linear-gradient(120deg,#1e3a5f,#2d5a8e);
+      border-radius:12px;padding:5mm 6mm;margin-bottom:6mm;
+      display:grid;grid-template-columns:repeat(4,1fr);gap:4mm;direction:rtl">
+      ${[["💰 المدفوع",omrP(totalPaid),"#86efac"],["📊 التسويات",omrP(totalAdj),"#fde68a"],
+         ["🏆 الإجمالي",omrP(grandTotal),"#fff"],["📈 متوسط يومي",omrP(avgDaily),"#e9d5ff"]
+        ].map(([l,v,c])=>`<div style="text-align:center;background:rgba(255,255,255,0.1);border-radius:8px;padding:3mm">
+        <div style="font-size:8pt;color:rgba(255,255,255,0.7);font-weight:700">${l}</div>
+        <div style="font-size:14pt;font-weight:900;color:${c};margin-top:2mm">${v}</div>
+      </div>`).join('')}
+    </div>`;
+
+    const w = window.open('','_blank','width=1100,height=800');
+    w.document.write(`<!DOCTYPE html><html lang="ar" dir="rtl">
+    <head><meta charset="UTF-8"><title>تقرير التحليل — ${periodLabel}</title>
+    <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;700;800;900&display=swap" rel="stylesheet">
+    <style>*{box-sizing:border-box;margin:0;padding:0;-webkit-print-color-adjust:exact!important;print-color-adjust:exact!important}
+    body{font-family:'Cairo',sans-serif;background:#f5f0eb;direction:rtl}
+    .page{width:210mm;min-height:297mm;margin:8mm auto;background:#fff;padding:11mm;
+      box-shadow:0 4px 32px rgba(0,0,0,.15);page-break-after:always}
+    .page:last-child{page-break-after:auto}
+    @media print{@page{size:A4;margin:0}body{background:#fff}.page{margin:0;padding:10mm;box-shadow:none}.no-print{display:none!important}}
+    table{width:100%;border-collapse:collapse}th,td{border-bottom:1px solid #f0ece8}
+    </style></head><body>
+    <button class="no-print" onclick="window.print()" style="position:fixed;top:10px;left:10px;
+      background:#1e3a5f;color:#fff;border:none;border-radius:10px;padding:10px 24px;
+      font-size:14px;font-weight:800;cursor:pointer;z-index:999">🖨️ طباعة / PDF</button>
+
+    <div class="page">
+      ${pageHeader}
+      ${summaryBanner}
+      <div style="font-size:13pt;font-weight:900;color:#1e3a5f;margin-bottom:4mm">📅 تفصيل الأيام (${daily.length} يوم)</div>
+      <table>
+        <thead><tr style="background:#1e3a5f">
+          <th style="padding:2.5mm 3mm;color:#fff;font-size:9pt">#</th>
+          <th style="padding:2.5mm 3mm;color:#fff;font-size:9pt;text-align:right">التاريخ</th>
+          <th style="padding:2.5mm 3mm;color:#fff;font-size:9pt;text-align:center">المدفوع</th>
+          <th style="padding:2.5mm 3mm;color:#fff;font-size:9pt;text-align:center">التسويات</th>
+          <th style="padding:2.5mm 3mm;color:#fff;font-size:9pt;text-align:center">الإجمالي</th>
+          <th style="padding:2.5mm 3mm;color:#fff;font-size:9pt;text-align:center">دفعات</th>
+        </tr></thead>
+        <tbody>${dailyHTML}</tbody>
+        <tfoot><tr style="background:#f0f4ff">
+          <td colspan="2" style="padding:3mm;font-size:12pt;font-weight:900;color:#1e3a5f">الإجمالي</td>
+          <td style="padding:3mm;text-align:center;font-size:13pt;font-weight:900;color:#16a34a">${omrP(totalPaid)}</td>
+          <td style="padding:3mm;text-align:center;font-size:13pt;font-weight:900;color:#d97706">${omrP(totalAdj)}</td>
+          <td style="padding:3mm;text-align:center;font-size:14pt;font-weight:900;color:#1e3a5f">${omrP(grandTotal)}</td>
+          <td style="padding:3mm;text-align:center;font-size:12pt;font-weight:800;color:#555">${daily.reduce((s,x)=>s+x.count,0)}</td>
+        </tfoot>
+      </table>
+    </div>
+
+    <div class="page">
+      ${pageHeader}
+      <div style="font-size:13pt;font-weight:900;color:#1e3a5f;margin-bottom:4mm">🗺 التوزيع بالمنطقة</div>
+      ${regBarsHTML}
+      <div style="margin-top:6mm;font-size:13pt;font-weight:900;color:#1e3a5f;margin-bottom:4mm">
+        👤 أعلى المحصّلين (${collectors.length})
+      </div>
+      <table>
+        <thead><tr style="background:#1e3a5f">
+          <th style="padding:2.5mm 3mm;color:#fff;font-size:9pt">#</th>
+          <th style="padding:2.5mm 3mm;color:#fff;font-size:9pt;text-align:right">المحصّل</th>
+          <th style="padding:2.5mm 3mm;color:#fff;font-size:9pt;text-align:right">المنطقة</th>
+          <th style="padding:2.5mm 3mm;color:#fff;font-size:9pt;text-align:center">المدفوع</th>
+          <th style="padding:2.5mm 3mm;color:#fff;font-size:9pt;text-align:center">الإجمالي</th>
+          <th style="padding:2.5mm 3mm;color:#fff;font-size:9pt;text-align:center">دفعات</th>
+        </tr></thead>
+        <tbody>${collectorsHTML}</tbody>
+      </table>
+      <div style="text-align:center;font-size:8pt;color:#aaa;margin-top:6mm;
+        padding-top:3mm;border-top:1px solid #eee">
+        ONEIC — تقرير التحليل البياني · ${periodLabel} · © 2026
+      </div>
+    </div>
+    </body></html>`);
+    w.document.close();
+    setTimeout(()=>w.print(), 2000);
+  };
+
+  const tabs = [
+    {id:'trend', label:'📈 الاتجاه اليومي'},
+    {id:'region', label:'🗺 المناطق'},
+    {id:'collector', label:'🏆 المحصّلون'},
+    {id:'kpi', label:'📊 المؤشرات'},
+  ];
+
+  return (
+    <div style={{position:"fixed",inset:0,background:"rgba(0,0,0,0.8)",
+      display:"flex",alignItems:"center",justifyContent:"center",
+      zIndex:9999,padding:16,direction:"rtl"}}>
+      <div style={{
+        background:"#fff",borderRadius:20,width:"100%",
+        maxWidth:small?400:960,maxHeight:"92vh",
+        overflow:"hidden",display:"flex",flexDirection:"column",
+        boxShadow:"0 24px 80px rgba(0,0,0,0.5)"
+      }}>
+
+        {/* ── Header ── */}
+        <div style={{background:"linear-gradient(135deg,#1e3a5f,#2d5a8e)",padding:"18px 24px",flexShrink:0}}>
+          <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",flexWrap:"wrap",gap:12}}>
+            <div style={{display:"flex",alignItems:"center",gap:14}}>
+              <div style={{width:48,height:48,borderRadius:14,background:"rgba(255,255,255,0.15)",
+                border:"1.5px solid rgba(255,255,255,0.25)",display:"flex",alignItems:"center",
+                justifyContent:"center",fontSize:26}}>📊</div>
+              <div>
+                <div style={{fontSize:20,fontWeight:900,color:"#fff"}}>لوحة التحليل البياني</div>
+                <div style={{fontSize:11,color:"rgba(255,255,255,0.6)",marginTop:3}}>
+                  {d.dateRange?.from} → {d.dateRange?.to} &nbsp;·&nbsp; {d.totalRecords?.toLocaleString()} دفعة
+                  {growthRate !== 0 && <span style={{
+                    marginRight:8,color:growthRate>0?"#86efac":"#fca5a5",fontWeight:800
+                  }}>{growthRate>0?"▲":"▼"} {Math.abs(growthRate).toFixed(1)}% نمو</span>}
+                </div>
+              </div>
+            </div>
+            <div style={{display:"flex",gap:10,alignItems:"center"}}>
+              <button onClick={handlePrintChart} style={{
+                background:"rgba(255,255,255,0.15)",color:"#fff",
+                border:"1.5px solid rgba(255,255,255,0.3)",
+                borderRadius:10,padding:"8px 16px",fontSize:13,fontWeight:800,
+                cursor:"pointer",fontFamily:"'Cairo',sans-serif"
+              }}>🖨️ تصدير PDF</button>
+              <button onClick={onClose} style={{
+                background:"rgba(255,255,255,0.15)",color:"#fff",border:"none",
+                borderRadius:10,padding:"8px 14px",fontSize:16,cursor:"pointer",fontWeight:700
+              }}>✕</button>
+            </div>
+          </div>
+
+          {/* ── فلتر الفترة ── */}
+          <div style={{
+            marginTop:12,padding:"12px 14px",
+            background:"rgba(255,255,255,0.08)",
+            borderRadius:12,border:"1px solid rgba(255,255,255,0.2)"
+          }}>
+            {/* صف 1: السنة + الشهر + أزرار سريعة */}
+            <div style={{display:"flex",alignItems:"center",gap:8,flexWrap:"wrap",marginBottom:8}}>
+              <span style={{fontSize:12,color:"rgba(255,255,255,0.8)",fontWeight:800}}>🗓 الفترة:</span>
+              <select value={filterYear} onChange={e=>{setFilterYear(e.target.value);setFilterMonth('all');clearDayFilter();}}
+                style={{padding:"5px 10px",borderRadius:8,border:"1px solid rgba(255,255,255,0.3)",
+                  background:"rgba(30,58,95,0.8)",color:"#fff",fontSize:12,fontWeight:700,
+                  fontFamily:"'Cairo',sans-serif",cursor:"pointer",outline:"none"}}>
+                <option value="all">كل السنوات</option>
+                {years.map(y=><option key={y} value={y}>{y}</option>)}
+              </select>
+              <select value={filterMonth} onChange={e=>{setFilterMonth(e.target.value);clearDayFilter();}}
+                style={{padding:"5px 10px",borderRadius:8,border:"1px solid rgba(255,255,255,0.3)",
+                  background:"rgba(30,58,95,0.8)",color:"#fff",fontSize:12,fontWeight:700,
+                  fontFamily:"'Cairo',sans-serif",cursor:"pointer",outline:"none"}}>
+                <option value="all">كل الأشهر</option>
+                {months.map(m=><option key={m} value={m}>{MONTH_AR[m.slice(5)]||m.slice(5)} {m.slice(0,4)}</option>)}
+              </select>
+              <div style={{display:"flex",gap:5,flexWrap:"wrap"}}>
+                {[
+                  ["هذا الشهر", ()=>{const n=new Date(),y=n.getFullYear().toString(),m=String(n.getMonth()+1).padStart(2,'0');setFilterYear(y);setFilterMonth(y+'-'+m);clearDayFilter();}],
+                  ["هذه السنة", ()=>{setFilterYear(new Date().getFullYear().toString());setFilterMonth('all');clearDayFilter();}],
+                  ["الكل",      ()=>{setFilterYear('all');setFilterMonth('all');clearDayFilter();}],
+                ].map(([l,a])=>(
+                  <button key={l} onClick={a} style={{
+                    background:"rgba(255,255,255,0.2)",color:"#fff",border:"none",
+                    borderRadius:7,padding:"4px 10px",fontSize:11,fontWeight:700,
+                    cursor:"pointer",fontFamily:"'Cairo',sans-serif",whiteSpace:"nowrap"
+                  }}>{l}</button>
+                ))}
+              </div>
+            </div>
+            {/* صف 2: اختيار الأيام من - إلى */}
+            <div style={{display:"flex",alignItems:"center",gap:8,flexWrap:"wrap"}}>
+              <span style={{fontSize:11,color:"rgba(255,255,255,0.7)",fontWeight:700}}>📅 من يوم:</span>
+              <input type="date" value={filterFrom}
+                onChange={e=>setFilterFrom(e.target.value)}
+                style={{padding:"4px 8px",borderRadius:8,border:"1px solid rgba(255,255,255,0.3)",
+                  background:"rgba(30,58,95,0.8)",color:"#fff",fontSize:12,
+                  fontFamily:"'Cairo',sans-serif",outline:"none",cursor:"pointer"}}
+              />
+              <span style={{fontSize:11,color:"rgba(255,255,255,0.7)",fontWeight:700}}>إلى:</span>
+              <input type="date" value={filterTo}
+                onChange={e=>setFilterTo(e.target.value)}
+                style={{padding:"4px 8px",borderRadius:8,border:"1px solid rgba(255,255,255,0.3)",
+                  background:"rgba(30,58,95,0.8)",color:"#fff",fontSize:12,
+                  fontFamily:"'Cairo',sans-serif",outline:"none",cursor:"pointer"}}
+              />
+              {(filterFrom||filterTo) && (
+                <button onClick={clearDayFilter} style={{
+                  background:"rgba(232,93,32,0.4)",color:"#fff",border:"none",
+                  borderRadius:7,padding:"4px 10px",fontSize:11,fontWeight:700,
+                  cursor:"pointer",fontFamily:"'Cairo',sans-serif"
+                }}>✕ مسح</button>
+              )}
+              {/* ملخص الفترة */}
+              <div style={{marginRight:"auto",background:"rgba(255,255,255,0.15)",
+                borderRadius:8,padding:"4px 12px",fontSize:11,color:"#fff",fontWeight:700}}>
+                📊 {daily.length} يوم &nbsp;·&nbsp; {fmt(grandTotal)} OMR
+              </div>
+            </div>
+          </div>
+
+          {/* KPI شريط */}
+          <div style={{display:"grid",gridTemplateColumns:small?"1fr 1fr":"repeat(4,1fr)",
+            gap:8,marginTop:10,borderTop:"1px solid rgba(255,255,255,0.15)",paddingTop:10}}>
+            {[
+              ["💰 إجمالي المدفوع", fmt(totalPaid), "#86efac"],
+              ["📊 التسويات", fmt(totalAdj), "#fde68a"],
+              ["📈 متوسط يومي", fmt(avgDaily), "#e9d5ff"],
+              ["🏆 أفضل يوم", (bestDay.date||'').slice(5)+' · '+fmtK(bestDay.paid+bestDay.adj||0), "#fff"],
+            ].map(([l,v,c])=>(
+              <div key={l} style={{textAlign:"center",padding:"10px",
+                background:"rgba(255,255,255,0.08)",border:"1px solid rgba(255,255,255,0.12)",borderRadius:10}}>
+                <div style={{fontSize:10,color:"rgba(255,255,255,0.6)",fontWeight:700,marginBottom:4}}>{l}</div>
+                <div style={{fontSize:small?14:18,fontWeight:900,color:c,lineHeight:1}}>{v}</div>
+              </div>
+            ))}
+          </div>
+        </div>
+
+        {/* ── Tabs ── */}
+        <div style={{display:"flex",borderBottom:"2px solid #f0ece8",background:"#f8f9fc",padding:"0 8px",flexShrink:0}}>
+          {tabs.map(t=>(
+            <button key={t.id} onClick={()=>setActiveChart(t.id)} style={{
+              flex:1,padding:"12px 6px",border:"none",cursor:"pointer",
+              background:"transparent",color:activeChart===t.id?"#1e3a5f":"#999",
+              fontWeight:activeChart===t.id?900:600,fontSize:small?11:14,
+              fontFamily:"'Cairo',sans-serif",
+              borderBottom:activeChart===t.id?"3px solid #1e3a5f":"3px solid transparent",
+              transition:"all 0.2s"
+            }}>{t.label}</button>
+          ))}
+        </div>
+
+        {/* ── Content ── */}
+        <div style={{flex:1,overflow:"auto",padding:small?"12px":"20px 24px"}}>
+
+          {/* ══ الاتجاه اليومي ══ */}
+          {activeChart==='trend' && (
+            <div>
+              <div style={{fontSize:13,color:"#555",fontWeight:700,marginBottom:12}}>
+                الدفعات اليومية — من {d.dateRange?.from} إلى {d.dateRange?.to}
+              </div>
+
+              {/* Line chart SVG — تواريخ واضحة */}
+              {(() => {
+                const CW = Math.max(daily.length * 38, 680);
+                const CH = 220;
+                const cpx = 60, cpy = 24;
+                const cw = CW - cpx*2, ch = CH - cpy*2 - 40;
+                const cpts = daily.map((d,i)=>{
+                  const x = cpx + (daily.length>1 ? (i/(daily.length-1))*cw : cw/2);
+                  const y = cpy + ch - ((d.paid+d.adj)/maxDaily)*ch;
+                  return [x, y, d];
+                });
+                const cLine = cpts.map(([x,y],i)=>i===0?`M${x},${y}`:`L${x},${y}`).join(' ');
+                const cArea = cpts.length
+                  ? cLine+` L${cpts[cpts.length-1][0]},${cpy+ch} L${cpts[0][0]},${cpy+ch} Z`
+                  : '';
+                return (
+                <div style={{background:"#f8fafc",borderRadius:14,padding:"16px 0 8px",
+                  border:"1px solid #e8f0fe",marginBottom:20,overflowX:"auto"}}>
+                  <svg width={CW} height={CH} style={{display:"block",minWidth:680}}>
+                    <defs>
+                      <linearGradient id="aGrad2" x1="0" y1="0" x2="0" y2="1">
+                        <stop offset="0%" stopColor="#1e3a5f" stopOpacity="0.35"/>
+                        <stop offset="100%" stopColor="#1e3a5f" stopOpacity="0.02"/>
+                      </linearGradient>
+                    </defs>
+                    {/* Grid */}
+                    {[0,0.25,0.5,0.75,1].map(r=>(
+                      <g key={r}>
+                        <line x1={cpx} y1={cpy+ch*(1-r)} x2={CW-cpx} y2={cpy+ch*(1-r)}
+                          stroke={r===0?"#ccc":"#e8f0fe"} strokeWidth={r===0?1.5:1}
+                          strokeDasharray={r===0?"":"4,4"}/>
+                        <text x={cpx-8} y={cpy+ch*(1-r)+4} textAnchor="end"
+                          fontSize="11" fill="#666" fontWeight="700" fontFamily="Cairo">
+                          {fmtK(maxDaily*r)}
+                        </text>
+                      </g>
+                    ))}
+                    {/* Area */}
+                    {cArea && <path d={cArea} fill="url(#aGrad2)"/>}
+                    {/* Line */}
+                    {cLine && <path d={cLine} fill="none" stroke="#1e3a5f"
+                      strokeWidth="2.5" strokeLinejoin="round" strokeLinecap="round"/>}
+                    {/* Points + Labels */}
+                    {cpts.map(([x,y,day],i)=>{
+                      const total = day.paid+day.adj;
+                      const isBest = total===maxDaily;
+                      const isWorst = total===Math.min(...daily.map(d=>d.paid+d.adj));
+                      // تواريخ: كل يوم إذا أقل من 15، وإلا كل 3
+                      const showLabel = daily.length<=15 || i%Math.ceil(daily.length/15)===0 || isBest;
+                      return (
+                        <g key={i}>
+                          {/* خط عمودي خفيف */}
+                          <line x1={x} y1={cpy+ch} x2={x} y2={y+8}
+                            stroke={isBest?"#e85d2030":"#1e3a5f15"} strokeWidth="1"/>
+                          {/* النقطة */}
+                          <circle cx={x} cy={y}
+                            r={isBest?8:isWorst?6:4}
+                            fill={isBest?"#e85d20":isWorst?"#888":"#1e3a5f"}
+                            stroke="#fff" strokeWidth="2"/>
+                          {/* قيمة أفضل يوم */}
+                          {isBest && (
+                            <g>
+                              <rect x={x-32} y={y-32} width={64} height={20} rx="5"
+                                fill="#e85d20"/>
+                              <text x={x} y={y-18} textAnchor="middle"
+                                fontSize="10" fill="#fff" fontWeight="bold" fontFamily="Cairo">
+                                🏆 {fmtK(total)}
+                              </text>
+                            </g>
+                          )}
+                          {/* التاريخ */}
+                          {showLabel && (
+                            <g>
+                              <line x1={x} y1={cpy+ch+2} x2={x} y2={cpy+ch+8}
+                                stroke="#aaa" strokeWidth="1"/>
+                              <text x={x} y={cpy+ch+20}
+                                textAnchor="middle" fontSize="10"
+                                fill={isBest?"#e85d20":"#444"}
+                                fontWeight={isBest?"900":"700"}
+                                fontFamily="Cairo">
+                                {day.date.slice(5,7)+'-'+day.date.slice(8)}
+                              </text>
+                              <text x={x} y={cpy+ch+32}
+                                textAnchor="middle" fontSize="9"
+                                fill="#aaa" fontFamily="Cairo">
+                                {day.date.slice(0,4)}
+                              </text>
+                            </g>
+                          )}
+                        </g>
+                      );
+                    })}
+                  </svg>
+                </div>);
+              })()}
+
+              {/* ملخص أسبوعي */}
+              <div style={{display:"grid",gridTemplateColumns:"repeat(3,1fr)",gap:12,marginBottom:16}}>
+                {[
+                  ["📅 أيام نشطة", daily.length+" يوم", "#1e3a5f"],
+                  ["⬆️ أعلى يوم", (bestDay.date||'').slice(5)+" · "+fmt(bestDay.paid+bestDay.adj||0), "#e85d20"],
+                  ["📉 أدنى يوم", (worstDay.date||'').slice(5)+" · "+fmt(worstDay.paid+worstDay.adj||0), "#888"],
+                ].map(([l,v,c])=>(
+                  <div key={l} style={{background:"#f8f4f1",borderRadius:12,padding:"14px",textAlign:"center",border:"1px solid #f0ece8"}}>
+                    <div style={{fontSize:11,color:"#888",fontWeight:700,marginBottom:6}}>{l}</div>
+                    <div style={{fontSize:14,fontWeight:900,color:c}}>{v}</div>
+                  </div>
+                ))}
+              </div>
+
+              {/* جدول تفصيلي */}
+              <div style={{maxHeight:220,overflowY:"auto"}}>
+                <div style={{display:"grid",gridTemplateColumns:"110px 1fr 130px 130px 60px",
+                  gap:6,padding:"8px 10px",background:"#1e3a5f",borderRadius:8,marginBottom:6}}>
+                  {["التاريخ","التقدم","المدفوع","الإجمالي","عدد"].map((h,i)=>(
+                    <div key={i} style={{fontSize:12,fontWeight:800,color:"#fff",textAlign:i>=2?"center":"right"}}>{h}</div>
+                  ))}
+                </div>
+                {[...daily].reverse().map((day,i)=>{
+                  const total=day.paid+day.adj;
+                  const pct=(total/maxDaily*100);
+                  return(
+                  <div key={i} style={{
+                    display:"grid",gridTemplateColumns:"110px 1fr 130px 130px 60px",
+                    gap:6,alignItems:"center",padding:"9px 10px",
+                    background:i%2===0?"#fff":"#f8f4f1",
+                    borderRadius:8,marginBottom:3,border:"1px solid #f0ece8"
+                  }}>
+                    <div style={{fontSize:14,fontWeight:800,color:"#111"}}>{day.date}</div>
+                    <div style={{background:"#f0ece8",borderRadius:4,height:8,overflow:"hidden"}}>
+                      <div style={{width:pct+"%",height:"100%",
+                        background:`linear-gradient(90deg,#1e3a5f,#2d5a8e)`,borderRadius:4}}/>
+                    </div>
+                    <div style={{fontSize:14,fontWeight:800,color:"#16a34a",textAlign:"center"}}>{fmt(day.paid)}</div>
+                    <div style={{fontSize:15,fontWeight:900,color:"#1e3a5f",textAlign:"center"}}>{fmt(total)}</div>
+                    <div style={{textAlign:"center"}}>
+                      <span style={{background:"#1e3a5f22",color:"#1e3a5f",borderRadius:6,
+                        padding:"2px 7px",fontSize:12,fontWeight:700}}>{day.count}</span>
+                    </div>
+                  </div>);
+                })}
+              </div>
+            </div>
+          )}
+
+          {/* ══ المناطق ══ */}
+          {activeChart==='region' && (
+            <div>
+              <div style={{fontSize:13,color:"#555",fontWeight:700,marginBottom:16}}>
+                توزيع المدفوعات حسب المنطقة
+              </div>
+
+              {/* SVG Donut Chart */}
+              <div style={{display:"flex",gap:24,alignItems:"center",marginBottom:20,flexWrap:"wrap"}}>
+                <svg viewBox="0 0 200 200" width={small?160:200} style={{flexShrink:0}}>
+                  {(() => {
+                    let offset = -90;
+                    return regions.map((r,i)=>{
+                      const pct = (r.paid+r.adj)/grandTotal;
+                      const angle = pct * 360;
+                      const rad = Math.PI/180;
+                      const r1=80, r2=50, cx=100, cy=100;
+                      const x1=cx+r1*Math.cos((offset)*rad);
+                      const y1=cy+r1*Math.sin((offset)*rad);
+                      const x2=cx+r1*Math.cos((offset+angle)*rad);
+                      const y2=cy+r1*Math.sin((offset+angle)*rad);
+                      const x3=cx+r2*Math.cos((offset+angle)*rad);
+                      const y3=cy+r2*Math.sin((offset+angle)*rad);
+                      const x4=cx+r2*Math.cos((offset)*rad);
+                      const y4=cy+r2*Math.sin((offset)*rad);
+                      const large = angle>180?1:0;
+                      const col = getRegColor(r);
+                      const path = `M${x1},${y1} A${r1},${r1} 0 ${large},1 ${x2},${y2} L${x3},${y3} A${r2},${r2} 0 ${large},0 ${x4},${y4} Z`;
+                      offset += angle;
+                      return <path key={i} d={path} fill={col} stroke="#fff" strokeWidth="2"/>;
+                    });
+                  })()}
+                  <text x="100" y="96" textAnchor="middle" fontSize="11" fill="#1e3a5f"
+                    fontWeight="900" fontFamily="Cairo">الإجمالي</text>
+                  <text x="100" y="112" textAnchor="middle" fontSize="9" fill="#555"
+                    fontFamily="Cairo">{fmtK(grandTotal)}</text>
+                </svg>
+
+                {/* Legend */}
+                <div style={{flex:1,minWidth:180}}>
+                  {regions.map((r,i)=>{
+                    const col = getRegColor(r);
+                    const pct = Math.round((r.paid+r.adj)/grandTotal*100);
+                    return(
+                    <div key={i} style={{display:"flex",alignItems:"center",gap:10,
+                      padding:"8px 10px",borderRadius:8,marginBottom:6,
+                      background:"#f8f4f1",border:`1px solid #f0ece8`,
+                      borderRight:`4px solid ${col}`}}>
+                      <div style={{flex:1}}>
+                        <div style={{fontSize:13,fontWeight:800,color:"#000"}}>{r.nameAr||r.nameEn}</div>
+                        <div style={{fontSize:11,color:"#888"}}>{r.count} دفعة</div>
+                      </div>
+                      <div style={{textAlign:"left"}}>
+                        <div style={{fontSize:14,fontWeight:900,color:col}}>{fmt(r.paid+r.adj)}</div>
+                        <div style={{fontSize:12,fontWeight:700,color:"#888"}}>{pct}%</div>
+                      </div>
+                    </div>);
+                  })}
+                </div>
+              </div>
+
+              {/* Bar chart للمناطق */}
+              <div style={{background:"#f8fafc",borderRadius:12,padding:"16px",border:"1px solid #e8f0fe"}}>
+                {regions.map((r,i)=>{
+                  const pct=(r.paid+r.adj)/maxReg*100;
+                  const col=getRegColor(r);
+                  return(
+                  <div key={i} style={{marginBottom:14}}>
+                    <div style={{display:"flex",justifyContent:"space-between",marginBottom:5}}>
+                      <span style={{fontSize:13,fontWeight:800,color:"#000"}}>{r.nameAr||r.nameEn}</span>
+                      <span style={{fontSize:13,fontWeight:900,color:col}}>{fmt(r.paid+r.adj)} OMR</span>
+                    </div>
+                    <div style={{background:"#e8f0fe",borderRadius:6,height:12,overflow:"hidden",position:"relative"}}>
+                      <div style={{
+                        width:pct+"%",height:"100%",
+                        background:`linear-gradient(90deg,${col},${col}aa)`,
+                        borderRadius:6,transition:"width 0.8s ease"
+                      }}/>
+                    </div>
+                    <div style={{display:"flex",justifyContent:"space-between",marginTop:3}}>
+                      <span style={{fontSize:10,color:"#888"}}>مدفوع: {fmt(r.paid)}</span>
+                      <span style={{fontSize:10,color:"#888"}}>تسويات: {fmt(r.adj)}</span>
+                    </div>
+                  </div>);
+                })}
+              </div>
+            </div>
+          )}
+
+          {/* ══ المحصّلون ══ */}
+          {activeChart==='collector' && (
+            <div>
+              <div style={{fontSize:13,color:"#555",fontWeight:700,marginBottom:16}}>
+                أعلى {collectors.length} محصّلين خلال الفترة
+              </div>
+
+              {/* Top 3 podium */}
+              <div style={{display:"flex",justifyContent:"center",alignItems:"flex-end",
+                gap:12,marginBottom:24,direction:"ltr"}}>
+                {[1,0,2].map(rank=>{
+                  const c = collectors[rank];
+                  if (!c) return null;
+                  const heights=[90,110,75];
+                  const colors=["#c0c0c0","#ffd700","#cd7f32"];
+                  const labels=["🥈 ثانٍ","🥇 أول","🥉 ثالث"];
+                  return(
+                  <div key={rank} style={{textAlign:"center",flex:1,maxWidth:160}}>
+                    <div style={{fontSize:10,color:"#888",fontWeight:700,marginBottom:4}}>{labels[rank]}</div>
+                    <div style={{fontSize:12,fontWeight:800,color:"#000",
+                      marginBottom:6,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>
+                      {c.name}
+                    </div>
+                    <div style={{fontSize:13,fontWeight:900,color:"#1e3a5f",marginBottom:6}}>
+                      {fmt(c.paid+c.adj)}
+                    </div>
+                    <div style={{
+                      height:heights[rank],
+                      background:`linear-gradient(180deg,${colors[rank]},${colors[rank]}88)`,
+                      borderRadius:"8px 8px 0 0",
+                      border:`2px solid ${colors[rank]}`,
+                      display:"flex",alignItems:"center",justifyContent:"center",
+                      fontSize:24
+                    }}>{["🥈","🥇","🥉"][rank]}</div>
+                  </div>);
+                })}
+              </div>
+
+              {/* قائمة كاملة */}
+              <div style={{maxHeight:280,overflowY:"auto"}}>
+                <div style={{display:"grid",gridTemplateColumns:"30px 1fr 80px 120px 50px",
+                  gap:6,padding:"8px 10px",background:"#1e3a5f",borderRadius:8,marginBottom:6}}>
+                  {["#","المحصّل","المنطقة","الإجمالي","عدد"].map((h,i)=>(
+                    <div key={i} style={{fontSize:12,fontWeight:800,color:"#fff",textAlign:i>=2?"center":"right"}}>{h}</div>
+                  ))}
+                </div>
+                {collectors.map((c,i)=>{
+                  const total=c.paid+c.adj;
+                  const pct=Math.round(total/maxCol*100);
+                  const medals=["🥇","🥈","🥉"];
+                  return(
+                  <div key={i} style={{
+                    display:"grid",gridTemplateColumns:"30px 1fr 80px 120px 50px",
+                    gap:6,alignItems:"center",padding:"10px",
+                    background:i%2===0?"#fff":"#f8f4f1",
+                    borderRadius:8,marginBottom:4,border:"1px solid #f0ece8"
+                  }}>
+                    <div style={{textAlign:"center",fontSize:i<3?18:13,fontWeight:800,
+                      color:["#ffd700","#c0c0c0","#cd7f32","#555"][Math.min(i,3)]}}>
+                      {i<3?medals[i]:i+1}
+                    </div>
+                    <div>
+                      <div style={{fontSize:13,fontWeight:800,color:"#000",
+                        overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{c.name}</div>
+                      <div style={{height:4,background:"#f0ece8",borderRadius:2,marginTop:4,overflow:"hidden"}}>
+                        <div style={{width:pct+"%",height:"100%",
+                          background:"linear-gradient(90deg,#1e3a5f,#2d5a8e)",borderRadius:2}}/>
+                      </div>
+                    </div>
+                    <div style={{textAlign:"center",fontSize:10,color:"#888",
+                      overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>
+                      {c.region}
+                    </div>
+                    <div style={{textAlign:"center",fontSize:15,fontWeight:900,color:"#1e3a5f"}}>{fmt(total)}</div>
+                    <div style={{textAlign:"center"}}>
+                      <span style={{background:"#1e3a5f22",color:"#1e3a5f",borderRadius:6,
+                        padding:"2px 6px",fontSize:12,fontWeight:700}}>{c.count}</span>
+                    </div>
+                  </div>);
+                })}
+              </div>
+            </div>
+          )}
+
+          {/* ══ مؤشرات الأداء ══ */}
+          {activeChart==='kpi' && (
+            <div>
+              <div style={{fontSize:13,color:"#555",fontWeight:700,marginBottom:16}}>
+                مؤشرات الأداء الرئيسية — KPIs
+              </div>
+
+              {/* البطاقات الرئيسية */}
+              <div style={{display:"grid",gridTemplateColumns:small?"1fr":"1fr 1fr",gap:14,marginBottom:20}}>
+                {[
+                  {icon:"💰",title:"إجمالي المدفوع",value:fmt(totalPaid),sub:"OMR",color:"#16a34a",bg:"#f0fdf4"},
+                  {icon:"📊",title:"إجمالي التسويات",value:fmt(totalAdj),sub:"OMR",color:"#d97706",bg:"#fffbeb"},
+                  {icon:"🏆",title:"الإجمالي الكلي",value:fmt(grandTotal),sub:"OMR",color:"#1e3a5f",bg:"#eff6ff"},
+                  {icon:"📈",title:"المتوسط اليومي",value:fmt(avgDaily),sub:"OMR/يوم",color:"#7c3aed",bg:"#f5f3ff"},
+                  {icon:"📅",title:"أيام نشطة",value:daily.length,sub:"من إجمالي الأيام",color:"#0369a1",bg:"#f0f9ff"},
+                  {icon:"👤",title:"عدد المحصّلين",value:collectors.length,sub:"محصّل نشط",color:"#be185d",bg:"#fdf2f8"},
+                  {icon:"📋",title:"إجمالي الدفعات",value:(d.totalRecords||0).toLocaleString(),sub:"دفعة",color:"#065f46",bg:"#ecfdf5"},
+                  {icon:growthRate>=0?"📈":"📉",title:"معدل النمو",value:Math.abs(growthRate).toFixed(1)+"%",
+                    sub:growthRate>=0?"نمو إيجابي ✅":"تراجع ⚠️",
+                    color:growthRate>=0?"#16a34a":"#dc2626",
+                    bg:growthRate>=0?"#f0fdf4":"#fef2f2"},
+                ].map((kpi,i)=>(
+                  <div key={i} style={{
+                    background:kpi.bg,borderRadius:14,padding:"16px 18px",
+                    border:`1.5px solid ${kpi.color}22`,
+                    display:"flex",alignItems:"center",gap:16
+                  }}>
+                    <div style={{
+                      width:50,height:50,borderRadius:14,
+                      background:`${kpi.color}18`,
+                      display:"flex",alignItems:"center",justifyContent:"center",
+                      fontSize:24,flexShrink:0
+                    }}>{kpi.icon}</div>
+                    <div>
+                      <div style={{fontSize:11,color:"#888",fontWeight:700,marginBottom:4}}>{kpi.title}</div>
+                      <div style={{fontSize:22,fontWeight:900,color:kpi.color,lineHeight:1}}>{kpi.value}</div>
+                      <div style={{fontSize:10,color:"#aaa",marginTop:3}}>{kpi.sub}</div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+
+              {/* توزيع بالنسبة المئوية */}
+              <div style={{background:"#f8f4f1",borderRadius:14,padding:"16px",border:"1px solid #f0ece8"}}>
+                <div style={{fontSize:13,fontWeight:800,color:"#333",marginBottom:12}}>
+                  📊 توزيع المدفوعات بالنسبة المئوية
+                </div>
+                <div style={{height:24,background:"#f0ece8",borderRadius:12,overflow:"hidden",
+                  display:"flex",marginBottom:10}}>
+                  {regions.map((r,i)=>{
+                    const pct=(r.paid+r.adj)/grandTotal*100;
+                    const col=getRegColor(r);
+                    return pct>1 && (
+                      <div key={i} title={`${r.nameAr}: ${pct.toFixed(1)}%`}
+                        style={{width:pct+"%",background:col,height:"100%",
+                          borderLeft:i>0?"1px solid rgba(255,255,255,0.4)":""}}/>
+                    );
+                  })}
+                </div>
+                <div style={{display:"flex",flexWrap:"wrap",gap:8}}>
+                  {regions.map((r,i)=>{
+                    const pct=(r.paid+r.adj)/grandTotal*100;
+                    const col=getRegColor(r);
+                    return pct>1 && (
+                      <div key={i} style={{display:"flex",alignItems:"center",gap:5}}>
+                        <div style={{width:10,height:10,borderRadius:3,background:col,flexShrink:0}}/>
+                        <span style={{fontSize:11,color:"#555",fontWeight:700}}>
+                          {r.nameAr||r.nameEn} {pct.toFixed(1)}%
+                        </span>
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
+            </div>
+          )}
+
+        </div>
+      </div>
+    </div>
+  );
+}
+
 function BulkPaymentSection({ bulk, small }) {
   const [activeTab, setActiveTab]       = useState('daily');
   const [selectedDate, setSelectedDate] = useState(null);
@@ -6780,6 +7619,7 @@ function BulkPaymentSection({ bulk, small }) {
   const [bulkSuccess, setBulkSuccess]   = useState(false);
   const [bulkError, setBulkError]       = useState(null);
   const [bulkData, setBulkData]         = useState(bulk);
+  const [showAnalytics, setShowAnalytics] = useState(false);
   const fileRef = useRef(null);
 
   const handleBulkFile = async (file) => {
@@ -6856,17 +7696,10 @@ function BulkPaymentSection({ bulk, small }) {
       // ── حفظ محلي ─────────────────────────────────────────────────────────
       try { localStorage.setItem('oneic_bulk_data', JSON.stringify(final)); } catch(e){}
 
-      // ── رفع للـ JSONbin ────────────────────────────────────────────────────
+      // ── رفع لـ Supabase ──────────────────────────────────────────────────────
       try {
-        await fetch(`https://api.jsonbin.io/v3/b/${JSONBIN_ID}`, {
-          method: 'PUT',
-          headers: {
-            'Content-Type': 'application/json',
-            'X-Master-Key': JSONBIN_KEY
-          },
-          body: JSON.stringify({ bulk: final })
-        });
-      } catch(e) { console.warn('JSONbin bulk upload failed:', e); }
+        await sbUpsert('oneic_bulk', { id: 1, payload: final, updated_at: new Date().toISOString() });
+      } catch(e) { console.warn('Supabase bulk upload failed:', e); }
 
       setBulkData(final);
       setSelectedDate(null);
@@ -6878,21 +7711,15 @@ function BulkPaymentSection({ bulk, small }) {
 
   useEffect(() => {
     async function loadBulk() {
-      // أولاً: جرّب JSONbin
+      // أولاً: جرّب Supabase
       try {
-        const res = await fetch(`https://api.jsonbin.io/v3/b/${JSONBIN_ID}/latest`, {
-          headers: { 'X-Master-Key': JSONBIN_KEY, 'X-Bin-Meta': 'false' }
-        });
-        if (res.ok) {
-          const json = await res.json();
-          const d = json.bulk || json;
-          if (d?.daily?.length > 0) {
-            setBulkData(d);
-            try { localStorage.setItem('oneic_bulk_data', JSON.stringify(d)); } catch(e) {}
-            return;
-          }
+        const row = await sbGet('oneic_bulk');
+        if (row?.payload?.daily?.length > 0) {
+          setBulkData(row.payload);
+          try { localStorage.setItem('oneic_bulk_data', JSON.stringify(row.payload)); } catch(e) {}
+          return;
         }
-      } catch(e) { console.warn('JSONbin load failed, using localStorage'); }
+      } catch(e) { console.warn('Supabase bulk load failed, using localStorage:', e.message); }
       // ثانياً: localStorage
       try {
         const saved = localStorage.getItem('oneic_bulk_data');
@@ -6940,6 +7767,7 @@ function BulkPaymentSection({ bulk, small }) {
   const tabs = [{id:'daily',label:'📅 يومي'},{id:'region',label:'🗺 المناطق'},{id:'collector',label:'👤 المحصّلون'}];
 
   return (
+    <>
     <div style={{background:"#fff",borderRadius:16,boxShadow:"0 3px 18px rgba(0,0,0,0.07)",
       border:"1.5px solid #f0ece8",marginBottom:18,overflow:"hidden"}}>
 
@@ -6967,6 +7795,15 @@ function BulkPaymentSection({ bulk, small }) {
             </div>
           </div>
           <div style={{display:"flex",gap:10,alignItems:"center"}}>
+          <button onClick={()=>setShowAnalytics(true)} style={{
+            background:"linear-gradient(120deg,rgba(255,255,255,0.25),rgba(255,255,255,0.15))",
+            color:"#fff",border:"1.5px solid rgba(255,255,255,0.5)",
+            borderRadius:10,padding:"8px 16px",
+            fontSize:13,fontWeight:800,cursor:"pointer",
+            fontFamily:"'Cairo',sans-serif",
+            display:"flex",alignItems:"center",gap:6,
+            whiteSpace:"nowrap",boxShadow:"0 2px 8px rgba(0,0,0,0.2)"
+          }}>📊 {small?"تحليل":"التحليل البياني"}</button>
           <button onClick={()=>handleBulkPrint(bulkData,filterFrom,filterTo)} style={{
             background:"rgba(255,255,255,0.15)",color:"#fff",
             border:"1.5px solid rgba(255,255,255,0.3)",
@@ -7153,7 +7990,7 @@ function BulkPaymentSection({ bulk, small }) {
                       padding:"2px",borderRadius:4,
                       background:isSel?"rgba(232,93,32,0.1)":"transparent",
                       border:isSel?"1px solid #e85d20":"1px solid transparent"}}>
-                    <div style={{fontSize:7,color:isSel?"#e85d20":"#aaa",fontWeight:isSel?800:500,textAlign:"center",lineHeight:1}}>
+                    <div style={{fontSize:9,color:isSel?"#e85d20":"#222",fontWeight:isSel?900:700,textAlign:"center",lineHeight:1}}>
                       {total>500?fmt(total).slice(0,5):''}
                     </div>
                     <div style={{width:"100%",height:Math.max(pct,3)+"%",minHeight:4,
@@ -7167,8 +8004,8 @@ function BulkPaymentSection({ bulk, small }) {
               {(d.daily||[]).filter(x=>(!filterFrom||x.date>=filterFrom)&&(!filterTo||x.date<=filterTo)).map((day,i)=>(
                 <div key={i} onClick={()=>setSelectedDate(selectedDate===day.date?null:day.date)}
                   style={{minWidth:small?20:26,flex:"0 0 auto",textAlign:"center",
-                    fontSize:8,cursor:"pointer",fontWeight:700,
-                    color:selectedDate===day.date?"#e85d20":"#aaa"}}>
+                    fontSize:10,cursor:"pointer",fontWeight:800,
+                    color:selectedDate===day.date?"#e85d20":"#333"}}>
                   {day.date.slice(8)}
                 </div>))}
             </div>
@@ -7328,6 +8165,8 @@ function BulkPaymentSection({ bulk, small }) {
 
       </div>
     </div>
+    {showAnalytics&&<AnalyticsModal bulk={bulkData} onClose={()=>setShowAnalytics(false)} small={small}/>}
+    </>
   );
 }
 
@@ -8137,24 +8976,19 @@ export default function Dashboard() {
     return BULK_SEED;
   });
 
-  // ── تحميل من JSONbin عند فتح الصفحة ──────────────────────────────────────
+  // ── تحميل من Supabase عند فتح الصفحة ──────────────────────────────────────
   useEffect(() => {
     async function load() {
       try {
-        const res = await fetch(
-          `https://api.jsonbin.io/v3/b/${JSONBIN_ID}/latest`,
-          { headers: { 'X-Master-Key': JSONBIN_KEY, 'X-Bin-Meta': 'false' } }
-        );
-        if (res.ok) {
-          const d = await res.json();
-          if (d?.regions?.length > 0) {
-            setData(d);
-            try { localStorage.setItem('oneic_dashboard_data', JSON.stringify(d)); } catch(e) {}
-            setLoadingServer(false);
-            return;
-          }
+        const row = await sbGet('oneic_data');
+        if (row?.payload?.regions?.length > 0) {
+          const d = row.payload;
+          setData(d);
+          try { localStorage.setItem('oneic_dashboard_data', JSON.stringify(d)); } catch(e) {}
+          setLoadingServer(false);
+          return;
         }
-      } catch(e) { console.warn('JSONbin unavailable, using localStorage'); }
+      } catch(e) { console.warn('Supabase unavailable, using localStorage:', e.message); }
       // fallback localStorage
       try {
         const saved = localStorage.getItem('oneic_dashboard_data');
@@ -8194,20 +9028,8 @@ export default function Dashboard() {
     // ── رفع لـ JSONbin + localStorage ───────────────────────────────────
     setUploading(true);
     try {
-      const res = await fetch(
-        `https://api.jsonbin.io/v3/b/${JSONBIN_ID}`,
-        {
-          method: 'PUT',
-          headers: {
-            'Content-Type': 'application/json',
-            'X-Master-Key': JSONBIN_KEY
-          },
-          body: JSON.stringify(dataToSave)
-        }
-      );
-      if (res.ok) {
-        console.log('✅ Saved to JSONbin');
-      }
+      await sbUpsert('oneic_data', { id: 1, payload: dataToSave, updated_at: new Date().toISOString() });
+      console.log('✅ Saved to Supabase');
     } catch(e) {
       console.warn('JSONbin save failed:', e);
     }
@@ -8239,11 +9061,7 @@ export default function Dashboard() {
       // رفع التاريخ لـ JSONbin أيضاً
       try {
         const fullData = { ...dataToSave, history: newHistory };
-        fetch(`https://api.jsonbin.io/v3/b/${JSONBIN_ID}`, {
-          method: 'PUT',
-          headers: { 'Content-Type': 'application/json', 'X-Master-Key': JSONBIN_KEY },
-          body: JSON.stringify(fullData)
-        });
+        sbUpsert('oneic_data', { id: 1, payload: fullData, updated_at: new Date().toISOString() });
       } catch(e) {}
       return newHistory;
     });
@@ -8290,7 +9108,7 @@ export default function Dashboard() {
           <div style={{background:"#fff",borderRadius:20,width:"100%",maxWidth:480,padding:28,boxShadow:"0 20px 60px rgba(0,0,0,0.3)"}}>
             <div style={{fontSize:18,fontWeight:900,color:"#1e3a5f",marginBottom:6}}>⚙️ إعدادات المزامنة</div>
             <div style={{fontSize:12,color:"#888",marginBottom:20}}>
-              أنشئ حساباً مجانياً على <a href="https://jsonbin.io" target="_blank" rel="noreferrer" style={{color:"#e85d20"}}>jsonbin.io</a> ← أنشئ Bin جديد ← انسخ الـ ID والـ API Key
+              البيانات محفوظة في Supabase — تظهر على جميع الأجهزة تلقائياً ✅
             </div>
             <div style={{marginBottom:14}}>
               <div style={{fontSize:13,fontWeight:700,color:"#333",marginBottom:6}}>Bin ID</div>
@@ -8510,7 +9328,7 @@ export default function Dashboard() {
           <div style={{background:"#fff",borderRadius:20,width:"100%",maxWidth:480,padding:28,boxShadow:"0 20px 60px rgba(0,0,0,0.3)"}}>
             <div style={{fontSize:18,fontWeight:900,color:"#1e3a5f",marginBottom:6}}>⚙️ إعدادات المزامنة</div>
             <div style={{fontSize:12,color:"#888",marginBottom:20}}>
-              أنشئ حساباً مجانياً على <a href="https://jsonbin.io" target="_blank" rel="noreferrer" style={{color:"#e85d20"}}>jsonbin.io</a> ← أنشئ Bin جديد ← انسخ الـ ID والـ API Key
+              البيانات محفوظة في Supabase — تظهر على جميع الأجهزة تلقائياً ✅
             </div>
             <div style={{marginBottom:14}}>
               <div style={{fontSize:13,fontWeight:700,color:"#333",marginBottom:6}}>Bin ID</div>
@@ -8666,9 +9484,30 @@ export default function Dashboard() {
         </div>
       </div>
 
-      {/* ══ BANNER ══ */}
+
+
+      {/* ══ BODY ══ */}
+      <div style={{ padding:pad, flex:1, overflowY:"auto", overflowX:"hidden" }}>
+
+        {/* ══ Bulk Payment Report — التقرير اليومي ══ */}
+        <BulkPaymentSection bulk={bulkData} small={small}/>
+
+        {/* ══ الفاصل ══ */}
+        <div style={{
+          display:"flex", alignItems:"center", gap:12, margin:"6px 0 8px 0"
+        }}>
+          <div style={{flex:1, height:2, background:"linear-gradient(90deg,#f0ece8,#e85d20,#f0ece8)"}}/>
+          <div style={{
+            background:"#e85d20", color:"#fff", borderRadius:20,
+            padding:"4px 16px", fontSize:13, fontWeight:800, whiteSpace:"nowrap"
+          }}>📊 الإجمالي الكلي للمشروع</div>
+          <div style={{flex:1, height:2, background:"linear-gradient(90deg,#f0ece8,#e85d20,#f0ece8)"}}/>
+        </div>
+
+{/* ══ BANNER ══ */}
       <div id="print-banner" style={{
         background:"linear-gradient(120deg,#e85d20,#c44b10,#a83808)",
+        marginBottom:16,
         padding: isMobile?"14px":"16px 24px",
         display:"flex", justifyContent:"space-between", alignItems:"center",
         flexWrap:"wrap", gap:10,
@@ -8697,25 +9536,7 @@ export default function Dashboard() {
         </div>
       </div>
 
-      {/* ══ BODY ══ */}
-      <div style={{ padding:pad, flex:1, overflowY:"auto", overflowX:"hidden" }}>
-
-        {/* ══ Bulk Payment Report — التقرير اليومي ══ */}
-        <BulkPaymentSection bulk={bulkData} small={small}/>
-
-        {/* ══ الفاصل ══ */}
-        <div style={{
-          display:"flex", alignItems:"center", gap:12, margin:"16px 0"
-        }}>
-          <div style={{flex:1, height:2, background:"linear-gradient(90deg,#f0ece8,#e85d20,#f0ece8)"}}/>
-          <div style={{
-            background:"#e85d20", color:"#fff", borderRadius:20,
-            padding:"4px 16px", fontSize:13, fontWeight:800, whiteSpace:"nowrap"
-          }}>📊 الإجمالي الكلي للمشروع</div>
-          <div style={{flex:1, height:2, background:"linear-gradient(90deg,#f0ece8,#e85d20,#f0ece8)"}}/>
-        </div>
-
-        {/* Summary cards */}
+                {/* Summary cards */}
         <div id="print-summary" style={{
           display:"grid",
           gridTemplateColumns: isMobile?"1fr":isTablet?"1fr 1fr":"repeat(3,1fr)",
