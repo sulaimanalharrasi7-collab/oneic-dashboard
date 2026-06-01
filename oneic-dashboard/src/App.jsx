@@ -6052,36 +6052,47 @@ function parseXLS(file) {
 
 
 // ── إعدادات المزامنة ──────────────────────────────────────────────────────
-const SUPABASE_URL = "https://itdgfrrnghmolevucxkq.supabase.co";
-const SUPABASE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Iml0ZGdmcnJuZ2htb2xldXZjeGtxIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzk1MTg3MDUsImV4cCI6MjA5NTA5NDcwNX0.Ej_0vX-3x05hmZ4M_1mRQVC2Y01Mrw622IL1W4YjusA";
+const JSONBIN_ID  = "6a1addbc21f9ee59d29dad67";
+const JSONBIN_KEY = "$2a$10$iGKOshaaDAnJWlKtVW9LhuJFN9ocrQXgvZ8adXsXPZntwjlkhZ0FO";
 
-// ── Supabase helpers ──────────────────────────────────────────────────────────
-async function sbGet(table) {
+// ── JSONbin helpers (bin واحد لكل البيانات) ──────────────────────────────────
+let _jbCache = null;
+
+async function _jbRead() {
   const res = await fetch(
-    `${SUPABASE_URL}/rest/v1/${table}?select=*&order=id.desc&limit=1`,
-    { headers: { apikey: SUPABASE_KEY, Authorization: `Bearer ${SUPABASE_KEY}` } }
+    `https://api.jsonbin.io/v3/b/${JSONBIN_ID}/latest`,
+    { headers: { 'X-Master-Key': JSONBIN_KEY, 'X-Bin-Meta': 'false' } }
   );
   if (!res.ok) throw new Error(await res.text());
-  const rows = await res.json();
-  return rows[0] || null;
+  _jbCache = await res.json();
+  return _jbCache || {};
 }
 
-async function sbUpsert(table, payload) {
+async function _jbWrite(data) {
   const res = await fetch(
-    `${SUPABASE_URL}/rest/v1/${table}`,
+    `https://api.jsonbin.io/v3/b/${JSONBIN_ID}`,
     {
-      method: 'POST',
-      headers: {
-        apikey: SUPABASE_KEY,
-        Authorization: `Bearer ${SUPABASE_KEY}`,
-        'Content-Type': 'application/json',
-        Prefer: 'resolution=merge-duplicates,return=representation'
-      },
-      body: JSON.stringify(payload)
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json', 'X-Master-Key': JSONBIN_KEY },
+      body: JSON.stringify(data)
     }
   );
   if (!res.ok) throw new Error(await res.text());
+  _jbCache = data;
   return await res.json();
+}
+
+async function sbGet(table) {
+  const bin = await _jbRead();
+  const key = table === 'oneic_data' ? 'main' : 'bulk';
+  return bin[key] || null;
+}
+
+async function sbUpsert(table, obj) {
+  const bin = _jbCache || await _jbRead();
+  const key = table === 'oneic_data' ? 'main' : 'bulk';
+  const data = obj.payload || obj;
+  return await _jbWrite({ ...bin, [key]: data });
 }
 
 const omr = n => new Intl.NumberFormat("en-US",{minimumFractionDigits:3,maximumFractionDigits:3}).format(n||0);
@@ -7698,7 +7709,7 @@ function BulkPaymentSection({ bulk, small }) {
 
       // ── رفع لـ Supabase ──────────────────────────────────────────────────────
       try {
-        await sbUpsert('oneic_bulk', { id: 1, payload: final, updated_at: new Date().toISOString() });
+        await sbUpsert('oneic_bulk', { payload: final });
       } catch(e) { console.warn('Supabase bulk upload failed:', e); }
 
       setBulkData(final);
@@ -7714,9 +7725,9 @@ function BulkPaymentSection({ bulk, small }) {
       // أولاً: جرّب Supabase
       try {
         const row = await sbGet('oneic_bulk');
-        if (row?.payload?.daily?.length > 0) {
-          setBulkData(row.payload);
-          try { localStorage.setItem('oneic_bulk_data', JSON.stringify(row.payload)); } catch(e) {}
+        if (row?.daily?.length > 0) {
+          setBulkData(row);
+          try { localStorage.setItem('oneic_bulk_data', JSON.stringify(row)); } catch(e) {}
           return;
         }
       } catch(e) { console.warn('Supabase bulk load failed, using localStorage:', e.message); }
@@ -8981,8 +8992,8 @@ export default function Dashboard() {
     async function load() {
       try {
         const row = await sbGet('oneic_data');
-        if (row?.payload?.regions?.length > 0) {
-          const d = row.payload;
+        if (row?.regions?.length > 0) {
+          const d = row;
           setData(d);
           try { localStorage.setItem('oneic_dashboard_data', JSON.stringify(d)); } catch(e) {}
           setLoadingServer(false);
@@ -9028,7 +9039,7 @@ export default function Dashboard() {
     // ── رفع لـ JSONbin + localStorage ───────────────────────────────────
     setUploading(true);
     try {
-      await sbUpsert('oneic_data', { id: 1, payload: dataToSave, updated_at: new Date().toISOString() });
+      await sbUpsert('oneic_data', { payload: dataToSave });
       console.log('✅ Saved to Supabase');
     } catch(e) {
       console.warn('JSONbin save failed:', e);
@@ -9061,7 +9072,7 @@ export default function Dashboard() {
       // رفع التاريخ لـ JSONbin أيضاً
       try {
         const fullData = { ...dataToSave, history: newHistory };
-        sbUpsert('oneic_data', { id: 1, payload: fullData, updated_at: new Date().toISOString() });
+        sbUpsert('oneic_data', { payload: fullData });
       } catch(e) {}
       return newHistory;
     });
