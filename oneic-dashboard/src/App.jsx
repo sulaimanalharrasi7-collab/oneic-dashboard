@@ -7700,36 +7700,74 @@ function AnalyticsModal({ bulk, onClose, small }) {
                 توزيع المدفوعات حسب المنطقة
               </div>
 
-              {/* SVG Donut Chart */}
-              <div style={{display:"flex",gap:24,alignItems:"center",marginBottom:20,flexWrap:"wrap"}}>
-                <svg viewBox="0 0 200 200" width={small?160:200} style={{flexShrink:0}}>
-                  {(() => {
-                    let offset = -90;
-                    return regions.map((r,i)=>{
-                      const pct = (r.paid+r.adj)/grandTotal;
-                      const angle = pct * 360;
-                      const rad = Math.PI/180;
-                      const r1=80, r2=50, cx=100, cy=100;
-                      const x1=cx+r1*Math.cos((offset)*rad);
-                      const y1=cy+r1*Math.sin((offset)*rad);
-                      const x2=cx+r1*Math.cos((offset+angle)*rad);
-                      const y2=cy+r1*Math.sin((offset+angle)*rad);
-                      const x3=cx+r2*Math.cos((offset+angle)*rad);
-                      const y3=cy+r2*Math.sin((offset+angle)*rad);
-                      const x4=cx+r2*Math.cos((offset)*rad);
-                      const y4=cy+r2*Math.sin((offset)*rad);
-                      const large = angle>180?1:0;
-                      const col = getRegColor(r);
-                      const path = `M${x1},${y1} A${r1},${r1} 0 ${large},1 ${x2},${y2} L${x3},${y3} A${r2},${r2} 0 ${large},0 ${x4},${y4} Z`;
-                      offset += angle;
-                      return <path key={i} d={path} fill={col} stroke="#fff" strokeWidth="2"/>;
-                    });
-                  })()}
-                  <text x="100" y="96" textAnchor="middle" fontSize="11" fill="#1e3a5f"
-                    fontWeight="900" fontFamily="Cairo">الإجمالي</text>
-                  <text x="100" y="112" textAnchor="middle" fontSize="9" fill="#555"
-                    fontFamily="Cairo">{fmtK(grandTotal)}</text>
-                </svg>
+              {/* Donut Chart — أشرطة دائرية واضحة */}
+              <div style={{display:"flex",gap:24,alignItems:"flex-start",marginBottom:20,flexWrap:"wrap"}}>
+                {(() => {
+                  const CX=110, CY=110, R_OUT=90, R_IN=58, GAP=2;
+                  const total = regions.reduce((s,r)=>s+(r.paid+r.adj),0)||1;
+                  let cumAngle = -90;
+                  const slices = regions.map((r,i)=>{
+                    const pct = (r.paid+r.adj)/total;
+                    const angleDeg = Math.max(pct*360 - GAP, 0.5);
+                    const startA = cumAngle + GAP/2;
+                    cumAngle += pct*360;
+                    return { r, i, pct, angleDeg, startA,
+                      col: getRegColor(r) };
+                  });
+                  const toXY=(cx,cy,r,deg)=>{
+                    const a=deg*Math.PI/180;
+                    return [cx+r*Math.cos(a), cy+r*Math.sin(a)];
+                  };
+                  return (
+                    <svg viewBox={`0 0 ${CX*2} ${CY*2}`}
+                      width={small?180:220} style={{flexShrink:0,overflow:"visible"}}>
+                      <defs>
+                        <filter id="dshadow" x="-20%" y="-20%" width="140%" height="140%">
+                          <feDropShadow dx="0" dy="2" stdDeviation="4" floodOpacity="0.15"/>
+                        </filter>
+                      </defs>
+                      {/* الشرائح */}
+                      {slices.map(({r,i,pct,angleDeg,startA,col})=>{
+                        const endA = startA + angleDeg;
+                        const large = angleDeg > 180 ? 1 : 0;
+                        const [x1,y1] = toXY(CX,CY,R_OUT,startA);
+                        const [x2,y2] = toXY(CX,CY,R_OUT,endA);
+                        const [x3,y3] = toXY(CX,CY,R_IN, endA);
+                        const [x4,y4] = toXY(CX,CY,R_IN, startA);
+                        const d = `M${x1},${y1} A${R_OUT},${R_OUT} 0 ${large},1 ${x2},${y2} L${x3},${y3} A${R_IN},${R_IN} 0 ${large},0 ${x4},${y4} Z`;
+                        // نسبة في منتصف الشريحة
+                        const midA = startA + angleDeg/2;
+                        const [lx,ly] = toXY(CX,CY,(R_OUT+R_IN)/2, midA);
+                        const showLabel = pct > 0.06;
+                        return (
+                          <g key={i} filter="url(#dshadow)">
+                            <path d={d} fill={col} stroke="#fff" strokeWidth="2.5"/>
+                            {showLabel && (
+                              <text x={lx} y={ly} textAnchor="middle" dominantBaseline="middle"
+                                fontSize="9" fill="#fff" fontWeight="900" fontFamily="Cairo"
+                                style={{pointerEvents:"none"}}>
+                                {Math.round(pct*100)}%
+                              </text>
+                            )}
+                          </g>
+                        );
+                      })}
+                      {/* الدائرة الداخلية */}
+                      <circle cx={CX} cy={CY} r={R_IN-3} fill="#fff"
+                        filter="url(#dshadow)"/>
+                      <text x={CX} y={CY-10} textAnchor="middle"
+                        fontSize="10" fill="#888" fontWeight="700" fontFamily="Cairo">
+                        الإجمالي
+                      </text>
+                      <text x={CX} y={CY+6} textAnchor="middle"
+                        fontSize="14" fill="#1e3a5f" fontWeight="900" fontFamily="Cairo">
+                        {fmtK(grandTotal)}
+                      </text>
+                      <text x={CX} y={CY+20} textAnchor="middle"
+                        fontSize="9" fill="#aaa" fontFamily="Cairo">OMR</text>
+                    </svg>
+                  );
+                })()}
 
                 {/* Legend */}
                 <div style={{flex:1,minWidth:180}}>
