@@ -6051,235 +6051,88 @@ function parseXLS(file) {
 
 
 
-// ── إعدادات المزامنة ──────────────────────────────────────────────────────
-
-// ══════════════════════════════════════════════════════════════════════════════
-// نظام المزامنة المركزي — يضمن تطابق البيانات على كل الأجهزة
-// ══════════════════════════════════════════════════════════════════════════════
-// ── إعدادات المزامنة ─────────────────────────────────────────────────────────
-const JSONBIN_ID  = "6a1db75321f9ee59d2a657cf";
-const JSONBIN_KEY = "$2a$10$5XcVCzKzp4eKgd8JsUvRruea6sHaS9J2fU7RZKGPt3s8DJPXGH9Pm";
+// ── نظام الحفظ المحلي + JSONbin ─────────────────────────────────────────────
 const SYNC_KEY_BULK = "oneic_bulk_data";
 const SYNC_KEY_DASH = "oneic_dash_data";
-const GH_TOKEN  = "";
-const GH_REPO   = "sulaimanalharrasi7-collab/oneic-dashboard";
-const GH_BRANCH = "main";
+const JSONBIN_ID  = "6a1db75321f9ee59d2a657cf";
+const JSONBIN_KEY = "$2a$10$5XcVCzKzp4eKgd8JsUvRruea6sHaS9J2fU7RZKGPt3s8DJPXGH9Pm";
 
-// ── جلب البيانات من JSONbin ────────────────────────────────────────────────
-// ── نظام المزامنة الذكي — متعدد المصادر ────────────────────────────────────
-
-// قراءة من localStorage مع دعم الصيغتين
-
-
-// حفظ في localStorage
-function saveLocal(key, data) {
-  try { localStorage.setItem(key, JSON.stringify({ data, savedAt: Date.now() })); } catch(e){}
-}
-
-// ── Export كل البيانات كملف JSON ─────────────────────────────────────────────
-function exportAllData() {
-  try {
-    const bulk = readLocal('oneic_bulk_data');
-    const dash = readLocal('oneic_dash_data');
-    const hist = (() => { try { return JSON.parse(localStorage.getItem('oneic_history')||'[]'); } catch(e){return[];} })();
-    const payload = {
-      oneic_bulk_data: bulk, oneic_dash_data: dash, oneic_history: hist,
-      _exportedAt: new Date().toISOString(), _version: '1.0'
-    };
-    const blob = new Blob([JSON.stringify(payload,null,2)],{type:'application/json'});
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href=url; a.download='oneic_data_'+new Date().toISOString().slice(0,10)+'.json';
-    document.body.appendChild(a); a.click(); document.body.removeChild(a);
-    URL.revokeObjectURL(url); return true;
-  } catch(e) { alert('فشل التصدير: '+e.message); return false; }
-}
-
-// ── Import من ملف JSON ────────────────────────────────────────────────────────
-function importAllData(file, onSuccess, onError) {
-  const reader = new FileReader();
-  reader.onload = (e) => {
-    try {
-      const data = JSON.parse(e.target.result);
-      let imported = [];
-      if (data.oneic_bulk_data?.daily?.length > 0) {
-        saveLocal('oneic_bulk_data', data.oneic_bulk_data);
-        imported.push('Bulk Payment');
-      }
-      if (data.oneic_dash_data?.regions?.length > 0) {
-        saveLocal('oneic_dash_data', data.oneic_dash_data);
-        imported.push('بيانات المشروع');
-      }
-      if (data.oneic_history?.length > 0) {
-        try { localStorage.setItem('oneic_history', JSON.stringify(data.oneic_history)); } catch(ex){}
-        imported.push('السجل التاريخي');
-      }
-      onSuccess?.(data, imported);
-    } catch(ex) { onError?.(ex.message); }
-  };
-  reader.onerror = () => onError?.('فشل قراءة الملف');
-  reader.readAsText(file);
-}
-
-
-// GitHub API — قراءة
-async function ghFetch(key) {
-  if (!GH_TOKEN) return null;
-  try {
-    const path = `data/${key}.json`;
-    const res = await fetch(
-      `https://api.github.com/repos/${GH_REPO}/contents/${path}`,
-      { headers: { Authorization: `token ${GH_TOKEN}`, Accept: 'application/vnd.github.v3+json' },
-        cache: 'no-store' }
-    );
-    if (!res.ok) return null;
-    const info = await res.json();
-    const content = atob(info.content.split('\n').join(''));
-    return JSON.parse(content);
-  } catch(e) { return null; }
-}
-
-// GitHub API — كتابة
-async function ghPush(key, data) {
-  if (!GH_TOKEN) return false;
-  try {
-    const path = `data/${key}.json`;
-    // نقرأ SHA الموجودة
-    let sha = '';
-    try {
-      const getRes = await fetch(
-        `https://api.github.com/repos/${GH_REPO}/contents/${path}`,
-        { headers: { Authorization: `token ${GH_TOKEN}` } }
-      );
-      if (getRes.ok) { const info = await getRes.json(); sha = info.sha || ''; }
-    } catch(e){}
-    const content = btoa(unescape(encodeURIComponent(JSON.stringify(data, null, 2))));
-    const body = { message: `sync ${key} ${new Date().toISOString()}`,
-                   content, branch: GH_BRANCH };
-    if (sha) body.sha = sha;
-    const res = await fetch(
-      `https://api.github.com/repos/${GH_REPO}/contents/${path}`,
-      { method: 'PUT', headers: { Authorization: `token ${GH_TOKEN}`,
-          'Content-Type': 'application/json' },
-        body: JSON.stringify(body) }
-    );
-    return res.ok;
-  } catch(e) { return false; }
-}
-
-// JSONbin — قراءة
-async function jbFetch(key) {
-  try {
-    const res = await fetch(`https://api.jsonbin.io/v3/b/${JSONBIN_ID}/latest`, {
-      headers: { 'X-Master-Key': JSONBIN_KEY, 'X-Bin-Meta': 'false' },
-      cache: 'no-store'
-    });
-    if (!res.ok) return null;
-    const json = await res.json();
-    return json[key] || null;
-  } catch(e) { return null; }
-}
-
-// JSONbin — كتابة (مع قراءة أولاً لعدم مسح البيانات)
-async function jbPush(key, data) {
-  try {
-    // 1) اقرأ الموجود
-    const getRes = await fetch(`https://api.jsonbin.io/v3/b/${JSONBIN_ID}/latest`, {
-      headers: { 'X-Master-Key': JSONBIN_KEY, 'X-Bin-Meta': 'false' },
-      cache: 'no-store'
-    });
-    let existing = {};
-    if (getRes.ok) { try { existing = await getRes.json(); } catch(e){} }
-    // 2) أضف المفتاح
-    const payload = { ...existing, [key]: data, _syncedAt: new Date().toISOString() };
-    // 3) اكتب
-    const putRes = await fetch(`https://api.jsonbin.io/v3/b/${JSONBIN_ID}`, {
-      method: 'PUT',
-      headers: { 'Content-Type': 'application/json', 'X-Master-Key': JSONBIN_KEY },
-      body: JSON.stringify(payload)
-    });
-    return putRes.ok;
-  } catch(e) { return false; }
-}
-
-// ── syncFetch: يجرب JSONbin ثم GitHub ثم localStorage ───────────────────────
-async function syncFetch(binId, key) {
-  // 1) JSONbin
-  const fromJB = await jbFetch(key);
-  if (fromJB && typeof fromJB === 'object' && (fromJB.daily?.length > 0 || fromJB.regions?.length > 0)) {
-    saveLocal(key, fromJB);
-    return fromJB;
-  }
-  // 2) GitHub
-  const fromGH = await ghFetch(key);
-  if (fromGH && typeof fromGH === 'object' && (fromGH.daily?.length > 0 || fromGH.regions?.length > 0)) {
-    saveLocal(key, fromGH);
-    return fromGH;
-  }
-  // 3) localStorage
-  const local = readLocal(key);
-  if (local) return local;
-  return null;
-}
-
-// ── syncPush: يرفع لـ JSONbin وGitHub ويحفظ محلياً ──────────────────────────
-
-
-async function syncPush(binId, key, data) {
-  // ── حفظ محلي دائماً فوراً ─────────────────────────────────────────────────
-  try {
-    localStorage.setItem(key, JSON.stringify({ data, syncedAt: Date.now() }));
-  } catch(e){}
-
-  // ── قراءة JSONbin الحالي أولاً ثم دمج ثم كتابة ────────────────────────────
-  try {
-    // 1) اقرأ الكل الموجود
-    const getRes = await fetch(`https://api.jsonbin.io/v3/b/${binId}/latest`, {
-      headers: { 'X-Master-Key': JSONBIN_KEY, 'X-Bin-Meta': 'false' },
-      cache: 'no-store'
-    });
-    let existing = {};
-    if (getRes.ok) {
-      try { existing = await getRes.json(); } catch(e){ existing = {}; }
-    }
-    // 2) دمج المفتاح الجديد مع الموجود (لا تمسح المفاتيح الأخرى)
-    const payload = {
-      ...existing,
-      [key]: data,
-      _syncedAt: new Date().toISOString()
-    };
-    // 3) اكتب الكل
-    const putRes = await fetch(`https://api.jsonbin.io/v3/b/${binId}`, {
-      method: 'PUT',
-      headers: { 'Content-Type': 'application/json', 'X-Master-Key': JSONBIN_KEY },
-      body: JSON.stringify(payload)
-    });
-    if (!putRes.ok) throw new Error('push failed ' + putRes.status);
-    return true;
-  } catch(e) {
-    console.warn('syncPush failed:', e.message);
-    return false;
-  }
-}
-
-// ── قراءة من localStorage بطريقة آمنة ─────────────────────────────────────
 function readLocal(key) {
   try {
     const raw = localStorage.getItem(key);
     if (!raw) return null;
-    const parsed = JSON.parse(raw);
-    // يدعم الصيغتين: {data, syncedAt} أو البيانات مباشرة
-    return parsed.data || (parsed.daily ? parsed : null);
+    const p = JSON.parse(raw);
+    return p.data || (p.daily || p.regions ? p : null);
   } catch(e) { return null; }
 }
 
+function saveLocal(key, data) {
+  try { localStorage.setItem(key, JSON.stringify({ data, savedAt: Date.now() })); } catch(e) {}
+}
+
+async function syncFetch(binId, key) {
+  try {
+    const res = await fetch(`https://api.jsonbin.io/v3/b/${binId}/latest`,
+      { headers: { 'X-Master-Key': JSONBIN_KEY, 'X-Bin-Meta': 'false' }, cache: 'no-store' });
+    if (res.ok) {
+      const json = await res.json();
+      const d = json[key] || json;
+      if (d && (d.daily?.length > 0 || d.regions?.length > 0)) {
+        saveLocal(key, d);
+        return d;
+      }
+    }
+  } catch(e) {}
+  return readLocal(key);
+}
+
+async function syncPush(binId, key, data) {
+  saveLocal(key, data);
+  try {
+    let existing = {};
+    try {
+      const g = await fetch(`https://api.jsonbin.io/v3/b/${binId}/latest`,
+        { headers: { 'X-Master-Key': JSONBIN_KEY, 'X-Bin-Meta': 'false' }, cache: 'no-store' });
+      if (g.ok) existing = await g.json();
+    } catch(e) {}
+    await fetch(`https://api.jsonbin.io/v3/b/${binId}`,
+      { method: 'PUT', headers: { 'Content-Type': 'application/json', 'X-Master-Key': JSONBIN_KEY },
+        body: JSON.stringify({ ...existing, [key]: data, _syncedAt: new Date().toISOString() }) });
+  } catch(e) {}
+  return true;
+}
+
+function exportAllData() {
+  try {
+    const bulk = readLocal(SYNC_KEY_BULK);
+    const dash = readLocal(SYNC_KEY_DASH);
+    const hist = (() => { try { return JSON.parse(localStorage.getItem('oneic_history')||'[]'); } catch(e){return[];} })();
+    const blob = new Blob([JSON.stringify({oneic_bulk_data:bulk,oneic_dash_data:dash,oneic_history:hist,_exportedAt:new Date().toISOString()},null,2)],{type:'application/json'});
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href=url; a.download='oneic_sync_'+new Date().toISOString().slice(0,10)+'.json';
+    document.body.appendChild(a); a.click(); document.body.removeChild(a);
+    URL.revokeObjectURL(url); return true;
+  } catch(e) { return false; }
+}
+
+function importAllData(file, onSuccess, onError) {
+  const reader = new FileReader();
+  reader.onload = (e) => {
+    try {
+      const d = JSON.parse(e.target.result);
+      const imported = [];
+      if (d.oneic_bulk_data?.daily?.length > 0) { saveLocal(SYNC_KEY_BULK, d.oneic_bulk_data); imported.push('Bulk'); }
+      if (d.oneic_dash_data?.regions?.length > 0) { saveLocal(SYNC_KEY_DASH, d.oneic_dash_data); imported.push('Dashboard'); }
+      if (d.oneic_history?.length > 0) { try { localStorage.setItem('oneic_history', JSON.stringify(d.oneic_history)); } catch(ex){} imported.push('History'); }
+      onSuccess?.(d, imported);
+    } catch(ex) { onError?.(ex.message); }
+  };
+  reader.onerror = () => onError?.('فشل');
+  reader.readAsText(file);
+}
 
 const omr = n => new Intl.NumberFormat("en-US",{minimumFractionDigits:3,maximumFractionDigits:3}).format(n||0);
-
-
-
-
-// ── BulkPaymentSection ────────────────────────────────────────────────────────
 
 
 // ── Bulk Payment Print ────────────────────────────────────────────────────────
