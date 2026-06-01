@@ -6777,11 +6777,13 @@ function AnalyticsModal({ bulk, onClose, small }) {
   const [activeChart, setActiveChart] = useState('trend');
   const [filterYear,  setFilterYear]  = useState('all');
   const [filterMonth, setFilterMonth] = useState('all');
+  const [filterFrom,  setFilterFrom]  = useState('');
+  const [filterTo,    setFilterTo]    = useState('');
   const d = bulk;
   if (!d) return null;
 
   // ─── استخراج السنوات والأشهر المتاحة ──────────────────────────────────────
-  const allDailyRaw = d.daily || [];
+  const allDailyRaw = [...(d.daily||[])].sort((a,b)=>a.date.localeCompare(b.date));
   const years  = [...new Set(allDailyRaw.map(x=>x.date.slice(0,4)))].sort();
   const months = filterYear==='all'
     ? [...new Set(allDailyRaw.map(x=>x.date.slice(0,7)))].sort()
@@ -6791,6 +6793,8 @@ function AnalyticsModal({ bulk, onClose, small }) {
     '05':'مايو','06':'يونيو','07':'يوليو','08':'أغسطس',
     '09':'سبتمبر','10':'أكتوبر','11':'نوفمبر','12':'ديسمبر'
   };
+  // reset day filter when year/month changes
+  const clearDayFilter = () => { setFilterFrom(''); setFilterTo(''); };
 
   const fmt = n => new Intl.NumberFormat("en-US",{minimumFractionDigits:3,maximumFractionDigits:3}).format(n||0);
   const fmtK = n => n >= 1000 ? (n/1000).toFixed(1)+'K' : n.toFixed(0);
@@ -6799,8 +6803,10 @@ function AnalyticsModal({ bulk, onClose, small }) {
   const daily = allDailyRaw.filter(x=>{
     if (filterYear!=='all' && !x.date.startsWith(filterYear)) return false;
     if (filterMonth!=='all' && !x.date.startsWith(filterMonth)) return false;
+    if (filterFrom && x.date < filterFrom) return false;
+    if (filterTo   && x.date > filterTo)   return false;
     return true;
-  }).sort((a,b)=>a.date.localeCompare(b.date));
+  });
 
   // إعادة حساب المناطق والمحصّلين بناءً على الفلتر
   const filteredDates = new Set(daily.map(x=>x.date));
@@ -6870,16 +6876,27 @@ function AnalyticsModal({ bulk, onClose, small }) {
   const linePath = pts.map((p,i)=>i===0?`M${p[0]},${p[1]}`:`L${p[0]},${p[1]}`).join(' ');
   const areaPath = pts.length ? `${linePath} L${pts[pts.length-1][0]},${PY+chartH} L${pts[0][0]},${PY+chartH} Z` : '';
 
-  // طباعة اللوحة
+  // طباعة اللوحة الكاملة — جميع التبويبات
   const handlePrintChart = () => {
-    const w = window.open('','_blank','width=1100,height=800');
-    const regBars = regions.map((r,i)=>{
-      const pct = Math.round(((r.paid+r.adj)/maxReg)*100);
-      const col = getRegColor(r);
-      return `<div style="margin-bottom:10px">
+    const omrP = n => new Intl.NumberFormat("en-US",{minimumFractionDigits:3,maximumFractionDigits:3}).format(n||0);
+    const fmtKP = n => n>=1000?(n/1000).toFixed(1)+'K':n.toFixed(1);
+    const periodLabel = filterFrom||filterTo
+      ? `${filterFrom||daily[0]?.date||''} → ${filterTo||daily[daily.length-1]?.date||''}`
+      : filterMonth!=='all'
+      ? `${MONTH_AR[filterMonth.slice(5)]} ${filterMonth.slice(0,4)}`
+      : filterYear!=='all' ? `سنة ${filterYear}` : `${d.dateRange?.from} → ${d.dateRange?.to}`;
+
+    const regBarsHTML = regions.map((r,i)=>{
+      const pct=Math.round(((r.paid+r.adj)/Math.max(...regions.map(x=>x.paid+x.adj),1))*100);
+      const col=getRegColor(r);
+      return `<div style="margin-bottom:12px">
         <div style="display:flex;justify-content:space-between;margin-bottom:4px;direction:rtl">
-          <span style="font-size:13px;font-weight:700;color:#000">${r.nameAr||r.nameEn}</span>
-          <span style="font-size:13px;font-weight:800;color:${col}">${fmt(r.paid+r.adj)} OMR</span>
+          <span style="font-size:13px;font-weight:800;color:#000">${r.nameAr||r.nameEn}</span>
+          <div style="display:flex;gap:16px">
+            <span style="font-size:11px;color:#16a34a">مدفوع: ${omrP(r.paid)}</span>
+            <span style="font-size:11px;color:#d97706">تسويات: ${omrP(r.adj)}</span>
+            <span style="font-size:13px;font-weight:900;color:${col}">${omrP(r.paid+r.adj)}</span>
+          </div>
         </div>
         <div style="background:#f0ece8;border-radius:6px;height:14px;overflow:hidden">
           <div style="width:${pct}%;height:100%;background:${col};border-radius:6px"></div>
@@ -6887,56 +6904,119 @@ function AnalyticsModal({ bulk, onClose, small }) {
       </div>`;
     }).join('');
 
+    const collectorsHTML = collectors.map((c,i)=>{
+      const total=c.paid+c.adj;
+      const pct=Math.round((total/Math.max(...collectors.map(x=>x.paid+x.adj),1))*100);
+      const medals=["🥇","🥈","🥉"];
+      return `<tr style="background:${i%2===0?'#fff':'#f8f4f1'}">
+        <td style="padding:2.5mm 3mm;font-size:14px;text-align:center">${i<3?medals[i]:i+1}</td>
+        <td style="padding:2.5mm 3mm;font-size:12px;font-weight:800;color:#000">${c.name}</td>
+        <td style="padding:2.5mm 3mm;font-size:11px;color:#555">${c.region||''}</td>
+        <td style="padding:2.5mm 3mm;text-align:center;font-size:12px;font-weight:800;color:#16a34a">${omrP(c.paid)}</td>
+        <td style="padding:2.5mm 3mm;text-align:center;font-size:13px;font-weight:900;color:#1e3a5f">${omrP(total)}</td>
+        <td style="padding:2.5mm 3mm;text-align:center;font-size:11px;color:#555">${c.count}</td>
+      </tr>`;
+    }).join('');
+
+    const dailyHTML = [...daily].reverse().map((day,i)=>{
+      const total=day.paid+day.adj;
+      return `<tr style="background:${i%2===0?'#fff':'#f8f4f1'}">
+        <td style="padding:2.5mm 3mm;font-size:11px;color:#888">${i+1}</td>
+        <td style="padding:2.5mm 3mm;font-size:13px;font-weight:800;color:#111">${day.date}</td>
+        <td style="padding:2.5mm 3mm;text-align:center;font-size:12px;font-weight:800;color:#16a34a">${omrP(day.paid)}</td>
+        <td style="padding:2.5mm 3mm;text-align:center;font-size:12px;font-weight:800;color:#d97706">${omrP(day.adj)}</td>
+        <td style="padding:2.5mm 3mm;text-align:center;font-size:13px;font-weight:900;color:#1e3a5f">${omrP(total)}</td>
+        <td style="padding:2.5mm 3mm;text-align:center;font-size:11px;color:#555">${day.count}</td>
+      </tr>`;
+    }).join('');
+
+    const pageHeader = `<div style="display:flex;justify-content:space-between;align-items:center;
+      border-bottom:3px solid #1e3a5f;padding-bottom:6mm;margin-bottom:6mm;direction:rtl">
+      <div>
+        <div style="font-size:18pt;font-weight:900;color:#1e3a5f">📊 تقرير التحليل البياني</div>
+        <div style="font-size:9pt;color:#888;margin-top:3px">${periodLabel} · ${daily.length} يوم نشط · ${d.totalRecords?.toLocaleString()} دفعة</div>
+      </div>
+      <div style="text-align:left;font-size:9pt;color:#888">
+        <div>تاريخ الطباعة: ${new Date().toLocaleDateString('ar-OM')}</div>
+        <div style="font-weight:800;color:#1e3a5f">ONEIC © 2026</div>
+      </div>
+    </div>`;
+
+    const summaryBanner = `<div style="background:linear-gradient(120deg,#1e3a5f,#2d5a8e);
+      border-radius:12px;padding:5mm 6mm;margin-bottom:6mm;
+      display:grid;grid-template-columns:repeat(4,1fr);gap:4mm;direction:rtl">
+      ${[["💰 المدفوع",omrP(totalPaid),"#86efac"],["📊 التسويات",omrP(totalAdj),"#fde68a"],
+         ["🏆 الإجمالي",omrP(grandTotal),"#fff"],["📈 متوسط يومي",omrP(avgDaily),"#e9d5ff"]
+        ].map(([l,v,c])=>`<div style="text-align:center;background:rgba(255,255,255,0.1);border-radius:8px;padding:3mm">
+        <div style="font-size:8pt;color:rgba(255,255,255,0.7);font-weight:700">${l}</div>
+        <div style="font-size:14pt;font-weight:900;color:${c};margin-top:2mm">${v}</div>
+      </div>`).join('')}
+    </div>`;
+
+    const w = window.open('','_blank','width=1100,height=800');
     w.document.write(`<!DOCTYPE html><html lang="ar" dir="rtl">
-    <head><meta charset="UTF-8"><title>تقرير التحليل — ${d.dateRange?.from} → ${d.dateRange?.to}</title>
+    <head><meta charset="UTF-8"><title>تقرير التحليل — ${periodLabel}</title>
     <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;700;800;900&display=swap" rel="stylesheet">
     <style>*{box-sizing:border-box;margin:0;padding:0;-webkit-print-color-adjust:exact!important;print-color-adjust:exact!important}
     body{font-family:'Cairo',sans-serif;background:#f5f0eb;direction:rtl}
-    .page{width:210mm;min-height:297mm;margin:8mm auto;background:#fff;padding:12mm;box-shadow:0 4px 32px rgba(0,0,0,.15);page-break-after:always}
-    @media print{@page{size:A4;margin:0}body{background:#fff}.page{margin:0;padding:10mm;box-shadow:none}.no-print{display:none!important}}</style></head>
-    <body>
-    <button class="no-print" onclick="window.print()" style="position:fixed;top:10px;left:10px;background:#1e3a5f;color:#fff;border:none;border-radius:10px;padding:10px 24px;font-size:14px;font-weight:800;cursor:pointer;z-index:999">🖨️ طباعة PDF</button>
+    .page{width:210mm;min-height:297mm;margin:8mm auto;background:#fff;padding:11mm;
+      box-shadow:0 4px 32px rgba(0,0,0,.15);page-break-after:always}
+    .page:last-child{page-break-after:auto}
+    @media print{@page{size:A4;margin:0}body{background:#fff}.page{margin:0;padding:10mm;box-shadow:none}.no-print{display:none!important}}
+    table{width:100%;border-collapse:collapse}th,td{border-bottom:1px solid #f0ece8}
+    </style></head><body>
+    <button class="no-print" onclick="window.print()" style="position:fixed;top:10px;left:10px;
+      background:#1e3a5f;color:#fff;border:none;border-radius:10px;padding:10px 24px;
+      font-size:14px;font-weight:800;cursor:pointer;z-index:999">🖨️ طباعة / PDF</button>
+
     <div class="page">
-      <div style="display:flex;justify-content:space-between;align-items:center;border-bottom:3px solid #1e3a5f;padding-bottom:8mm;margin-bottom:6mm">
-        <div>
-          <div style="font-size:20pt;font-weight:900;color:#1e3a5f">📊 تقرير التحليل البياني</div>
-          <div style="font-size:10pt;color:#888;margin-top:3px">${d.dateRange?.from} → ${d.dateRange?.to} · ${d.totalRecords?.toLocaleString()} دفعة · ONEIC © 2026</div>
-        </div>
+      ${pageHeader}
+      ${summaryBanner}
+      <div style="font-size:13pt;font-weight:900;color:#1e3a5f;margin-bottom:4mm">📅 تفصيل الأيام (${daily.length} يوم)</div>
+      <table>
+        <thead><tr style="background:#1e3a5f">
+          <th style="padding:2.5mm 3mm;color:#fff;font-size:9pt">#</th>
+          <th style="padding:2.5mm 3mm;color:#fff;font-size:9pt;text-align:right">التاريخ</th>
+          <th style="padding:2.5mm 3mm;color:#fff;font-size:9pt;text-align:center">المدفوع</th>
+          <th style="padding:2.5mm 3mm;color:#fff;font-size:9pt;text-align:center">التسويات</th>
+          <th style="padding:2.5mm 3mm;color:#fff;font-size:9pt;text-align:center">الإجمالي</th>
+          <th style="padding:2.5mm 3mm;color:#fff;font-size:9pt;text-align:center">دفعات</th>
+        </tr></thead>
+        <tbody>${dailyHTML}</tbody>
+        <tfoot><tr style="background:#f0f4ff">
+          <td colspan="2" style="padding:3mm;font-size:12pt;font-weight:900;color:#1e3a5f">الإجمالي</td>
+          <td style="padding:3mm;text-align:center;font-size:13pt;font-weight:900;color:#16a34a">${omrP(totalPaid)}</td>
+          <td style="padding:3mm;text-align:center;font-size:13pt;font-weight:900;color:#d97706">${omrP(totalAdj)}</td>
+          <td style="padding:3mm;text-align:center;font-size:14pt;font-weight:900;color:#1e3a5f">${omrP(grandTotal)}</td>
+          <td style="padding:3mm;text-align:center;font-size:12pt;font-weight:800;color:#555">${daily.reduce((s,x)=>s+x.count,0)}</td>
+        </tfoot>
+      </table>
+    </div>
+
+    <div class="page">
+      ${pageHeader}
+      <div style="font-size:13pt;font-weight:900;color:#1e3a5f;margin-bottom:4mm">🗺 التوزيع بالمنطقة</div>
+      ${regBarsHTML}
+      <div style="margin-top:6mm;font-size:13pt;font-weight:900;color:#1e3a5f;margin-bottom:4mm">
+        👤 أعلى المحصّلين (${collectors.length})
       </div>
-      <div style="background:linear-gradient(120deg,#1e3a5f,#2d5a8e);border-radius:12px;padding:6mm;margin-bottom:6mm">
-        <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:4mm">
-          ${[['💰 إجمالي المدفوع',fmt(totalPaid),'#86efac'],['📊 التسويات',fmt(totalAdj),'#fde68a'],
-             ['📈 المتوسط اليومي',fmt(avgDaily),'#e9d5ff'],['🏆 أفضل يوم',fmt(bestDay.paid+bestDay.adj||0),'#fff']
-          ].map(([l,v,c])=>`<div style="text-align:center;background:rgba(255,255,255,0.1);border-radius:8px;padding:3mm">
-            <div style="font-size:9pt;color:rgba(255,255,255,0.7);font-weight:700;margin-bottom:2mm">${l}</div>
-            <div style="font-size:14pt;font-weight:900;color:${c}">${v}</div>
-          </div>`).join('')}
-        </div>
+      <table>
+        <thead><tr style="background:#1e3a5f">
+          <th style="padding:2.5mm 3mm;color:#fff;font-size:9pt">#</th>
+          <th style="padding:2.5mm 3mm;color:#fff;font-size:9pt;text-align:right">المحصّل</th>
+          <th style="padding:2.5mm 3mm;color:#fff;font-size:9pt;text-align:right">المنطقة</th>
+          <th style="padding:2.5mm 3mm;color:#fff;font-size:9pt;text-align:center">المدفوع</th>
+          <th style="padding:2.5mm 3mm;color:#fff;font-size:9pt;text-align:center">الإجمالي</th>
+          <th style="padding:2.5mm 3mm;color:#fff;font-size:9pt;text-align:center">دفعات</th>
+        </tr></thead>
+        <tbody>${collectorsHTML}</tbody>
+      </table>
+      <div style="text-align:center;font-size:8pt;color:#aaa;margin-top:6mm;
+        padding-top:3mm;border-top:1px solid #eee">
+        ONEIC — تقرير التحليل البياني · ${periodLabel} · © 2026
       </div>
-      <div style="margin-bottom:6mm">
-        <div style="font-size:13pt;font-weight:900;color:#1e3a5f;margin-bottom:4mm">🗺 التوزيع بالمنطقة</div>
-        ${regBars}
-      </div>
-      <div>
-        <div style="font-size:13pt;font-weight:900;color:#1e3a5f;margin-bottom:4mm">👤 أعلى 10 محصّلين</div>
-        <table style="width:100%;border-collapse:collapse">
-          <thead><tr style="background:#1e3a5f">
-            <th style="padding:2.5mm 3mm;color:#fff;font-size:9pt;text-align:right">#</th>
-            <th style="padding:2.5mm 3mm;color:#fff;font-size:9pt;text-align:right">المحصّل</th>
-            <th style="padding:2.5mm 3mm;color:#fff;font-size:9pt;text-align:center">المدفوع</th>
-            <th style="padding:2.5mm 3mm;color:#fff;font-size:9pt;text-align:center">الإجمالي</th>
-            <th style="padding:2.5mm 3mm;color:#fff;font-size:9pt;text-align:center">دفعات</th>
-          </tr></thead>
-          <tbody>${collectors.map((c,i)=>`<tr style="background:${i%2===0?'#fff':'#f8f4f1'}">
-            <td style="padding:2.5mm;font-size:10pt;color:#888">${i+1}</td>
-            <td style="padding:2.5mm;font-size:11pt;font-weight:800;color:#000">${c.name}</td>
-            <td style="padding:2.5mm;text-align:center;font-size:11pt;font-weight:800;color:#16a34a">${fmt(c.paid)}</td>
-            <td style="padding:2.5mm;text-align:center;font-size:12pt;font-weight:900;color:#1e3a5f">${fmt(c.paid+c.adj)}</td>
-            <td style="padding:2.5mm;text-align:center;font-size:11pt;color:#555">${c.count}</td>
-          </tr>`).join('')}</tbody>
-        </table>
-      </div>
-    </div></body></html>`);
+    </div>
+    </body></html>`);
     w.document.close();
     setTimeout(()=>w.print(), 2000);
   };
@@ -6992,60 +7072,70 @@ function AnalyticsModal({ bulk, onClose, small }) {
 
           {/* ── فلتر الفترة ── */}
           <div style={{
-            display:"flex",alignItems:"center",gap:8,marginTop:12,
-            padding:"10px 12px",background:"rgba(255,255,255,0.1)",
-            borderRadius:12,border:"1px solid rgba(255,255,255,0.2)",
-            flexWrap:"wrap"
+            marginTop:12,padding:"12px 14px",
+            background:"rgba(255,255,255,0.08)",
+            borderRadius:12,border:"1px solid rgba(255,255,255,0.2)"
           }}>
-            <span style={{fontSize:12,color:"rgba(255,255,255,0.8)",fontWeight:800,whiteSpace:"nowrap"}}>
-              🗓 الفترة:
-            </span>
-            {/* السنة */}
-            <select value={filterYear} onChange={e=>{setFilterYear(e.target.value);setFilterMonth('all');}}
-              style={{padding:"5px 10px",borderRadius:8,border:"1px solid rgba(255,255,255,0.3)",
-                background:"rgba(255,255,255,0.15)",color:"#fff",fontSize:12,fontWeight:700,
-                fontFamily:"'Cairo',sans-serif",cursor:"pointer",outline:"none"}}>
-              <option value="all" style={{color:"#000"}}>كل السنوات</option>
-              {years.map(y=><option key={y} value={y} style={{color:"#000"}}>{y}</option>)}
-            </select>
-            {/* الشهر */}
-            <select value={filterMonth} onChange={e=>setFilterMonth(e.target.value)}
-              style={{padding:"5px 10px",borderRadius:8,border:"1px solid rgba(255,255,255,0.3)",
-                background:"rgba(255,255,255,0.15)",color:"#fff",fontSize:12,fontWeight:700,
-                fontFamily:"'Cairo',sans-serif",cursor:"pointer",outline:"none"}}>
-              <option value="all" style={{color:"#000"}}>كل الأشهر</option>
-              {months.map(m=><option key={m} value={m} style={{color:"#000"}}>
-                {MONTH_AR[m.slice(5)] || m.slice(5)} {m.slice(0,4)}
-              </option>)}
-            </select>
-            {/* أزرار سريعة */}
-            <div style={{display:"flex",gap:6,flexWrap:"wrap"}}>
-              {[
-                {label:"هذا الشهر", action:()=>{
-                  const now=new Date(); const y=now.getFullYear().toString();
-                  const m=String(now.getMonth()+1).padStart(2,'0');
-                  setFilterYear(y); setFilterMonth(y+'-'+m);
-                }},
-                {label:"آخر 3 أشهر", action:()=>{
-                  const now=new Date(); const y=now.getFullYear().toString();
-                  setFilterYear(y); setFilterMonth('all');
-                }},
-                {label:"الكل", action:()=>{setFilterYear('all');setFilterMonth('all');}},
-              ].map(btn=>(
-                <button key={btn.label} onClick={btn.action} style={{
-                  background:"rgba(255,255,255,0.2)",color:"#fff",border:"none",
-                  borderRadius:7,padding:"4px 10px",fontSize:11,fontWeight:700,
-                  cursor:"pointer",fontFamily:"'Cairo',sans-serif",
-                  whiteSpace:"nowrap"
-                }}>{btn.label}</button>
-              ))}
-            </div>
-            {(filterYear!=='all'||filterMonth!=='all') && (
-              <div style={{marginRight:"auto",background:"rgba(255,255,255,0.15)",
-                borderRadius:8,padding:"4px 10px",fontSize:11,color:"#fff"}}>
-                📅 {daily.length} يوم · {grandTotal>0?(grandTotal/1000).toFixed(1)+'K':'0'} OMR
+            {/* صف 1: السنة + الشهر + أزرار سريعة */}
+            <div style={{display:"flex",alignItems:"center",gap:8,flexWrap:"wrap",marginBottom:8}}>
+              <span style={{fontSize:12,color:"rgba(255,255,255,0.8)",fontWeight:800}}>🗓 الفترة:</span>
+              <select value={filterYear} onChange={e=>{setFilterYear(e.target.value);setFilterMonth('all');clearDayFilter();}}
+                style={{padding:"5px 10px",borderRadius:8,border:"1px solid rgba(255,255,255,0.3)",
+                  background:"rgba(30,58,95,0.8)",color:"#fff",fontSize:12,fontWeight:700,
+                  fontFamily:"'Cairo',sans-serif",cursor:"pointer",outline:"none"}}>
+                <option value="all">كل السنوات</option>
+                {years.map(y=><option key={y} value={y}>{y}</option>)}
+              </select>
+              <select value={filterMonth} onChange={e=>{setFilterMonth(e.target.value);clearDayFilter();}}
+                style={{padding:"5px 10px",borderRadius:8,border:"1px solid rgba(255,255,255,0.3)",
+                  background:"rgba(30,58,95,0.8)",color:"#fff",fontSize:12,fontWeight:700,
+                  fontFamily:"'Cairo',sans-serif",cursor:"pointer",outline:"none"}}>
+                <option value="all">كل الأشهر</option>
+                {months.map(m=><option key={m} value={m}>{MONTH_AR[m.slice(5)]||m.slice(5)} {m.slice(0,4)}</option>)}
+              </select>
+              <div style={{display:"flex",gap:5,flexWrap:"wrap"}}>
+                {[
+                  ["هذا الشهر", ()=>{const n=new Date(),y=n.getFullYear().toString(),m=String(n.getMonth()+1).padStart(2,'0');setFilterYear(y);setFilterMonth(y+'-'+m);clearDayFilter();}],
+                  ["هذه السنة", ()=>{setFilterYear(new Date().getFullYear().toString());setFilterMonth('all');clearDayFilter();}],
+                  ["الكل",      ()=>{setFilterYear('all');setFilterMonth('all');clearDayFilter();}],
+                ].map(([l,a])=>(
+                  <button key={l} onClick={a} style={{
+                    background:"rgba(255,255,255,0.2)",color:"#fff",border:"none",
+                    borderRadius:7,padding:"4px 10px",fontSize:11,fontWeight:700,
+                    cursor:"pointer",fontFamily:"'Cairo',sans-serif",whiteSpace:"nowrap"
+                  }}>{l}</button>
+                ))}
               </div>
-            )}
+            </div>
+            {/* صف 2: اختيار الأيام من - إلى */}
+            <div style={{display:"flex",alignItems:"center",gap:8,flexWrap:"wrap"}}>
+              <span style={{fontSize:11,color:"rgba(255,255,255,0.7)",fontWeight:700}}>📅 من يوم:</span>
+              <input type="date" value={filterFrom}
+                onChange={e=>setFilterFrom(e.target.value)}
+                style={{padding:"4px 8px",borderRadius:8,border:"1px solid rgba(255,255,255,0.3)",
+                  background:"rgba(30,58,95,0.8)",color:"#fff",fontSize:12,
+                  fontFamily:"'Cairo',sans-serif",outline:"none",cursor:"pointer"}}
+              />
+              <span style={{fontSize:11,color:"rgba(255,255,255,0.7)",fontWeight:700}}>إلى:</span>
+              <input type="date" value={filterTo}
+                onChange={e=>setFilterTo(e.target.value)}
+                style={{padding:"4px 8px",borderRadius:8,border:"1px solid rgba(255,255,255,0.3)",
+                  background:"rgba(30,58,95,0.8)",color:"#fff",fontSize:12,
+                  fontFamily:"'Cairo',sans-serif",outline:"none",cursor:"pointer"}}
+              />
+              {(filterFrom||filterTo) && (
+                <button onClick={clearDayFilter} style={{
+                  background:"rgba(232,93,32,0.4)",color:"#fff",border:"none",
+                  borderRadius:7,padding:"4px 10px",fontSize:11,fontWeight:700,
+                  cursor:"pointer",fontFamily:"'Cairo',sans-serif"
+                }}>✕ مسح</button>
+              )}
+              {/* ملخص الفترة */}
+              <div style={{marginRight:"auto",background:"rgba(255,255,255,0.15)",
+                borderRadius:8,padding:"4px 12px",fontSize:11,color:"#fff",fontWeight:700}}>
+                📊 {daily.length} يوم &nbsp;·&nbsp; {fmt(grandTotal)} OMR
+              </div>
+            </div>
           </div>
 
           {/* KPI شريط */}
@@ -7090,70 +7180,101 @@ function AnalyticsModal({ bulk, onClose, small }) {
                 الدفعات اليومية — من {d.dateRange?.from} إلى {d.dateRange?.to}
               </div>
 
-              {/* Line chart SVG */}
-              <div style={{background:"#f8fafc",borderRadius:14,padding:"16px 8px 8px",
-                border:"1px solid #e8f0fe",marginBottom:20,overflowX:"auto"}}>
-                <svg viewBox={`0 0 ${W} ${H+40}`} width="100%" style={{display:"block",minWidth:400}}>
-                  {/* Grid lines */}
-                  {[0,0.25,0.5,0.75,1].map(r=>(
-                    <g key={r}>
-                      <line x1={PX} y1={PY+chartH*(1-r)} x2={W-PX} y2={PY+chartH*(1-r)}
-                        stroke="#e8f0fe" strokeWidth="1" strokeDasharray="4,4"/>
-                      <text x={PX-6} y={PY+chartH*(1-r)+4} textAnchor="end"
-                        fontSize="9" fill="#999" fontFamily="Cairo">
-                        {fmtK(maxDaily*r)}
-                      </text>
-                    </g>
-                  ))}
-
-                  {/* Area fill */}
-                  {areaPath && <path d={areaPath} fill="url(#areaGrad)" opacity="0.3"/>}
-
-                  {/* Line */}
-                  {linePath && <path d={linePath} fill="none" stroke="#1e3a5f" strokeWidth="2.5"
-                    strokeLinejoin="round" strokeLinecap="round"/>}
-
-                  {/* Gradient def */}
-                  <defs>
-                    <linearGradient id="areaGrad" x1="0" y1="0" x2="0" y2="1">
-                      <stop offset="0%" stopColor="#1e3a5f" stopOpacity="0.4"/>
-                      <stop offset="100%" stopColor="#1e3a5f" stopOpacity="0"/>
-                    </linearGradient>
-                  </defs>
-
-                  {/* Data points */}
-                  {pts.map(([x,y],i)=>{
-                    const day = daily[i];
-                    const total = day.paid+day.adj;
-                    const isBest = total === maxDaily;
-                    return (
-                      <g key={i}>
-                        <circle cx={x} cy={y} r={isBest?7:4}
-                          fill={isBest?"#e85d20":"#1e3a5f"}
-                          stroke="#fff" strokeWidth="2"/>
-                        {isBest && (
-                          <text x={x} y={y-14} textAnchor="middle"
-                            fontSize="9" fill="#e85d20" fontWeight="bold" fontFamily="Cairo">
-                            🏆 {fmtK(total)}
-                          </text>
-                        )}
+              {/* Line chart SVG — تواريخ واضحة */}
+              {(() => {
+                const CW = Math.max(daily.length * 38, 680);
+                const CH = 220;
+                const cpx = 60, cpy = 24;
+                const cw = CW - cpx*2, ch = CH - cpy*2 - 40;
+                const cpts = daily.map((d,i)=>{
+                  const x = cpx + (daily.length>1 ? (i/(daily.length-1))*cw : cw/2);
+                  const y = cpy + ch - ((d.paid+d.adj)/maxDaily)*ch;
+                  return [x, y, d];
+                });
+                const cLine = cpts.map(([x,y],i)=>i===0?`M${x},${y}`:`L${x},${y}`).join(' ');
+                const cArea = cpts.length
+                  ? cLine+` L${cpts[cpts.length-1][0]},${cpy+ch} L${cpts[0][0]},${cpy+ch} Z`
+                  : '';
+                return (
+                <div style={{background:"#f8fafc",borderRadius:14,padding:"16px 0 8px",
+                  border:"1px solid #e8f0fe",marginBottom:20,overflowX:"auto"}}>
+                  <svg width={CW} height={CH} style={{display:"block",minWidth:680}}>
+                    <defs>
+                      <linearGradient id="aGrad2" x1="0" y1="0" x2="0" y2="1">
+                        <stop offset="0%" stopColor="#1e3a5f" stopOpacity="0.35"/>
+                        <stop offset="100%" stopColor="#1e3a5f" stopOpacity="0.02"/>
+                      </linearGradient>
+                    </defs>
+                    {/* Grid */}
+                    {[0,0.25,0.5,0.75,1].map(r=>(
+                      <g key={r}>
+                        <line x1={cpx} y1={cpy+ch*(1-r)} x2={CW-cpx} y2={cpy+ch*(1-r)}
+                          stroke={r===0?"#ccc":"#e8f0fe"} strokeWidth={r===0?1.5:1}
+                          strokeDasharray={r===0?"":"4,4"}/>
+                        <text x={cpx-8} y={cpy+ch*(1-r)+4} textAnchor="end"
+                          fontSize="11" fill="#666" fontWeight="700" fontFamily="Cairo">
+                          {fmtK(maxDaily*r)}
+                        </text>
                       </g>
-                    );
-                  })}
-
-                  {/* Date labels */}
-                  {daily.map((day,i)=>{
-                    const [x] = pts[i]||[0];
-                    return (
-                      <text key={i} x={x} y={PY+chartH+22}
-                        textAnchor="middle" fontSize="9" fill="#555"
-                        fontWeight="700" fontFamily="Cairo">
-                        {day.date.slice(5)}
-                      </text>
-                    );
-                  })}
-                </svg>
-              </div>
+                    ))}
+                    {/* Area */}
+                    {cArea && <path d={cArea} fill="url(#aGrad2)"/>}
+                    {/* Line */}
+                    {cLine && <path d={cLine} fill="none" stroke="#1e3a5f"
+                      strokeWidth="2.5" strokeLinejoin="round" strokeLinecap="round"/>}
+                    {/* Points + Labels */}
+                    {cpts.map(([x,y,day],i)=>{
+                      const total = day.paid+day.adj;
+                      const isBest = total===maxDaily;
+                      const isWorst = total===Math.min(...daily.map(d=>d.paid+d.adj));
+                      // تواريخ: كل يوم إذا أقل من 15، وإلا كل 3
+                      const showLabel = daily.length<=15 || i%Math.ceil(daily.length/15)===0 || isBest;
+                      return (
+                        <g key={i}>
+                          {/* خط عمودي خفيف */}
+                          <line x1={x} y1={cpy+ch} x2={x} y2={y+8}
+                            stroke={isBest?"#e85d2030":"#1e3a5f15"} strokeWidth="1"/>
+                          {/* النقطة */}
+                          <circle cx={x} cy={y}
+                            r={isBest?8:isWorst?6:4}
+                            fill={isBest?"#e85d20":isWorst?"#888":"#1e3a5f"}
+                            stroke="#fff" strokeWidth="2"/>
+                          {/* قيمة أفضل يوم */}
+                          {isBest && (
+                            <g>
+                              <rect x={x-32} y={y-32} width={64} height={20} rx="5"
+                                fill="#e85d20"/>
+                              <text x={x} y={y-18} textAnchor="middle"
+                                fontSize="10" fill="#fff" fontWeight="bold" fontFamily="Cairo">
+                                🏆 {fmtK(total)}
+                              </text>
+                            </g>
+                          )}
+                          {/* التاريخ */}
+                          {showLabel && (
+                            <g>
+                              <line x1={x} y1={cpy+ch+2} x2={x} y2={cpy+ch+8}
+                                stroke="#aaa" strokeWidth="1"/>
+                              <text x={x} y={cpy+ch+20}
+                                textAnchor="middle" fontSize="10"
+                                fill={isBest?"#e85d20":"#444"}
+                                fontWeight={isBest?"900":"700"}
+                                fontFamily="Cairo">
+                                {day.date.slice(5,7)+'-'+day.date.slice(8)}
+                              </text>
+                              <text x={x} y={cpy+ch+32}
+                                textAnchor="middle" fontSize="9"
+                                fill="#aaa" fontFamily="Cairo">
+                                {day.date.slice(0,4)}
+                              </text>
+                            </g>
+                          )}
+                        </g>
+                      );
+                    })}
+                  </svg>
+                </div>);
+              })()}
 
               {/* ملخص أسبوعي */}
               <div style={{display:"grid",gridTemplateColumns:"repeat(3,1fr)",gap:12,marginBottom:16}}>
