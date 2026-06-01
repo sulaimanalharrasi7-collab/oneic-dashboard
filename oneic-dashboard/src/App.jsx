@@ -6056,41 +6056,129 @@ function parseXLS(file) {
 // ══════════════════════════════════════════════════════════════════════════════
 // نظام المزامنة المركزي — يضمن تطابق البيانات على كل الأجهزة
 // ══════════════════════════════════════════════════════════════════════════════
-const JSONBIN_ID  = "6a1addbc21f9ee59d29dad67";
-const JSONBIN_KEY = "$2a$10$iGKOshaaDAnJWlKtVW9LhuJFN9ocrQXgvZ8adXsXPZntwjlkhZ0FO";
+// ── إعدادات المزامنة ─────────────────────────────────────────────────────────
+const JSONBIN_ID  = "6a1db75321f9ee59d2a657cf";
+const JSONBIN_KEY = "$2a$10$5XcVCzKzp4eKgd8JsUvRruea6sHaS9J2fU7RZKGPt3s8DJPXGH9Pm";
 const SYNC_KEY_BULK = "oneic_bulk_data";
 const SYNC_KEY_DASH = "oneic_dash_data";
+const GH_TOKEN  = "";
+const GH_REPO   = "sulaimanalharrasi7-collab/oneic-dashboard";
+const GH_BRANCH = "main";
 
 // ── جلب البيانات من JSONbin ────────────────────────────────────────────────
-async function syncFetch(binId, key) {
+// ── نظام المزامنة الذكي — متعدد المصادر ────────────────────────────────────
+
+// قراءة من localStorage مع دعم الصيغتين
+
+
+// حفظ في localStorage
+function saveLocal(key, data) {
+  try { localStorage.setItem(key, JSON.stringify({ data, savedAt: Date.now() })); } catch(e){}
+}
+
+// GitHub API — قراءة
+async function ghFetch(key) {
+  if (!GH_TOKEN) return null;
   try {
-    const res = await fetch(`https://api.jsonbin.io/v3/b/${binId}/latest`, {
+    const path = `data/${key}.json`;
+    const res = await fetch(
+      `https://api.github.com/repos/${GH_REPO}/contents/${path}`,
+      { headers: { Authorization: `token ${GH_TOKEN}`, Accept: 'application/vnd.github.v3+json' },
+        cache: 'no-store' }
+    );
+    if (!res.ok) return null;
+    const info = await res.json();
+    const content = atob(info.content.split('\n').join(''));
+    return JSON.parse(content);
+  } catch(e) { return null; }
+}
+
+// GitHub API — كتابة
+async function ghPush(key, data) {
+  if (!GH_TOKEN) return false;
+  try {
+    const path = `data/${key}.json`;
+    // نقرأ SHA الموجودة
+    let sha = '';
+    try {
+      const getRes = await fetch(
+        `https://api.github.com/repos/${GH_REPO}/contents/${path}`,
+        { headers: { Authorization: `token ${GH_TOKEN}` } }
+      );
+      if (getRes.ok) { const info = await getRes.json(); sha = info.sha || ''; }
+    } catch(e){}
+    const content = btoa(unescape(encodeURIComponent(JSON.stringify(data, null, 2))));
+    const body = { message: `sync ${key} ${new Date().toISOString()}`,
+                   content, branch: GH_BRANCH };
+    if (sha) body.sha = sha;
+    const res = await fetch(
+      `https://api.github.com/repos/${GH_REPO}/contents/${path}`,
+      { method: 'PUT', headers: { Authorization: `token ${GH_TOKEN}`,
+          'Content-Type': 'application/json' },
+        body: JSON.stringify(body) }
+    );
+    return res.ok;
+  } catch(e) { return false; }
+}
+
+// JSONbin — قراءة
+async function jbFetch(key) {
+  try {
+    const res = await fetch(`https://api.jsonbin.io/v3/b/${JSONBIN_ID}/latest`, {
       headers: { 'X-Master-Key': JSONBIN_KEY, 'X-Bin-Meta': 'false' },
       cache: 'no-store'
     });
-    if (!res.ok) throw new Error('fetch failed ' + res.status);
+    if (!res.ok) return null;
     const json = await res.json();
-    // البيانات قد تكون مباشرة أو داخل key
-    const data = (json && json[key] && typeof json[key] === 'object' && !json[key].record)
-      ? json[key]
-      : (json && json.record ? null : json);
-    if (data && typeof data === 'object' && Object.keys(data).length > 2) {
-      // حفظ محلي للـ fallback فقط
-      try { localStorage.setItem(key, JSON.stringify({ data, syncedAt: Date.now() })); } catch(e){}
-      return data;
-    }
-  } catch(e) {
-    console.warn('syncFetch failed:', e.message);
-  }
-  // fallback: localStorage
+    return json[key] || null;
+  } catch(e) { return null; }
+}
+
+// JSONbin — كتابة (مع قراءة أولاً لعدم مسح البيانات)
+async function jbPush(key, data) {
   try {
-    const raw = localStorage.getItem(key);
-    if (raw) { const p = JSON.parse(raw); return p.data || (p.daily || p.regions ? p : null); }
-  } catch(e){}
+    // 1) اقرأ الموجود
+    const getRes = await fetch(`https://api.jsonbin.io/v3/b/${JSONBIN_ID}/latest`, {
+      headers: { 'X-Master-Key': JSONBIN_KEY, 'X-Bin-Meta': 'false' },
+      cache: 'no-store'
+    });
+    let existing = {};
+    if (getRes.ok) { try { existing = await getRes.json(); } catch(e){} }
+    // 2) أضف المفتاح
+    const payload = { ...existing, [key]: data, _syncedAt: new Date().toISOString() };
+    // 3) اكتب
+    const putRes = await fetch(`https://api.jsonbin.io/v3/b/${JSONBIN_ID}`, {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json', 'X-Master-Key': JSONBIN_KEY },
+      body: JSON.stringify(payload)
+    });
+    return putRes.ok;
+  } catch(e) { return false; }
+}
+
+// ── syncFetch: يجرب JSONbin ثم GitHub ثم localStorage ───────────────────────
+async function syncFetch(binId, key) {
+  // 1) JSONbin
+  const fromJB = await jbFetch(key);
+  if (fromJB && typeof fromJB === 'object' && (fromJB.daily?.length > 0 || fromJB.regions?.length > 0)) {
+    saveLocal(key, fromJB);
+    return fromJB;
+  }
+  // 2) GitHub
+  const fromGH = await ghFetch(key);
+  if (fromGH && typeof fromGH === 'object' && (fromGH.daily?.length > 0 || fromGH.regions?.length > 0)) {
+    saveLocal(key, fromGH);
+    return fromGH;
+  }
+  // 3) localStorage
+  const local = readLocal(key);
+  if (local) return local;
   return null;
 }
 
-// ── رفع البيانات لـ JSONbin ────────────────────────────────────────────────
+// ── syncPush: يرفع لـ JSONbin وGitHub ويحفظ محلياً ──────────────────────────
+
+
 async function syncPush(binId, key, data) {
   // ── حفظ محلي دائماً فوراً ─────────────────────────────────────────────────
   try {
