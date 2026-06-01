@@ -7140,14 +7140,14 @@ function AnalyticsModal({ bulk, onClose, small }) {
             <div style={{display:"flex",alignItems:"center",gap:8,flexWrap:"wrap"}}>
               <span style={{fontSize:11,color:"rgba(255,255,255,0.7)",fontWeight:700}}>📅 من يوم:</span>
               <input type="date" value={filterFrom}
-                onChange={e=>setFilterFrom(e.target.value)}
+                onChange={e=>{setFilterFrom(e.target.value);if(e.target.value){setFilterYear('all');setFilterMonth('all');}}}
                 style={{padding:"4px 8px",borderRadius:8,border:"1px solid rgba(255,255,255,0.3)",
                   background:"rgba(30,58,95,0.8)",color:"#fff",fontSize:12,
                   fontFamily:"'Cairo',sans-serif",outline:"none",cursor:"pointer"}}
               />
               <span style={{fontSize:11,color:"rgba(255,255,255,0.7)",fontWeight:700}}>إلى:</span>
               <input type="date" value={filterTo}
-                onChange={e=>setFilterTo(e.target.value)}
+                onChange={e=>{setFilterTo(e.target.value);if(e.target.value){setFilterYear('all');setFilterMonth('all');}}}
                 style={{padding:"4px 8px",borderRadius:8,border:"1px solid rgba(255,255,255,0.3)",
                   background:"rgba(30,58,95,0.8)",color:"#fff",fontSize:12,
                   fontFamily:"'Cairo',sans-serif",outline:"none",cursor:"pointer"}}
