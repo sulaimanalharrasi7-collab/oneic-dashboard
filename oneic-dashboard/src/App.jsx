@@ -8666,9 +8666,30 @@ export default function Dashboard() {
         </div>
       </div>
 
-      {/* ══ BANNER ══ */}
+
+
+      {/* ══ BODY ══ */}
+      <div style={{ padding:pad, flex:1, overflowY:"auto", overflowX:"hidden" }}>
+
+        {/* ══ Bulk Payment Report — التقرير اليومي ══ */}
+        <BulkPaymentSection bulk={bulkData} small={small}/>
+
+        {/* ══ الفاصل ══ */}
+        <div style={{
+          display:"flex", alignItems:"center", gap:12, margin:"6px 0 8px 0"
+        }}>
+          <div style={{flex:1, height:2, background:"linear-gradient(90deg,#f0ece8,#e85d20,#f0ece8)"}}/>
+          <div style={{
+            background:"#e85d20", color:"#fff", borderRadius:20,
+            padding:"4px 16px", fontSize:13, fontWeight:800, whiteSpace:"nowrap"
+          }}>📊 الإجمالي الكلي للمشروع</div>
+          <div style={{flex:1, height:2, background:"linear-gradient(90deg,#f0ece8,#e85d20,#f0ece8)"}}/>
+        </div>
+
+{/* ══ BANNER ══ */}
       <div id="print-banner" style={{
         background:"linear-gradient(120deg,#e85d20,#c44b10,#a83808)",
+        marginBottom:16,
         padding: isMobile?"14px":"16px 24px",
         display:"flex", justifyContent:"space-between", alignItems:"center",
         flexWrap:"wrap", gap:10,
@@ -8697,25 +8718,7 @@ export default function Dashboard() {
         </div>
       </div>
 
-      {/* ══ BODY ══ */}
-      <div style={{ padding:pad, flex:1, overflowY:"auto", overflowX:"hidden" }}>
-
-        {/* ══ Bulk Payment Report — التقرير اليومي ══ */}
-        <BulkPaymentSection bulk={bulkData} small={small}/>
-
-        {/* ══ الفاصل ══ */}
-        <div style={{
-          display:"flex", alignItems:"center", gap:12, margin:"16px 0"
-        }}>
-          <div style={{flex:1, height:2, background:"linear-gradient(90deg,#f0ece8,#e85d20,#f0ece8)"}}/>
-          <div style={{
-            background:"#e85d20", color:"#fff", borderRadius:20,
-            padding:"4px 16px", fontSize:13, fontWeight:800, whiteSpace:"nowrap"
-          }}>📊 الإجمالي الكلي للمشروع</div>
-          <div style={{flex:1, height:2, background:"linear-gradient(90deg,#f0ece8,#e85d20,#f0ece8)"}}/>
-        </div>
-
-        {/* Summary cards */}
+                {/* Summary cards */}
         <div id="print-summary" style={{
           display:"grid",
           gridTemplateColumns: isMobile?"1fr":isTablet?"1fr 1fr":"repeat(3,1fr)",
