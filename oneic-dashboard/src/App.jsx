@@ -7153,7 +7153,7 @@ function BulkPaymentSection({ bulk, small }) {
                       padding:"2px",borderRadius:4,
                       background:isSel?"rgba(232,93,32,0.1)":"transparent",
                       border:isSel?"1px solid #e85d20":"1px solid transparent"}}>
-                    <div style={{fontSize:7,color:isSel?"#e85d20":"#aaa",fontWeight:isSel?800:500,textAlign:"center",lineHeight:1}}>
+                    <div style={{fontSize:9,color:isSel?"#e85d20":"#222",fontWeight:isSel?900:700,textAlign:"center",lineHeight:1}}>
                       {total>500?fmt(total).slice(0,5):''}
                     </div>
                     <div style={{width:"100%",height:Math.max(pct,3)+"%",minHeight:4,
@@ -7167,8 +7167,8 @@ function BulkPaymentSection({ bulk, small }) {
               {(d.daily||[]).filter(x=>(!filterFrom||x.date>=filterFrom)&&(!filterTo||x.date<=filterTo)).map((day,i)=>(
                 <div key={i} onClick={()=>setSelectedDate(selectedDate===day.date?null:day.date)}
                   style={{minWidth:small?20:26,flex:"0 0 auto",textAlign:"center",
-                    fontSize:8,cursor:"pointer",fontWeight:700,
-                    color:selectedDate===day.date?"#e85d20":"#aaa"}}>
+                    fontSize:10,cursor:"pointer",fontWeight:800,
+                    color:selectedDate===day.date?"#e85d20":"#333"}}>
                   {day.date.slice(8)}
                 </div>))}
             </div>
