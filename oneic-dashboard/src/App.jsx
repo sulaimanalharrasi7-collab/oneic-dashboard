@@ -8099,39 +8099,31 @@ function BulkPaymentSection({ bulk, small }) {
   };
 
   useEffect(() => {
-    async function loadBulk() {
-      setBulkLoading(true);
-      // 1) JSONbin أولاً — المصدر الوحيد للحقيقة
-      try {
-        const remote = await syncFetch(JSONBIN_ID, SYNC_KEY_BULK);
-        if (remote?.daily?.length > 0) {
-          setBulkDataMain(remote);
-          setLastSync(new Date());
-          setBulkLoading(false);
-          return;
-        }
-      } catch(e) { console.warn('JSONbin bulk load failed:', e); }
-      // 2) fallback: localStorage
-      try {
-        const local = readLocal(SYNC_KEY_BULK);
-        if (local?.daily?.length > 0) {
-          setBulkDataMain(local);
-          setLastSync(new Date());
-          setBulkLoading(false);
-          return;
-        }
-      } catch(e) {}
-      // 3) SEED كـ last resort
-      setBulkDataMain(BULK_SEED);
+    // تحميل Bulk من localStorage أولاً (فوري) ثم JSONbin (للمزامنة)
+    const local = readLocal(SYNC_KEY_BULK);
+    if (local?.daily?.length > 0) {
+      setBulkDataMain(local);
       setBulkLoading(false);
     }
-    loadBulk();
+    // ثم نحاول JSONbin للحصول على أحدث نسخة
+    syncFetch(JSONBIN_ID, SYNC_KEY_BULK).then(remote => {
+      if (remote?.daily?.length > 0) {
+        setBulkDataMain(prev => {
+          if (!prev || !prev.daily) return remote;
+          const isNewer = remote.uploadedAt && prev.uploadedAt
+            ? remote.uploadedAt > prev.uploadedAt
+            : remote.daily.length >= prev.daily.length;
+          return isNewer ? remote : prev;
+        });
+        setLastSync(new Date());
+      }
+      setBulkLoading(false);
+    }).catch(() => setBulkLoading(false));
 
-    // ✅ مزامنة تلقائية كل 5 دقائق
-    const interval = setInterval(async () => {
-      if (document.visibilityState !== 'visible') return; // لا تحدّث إذا الصفحة مخفية
-      try {
-        const remote = await syncFetch(JSONBIN_ID, SYNC_KEY_BULK);
+    // auto-refresh كل 60 ثانية
+    const interval = setInterval(() => {
+      if (document.visibilityState !== 'visible') return;
+      syncFetch(JSONBIN_ID, SYNC_KEY_BULK).then(remote => {
         if (remote?.daily?.length > 0) {
           setBulkDataMain(prev => {
             if (!prev || !prev.daily) return remote;
@@ -8142,8 +8134,8 @@ function BulkPaymentSection({ bulk, small }) {
             return isNewer ? remote : prev;
           });
         }
-      } catch(e){}
-    }, 30 * 1000); // ✅ 30 ثانية — مزامنة فورية بين كل الأجهزة
+      }).catch(() => {});
+    }, 60000);
     return () => clearInterval(interval);
   }, []);
 
@@ -9411,34 +9403,38 @@ export default function Dashboard() {
   }, [setMilestoneBadge]);
 
   useEffect(() => {
-    async function load() {
-      // ✅ JSONbin أولاً دائماً — أحدث نسخة على كل الأجهزة (no cache)
-      const remote = await syncFetch(JSONBIN_ID, SYNC_KEY_DASH);
-      if (remote?.regions?.length > 0) {
-        setData(remote);
-        setLoadingServer(false);
-        return;
-      }
-      // fallback: localStorage
-      const local = readLocal(SYNC_KEY_DASH);
-      if (local?.regions?.length > 0) setData(local);
+    // تحميل Dashboard من localStorage أولاً (فوري)
+    const local = readLocal(SYNC_KEY_DASH);
+    if (local?.regions?.length > 0) {
+      setData(local);
       setLoadingServer(false);
     }
-    load();
-
-    // ✅ مزامنة تلقائية كل 3 دقائق
-    const syncInterval = setInterval(async () => {
-      if (document.visibilityState !== 'visible') return;
-      const remote = await syncFetch(JSONBIN_ID, SYNC_KEY_DASH);
+    // ثم نحاول JSONbin
+    syncFetch(JSONBIN_ID, SYNC_KEY_DASH).then(remote => {
       if (remote?.regions?.length > 0) {
-        setData(prev => {
-          if (!prev || !prev.grandTotal) return remote;
-          const isNewer = remote.uploadedAt && prev.uploadedAt
-            ? remote.uploadedAt > prev.uploadedAt : false;
-          return isNewer ? remote : prev;
-        });
+        const isNewer = !local || (remote.uploadedAt && local.uploadedAt
+          ? remote.uploadedAt > local.uploadedAt : false);
+        if (isNewer) {
+          setData(remote);
+          if (remote.history?.length > 0) setHistory(remote.history);
+        }
       }
-    }, 30 * 1000); // ✅ 30 ثانية
+      setLoadingServer(false);
+    }).catch(() => setLoadingServer(false));
+
+    // auto-refresh كل 60 ثانية
+    const syncInterval = setInterval(() => {
+      if (document.visibilityState !== 'visible') return;
+      syncFetch(JSONBIN_ID, SYNC_KEY_DASH).then(remote => {
+        if (remote?.regions?.length > 0) {
+          setData(prev => {
+            const isNewer = remote.uploadedAt && prev?.uploadedAt
+              ? remote.uploadedAt > prev.uploadedAt : false;
+            return isNewer ? remote : prev;
+          });
+        }
+      }).catch(() => {});
+    }, 60000);
     return () => clearInterval(syncInterval);
   }, []);
 
