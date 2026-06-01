@@ -7998,6 +7998,18 @@ function BulkPaymentSection({ bulk, small }) {
   const [bulkSuccess, setBulkSuccess]   = useState(false);
   const [bulkError, setBulkError]       = useState(null);
   const [bulkData, setBulkData]         = useState(bulk);
+  // ── مزامنة مع الـ prop عند تغييره من الخارج ──────────────────────────────
+  useEffect(() => {
+    if (!bulk) return;
+    setBulkData(prev => {
+      // استخدم الأحدث بناءً على عدد الأيام أو uploadedAt
+      if (!prev || !prev.daily) return bulk;
+      const bulkNewer = bulk.uploadedAt && prev.uploadedAt
+        ? bulk.uploadedAt > prev.uploadedAt
+        : (bulk.daily?.length || 0) >= (prev.daily?.length || 0);
+      return bulkNewer ? bulk : prev;
+    });
+  }, [bulk]);
   const [showAnalytics, setShowAnalytics] = useState(false);
   const [lastSync, setLastSync]           = useState(null);
   const [syncing, setSyncing]             = useState(false);
@@ -8101,16 +8113,30 @@ function BulkPaymentSection({ bulk, small }) {
 
   useEffect(() => {
     async function loadBulk() {
-      // ✅ دائماً من JSONbin أولاً (أحدث نسخة على كل الأجهزة)
-      const remote = await syncFetch(JSONBIN_ID, SYNC_KEY_BULK);
-      if (remote?.daily?.length > 0) {
-        setBulkData(remote);
-        setLastSync(new Date());
-        return;
-      }
-      // fallback: localStorage أو SEED
-      const local = readLocal(SYNC_KEY_BULK);
-      if (local?.daily?.length > 0) { setBulkData(local); setLastSync(new Date()); }
+      setBulkLoading(true);
+      // 1) JSONbin أولاً — المصدر الوحيد للحقيقة
+      try {
+        const remote = await syncFetch(JSONBIN_ID, SYNC_KEY_BULK);
+        if (remote?.daily?.length > 0) {
+          setBulkDataMain(remote);
+          setLastSync(new Date());
+          setBulkLoading(false);
+          return;
+        }
+      } catch(e) { console.warn('JSONbin bulk load failed:', e); }
+      // 2) fallback: localStorage
+      try {
+        const local = readLocal(SYNC_KEY_BULK);
+        if (local?.daily?.length > 0) {
+          setBulkDataMain(local);
+          setLastSync(new Date());
+          setBulkLoading(false);
+          return;
+        }
+      } catch(e) {}
+      // 3) SEED كـ last resort
+      setBulkDataMain(BULK_SEED);
+      setBulkLoading(false);
     }
     loadBulk();
 
@@ -8120,12 +8146,12 @@ function BulkPaymentSection({ bulk, small }) {
       try {
         const remote = await syncFetch(JSONBIN_ID, SYNC_KEY_BULK);
         if (remote?.daily?.length > 0) {
-          setBulkData(prev => {
+          setBulkDataMain(prev => {
             if (!prev || !prev.daily) return remote;
-            // حدّث إذا كانت هناك أيام جديدة أو uploadedAt أحدث
             const isNewer = remote.uploadedAt && prev.uploadedAt
               ? remote.uploadedAt > prev.uploadedAt
               : remote.daily.length > prev.daily.length;
+            if (isNewer) setLastSync(new Date());
             return isNewer ? remote : prev;
           });
         }
@@ -9386,13 +9412,9 @@ export default function Dashboard() {
   const [history, setHistory]   = useState(() => {
     try { return JSON.parse(localStorage.getItem('oneic_history')||'[]'); } catch(e){return [];}
   });
-  const [bulkData, setBulkDataMain] = useState(() => {
-    try {
-      const saved = localStorage.getItem('oneic_bulk_data');
-      if (saved) { const p = JSON.parse(saved); if (p?.daily?.length>0) return p; }
-    } catch(e){}
-    return BULK_SEED;
-  });
+  // bulkData يبدأ فارغاً — يُحمّل من JSONbin فوراً
+  const [bulkData, setBulkDataMain] = useState(BULK_SEED);
+  const [bulkLoading, setBulkLoading] = useState(true);
 
   // ── تحميل من JSONbin عند فتح الصفحة ──────────────────────────────────────
   // تسجيل milestone setter في window للوصول من BulkPaymentSection
