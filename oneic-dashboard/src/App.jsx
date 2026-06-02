@@ -6872,12 +6872,24 @@ function AnalyticsModal({ bulk, onClose, small }) {
 
   // ─ ألوان المناطق ────────────────────────────────────────────────────────────
   const REG_COLORS = {
+    // عربي
     'شركات التحصيل':'#1a7a6b','المكتب الرئيسي':'#6c3fa0',
     'مسقط والداخلية':'#e85d20','الباطنة الشمالية والجنوبية':'#c44b10',
     'الباطنة':'#c44b10','الشرقية والوسطى':'#d4601a',
     'مسندم والبريمي':'#b03808','ظفار':'#f07030',
+    // إنجليزي
+    'Debt Collection Company':'#1a7a6b','Head Office':'#6c3fa0',
+    'MUSCAT AND AL DAKHILIYAH':'#e85d20','MUSCAT AND DAKHILIYAH':'#e85d20',
+    'South and North Al Batinah':'#c44b10','North and South Al Batinah':'#c44b10',
+    'S&N Al Batinah':'#c44b10','N&S Al Batinah':'#c44b10',
+    'North and South Al Shaurqiah and Al Wasatah':'#d4601a',
+    'N&S Al Sharqiyah':'#d4601a','Al Sharqiyah':'#d4601a',
+    'Musandam and Al Buraimi':'#b03808','Musandam':'#b03808',
+    'Dhofar':'#f07030','Legal':'#9333ea','Legal- DR. Sarhaan':'#9333ea',
+    // أي منطقة غير معروفة - ألوان احتياطية بالترتيب
   };
-  const getRegColor = (r) => REG_COLORS[r.nameAr||r.nameEn] || r.color || '#888';
+  const FALLBACK_COLS = ['#e85d20','#1a7a6b','#6c3fa0','#c44b10','#d4601a','#b03808','#f07030','#9333ea','#0891b2','#059669'];
+  const getRegColor = (r,idx=0) => REG_COLORS[r.nameAr] || REG_COLORS[r.nameEn] || r.color || FALLBACK_COLS[idx%FALLBACK_COLS.length] || '#888';
 
   // ─ SVG Charts ───────────────────────────────────────────────────────────────
   const maxDaily = daily.length ? Math.max(...daily.map(x=>x.paid+x.adj), 1) : 1;
@@ -7385,7 +7397,7 @@ function AnalyticsModal({ bulk, onClose, small }) {
                 {/* Legend */}
                 <div style={{flex:1,minWidth:180}}>
                   {regions.map((r,i)=>{
-                    const col = getRegColor(r);
+                    const col = getRegColor(r,i);
                     const pct = Math.round((r.paid+r.adj)/grandTotal*100);
                     return(
                     <div key={i} style={{display:"flex",alignItems:"center",gap:10,
