@@ -6052,47 +6052,26 @@ function parseXLS(file) {
 
 
 // ── إعدادات المزامنة ──────────────────────────────────────────────────────
-const JSONBIN_ID  = "6a1addbc21f9ee59d29dad67";
-const JSONBIN_KEY = "$2a$10$iGKOshaaDAnJWlKtVW9LhuJFN9ocrQXgvZ8adXsXPZntwjlkhZ0FO";
+const FIREBASE_URL = "https://oneic-dashboard-default-rtdb.firebaseio.com";
 
-// ── JSONbin helpers (bin واحد لكل البيانات) ──────────────────────────────────
-let _jbCache = null;
-
-async function _jbRead() {
-  const res = await fetch(
-    `https://api.jsonbin.io/v3/b/${JSONBIN_ID}/latest`,
-    { headers: { 'X-Master-Key': JSONBIN_KEY, 'X-Bin-Meta': 'false' } }
-  );
+// ── Firebase Realtime Database helpers ───────────────────────────────────────
+async function sbGet(table) {
+  const key = table === 'oneic_data' ? 'main' : 'bulk';
+  const res = await fetch(`${FIREBASE_URL}/${key}.json`);
   if (!res.ok) throw new Error(await res.text());
-  _jbCache = await res.json();
-  return _jbCache || {};
-}
-
-async function _jbWrite(data) {
-  const res = await fetch(
-    `https://api.jsonbin.io/v3/b/${JSONBIN_ID}`,
-    {
-      method: 'PUT',
-      headers: { 'Content-Type': 'application/json', 'X-Master-Key': JSONBIN_KEY },
-      body: JSON.stringify(data)
-    }
-  );
-  if (!res.ok) throw new Error(await res.text());
-  _jbCache = data;
   return await res.json();
 }
 
-async function sbGet(table) {
-  const bin = await _jbRead();
-  const key = table === 'oneic_data' ? 'main' : 'bulk';
-  return bin[key] || null;
-}
-
 async function sbUpsert(table, obj) {
-  const bin = _jbCache || await _jbRead();
   const key = table === 'oneic_data' ? 'main' : 'bulk';
   const data = obj.payload || obj;
-  return await _jbWrite({ ...bin, [key]: data });
+  const res = await fetch(`${FIREBASE_URL}/${key}.json`, {
+    method: 'PUT',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(data)
+  });
+  if (!res.ok) throw new Error(await res.text());
+  return await res.json();
 }
 
 const omr = n => new Intl.NumberFormat("en-US",{minimumFractionDigits:3,maximumFractionDigits:3}).format(n||0);
@@ -7707,10 +7686,10 @@ function BulkPaymentSection({ bulk, small }) {
       // ── حفظ محلي ─────────────────────────────────────────────────────────
       try { localStorage.setItem('oneic_bulk_data', JSON.stringify(final)); } catch(e){}
 
-      // ── رفع لـ Supabase ──────────────────────────────────────────────────────
+      // ── رفع لـ Firebase ─────────────────────────────────────────────────────────
       try {
         await sbUpsert('oneic_bulk', { payload: final });
-      } catch(e) { console.warn('Supabase bulk upload failed:', e); }
+      } catch(e) { console.warn('Firebase bulk upload failed:', e); }
 
       setBulkData(final);
       setSelectedDate(null);
@@ -7730,7 +7709,7 @@ function BulkPaymentSection({ bulk, small }) {
           try { localStorage.setItem('oneic_bulk_data', JSON.stringify(row)); } catch(e) {}
           return;
         }
-      } catch(e) { console.warn('Supabase bulk load failed, using localStorage:', e.message); }
+      } catch(e) { console.warn('Firebase bulk load failed, using localStorage:', e.message); }
       // ثانياً: localStorage
       try {
         const saved = localStorage.getItem('oneic_bulk_data');
@@ -8999,7 +8978,7 @@ export default function Dashboard() {
           setLoadingServer(false);
           return;
         }
-      } catch(e) { console.warn('Supabase unavailable, using localStorage:', e.message); }
+      } catch(e) { console.warn('Firebase unavailable, using localStorage:', e.message); }
       // fallback localStorage
       try {
         const saved = localStorage.getItem('oneic_dashboard_data');
@@ -9040,7 +9019,7 @@ export default function Dashboard() {
     setUploading(true);
     try {
       await sbUpsert('oneic_data', { payload: dataToSave });
-      console.log('✅ Saved to Supabase');
+      console.log('✅ Saved to Firebase');
     } catch(e) {
       console.warn('JSONbin save failed:', e);
     }
