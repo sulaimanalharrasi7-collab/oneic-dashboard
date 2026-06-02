@@ -7443,15 +7443,16 @@ function AnalyticsModal({ bulk, onClose, small }) {
               {/* Top 3 podium */}
               <div style={{display:"flex",justifyContent:"center",alignItems:"flex-end",
                 gap:12,marginBottom:24,direction:"ltr"}}>
-                {[1,0,2].map(rank=>{
-                  const c = collectors[rank];
+                {[
+                  {idx:1, height:90,  color:"#c0c0c0", label:"🥈 ثانٍ",  medal:"🥈"},
+                  {idx:0, height:110, color:"#ffd700", label:"🥇 أول",   medal:"🥇"},
+                  {idx:2, height:75,  color:"#cd7f32", label:"🥉 ثالث",  medal:"🥉"},
+                ].map(({idx,height,color,label,medal})=>{
+                  const c = collectors[idx];
                   if (!c) return null;
-                  const heights=[90,110,75];
-                  const colors=["#c0c0c0","#ffd700","#cd7f32"];
-                  const labels=["🥈 ثانٍ","🥇 أول","🥉 ثالث"];
                   return(
-                  <div key={rank} style={{textAlign:"center",flex:1,maxWidth:160}}>
-                    <div style={{fontSize:10,color:"#888",fontWeight:700,marginBottom:4}}>{labels[rank]}</div>
+                  <div key={idx} style={{textAlign:"center",flex:1,maxWidth:160}}>
+                    <div style={{fontSize:10,color:"#888",fontWeight:700,marginBottom:4}}>{label}</div>
                     <div style={{fontSize:12,fontWeight:800,color:"#000",
                       marginBottom:6,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>
                       {c.name}
@@ -7460,13 +7461,13 @@ function AnalyticsModal({ bulk, onClose, small }) {
                       {fmt(c.paid+c.adj)}
                     </div>
                     <div style={{
-                      height:heights[rank],
-                      background:`linear-gradient(180deg,${colors[rank]},${colors[rank]}88)`,
+                      height:height,
+                      background:`linear-gradient(180deg,${color},${color}88)`,
                       borderRadius:"8px 8px 0 0",
-                      border:`2px solid ${colors[rank]}`,
+                      border:`2px solid ${color}`,
                       display:"flex",alignItems:"center",justifyContent:"center",
                       fontSize:24
-                    }}>{["🥈","🥇","🥉"][rank]}</div>
+                    }}>{medal}</div>
                   </div>);
                 })}
               </div>
