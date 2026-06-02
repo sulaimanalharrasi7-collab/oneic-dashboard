@@ -6829,7 +6829,7 @@ function AnalyticsModal({ bulk, onClose, small }) {
 
   // إعادة حساب المناطق والمحصّلين بناءً على الفلتر
   const filteredDates = new Set(daily.map(x=>x.date));
-  const isFiltered = filterYear!=='all' || filterMonth!=='all';
+  const isFiltered = filterYear!=='all' || filterMonth!=='all' || !!filterFrom || !!filterTo;
 
   // إذا يوجد dailyDetail، نبني بيانات مفلترة للمناطق والمحصّلين
   let filteredRegionMap = {};
@@ -6872,12 +6872,10 @@ function AnalyticsModal({ bulk, onClose, small }) {
 
   // ─ ألوان المناطق ────────────────────────────────────────────────────────────
   const REG_COLORS = {
-    // عربي
     'شركات التحصيل':'#1a7a6b','المكتب الرئيسي':'#6c3fa0',
     'مسقط والداخلية':'#e85d20','الباطنة الشمالية والجنوبية':'#c44b10',
     'الباطنة':'#c44b10','الشرقية والوسطى':'#d4601a',
     'مسندم والبريمي':'#b03808','ظفار':'#f07030',
-    // إنجليزي
     'Debt Collection Company':'#1a7a6b','Head Office':'#6c3fa0',
     'MUSCAT AND AL DAKHILIYAH':'#e85d20','MUSCAT AND DAKHILIYAH':'#e85d20',
     'South and North Al Batinah':'#c44b10','North and South Al Batinah':'#c44b10',
@@ -6886,7 +6884,6 @@ function AnalyticsModal({ bulk, onClose, small }) {
     'N&S Al Sharqiyah':'#d4601a','Al Sharqiyah':'#d4601a',
     'Musandam and Al Buraimi':'#b03808','Musandam':'#b03808',
     'Dhofar':'#f07030','Legal':'#9333ea','Legal- DR. Sarhaan':'#9333ea',
-    // أي منطقة غير معروفة - ألوان احتياطية بالترتيب
   };
   const FALLBACK_COLS = ['#e85d20','#1a7a6b','#6c3fa0','#c44b10','#d4601a','#b03808','#f07030','#9333ea','#0891b2','#059669'];
   const getRegColor = (r,idx=0) => REG_COLORS[r.nameAr] || REG_COLORS[r.nameEn] || r.color || FALLBACK_COLS[idx%FALLBACK_COLS.length] || '#888';
@@ -7397,7 +7394,7 @@ function AnalyticsModal({ bulk, onClose, small }) {
                 {/* Legend */}
                 <div style={{flex:1,minWidth:180}}>
                   {regions.map((r,i)=>{
-                    const col = getRegColor(r,i);
+                    const col = getRegColor(r);
                     const pct = Math.round((r.paid+r.adj)/grandTotal*100);
                     return(
                     <div key={i} style={{display:"flex",alignItems:"center",gap:10,
@@ -7630,16 +7627,28 @@ function BulkPaymentSection({ bulk, small }) {
     try {
       const parsed = await parseBulkPayment(file);
 
-      // ── قراءة البيانات المحفوظة (localStorage أولاً، ثم state الحالية) ────
+      // ── قراءة البيانات المحفوظة (Firebase أولاً ← localStorage ← state) ────
       let existing = null;
+      // 1) Firebase (المصدر الحقيقي - يحتوي كل التاريخ)
       try {
-        const saved = localStorage.getItem('oneic_bulk_data');
-        if (saved) {
-          const p = JSON.parse(saved);
-          if (p?.daily?.length > 0) existing = p;
+        const fbData = await sbGet('oneic_bulk');
+        if (fbData?.daily?.length > 0) {
+          existing = fbData;
+          // حدّث localStorage بأحدث نسخة من Firebase
+          try { localStorage.setItem('oneic_bulk_data', JSON.stringify(fbData)); } catch(e) {}
         }
-      } catch(e) {}
-      // إذا لم يجد في localStorage، استخدم الـ state الحالية
+      } catch(e) { console.warn('Firebase read failed, falling back:', e.message); }
+      // 2) localStorage (احتياطي)
+      if (!existing) {
+        try {
+          const saved = localStorage.getItem('oneic_bulk_data');
+          if (saved) {
+            const p = JSON.parse(saved);
+            if (p?.daily?.length > 0) existing = p;
+          }
+        } catch(e) {}
+      }
+      // 3) state الحالية (آخر خيار)
       if (!existing && bulkData?.daily?.length > 0 && bulkData !== BULK_SEED) {
         existing = bulkData;
       }
