@@ -8559,7 +8559,7 @@ async function parseComplaints(file) {
       } catch(e) { reject(e); }
     };
     reader.onerror = () => reject(new Error('فشل قراءة الملف'));
-    reader.readAsText(file); // readAsText يعمل على جميع المتصفحات
+    reader.readAsText(file, 'UTF-16'); // UTF-16 لملفات XLS
   });
 }
 
