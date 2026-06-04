@@ -8534,32 +8534,53 @@ async function parseComplaints(file) {
     const reader = new FileReader();
     reader.onload = e => {
       try {
-        const text = e.target.result;
-        const lines = text.split('\n').filter(l => l.trim());
-        if (lines.length < 2) { reject(new Error('الملف فارغ')); return; }
-        const headers = lines[0].split('\t').map(h => h.replace(/\r/g,'').replace(/\uFEFF/g,'').trim());
-        const regionIdx = headers.findIndex(h => h === 'Region');
-        const principalIdx = headers.findIndex(h => h === 'Principal Amount');
-        if (regionIdx < 0) { reject(new Error('عمود Region غير موجود')); return; }
-        const DC_KEYS = ['Debt Collection Company'];
-        const HO_KEYS = ['Head Office','Legal','Legal '];
-        let total=0, dcCount=0, hoCount=0, govCount=0;
-        let dcAmt=0, hoAmt=0, govAmt=0;
-        for (let i = 1; i < lines.length; i++) {
-          const row = lines[i].split('\t');
-          const region = (row[regionIdx]||'').replace(/\r/g,'').trim();
-          if (!region) continue;
-          const amt = principalIdx>=0 ? (parseFloat(row[principalIdx])||0) : 0;
-          total++;
-          if (DC_KEYS.some(k => region.includes(k))) { dcCount++; dcAmt+=amt; }
-          else if (HO_KEYS.some(k => region.trim()===k.trim())) { hoCount++; hoAmt+=amt; }
-          else { govCount++; govAmt+=amt; }
+        const buf = e.target.result;
+        const bytes = new Uint8Array(buf);
+        // تحويل UTF-16-LE يدوياً (تخطي أول 5 بايت)
+        let text = '';
+        let start = 0;
+        // ابحث عن BOM أو بداية البيانات
+        if (bytes[0]===0xFF && bytes[1]===0xFE) start=2;
+        else if (bytes[0]===0 && bytes[1]===0 && bytes[2]===0 && bytes[3]===0 && bytes[4]===0) start=5;
+        else if (bytes[4]===0 && bytes[5]>0) start=5;
+        
+        for (let i=start; i<bytes.length-1; i+=2) {
+          const lo=bytes[i], hi=bytes[i+1];
+          const cp=lo|(hi<<8);
+          if(cp===0x0000) continue;
+          if(cp===0xFEFF) continue; // skip BOM
+          text+=String.fromCodePoint(cp);
         }
-        resolve({ total, dcCount, hoCount, govCount, dcAmt, hoAmt, govAmt });
-      } catch(e) { reject(e); }
+        
+        if (!text || text.trim().length<10) {
+          reject(new Error('تعذّر قراءة الملف - تأكد أنه ملف XLS صحيح'));
+          return;
+        }
+        
+        const lines = text.split('\n').filter(l=>l.trim());
+        const headers = lines[0].split('\t').map(h=>h.replace(/\r/g,'').replace(/\uFEFF/g,'').trim());
+        const regionIdx = headers.findIndex(h=>h==='Region');
+        const principalIdx = headers.findIndex(h=>h==='Principal Amount');
+        if (regionIdx<0) { reject(new Error('عمود Region غير موجود')); return; }
+        
+        const DC=['Debt Collection Company'];
+        const HO=['Head Office','Legal','Legal '];
+        let total=0,dcCount=0,hoCount=0,govCount=0,dcAmt=0,hoAmt=0,govAmt=0;
+        for(let i=1;i<lines.length;i++){
+          const row=lines[i].split('\t');
+          const region=(row[regionIdx]||'').replace(/\r/g,'').trim();
+          if(!region) continue;
+          const amt=principalIdx>=0?(parseFloat(row[principalIdx])||0):0;
+          total++;
+          if(DC.some(k=>region.includes(k))){dcCount++;dcAmt+=amt;}
+          else if(HO.some(k=>region.trim()===k.trim())){hoCount++;hoAmt+=amt;}
+          else{govCount++;govAmt+=amt;}
+        }
+        resolve({total,dcCount,hoCount,govCount,dcAmt,hoAmt,govAmt});
+      } catch(e){reject(e);}
     };
-    reader.onerror = () => reject(new Error('فشل قراءة الملف'));
-    reader.readAsText(file, 'UTF-16'); // UTF-16 لملفات XLS
+    reader.onerror=()=>reject(new Error('فشل قراءة الملف'));
+    reader.readAsArrayBuffer(file);
   });
 }
 
