@@ -6349,7 +6349,7 @@ function UploadBtn({onFile,uploading,success,error,small}) {
         borderRadius:12,padding:small?"8px 14px":"10px 20px",cursor:uploading?"default":"pointer",
         background:success?"#f0fdf4":uploading?"#fff7f3":"#fff",
         textAlign:"center",minWidth:small?140:175,transition:"all 0.3s"}}>
-      <input ref={ref} type="file" accept=".xls,.xlsx" style={{display:"none"}}
+      <input ref={ref} type="file" accept=".xls,.xlsx,.csv" style={{display:"none"}}
         onChange={e=>{const f=e.target.files?.[0];if(f)onFile(f);e.target.value="";}}/>
       {uploading?<div style={{color:"#e85d20",fontSize:13,fontWeight:700}}>⏳ جاري التحليل...</div>
        :success?<div style={{color:"#16a34a",fontSize:13,fontWeight:700}}>✅ تم التحديث</div>
@@ -9079,9 +9079,26 @@ export default function Dashboard() {
   const handleFile = useCallback(async (file) => {
     setUploading(true); setError(null); setSuccess(false); setPending(null);
     try {
-      const p = await parseXLS(file);
-      // ── عرض نافذة التحقق قبل تطبيق البيانات ──
-      setPending({ data: p, fileName: file.name, fileSize: (file.size/1024/1024).toFixed(1) });
+      // ── تحديد نوع الملف تلقائياً ──────────────────────────────────────
+      const isComplaints = file.name.toLowerCase().includes('complaint');
+      if (isComplaints) {
+        // ملف complaints → يحدّث عدد الحسابات والمبالغ
+        const {total,dcCount,hoCount,govCount,dcAmt,hoAmt,govAmt} = await parseComplaints(file);
+        setComplaintsCount(total);
+        setComplaintsCounts({dc:dcCount,ho:hoCount,gov:govCount});
+        setComplaintsAmts({dc:dcAmt,ho:hoAmt,gov:govAmt});
+        try {
+          localStorage.setItem('oneic_complaints_count', String(total));
+          localStorage.setItem('oneic_complaints_counts', JSON.stringify({dc:dcCount,ho:hoCount,gov:govCount}));
+          localStorage.setItem('oneic_complaints_amts', JSON.stringify({dc:dcAmt,ho:hoAmt,gov:govAmt}));
+        } catch(ex){}
+        setSuccess(true);
+        setTimeout(()=>setSuccess(false), 3000);
+      } else {
+        // ملف bulk payment → يحدّث بيانات الداشبورد
+        const p = await parseXLS(file);
+        setPending({ data: p, fileName: file.name, fileSize: (file.size/1024/1024).toFixed(1) });
+      }
     }
     catch(e) { setError(e.message); }
     finally { setUploading(false); }
@@ -9502,32 +9519,7 @@ export default function Dashboard() {
         </div>
         <div style={{ display:"flex", alignItems:"center", gap: isMobile?10:20 }}>
           <UploadBtn onFile={handleFile} uploading={uploading} success={success} error={error} small={isMobile} />
-          <label title="رفع ملف Complaints لتحديث عدد الحسابات" style={{
-            display:"flex",alignItems:"center",gap:5,cursor:"pointer",
-            background:"rgba(30,58,95,0.85)",borderRadius:10,
-            padding:"8px 12px",border:"1.5px solid rgba(255,255,255,0.15)",
-            fontSize:13,fontWeight:700,color:"#fff",flexShrink:0,
-            whiteSpace:"nowrap"
-          }}>
-            <span>📋</span>
-            {!isMobile && <span>{complaintsCount>0?`${complaintsCount.toLocaleString()} حساب`:'الحسابات'}</span>}
-            <input type="file" accept=".xls,.xlsx,.csv" style={{display:"none"}}
-              onChange={async e=>{
-                if(!e.target.files[0]) return;
-                try {
-                  const {total,dcCount,hoCount,govCount,dcAmt,hoAmt,govAmt} = await parseComplaints(e.target.files[0]);
-                  setComplaintsCount(total);
-                  setComplaintsCounts({dc:dcCount,ho:hoCount,gov:govCount});
-                  setComplaintsAmts({dc:dcAmt,ho:hoAmt,gov:govAmt});
-                  try {
-                    localStorage.setItem('oneic_complaints_count', String(total));
-                    localStorage.setItem('oneic_complaints_counts', JSON.stringify({dc:dcCount,ho:hoCount,gov:govCount}));
-                    localStorage.setItem('oneic_complaints_amts', JSON.stringify({dc:dcAmt,ho:hoAmt,gov:govAmt}));
-                  } catch(ex){}
-                } catch(ex) { alert('خطأ في قراءة الملف: '+ex.message); }
-                e.target.value='';
-              }}/>
-          </label>
+
           <button
             onClick={() => setShowHistory(s=>!s)}
             title="السجل التاريخي"
