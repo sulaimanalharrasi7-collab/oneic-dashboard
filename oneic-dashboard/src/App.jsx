@@ -6405,17 +6405,25 @@ function SectionHeader({title,paid,adj,color,small}) {
 }
 
 // ── EntityCard ─────────────────────────────────────────────────────────────
-function EntityCard({name,paid,adj,color,rank,small}) {
+function EntityCard({name,paid,adj,color,rank,small,cnt,cBranch}) {
+  const bKey=Object.keys(cBranch||{}).find(k=>k.trim()===name?.trim());
+  const bD=bKey?(cBranch||{})[bKey]:null;
   return (
     <div className="entity-card" style={{background:"#fff",borderRadius:13,
       border:"1.5px solid #f0ece8",boxShadow:"0 2px 10px rgba(0,0,0,0.05)",
       padding:small?"12px 14px":"14px 18px",borderRight:`5px solid ${color}`}}>
-      <div style={{display:"flex",alignItems:"center",gap:10,marginBottom:10}}>
-        <div style={{width:small?30:36,height:small?30:36,borderRadius:9,background:color,flexShrink:0,
-          display:"flex",alignItems:"center",justifyContent:"center",fontSize:small?14:16,fontWeight:800,color:"#fff"}}>{rank}</div>
-        <div className="entity-name" style={{fontSize:small?14:17,fontWeight:900,color:"#000"}}>{name}</div>
+      <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",gap:10,marginBottom:10}}>
+        <div style={{display:"flex",alignItems:"center",gap:10}}>
+          <div style={{width:small?30:36,height:small?30:36,borderRadius:9,background:color,flexShrink:0,
+            display:"flex",alignItems:"center",justifyContent:"center",fontSize:small?14:16,fontWeight:800,color:"#fff"}}>{rank}</div>
+          <div className="entity-name" style={{fontSize:small?14:17,fontWeight:900,color:"#000"}}>{name}</div>
+        </div>
+        {bD&&<div style={{textAlign:"right",flexShrink:0}}>
+          <div style={{fontSize:small?10:12,fontWeight:900,color:color}}>{bD.count.toLocaleString()} حساب</div>
+          <div style={{fontSize:small?10:11,color:"#888",fontWeight:700}}>{omr(bD.amt)}</div>
+        </div>}
       </div>
-      <AmountRow paid={paid} adj={adj} color={color} small={small}/>
+      <AmountRow paid={paid} adj={adj} color={color} small={small} cnt={cnt}/>
     </div>
   );
 }
@@ -6473,7 +6481,7 @@ function SummaryCard({label,paid,adj,cnt,portAmt,color,icon,pct,small}) {
 // ── RegionRow ──────────────────────────────────────────────────────────────
 const RCOLS = ["#e85d20","#c44b10","#d4601a","#b03808","#f07030"];
 
-function RegionRow({region,idx,open,onToggle,small}) {
+function RegionRow({region,idx,open,onToggle,small,cRegion}) {
   const col = RCOLS[idx%RCOLS.length];
   const maxV = region.collectors?.length ? Math.max(...region.collectors.map(c=>c.paid+c.adj),1) : 1;
   return (
@@ -6490,12 +6498,18 @@ function RegionRow({region,idx,open,onToggle,small}) {
           <div className="region-name-en" style={{fontSize:small?11:14,color:"#555",marginTop:3,fontWeight:700}}>{region.nameEn}</div>
         </div>
         <div className="region-amounts" style={{display:"flex",flex:small?1:0,gap:0,minWidth:small?0:460}}>
-          {[["المدفوع","#16a34a",region.paid],["التسويات","#d97706",region.adj],["الإجمالي",col,region.paid+region.adj]].map(([lbl,clr,val],i)=>(
-            <div key={lbl} style={{flex:1,textAlign:"center",padding:small?"4px 8px":"6px 14px",borderRight:i<2?"1.5px solid #f0ece8":"none"}}>
-              <div style={{fontSize:small?11:13,color:"#333",fontWeight:800,marginBottom:4,letterSpacing:0.3}}>{lbl}</div>
-              <div style={{fontSize:i===2?(small?16:20):(small?13:18),fontWeight:900,color:clr,lineHeight:1}}>{omr(val)}</div>
-            </div>
-          ))}
+          {(()=>{
+            const rKey=Object.keys(cRegion||{}).find(k=>k.trim()===region.nameEn?.trim()||k.trim()===region.nameAr?.trim());
+            const cD=rKey?(cRegion||{})[rKey]:null;
+            return [["المدفوع","#16a34a",region.paid],["التسويات","#d97706",region.adj],["الإجمالي",col,region.paid+region.adj]].map(([lbl,clr,val],i)=>(
+              <div key={lbl} style={{flex:1,textAlign:"center",padding:small?"4px 8px":"6px 14px",borderRight:i<2?"1.5px solid #f0ece8":"none"}}>
+                <div style={{fontSize:small?11:13,color:"#333",fontWeight:800,marginBottom:4,letterSpacing:0.3}}>{lbl}</div>
+                <div style={{fontSize:i===2?(small?16:20):(small?13:18),fontWeight:900,color:clr,lineHeight:1}}>{omr(val)}</div>
+                {cD&&<div style={{fontSize:small?9:10,color:"#888",marginTop:2,fontWeight:700}}>{cD.count.toLocaleString()} حساب</div>}
+                {cD&&i===2&&<div style={{fontSize:small?9:10,color:col,marginTop:1,fontWeight:700}}>{omr(cD.amt)}</div>}
+              </div>
+            ));
+          })()}
         </div>
         <div className="toggle-btn" style={{display:"flex",alignItems:"center",gap:5,flexShrink:0,
           background:open?col:"#fff",color:open?"#fff":col,
@@ -8535,8 +8549,6 @@ async function parseComplaints(file) {
     reader.onload = e => {
       try {
         const bytes = new Uint8Array(e.target.result);
-        // هيكل الملف: 5 spaces + BOM(FF FE) + UTF-16-LE
-        // نبدأ من البايت رقم 7
         let text = '';
         for (let i = 7; i < bytes.length - 1; i += 2) {
           const cp = bytes[i] | (bytes[i+1] << 8);
@@ -8544,25 +8556,38 @@ async function parseComplaints(file) {
           text += String.fromCharCode(cp);
         }
         const lines = text.split('\n').filter(l => l.trim());
-        if (lines.length < 2) { reject(new Error('الملف فارغ أو تالف')); return; }
+        if (lines.length < 2) { reject(new Error('الملف فارغ')); return; }
         const headers = lines[0].split('\t').map(h => h.replace(/\r/g,'').trim());
         const regionIdx = headers.findIndex(h => h === 'Region');
+        const branchIdx = headers.findIndex(h => h === 'Branch');
         const principalIdx = headers.findIndex(h => h === 'Principal Amount');
         if (regionIdx < 0) { reject(new Error('عمود Region غير موجود')); return; }
         const DC = ['Debt Collection Company'];
         const HO = ['Head Office', 'Legal', 'Legal '];
-        let total=0, dcCount=0, hoCount=0, govCount=0, dcAmt=0, hoAmt=0, govAmt=0;
+        let total=0, dcCount=0, hoCount=0, govCount=0;
+        let dcAmt=0, hoAmt=0, govAmt=0;
+        const regionMap = {}, branchMap = {};
         for (let i = 1; i < lines.length; i++) {
           const row = lines[i].split('\t');
           const region = (row[regionIdx]||'').replace(/\r/g,'').trim();
+          const branch = branchIdx>=0 ? (row[branchIdx]||'').replace(/\r/g,'').trim() : '';
           if (!region) continue;
-          const amt = principalIdx >= 0 ? (parseFloat(row[principalIdx])||0) : 0;
+          const amt = principalIdx>=0 ? (parseFloat(row[principalIdx])||0) : 0;
           total++;
-          if (DC.some(k => region.includes(k))) { dcCount++; dcAmt += amt; }
-          else if (HO.some(k => region.trim() === k.trim())) { hoCount++; hoAmt += amt; }
-          else { govCount++; govAmt += amt; }
+          // Region totals
+          if (!regionMap[region]) regionMap[region] = {count:0, amt:0};
+          regionMap[region].count++; regionMap[region].amt += amt;
+          // Branch totals
+          if (branch) {
+            if (!branchMap[branch]) branchMap[branch] = {count:0, amt:0};
+            branchMap[branch].count++; branchMap[branch].amt += amt;
+          }
+          // Section totals
+          if (DC.some(k => region.includes(k))) { dcCount++; dcAmt+=amt; }
+          else if (HO.some(k => region.trim()===k.trim())) { hoCount++; hoAmt+=amt; }
+          else { govCount++; govAmt+=amt; }
         }
-        resolve({ total, dcCount, hoCount, govCount, dcAmt, hoAmt, govAmt });
+        resolve({ total, dcCount, hoCount, govCount, dcAmt, hoAmt, govAmt, regionMap, branchMap });
       } catch(e) { reject(e); }
     };
     reader.onerror = () => reject(new Error('فشل قراءة الملف'));
@@ -9036,6 +9061,12 @@ export default function Dashboard() {
   const [complaintsAmts, setComplaintsAmts] = useState(() => {
     try { return JSON.parse(localStorage.getItem('oneic_complaints_amts')||'{}'); } catch(e){return {};}
   });
+  const [complaintsRegionMap, setComplaintsRegionMap] = useState(() => {
+    try { return JSON.parse(localStorage.getItem('oneic_complaints_region_map')||'{}'); } catch(e){return {};}
+  });
+  const [complaintsBranchMap, setComplaintsBranchMap] = useState(() => {
+    try { return JSON.parse(localStorage.getItem('oneic_complaints_branch_map')||'{}'); } catch(e){return {};}
+  });
   const [uploading, setUploading] = useState(false);
   const [success, setSuccess]   = useState(false);
   const [error, setError]       = useState(null);
@@ -9090,14 +9121,18 @@ export default function Dashboard() {
       const isComplaints = file.name.toLowerCase().includes('complaint');
       if (isComplaints) {
         // ملف complaints → يحدّث عدد الحسابات والمبالغ
-        const {total,dcCount,hoCount,govCount,dcAmt,hoAmt,govAmt} = await parseComplaints(file);
+        const {total,dcCount,hoCount,govCount,dcAmt,hoAmt,govAmt,regionMap,branchMap} = await parseComplaints(file);
         setComplaintsCount(total);
         setComplaintsCounts({dc:dcCount,ho:hoCount,gov:govCount});
         setComplaintsAmts({dc:dcAmt,ho:hoAmt,gov:govAmt});
+        setComplaintsRegionMap(regionMap||{});
+        setComplaintsBranchMap(branchMap||{});
         try {
           localStorage.setItem('oneic_complaints_count', String(total));
           localStorage.setItem('oneic_complaints_counts', JSON.stringify({dc:dcCount,ho:hoCount,gov:govCount}));
           localStorage.setItem('oneic_complaints_amts', JSON.stringify({dc:dcAmt,ho:hoAmt,gov:govAmt}));
+          localStorage.setItem('oneic_complaints_region_map', JSON.stringify(regionMap||{}));
+          localStorage.setItem('oneic_complaints_branch_map', JSON.stringify(branchMap||{}));
         } catch(ex){}
         setSuccess(true);
         setTimeout(()=>setSuccess(false), 3000);
@@ -9684,7 +9719,7 @@ export default function Dashboard() {
             <SectionHeader title="🏢 شركات التحصيل" paid={dPd} adj={dAd} color="#1a7a6b" small={small}/>
             <div style={{ padding: small?"10px":"14px 16px", display:"flex", flexDirection:"column", gap: small?8:10 }}>
               {data.debtCompanies.map((c,i) => (
-                <EntityCard key={c.name} name={c.name} paid={c.paid} adj={c.adj} color="#1a7a6b" rank={i+1} small={small}/>
+                <EntityCard key={c.name} name={c.name} paid={c.paid} adj={c.adj} cBranch={complaintsBranchMap} color="#1a7a6b" rank={i+1} small={small}/>
               ))}
             </div>
           </div>
@@ -9694,7 +9729,7 @@ export default function Dashboard() {
             <SectionHeader title="🏛 المكتب الرئيسي" paid={hPd} adj={hAd} color="#6c3fa0" small={small}/>
             <div style={{ padding: small?"10px":"14px 16px", display:"flex", flexDirection:"column", gap: small?8:10 }}>
               {data.headOffice.map((c,i) => (
-                <EntityCard key={c.name} name={c.name} paid={c.paid} adj={c.adj} color="#6c3fa0" rank={i+1} small={small}/>
+                <EntityCard key={c.name} name={c.name} paid={c.paid} adj={c.adj} cBranch={complaintsBranchMap} color="#6c3fa0" rank={i+1} small={small}/>
               ))}
             </div>
           </div>
