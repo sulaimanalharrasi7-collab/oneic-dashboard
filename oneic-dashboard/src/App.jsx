@@ -8534,12 +8534,12 @@ async function parseComplaints(file) {
     const reader = new FileReader();
     reader.onload = e => {
       try {
-        const raw = new Uint8Array(e.target.result);
-        const text = new TextDecoder('utf-16-le').decode(raw.slice(5));
+        const text = e.target.result;
         const lines = text.split('\n').filter(l => l.trim());
-        const headers = lines[0].split('\t');
-        const regionIdx = headers.findIndex(h => h.trim() === 'Region');
-        const principalIdx = headers.findIndex(h => h.trim() === 'Principal Amount');
+        if (lines.length < 2) { reject(new Error('الملف فارغ')); return; }
+        const headers = lines[0].split('\t').map(h => h.replace(/\r/g,'').replace(/\uFEFF/g,'').trim());
+        const regionIdx = headers.findIndex(h => h === 'Region');
+        const principalIdx = headers.findIndex(h => h === 'Principal Amount');
         if (regionIdx < 0) { reject(new Error('عمود Region غير موجود')); return; }
         const DC_KEYS = ['Debt Collection Company'];
         const HO_KEYS = ['Head Office','Legal','Legal '];
@@ -8547,7 +8547,7 @@ async function parseComplaints(file) {
         let dcAmt=0, hoAmt=0, govAmt=0;
         for (let i = 1; i < lines.length; i++) {
           const row = lines[i].split('\t');
-          const region = (row[regionIdx]||'').trim();
+          const region = (row[regionIdx]||'').replace(/\r/g,'').trim();
           if (!region) continue;
           const amt = principalIdx>=0 ? (parseFloat(row[principalIdx])||0) : 0;
           total++;
@@ -8559,7 +8559,7 @@ async function parseComplaints(file) {
       } catch(e) { reject(e); }
     };
     reader.onerror = () => reject(new Error('فشل قراءة الملف'));
-    reader.readAsArrayBuffer(file);
+    reader.readAsText(file); // readAsText يعمل على جميع المتصفحات
   });
 }
 
