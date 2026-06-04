@@ -6421,10 +6421,12 @@ function EntityCard({name,paid,adj,color,rank,small}) {
 }
 
 // ── SummaryCard ────────────────────────────────────────────────────────────
-function SummaryCard({label,paid,adj,color,icon,pct,small}) {
+function SummaryCard({label,paid,adj,cnt,portAmt,color,icon,pct,small}) {
+  const total = paid+adj;
   return (
     <div style={{background:"#fff",borderRadius:15,overflow:"hidden",
       boxShadow:"0 3px 14px rgba(0,0,0,0.07)",border:"1.5px solid #f0ece8",minWidth:0}}>
+      {/* Header */}
       <div style={{background:color,padding:small?"10px 12px":"13px 14px",
         display:"flex",justifyContent:"space-between",alignItems:"center",gap:6,flexWrap:"wrap"}}>
         <div style={{display:"flex",alignItems:"center",gap:6,minWidth:0}}>
@@ -6434,14 +6436,32 @@ function SummaryCard({label,paid,adj,color,icon,pct,small}) {
         <div style={{background:"rgba(255,255,255,0.25)",borderRadius:20,
           padding:"2px 8px",fontSize:small?12:13,fontWeight:800,color:"#fff",flexShrink:0}}>{pct}%</div>
       </div>
-      <div style={{padding:small?"10px":"12px"}}>
+      {/* إجمالي الحسابات */}
+      <div style={{background:`${color}0f`,padding:small?"8px 12px":"10px 14px",
+        borderBottom:"1px solid #f0ece8",display:"flex",justifyContent:"space-between",alignItems:"center"}}>
+        <div style={{fontSize:small?10:11,color:"#888",fontWeight:700}}>إجمالي الحسابات</div>
+        <div style={{display:"flex",flexDirection:"column",alignItems:"flex-end",gap:2}}>
+          {portAmt>0
+            ? <div style={{fontSize:small?14:16,fontWeight:900,color:color,lineHeight:1}}>{omr(portAmt)}</div>
+            : <div style={{fontSize:small?15:18,fontWeight:900,color:color,lineHeight:1}}>{omr(total)}</div>
+          }
+          <div style={{fontSize:small?10:11,color:"#aaa",fontWeight:600}}>{(cnt||0).toLocaleString()} حساب</div>
+        </div>
+      </div>
+      {/* التفاصيل */}
+      <div style={{padding:small?"8px":"10px"}}>
         <div style={{display:"grid",gridTemplateColumns:"1fr 1fr 1fr",gap:0,
           border:"1px solid #f0ece8",borderRadius:10,overflow:"hidden"}}>
-          {[["المدفوع","#16a34a",paid],["التسويات","#d97706",adj],["الإجمالي",color,paid+adj]].map(([lbl,clr,val],i)=>(
-            <div key={lbl} style={{textAlign:"center",padding:small?"6px 4px":"8px 6px",
+          {[
+            ["المدفوع","#16a34a",paid,cnt],
+            ["التسويات","#d97706",adj,cnt],
+            ["الإجمالي",color,total,cnt]
+          ].map(([lbl,clr,val,c],i)=>(
+            <div key={lbl} style={{textAlign:"center",padding:small?"6px 3px":"8px 5px",
               borderRight:i<2?"1px solid #f0ece8":"none",minWidth:0,overflow:"hidden"}}>
-              <div style={{fontSize:small?10:12,color:"#333",fontWeight:800,marginBottom:4,whiteSpace:"nowrap"}}>{lbl}</div>
-              <div style={{fontSize:small?13:15,fontWeight:900,color:clr,lineHeight:1,wordBreak:"break-all"}}>{omr(val)}</div>
+              <div style={{fontSize:small?9:11,color:"#333",fontWeight:800,marginBottom:3,whiteSpace:"nowrap"}}>{lbl}</div>
+              <div style={{fontSize:small?12:14,fontWeight:900,color:clr,lineHeight:1,wordBreak:"break-all"}}>{omr(val)}</div>
+              {c!=null && <div style={{fontSize:small?9:10,color:"#aaa",marginTop:2,fontWeight:600}}>{(c||0).toLocaleString()} حساب</div>}
             </div>
           ))}
         </div>
@@ -8508,6 +8528,41 @@ function HistoryModal({ history, onClose, small }) {
 
 
 // ── Bulk Payment Parser (Smart 100%) ─────────────────────────────────────────
+// ── parseComplaints ─────────────────────────────────────────────────────────
+async function parseComplaints(file) {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload = e => {
+      try {
+        const raw = new Uint8Array(e.target.result);
+        const text = new TextDecoder('utf-16-le').decode(raw.slice(5));
+        const lines = text.split('\n').filter(l => l.trim());
+        const headers = lines[0].split('\t');
+        const regionIdx = headers.findIndex(h => h.trim() === 'Region');
+        const principalIdx = headers.findIndex(h => h.trim() === 'Principal Amount');
+        if (regionIdx < 0) { reject(new Error('عمود Region غير موجود')); return; }
+        const DC_KEYS = ['Debt Collection Company'];
+        const HO_KEYS = ['Head Office','Legal','Legal '];
+        let total=0, dcCount=0, hoCount=0, govCount=0;
+        let dcAmt=0, hoAmt=0, govAmt=0;
+        for (let i = 1; i < lines.length; i++) {
+          const row = lines[i].split('\t');
+          const region = (row[regionIdx]||'').trim();
+          if (!region) continue;
+          const amt = principalIdx>=0 ? (parseFloat(row[principalIdx])||0) : 0;
+          total++;
+          if (DC_KEYS.some(k => region.includes(k))) { dcCount++; dcAmt+=amt; }
+          else if (HO_KEYS.some(k => region.trim()===k.trim())) { hoCount++; hoAmt+=amt; }
+          else { govCount++; govAmt+=amt; }
+        }
+        resolve({ total, dcCount, hoCount, govCount, dcAmt, hoAmt, govAmt });
+      } catch(e) { reject(e); }
+    };
+    reader.onerror = () => reject(new Error('فشل قراءة الملف'));
+    reader.readAsArrayBuffer(file);
+  });
+}
+
 function parseBulkPayment(file) {
   return new Promise((resolve, reject) => {
     const reader = new FileReader();
@@ -8967,6 +9022,13 @@ export default function Dashboard() {
   // ── تحميل البيانات من API عند البداية ───────────────────────────────────
   const [data, setData] = useState(SEED);
   const [loadingServer, setLoadingServer] = useState(true);
+  const [complaintsCount, setComplaintsCount] = useState(() => { try { return parseInt(localStorage.getItem('oneic_complaints_count')||'0'); } catch(e){return 0;} });
+  const [complaintsCounts, setComplaintsCounts] = useState(() => {
+    try { return JSON.parse(localStorage.getItem('oneic_complaints_counts')||'{}'); } catch(e){return {};}
+  });
+  const [complaintsAmts, setComplaintsAmts] = useState(() => {
+    try { return JSON.parse(localStorage.getItem('oneic_complaints_amts')||'{}'); } catch(e){return {};}
+  });
   const [uploading, setUploading] = useState(false);
   const [success, setSuccess]   = useState(false);
   const [error, setError]       = useState(null);
@@ -9095,10 +9157,13 @@ export default function Dashboard() {
 
   const gPd = data.regions.reduce((s,r)=>s+r.paid,0);
   const gAd = data.regions.reduce((s,r)=>s+r.adj,0);
+  const gCnt = data.regions.reduce((s,r)=>s+(r.count||0),0);
   const dPd = data.debtCompanies.reduce((s,r)=>s+r.paid,0);
   const dAd = data.debtCompanies.reduce((s,r)=>s+r.adj,0);
+  const dCnt = data.debtCompanies.reduce((s,r)=>s+(r.count||0),0);
   const hPd = data.headOffice.reduce((s,r)=>s+r.paid,0);
   const hAd = data.headOffice.reduce((s,r)=>s+r.adj,0);
+  const hCnt = data.headOffice.reduce((s,r)=>s+(r.count||0),0);
   const gTotal = gPd+gAd+dPd+dAd+hPd+hAd;
   const p = v => gTotal>0 ? ((v/gTotal)*100).toFixed(1) : "0";
 
@@ -9437,6 +9502,32 @@ export default function Dashboard() {
         </div>
         <div style={{ display:"flex", alignItems:"center", gap: isMobile?10:20 }}>
           <UploadBtn onFile={handleFile} uploading={uploading} success={success} error={error} small={isMobile} />
+          <label title="رفع ملف Complaints لتحديث عدد الحسابات" style={{
+            display:"flex",alignItems:"center",gap:5,cursor:"pointer",
+            background:"rgba(30,58,95,0.85)",borderRadius:10,
+            padding:"8px 12px",border:"1.5px solid rgba(255,255,255,0.15)",
+            fontSize:13,fontWeight:700,color:"#fff",flexShrink:0,
+            whiteSpace:"nowrap"
+          }}>
+            <span>📋</span>
+            {!isMobile && <span>{complaintsCount>0?`${complaintsCount.toLocaleString()} حساب`:'الحسابات'}</span>}
+            <input type="file" accept=".xls,.xlsx,.csv" style={{display:"none"}}
+              onChange={async e=>{
+                if(!e.target.files[0]) return;
+                try {
+                  const {total,dcCount,hoCount,govCount,dcAmt,hoAmt,govAmt} = await parseComplaints(e.target.files[0]);
+                  setComplaintsCount(total);
+                  setComplaintsCounts({dc:dcCount,ho:hoCount,gov:govCount});
+                  setComplaintsAmts({dc:dcAmt,ho:hoAmt,gov:govAmt});
+                  try {
+                    localStorage.setItem('oneic_complaints_count', String(total));
+                    localStorage.setItem('oneic_complaints_counts', JSON.stringify({dc:dcCount,ho:hoCount,gov:govCount}));
+                    localStorage.setItem('oneic_complaints_amts', JSON.stringify({dc:dcAmt,ho:hoAmt,gov:govAmt}));
+                  } catch(ex){}
+                } catch(ex) { alert('خطأ في قراءة الملف: '+ex.message); }
+                e.target.value='';
+              }}/>
+          </label>
           <button
             onClick={() => setShowHistory(s=>!s)}
             title="السجل التاريخي"
@@ -9534,11 +9625,16 @@ export default function Dashboard() {
             <span style={{ fontSize: isMobile?28:isTablet?38:48, fontWeight:900, color:"#fff", letterSpacing:-1, lineHeight:1 }}>{omr(gTotal)}</span>
             <span style={{ fontSize: small?14:18, color:"rgba(255,255,255,0.8)", fontWeight:700 }}>OMR</span>
           </div>
+          {complaintsCount>0 && (
+            <div style={{ fontSize:small?11:13, color:"rgba(255,255,255,0.75)", fontWeight:700, marginTop:4 }}>
+              📋 {complaintsCount.toLocaleString()} حساب في المحفظة
+            </div>
+          )}
         </div>
         <div style={{ display:"flex", gap: small?10:4, flexWrap:"wrap" }}>
           {[["إجمالي المدفوع",omr(gPd+dPd+hPd),"#fff"],
             ["إجمالي التسويات",omr(gAd+dAd+hAd),"#fde68a"],
-            ["عدد السجلات",data.totalRecords?.toLocaleString(),"#bfdbfe"]
+            ["إجمالي الحسابات",complaintsCount>0?complaintsCount.toLocaleString():data.totalRecords?.toLocaleString(),"#bfdbfe"]
           ].map(([l,v,c]) => (
             <div key={l} style={{ textAlign:"center", padding:`0 ${small?10:16}px`, borderRight: small?"none":"1px solid rgba(255,255,255,0.2)" }}>
               <div style={{ fontSize: small?11:13, color:"rgba(255,255,255,0.8)", fontWeight:700, marginBottom:4 }}>{l}</div>
@@ -9554,9 +9650,9 @@ export default function Dashboard() {
           gridTemplateColumns: isMobile?"1fr":isTablet?"1fr 1fr":"repeat(3,1fr)",
           gap: small?12:16, marginBottom: small?14:18
         }}>
-          <SummaryCard label="المحافظات الخمس" paid={gPd} adj={gAd} color="#e85d20" icon="🗺" pct={p(gPd+gAd)} small={small}/>
-          <SummaryCard label="شركات التحصيل"   paid={dPd} adj={dAd} color="#1a7a6b" icon="🏢" pct={p(dPd+dAd)} small={small}/>
-          <SummaryCard label="المكتب الرئيسي"  paid={hPd} adj={hAd} color="#6c3fa0" icon="🏛" pct={p(hPd+hAd)} small={small}/>
+          <SummaryCard label="المحافظات الخمس" paid={gPd} adj={gAd} cnt={complaintsCounts.gov||gCnt||0} portAmt={complaintsAmts.gov||0} color="#e85d20" icon="🗺" pct={p(gPd+gAd)} small={small}/>
+          <SummaryCard label="شركات التحصيل"   paid={dPd} adj={dAd} cnt={complaintsCounts.dc||dCnt||0}  portAmt={complaintsAmts.dc||0}  color="#1a7a6b" icon="🏢" pct={p(dPd+dAd)} small={small}/>
+          <SummaryCard label="المكتب الرئيسي"  paid={hPd} adj={hAd} cnt={complaintsCounts.ho||hCnt||0}  portAmt={complaintsAmts.ho||0}  color="#6c3fa0" icon="🏛" pct={p(hPd+hAd)} small={small}/>
         </div>
 
         {/* Regions */}
