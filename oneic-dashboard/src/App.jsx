@@ -6405,9 +6405,15 @@ function SectionHeader({title,paid,adj,color,small}) {
 }
 
 // ── EntityCard ─────────────────────────────────────────────────────────────
-function EntityCard({name,paid,adj,color,rank,small,cnt,cBranch}) {
-  const bKey=Object.keys(cBranch||{}).find(k=>k.trim()===name?.trim());
-  const bD=bKey?(cBranch||{})[bKey]:null;
+function EntityCard({name,paid,adj,color,rank,small,cnt,cBranch,isHO}) {
+  // للمكتب الرئيسي: نستخدم HEAD_OFFICE_TOTAL، للشركات: نبحث بالاسم
+  let bD = null;
+  if (isHO) {
+    bD = (cBranch||{})['HEAD_OFFICE_TOTAL'] || null;
+  } else {
+    const bKey = Object.keys(cBranch||{}).find(k => k.trim()===name?.trim() || name?.includes(k) || k.includes(name||'__'));
+    bD = bKey ? (cBranch||{})[bKey] : null;
+  }
   return (
     <div className="entity-card" style={{background:"#fff",borderRadius:13,
       border:"1.5px solid #f0ece8",boxShadow:"0 2px 10px rgba(0,0,0,0.05)",
@@ -6499,8 +6505,13 @@ function RegionRow({region,idx,open,onToggle,small,cRegion}) {
         </div>
         <div className="region-amounts" style={{display:"flex",flex:small?1:0,gap:0,minWidth:small?0:460}}>
           {(()=>{
-            const rKey=Object.keys(cRegion||{}).find(k=>k.trim()===region.nameEn?.trim()||k.trim()===region.nameAr?.trim());
-            const cD=rKey?(cRegion||{})[rKey]:null;
+            // مطابقة دقيقة: نبحث بـ nameEn أو بمطابقة جزئية
+            const rKey = Object.keys(cRegion||{}).find(k =>
+              k.trim()===region.nameEn?.trim() ||
+              region.nameEn?.includes(k) ||
+              k.includes(region.nameEn||'__')
+            );
+            const cD = rKey ? (cRegion||{})[rKey] : null;
             return [["المدفوع","#16a34a",region.paid],["التسويات","#d97706",region.adj],["الإجمالي",col,region.paid+region.adj]].map(([lbl,clr,val],i)=>(
               <div key={lbl} style={{flex:1,textAlign:"center",padding:small?"4px 8px":"6px 14px",borderRight:i<2?"1.5px solid #f0ece8":"none"}}>
                 <div style={{fontSize:small?11:13,color:"#333",fontWeight:800,marginBottom:4,letterSpacing:0.3}}>{lbl}</div>
@@ -8549,6 +8560,7 @@ async function parseComplaints(file) {
     reader.onload = e => {
       try {
         const bytes = new Uint8Array(e.target.result);
+        // هيكل الملف: 5 spaces + BOM(FF FE) + UTF-16-LE
         let text = '';
         for (let i = 7; i < bytes.length - 1; i += 2) {
           const cp = bytes[i] | (bytes[i+1] << 8);
@@ -8562,11 +8574,19 @@ async function parseComplaints(file) {
         const branchIdx = headers.findIndex(h => h === 'Branch');
         const principalIdx = headers.findIndex(h => h === 'Principal Amount');
         if (regionIdx < 0) { reject(new Error('عمود Region غير موجود')); return; }
-        const DC = ['Debt Collection Company'];
-        const HO = ['Head Office', 'Legal', 'Legal '];
+
+        // خريطة التجميع الدقيقة
+        const DC_REGION = 'Debt Collection Company';
+        const HO_REGIONS = ['Head Office', 'Legal', 'Legal '];
+        
         let total=0, dcCount=0, hoCount=0, govCount=0;
         let dcAmt=0, hoAmt=0, govAmt=0;
-        const regionMap = {}, branchMap = {};
+        
+        // تجميع حسب Region للمحافظات وحسب Branch لشركات التحصيل
+        const regionMap = {}; // للمحافظات الخمس (Region)
+        const branchMap = {}; // لشركات التحصيل (Branch داخل DC)
+        // المكتب الرئيسي: Branch='Al-Khuwair' داخل Head Office
+        
         for (let i = 1; i < lines.length; i++) {
           const row = lines[i].split('\t');
           const region = (row[regionIdx]||'').replace(/\r/g,'').trim();
@@ -8574,18 +8594,27 @@ async function parseComplaints(file) {
           if (!region) continue;
           const amt = principalIdx>=0 ? (parseFloat(row[principalIdx])||0) : 0;
           total++;
-          // Region totals
-          if (!regionMap[region]) regionMap[region] = {count:0, amt:0};
-          regionMap[region].count++; regionMap[region].amt += amt;
-          // Branch totals
-          if (branch) {
-            if (!branchMap[branch]) branchMap[branch] = {count:0, amt:0};
-            branchMap[branch].count++; branchMap[branch].amt += amt;
+          
+          if (region === DC_REGION) {
+            // شركات التحصيل → نجمّع حسب Branch
+            dcCount++; dcAmt += amt;
+            if (branch) {
+              if (!branchMap[branch]) branchMap[branch] = {count:0, amt:0};
+              branchMap[branch].count++; branchMap[branch].amt += amt;
+            }
+          } else if (HO_REGIONS.some(k => region.trim() === k.trim())) {
+            // المكتب الرئيسي → نجمّع الكل تحت مفتاح واحد
+            hoCount++; hoAmt += amt;
+            const hoKey = 'HEAD_OFFICE_TOTAL';
+            if (!branchMap[hoKey]) branchMap[hoKey] = {count:0, amt:0};
+            branchMap[hoKey].count++; branchMap[hoKey].amt += amt;
+          } else {
+            // المحافظات الخمس → نجمّع حسب Region
+            govCount++; govAmt += amt;
+            const rKey = region;
+            if (!regionMap[rKey]) regionMap[rKey] = {count:0, amt:0};
+            regionMap[rKey].count++; regionMap[rKey].amt += amt;
           }
-          // Section totals
-          if (DC.some(k => region.includes(k))) { dcCount++; dcAmt+=amt; }
-          else if (HO.some(k => region.trim()===k.trim())) { hoCount++; hoAmt+=amt; }
-          else { govCount++; govAmt+=amt; }
         }
         resolve({ total, dcCount, hoCount, govCount, dcAmt, hoAmt, govAmt, regionMap, branchMap });
       } catch(e) { reject(e); }
@@ -9729,7 +9758,7 @@ export default function Dashboard() {
             <SectionHeader title="🏛 المكتب الرئيسي" paid={hPd} adj={hAd} color="#6c3fa0" small={small}/>
             <div style={{ padding: small?"10px":"14px 16px", display:"flex", flexDirection:"column", gap: small?8:10 }}>
               {data.headOffice.map((c,i) => (
-                <EntityCard key={c.name} name={c.name} paid={c.paid} adj={c.adj} cBranch={complaintsBranchMap} color="#6c3fa0" rank={i+1} small={small}/>
+                <EntityCard key={c.name} name={c.name} paid={c.paid} adj={c.adj} cBranch={complaintsBranchMap} isHO={true} color="#6c3fa0" rank={i+1} small={small}/>
               ))}
             </div>
           </div>
