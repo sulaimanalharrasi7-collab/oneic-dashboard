@@ -6435,8 +6435,12 @@ function EntityCard({name,paid,adj,color,rank,small,cnt,cBranch,isHO}) {
 }
 
 // ── SummaryCard ────────────────────────────────────────────────────────────
-function SummaryCard({label,paid,adj,cnt,portAmt,color,icon,pct,small}) {
+function SummaryCard({label,paid,adj,cnt,cntPaid,cntAdj,cntTotal,portAmt,color,icon,pct,small}) {
   const total = paid+adj;
+  // دعم الأعداد المنفصلة لكل خانة — إذا لم تُمرَّر نستخدم cnt للجميع
+  const _cntPaid  = cntPaid  != null ? cntPaid  : (cnt||0);
+  const _cntAdj   = cntAdj   != null ? cntAdj   : (cnt||0);
+  const _cntTotal = cntTotal != null ? cntTotal : (cnt||0);
   return (
     <div style={{background:"#fff",borderRadius:15,overflow:"hidden",
       boxShadow:"0 3px 14px rgba(0,0,0,0.07)",border:"1.5px solid #f0ece8",minWidth:0}}>
@@ -6467,9 +6471,9 @@ function SummaryCard({label,paid,adj,cnt,portAmt,color,icon,pct,small}) {
         <div style={{display:"grid",gridTemplateColumns:"1fr 1fr 1fr",gap:0,
           border:"1px solid #f0ece8",borderRadius:10,overflow:"hidden"}}>
           {[
-            ["المدفوع","#16a34a",paid,cnt],
-            ["التسويات","#d97706",adj,cnt],
-            ["الإجمالي",color,total,cnt]
+            ["المدفوع","#16a34a",paid,_cntPaid],
+            ["التسويات","#d97706",adj,_cntAdj],
+            ["الإجمالي",color,total,_cntTotal]
           ].map(([lbl,clr,val,c],i)=>(
             <div key={lbl} style={{textAlign:"center",padding:small?"6px 3px":"8px 5px",
               borderRight:i<2?"1px solid #f0ece8":"none",minWidth:0,overflow:"hidden"}}>
@@ -9255,6 +9259,27 @@ export default function Dashboard() {
   const gTotal = gPd+gAd+dPd+dAd+hPd+hAd;
   const p = v => gTotal>0 ? ((v/gTotal)*100).toFixed(1) : "0";
 
+  // ── عدد الحسابات لكل خانة (مدفوع / تسويات / إجمالي = مدفوع+تسويات بدون تكرار)
+  const calcCntBreakdown = (arr) => {
+    let paidCnt=0, adjCnt=0;
+    (arr||[]).forEach(r => {
+      const cols = r.collectors || [];
+      if (cols.length > 0) {
+        cols.forEach(c => {
+          if ((c.paid||0) > 0) paidCnt += (c.count||0);
+          if ((c.adj||0)  > 0) adjCnt  += (c.count||0);
+        });
+      } else {
+        if ((r.paid||0) > 0) paidCnt += (r.count||0);
+        if ((r.adj||0)  > 0) adjCnt  += (r.count||0);
+      }
+    });
+    return { paidCnt, adjCnt, totalCnt: paidCnt };
+  };
+  const gBreak = calcCntBreakdown(data.regions);
+  const dBreak = calcCntBreakdown(data.debtCompanies);
+  const hBreak = calcCntBreakdown(data.headOffice);
+
   const pad = isMobile ? "12px" : isTablet ? "16px" : "20px 24px";
 
   return (
@@ -9713,9 +9738,36 @@ export default function Dashboard() {
           gridTemplateColumns: isMobile?"1fr":isTablet?"1fr 1fr":"repeat(3,1fr)",
           gap: small?12:16, marginBottom: small?14:18
         }}>
-          <SummaryCard label="المحافظات الخمس" paid={gPd} adj={gAd} cnt={complaintsCounts.gov||gCnt||0} portAmt={complaintsAmts.gov||0} color="#e85d20" icon="🗺" pct={p(gPd+gAd)} small={small}/>
-          <SummaryCard label="شركات التحصيل"   paid={dPd} adj={dAd} cnt={complaintsCounts.dc||dCnt||0}  portAmt={complaintsAmts.dc||0}  color="#1a7a6b" icon="🏢" pct={p(dPd+dAd)} small={small}/>
-          <SummaryCard label="المكتب الرئيسي"  paid={hPd} adj={hAd} cnt={complaintsCounts.ho||hCnt||0}  portAmt={complaintsAmts.ho||0}  color="#6c3fa0" icon="🏛" pct={p(hPd+hAd)} small={small}/>
+          <SummaryCard
+            label="المحافظات الخمس"
+            paid={gPd} adj={gAd}
+            cnt={complaintsCounts.gov||gCnt||0}
+            cntPaid={gBreak.paidCnt||complaintsCounts.gov||gCnt||0}
+            cntAdj={gBreak.adjCnt||complaintsCounts.gov||gCnt||0}
+            cntTotal={gBreak.totalCnt||complaintsCounts.gov||gCnt||0}
+            portAmt={complaintsAmts.gov||0}
+            color="#e85d20" icon="🗺" pct={p(gPd+gAd)} small={small}
+          />
+          <SummaryCard
+            label="شركات التحصيل"
+            paid={dPd} adj={dAd}
+            cnt={complaintsCounts.dc||dCnt||0}
+            cntPaid={dBreak.paidCnt||complaintsCounts.dc||dCnt||0}
+            cntAdj={dBreak.adjCnt||complaintsCounts.dc||dCnt||0}
+            cntTotal={dBreak.totalCnt||complaintsCounts.dc||dCnt||0}
+            portAmt={complaintsAmts.dc||0}
+            color="#1a7a6b" icon="🏢" pct={p(dPd+dAd)} small={small}
+          />
+          <SummaryCard
+            label="المكتب الرئيسي"
+            paid={hPd} adj={hAd}
+            cnt={complaintsCounts.ho||hCnt||0}
+            cntPaid={hBreak.paidCnt||complaintsCounts.ho||hCnt||0}
+            cntAdj={hBreak.adjCnt||complaintsCounts.ho||hCnt||0}
+            cntTotal={hBreak.totalCnt||complaintsCounts.ho||hCnt||0}
+            portAmt={complaintsAmts.ho||0}
+            color="#6c3fa0" icon="🏛" pct={p(hPd+hAd)} small={small}
+          />
         </div>
 
         {/* Regions */}
