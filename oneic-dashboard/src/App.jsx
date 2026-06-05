@@ -9175,7 +9175,7 @@ tr.subtotal td:first-child{color:#e85d20}
   <div class="footer">
     <div class="footer-left">
       <strong>ONEIC</strong>
-      <div>Oman National Electronic Information Center</div>
+      <div>Oman National Engineering & Investment Co. (S.A.O.G)</div>
       <div style="margin-top:3px;color:rgba(255,255,255,.4)">نظام إدارة التحصيل © 2026</div>
     </div>
     <div class="footer-mid">
