@@ -9261,7 +9261,6 @@ export default function Dashboard() {
             .print-only { display: flex !important; justifyContent: space-between; alignItems: center; padding: 6px 12px; borderBottom: 3px solid #e85d20; marginBottom: 8px; }
           }
         `}</style>
-      </div>
 
       {/* ══ PRINT HEADER — يظهر فقط عند الطباعة ══ */}
       <div id="print-header" style={{display:"none",justifyContent:"space-between",alignItems:"center",padding:"3mm 0",borderBottom:"2px solid #e85d20",marginBottom:"3mm"}}>
