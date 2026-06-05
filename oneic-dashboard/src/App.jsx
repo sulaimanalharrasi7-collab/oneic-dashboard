@@ -6633,12 +6633,29 @@ function RegionRow({region, idx, open, onToggle, small}) {
             <div style={{fontSize:small?11:13, color:"#666", marginTop:3, fontWeight:600}}>{region.nameEn}</div>
           </div>
 
-          {/* المبالغ + عدد الحسابات */}
-          <div style={{display:"flex", flex: small?1:0, minWidth:small?0:480,
-            border:"1.5px solid #f0ece8", borderRadius:12, overflow:"hidden", background:"#fafafa"}}>
-            <AmtCell label="المدفوع"   val={region.paid}  cnt={paidCnt}  color="#16a34a"/>
-            <AmtCell label="التسويات" val={region.adj}   cnt={adjCnt}   color="#d97706"/>
-            <AmtCell label="الإجمالي" val={total}        cnt={totalCnt} color={col} big noBorder/>
+          {/* المبالغ + عدد الحسابات + المحفظة */}
+          <div style={{display:"flex", flexDirection:"column", gap:6, flex: small?1:0, minWidth:small?0:480}}>
+            {/* التحصيل */}
+            <div style={{display:"flex",
+              border:"1.5px solid #f0ece8", borderRadius:12, overflow:"hidden", background:"#fafafa"}}>
+              <AmtCell label="المدفوع"   val={region.paid}  cnt={paidCnt}  color="#16a34a"/>
+              <AmtCell label="التسويات" val={region.adj}   cnt={adjCnt}   color="#d97706"/>
+              <AmtCell label="الإجمالي" val={total}        cnt={totalCnt} color={col} big noBorder/>
+            </div>
+            {/* المحفظة */}
+            {(region.portAmt||0) > 0 && (
+              <div style={{display:"flex", border:`1.5px solid ${col}33`,
+                borderRadius:10, overflow:"hidden", background:`${col}06`}}>
+                <div style={{flex:1, textAlign:"center", padding:"4px 8px", borderRight:`1px solid ${col}22`}}>
+                  <div style={{fontSize:9, color:col, fontWeight:800, marginBottom:1}}>محفظة OMR</div>
+                  <div style={{fontSize:small?11:13, fontWeight:900, color:col}}>{omr(region.portAmt)}</div>
+                </div>
+                <div style={{flex:1, textAlign:"center", padding:"4px 8px"}}>
+                  <div style={{fontSize:9, color:col, fontWeight:800, marginBottom:1}}>عدد الحسابات</div>
+                  <div style={{fontSize:small?11:13, fontWeight:900, color:col}}>{(region.portCnt||0).toLocaleString()}</div>
+                </div>
+              </div>
+            )}
           </div>
 
           {/* زر المحصّلون */}
@@ -6687,13 +6704,25 @@ function RegionRow({region, idx, open, onToggle, small}) {
                     flex:1, overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap"}}>{c.name}</div>
                 </div>
 
-                {/* مبالغ المحصّل بنفس تنسيق المحافظة */}
+                {/* مبالغ المحصّل */}
                 <div style={{display:"flex", borderTop:`1px solid ${col}15`,
                   background: i%2===0 ? "#fafafa" : "#fff"}}>
                   <AmtCell label="المدفوع"   val={c.paid} cnt={cPaidCnt}  color="#16a34a"/>
                   <AmtCell label="التسويات" val={c.adj}  cnt={cAdjCnt}   color="#d97706"/>
                   <AmtCell label="الإجمالي" val={ct}     cnt={cTotalCnt} color={col} big noBorder/>
                 </div>
+                {/* نسبة المساهمة */}
+                {total > 0 && (
+                  <div style={{padding:"3px 10px 5px", background: i%2===0 ? "#fafafa" : "#fff"}}>
+                    <div style={{height:4, background:"#f0ece8", borderRadius:4, overflow:"hidden"}}>
+                      <div style={{height:"100%", width:`${Math.min(100,Math.round(ct/total*100))}%`,
+                        background:`linear-gradient(90deg,${col},${col}88)`, borderRadius:4}}/>
+                    </div>
+                    <div style={{fontSize:9, color:"#aaa", marginTop:2, textAlign:"left"}}>
+                      {Math.round(ct/total*100)}% من إجمالي المحافظة
+                    </div>
+                  </div>
+                )}
               </div>
             );
           })}
@@ -8957,8 +8986,37 @@ export default function Dashboard() {
   const handleFile = useCallback(async (file) => {
     setUploading(true); setError(null); setSuccess(false); setPending(null);
     try {
-      // ── تحديد نوع الملف تلقائياً ──────────────────────────────────────
-      const isComplaints = file.name.toLowerCase().includes('complaint');
+      // ── تحديد نوع الملف تلقائياً بالمحتوى لا الاسم ─────────────────
+      // نقرأ أول 2KB لمعرفة نوع الملف
+      const sniffBuffer = await file.slice(0, 4096).arrayBuffer();
+      const sniffText = (() => {
+        try {
+          const bytes = new Uint8Array(sniffBuffer);
+          // Find BOM
+          let start = 0;
+          for (let i = 0; i < Math.min(10, bytes.length-1); i++) {
+            if (bytes[i] === 0xFF && bytes[i+1] === 0xFE) { start = i+2; break; }
+          }
+          // Decode first 500 chars
+          let s = '';
+          for (let i = start; i < Math.min(start+1000, bytes.length-1); i += 2) {
+            const c = bytes[i] | (bytes[i+1] << 8);
+            if (c > 0) s += String.fromCharCode(c);
+          }
+          return s || new TextDecoder('utf-8').decode(sniffBuffer).slice(0, 500);
+        } catch(e) { return ''; }
+      })();
+      
+      // كشف النوع: complaints تحتوي "Complaint ID" أو "Agreement No"
+      // performance تحتوي "Paid Amount" + "Region" + "Collector"
+      const hasComplaintCols = sniffText.includes('Complaint ID') || sniffText.includes('Agreement No') || sniffText.includes('Complaint Code');
+      const hasPerformanceCols = sniffText.includes('Paid Amount') || sniffText.includes('Collector');
+      const isComplaints = hasComplaintCols || 
+        (file.name.toLowerCase().includes('complaint') && !hasPerformanceCols);
+      
+      console.log('[handleFile]', file.name, '→', isComplaints ? 'complaints' : 'performance',
+        '| complaint cols:', hasComplaintCols, '| performance cols:', hasPerformanceCols);
+      
       if (isComplaints) {
         // ملف complaints → يحدّث عدد الحسابات والمبالغ
         const {total,dcCount,hoCount,govCount,dcAmt,hoAmt,govAmt,regionMap,branchMap} = await parseComplaints(file);
@@ -8982,7 +9040,10 @@ export default function Dashboard() {
         setPending({ data: p, fileName: file.name, fileSize: (file.size/1024/1024).toFixed(1) });
       }
     }
-    catch(e) { setError(e.message); }
+    catch(e) {
+      console.error('[handleFile] Error:', e);
+      setError('خطأ: ' + (e.message || 'فشل قراءة الملف'));
+    }
     finally { setUploading(false); }
   }, []);
 
