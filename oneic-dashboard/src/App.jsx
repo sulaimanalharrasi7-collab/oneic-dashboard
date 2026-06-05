@@ -5974,154 +5974,167 @@ function detectAndDecode(buffer) {
   }
 }
 
-function parseXLS(file) {
-  return new Promise((resolve, reject) => {
-    const reader = new FileReader();
-    reader.onload = (e) => {
-      try {
-        // كشف تلقائي للـ encoding وقراءة الملف
-        const text = detectAndDecode(e.target.result);
-        const lines = text.split(/\r?\n/).filter(l => l.trim());
-        if (lines.length < 2) return reject(new Error("الملف فارغ"));
-        const headers = lines[0].split("\t").map(h => 
-          h.replace(/\uFEFF/g, '')
-           .replace(/ÿþ/g, '')
-           .replace(/\r/g, '')
-           .trim()
-        );
-        const rows = lines.slice(1).filter(l => l.trim()).map(line => {
-          const v = line.split("\t");
-          const o = {}; headers.forEach((h, i) => o[h] = v[i] || ""); return o;
-        });
-        const n = v => parseFloat(v) || 0;
-        const regMap = {}, dcMap = {}, hoMap = {};
-                const REG_AR = {
-          "Dhofar": "ظفار", "Dhofar ": "ظفار",
-          "Musandam, Al Burimai and Al Dahirah": "مسندم، البريمي والظاهرة",
-          "MUSCAT AND AL DAKHILIYAH": "مسقط والداخلية",
-          "North and South Al Shaurqiah and Al Wasatah": "الشرقية الشمالية والجنوبية والوسطى",
-          "South and North Al Batinah": "الباطنة الشمالية والجنوبية"
-        };
-        rows.forEach(row => {
-          const region = (row["Region"] || "").trim();
-          const paid = n(row["Paid Amount"]);
-          const adj  = n(row["Adjustment"]);
-          const col  = (row["Collector"] || "").trim();
-          const branch = (row["Branch"] || "").trim();
-          if (region === "Debt Collection Company") {
-            const key = branch.trim() || "Unknown";
-            if (!dcMap[key]) dcMap[key] = { paid: 0, adj: 0, count: 0, paidCount: 0, adjCount: 0 };
-            dcMap[key].paid  += paid;
-            dcMap[key].adj   += adj;
-            dcMap[key].count += 1;
-            if (paid > 0) dcMap[key].paidCount += 1;
-            if (adj  > 0) dcMap[key].adjCount  += 1;
-          } else if (region === "Head Office") {
-            // تصنيف دقيق: DR. Sarhaan | Documentation Legal | HO | Saif Legal (Blanks)
-            let key;
-            const colL = col.toLowerCase();
-            if (colL.includes("dr") || colL.includes("sarhaan")) {
-              key = "Legal - DR. Sarhaan";
-            } else if (colL.includes("doc")) {
-              key = "Documentation Legal";
-            } else if (colL === "" || col.trim() === "") {
-              key = "Saif Legal";
-            } else {
-              key = "HO";
-            }
-            if (!hoMap[key]) hoMap[key] = { paid: 0, adj: 0, count: 0 };
-            hoMap[key].paid  += paid;
-            hoMap[key].adj   += adj;
-            hoMap[key].count += 1;
-          } else if (REG_AR[region]) {
-            if (!regMap[region]) regMap[region] = { paid: 0, adj: 0, count: 0, paidCount: 0, adjCount: 0, cMap: {} };
-            regMap[region].paid  += paid;
-            regMap[region].adj   += adj;
-            regMap[region].count += 1;
-            if (paid > 0) regMap[region].paidCount += 1;
-            if (adj  > 0) regMap[region].adjCount  += 1;
-            if (col) {
-              if (!regMap[region].cMap[col]) regMap[region].cMap[col] = { paid: 0, adj: 0, count: 0, paidCount: 0, adjCount: 0 };
-              regMap[region].cMap[col].paid  += paid;
-              regMap[region].cMap[col].adj   += adj;
-              regMap[region].cMap[col].count += 1;
-              if (paid > 0) regMap[region].cMap[col].paidCount += 1;
-              if (adj  > 0) regMap[region].cMap[col].adjCount  += 1;
-            }
-          }
-        });
-        const REG_ORDER = ["Dhofar ","Dhofar","Musandam, Al Burimai and Al Dahirah","MUSCAT AND AL DAKHILIYAH","North and South Al Shaurqiah and Al Wasatah","South and North Al Batinah"];
-        const regions = REG_ORDER.filter(k => regMap[k]).map((k,i) => ({
-          id: k.toLowerCase().replace(/\s+/g,"_").replace(/[,]/g,""),
-          nameAr: REG_AR[k], nameEn: k.trim(),
-          paid: regMap[k].paid, adj: regMap[k].adj,
-          count: regMap[k].count||0,
-          paidCount: regMap[k].paidCount||0,
-          adjCount:  regMap[k].adjCount||0,
-          collectors: Object.entries(regMap[k].cMap)
-            .map(([nm,d]) => ({
-              name: nm, paid: d.paid, adj: d.adj,
-              count: d.count||0, paidCount: d.paidCount||0, adjCount: d.adjCount||0
-            }))
-            .sort((a,b) => (b.paid+b.adj)-(a.paid+a.adj))
-        }));
-        // كل شركات DC مرتبة بالإجمالي
-        const debtCompanies = (() => {
-          const DC_PORT_MAP = {
-            "Ejada":                         { portAmt: 261235.000,  portCnt: 1938  },
-            "Matrix Debt Collection":        { portAmt: 3084947.000, portCnt: 23398 },
-            "Compass Risk Support Services": { portAmt: 510610.000,  portCnt: 3992  },
-            "National Center":               { portAmt: 1089657.000, portCnt: 6741  },
-            "Tahseel United":                { portAmt: 0, portCnt: 0 },
-            "High Speed Company":            { portAmt: 0, portCnt: 0 }
-          };
-          const DC_REQUIRED = ["Ejada","Matrix Debt Collection","Compass Risk Support Services","National Center","Tahseel United","High Speed Company"];
-          const list = Object.entries(dcMap).map(([nm,d]) => {
-            const p = DC_PORT_MAP[nm.trim()]||{};
-            return {name:nm.trim(),paid:d.paid,adj:d.adj,count:d.count||0,paidCount:d.paidCount||0,adjCount:d.adjCount||0,portAmt:p.portAmt||0,portCnt:p.portCnt||0};
-          });
-          DC_REQUIRED.forEach(nm => {
-            if (!list.find(c=>c.name===nm)) {
-              const p = DC_PORT_MAP[nm]||{};
-              list.push({name:nm,paid:0,adj:0,count:0,paidCount:0,adjCount:0,portAmt:p.portAmt||0,portCnt:p.portCnt||0});
-            }
-          });
-          return list.sort((a,b)=>(b.paid+b.adj)-(a.paid+a.adj));
-        })();
-        // المكتب الرئيسي — أربعة أقسام
-        const HO_KEYS = ["Legal - DR. Sarhaan","Documentation Legal","HO","Saif Legal"];
-        const HO_PORT = {
-          "Legal - DR. Sarhaan": { portAmt: 3850803.888, portCnt: 5274 },
-          "Documentation Legal":  { portAmt: 0, portCnt: 0 },
-          "HO":                   { portAmt: 0, portCnt: 0 },
-          "Saif Legal":           { portAmt: 0, portCnt: 0 }
-        };
-        const headOffice = HO_KEYS
-          .map(nm => {
-            const p = HO_PORT[nm]||{};
-            return hoMap[nm]
-              ? {name:nm, paid:hoMap[nm].paid, adj:hoMap[nm].adj, count:hoMap[nm].count||0, portAmt:p.portAmt||0, portCnt:p.portCnt||0}
-              : {name:nm, paid:0, adj:0, count:0, portAmt:p.portAmt||0, portCnt:p.portCnt||0};
-          });
-        // إضافة أي أقسام جديدة لم تكن في القائمة
-        Object.keys(hoMap).forEach(k => {
-          if (!HO_KEYS.includes(k)) {
-            headOffice.push({name:k, paid:hoMap[k].paid, adj:hoMap[k].adj, count:hoMap[k].count||0});
-          }
-        });
-        resolve({ uploadDate: new Date().toISOString().split("T")[0], totalRecords: rows.length, regions, debtCompanies, headOffice });
-      } catch(err) { reject(err); }
-    };
-    reader.onerror = () => reject(new Error("فشل قراءة الملف"));
-    reader.readAsArrayBuffer(file);
+// ── parseXLS: يقرأ ملف Excel بـ SheetJS ويدعم .xlsx/.xls/.tsv ────────────
+async function parseXLS(file) {
+  // قراءة الملف كـ ArrayBuffer
+  const buffer = await file.arrayBuffer();
+
+  let rows = [];
+
+  // ── محاولة القراءة بـ SheetJS أولاً (للملفات .xlsx/.xls) ────────────────
+  try {
+    const XLSX = await import('https://cdn.sheetjs.com/xlsx-0.20.3/package/xlsx.mjs');
+    const wb = XLSX.read(buffer, { type: 'array', cellDates: true });
+    // نبحث عن الشيت المناسب — يحتوي على "Region" و "Paid Amount"
+    let wsName = wb.SheetNames[0];
+    for (const name of wb.SheetNames) {
+      const ws = wb.Sheets[name];
+      const sample = XLSX.utils.sheet_to_json(ws, { header: 1, range: 0, defval: '' });
+      const header = (sample[0] || []).map(v => String(v||'').trim());
+      if (header.includes('Region') || header.includes('Paid Amount') || header.includes('Branch')) {
+        wsName = name; break;
+      }
+    }
+    const ws = wb.Sheets[wsName];
+    rows = XLSX.utils.sheet_to_json(ws, { raw: false, defval: '' });
+  } catch(xlsxErr) {
+    // ── fallback: قراءة كـ text (TSV/CSV) ──────────────────────────────
+    const text = (() => {
+      const bytes = new Uint8Array(buffer);
+      let bomPos = -1;
+      for (let i = 0; i < Math.min(10, bytes.length - 1); i++) {
+        if (bytes[i] === 0xFF && bytes[i+1] === 0xFE) { bomPos = i; break; }
+      }
+      if (bomPos >= 0) {
+        try { return new TextDecoder('utf-16-le').decode(buffer.slice(bomPos + 2)); } catch(e){}
+      }
+      try { return new TextDecoder('utf-8').decode(buffer); } catch(e){}
+      return Array.from(new Uint8Array(buffer)).map(b => String.fromCharCode(b)).join('');
+    })();
+    const lines = text.split(/
+?
+/).filter(l => l.trim());
+    if (lines.length < 2) throw new Error('الملف فارغ');
+    const headers = lines[0].split('	').map(h => h.replace(/﻿/g,'').replace(/
+/g,'').trim());
+    rows = lines.slice(1).filter(l => l.trim()).map(line => {
+      const v = line.split('	');
+      const o = {}; headers.forEach((h,i) => o[h] = v[i] || ''); return o;
+    });
+  }
+
+  if (!rows || rows.length < 1) throw new Error('لا توجد بيانات في الملف');
+
+  const n = v => { if (v == null || v === '') return 0; return parseFloat(String(v).replace(/,/g,'')) || 0; };
+
+  const REG_AR = {
+    "Dhofar": "ظفار", "Dhofar ": "ظفار",
+    "Musandam, Al Burimai and Al Dahirah": "مسندم، البريمي والظاهرة",
+    "MUSCAT AND AL DAKHILIYAH": "مسقط والداخلية",
+    "North and South Al Shaurqiah and Al Wasatah": "الشرقية الشمالية والجنوبية والوسطى",
+    "South and North Al Batinah": "الباطنة الشمالية والجنوبية"
+  };
+
+  const regMap = {}, dcMap = {}, hoMap = {};
+
+  rows.forEach(row => {
+    const region = String(row['Region'] || row['region'] || '').trim();
+    const paid   = n(row['Paid Amount'] || row['paid_amount'] || row['Paid'] || 0);
+    const adj    = n(row['Adjustment'] || row['adjustment'] || row['Adj'] || 0);
+    const col    = String(row['Collector'] || row['collector'] || '').trim();
+    const branch = String(row['Branch'] || row['branch'] || '').trim();
+
+    if (region === 'Debt Collection Company') {
+      const key = branch || 'Unknown';
+      if (!dcMap[key]) dcMap[key] = { paid: 0, adj: 0, count: 0, paidCount: 0, adjCount: 0 };
+      dcMap[key].paid  += paid; dcMap[key].adj   += adj; dcMap[key].count += 1;
+      if (paid > 0) dcMap[key].paidCount += 1;
+      if (adj  > 0) dcMap[key].adjCount  += 1;
+    } else if (region === 'Head Office') {
+      const colL = col.toLowerCase();
+      let key;
+      if (colL.includes('dr') || colL.includes('sarhaan')) key = 'Legal - DR. Sarhaan';
+      else if (colL.includes('doc')) key = 'Documentation Legal';
+      else if (col.trim() === '') key = 'Saif Legal';
+      else key = 'HO';
+      if (!hoMap[key]) hoMap[key] = { paid: 0, adj: 0, count: 0 };
+      hoMap[key].paid  += paid; hoMap[key].adj   += adj; hoMap[key].count += 1;
+    } else if (REG_AR[region]) {
+      if (!regMap[region]) regMap[region] = { paid: 0, adj: 0, count: 0, paidCount: 0, adjCount: 0, cMap: {} };
+      regMap[region].paid  += paid; regMap[region].adj   += adj; regMap[region].count += 1;
+      if (paid > 0) regMap[region].paidCount += 1;
+      if (adj  > 0) regMap[region].adjCount  += 1;
+      if (col) {
+        if (!regMap[region].cMap[col]) regMap[region].cMap[col] = { paid: 0, adj: 0, count: 0, paidCount: 0, adjCount: 0 };
+        regMap[region].cMap[col].paid  += paid; regMap[region].cMap[col].adj   += adj;
+        regMap[region].cMap[col].count += 1;
+        if (paid > 0) regMap[region].cMap[col].paidCount += 1;
+        if (adj  > 0) regMap[region].cMap[col].adjCount  += 1;
+      }
+    }
   });
+
+  const REG_ORDER = ["Dhofar ","Dhofar","Musandam, Al Burimai and Al Dahirah","MUSCAT AND AL DAKHILIYAH","North and South Al Shaurqiah and Al Wasatah","South and North Al Batinah"];
+  const regions = REG_ORDER.filter(k => regMap[k]).map((k,i) => ({
+    id: k.toLowerCase().replace(/\s+/g,'_').replace(/[,]/g,''),
+    nameAr: REG_AR[k], nameEn: k.trim(),
+    paid: regMap[k].paid, adj: regMap[k].adj, count: regMap[k].count||0,
+    paidCount: regMap[k].paidCount||0, adjCount: regMap[k].adjCount||0,
+    collectors: Object.entries(regMap[k].cMap)
+      .map(([nm,d]) => ({name:nm, paid:d.paid, adj:d.adj, count:d.count||0, paidCount:d.paidCount||0, adjCount:d.adjCount||0}))
+      .sort((a,b) => (b.paid+b.adj)-(a.paid+a.adj))
+  }));
+
+  // شركات التحصيل — 6 شركات دائماً
+  const DC_PORT_MAP = {
+    "Ejada":                         { portAmt: 261235.000,  portCnt: 1938  },
+    "Matrix Debt Collection":        { portAmt: 3084947.000, portCnt: 23398 },
+    "Compass Risk Support Services": { portAmt: 510610.000,  portCnt: 3992  },
+    "National Center":               { portAmt: 1089657.000, portCnt: 6741  },
+    "Tahseel United":                { portAmt: 0, portCnt: 0 },
+    "High Speed Company":            { portAmt: 0, portCnt: 0 }
+  };
+  const DC_REQUIRED = ["Ejada","Matrix Debt Collection","Compass Risk Support Services","National Center","Tahseel United","High Speed Company"];
+  const dcList = Object.entries(dcMap).map(([nm,d]) => {
+    const p = DC_PORT_MAP[nm.trim()]||{};
+    return {name:nm.trim(), paid:d.paid, adj:d.adj, count:d.count||0, paidCount:d.paidCount||0, adjCount:d.adjCount||0, portAmt:p.portAmt||0, portCnt:p.portCnt||0};
+  });
+  DC_REQUIRED.forEach(nm => {
+    if (!dcList.find(c=>c.name===nm)) {
+      const p = DC_PORT_MAP[nm]||{};
+      dcList.push({name:nm, paid:0, adj:0, count:0, paidCount:0, adjCount:0, portAmt:p.portAmt||0, portCnt:p.portCnt||0});
+    }
+  });
+  const debtCompanies = dcList.sort((a,b) => (b.paid+b.adj)-(a.paid+a.adj));
+
+  // المكتب الرئيسي — 4 أقسام دائماً
+  const HO_KEYS = ["Legal - DR. Sarhaan","Documentation Legal","HO","Saif Legal"];
+  const HO_PORT = {
+    "Legal - DR. Sarhaan": { portAmt: 3850803.888, portCnt: 5274 },
+    "Documentation Legal":  { portAmt: 0, portCnt: 0 },
+    "HO":                   { portAmt: 0, portCnt: 0 },
+    "Saif Legal":           { portAmt: 0, portCnt: 0 }
+  };
+  const headOffice = HO_KEYS.map(nm => {
+    const p = HO_PORT[nm]||{};
+    return hoMap[nm]
+      ? {name:nm, paid:hoMap[nm].paid, adj:hoMap[nm].adj, count:hoMap[nm].count||0, portAmt:p.portAmt||0, portCnt:p.portCnt||0}
+      : {name:nm, paid:0, adj:0, count:0, portAmt:p.portAmt||0, portCnt:p.portCnt||0};
+  });
+  // أقسام إضافية من الملف خارج القائمة
+  Object.keys(hoMap).forEach(k => {
+    if (!HO_KEYS.includes(k))
+      headOffice.push({name:k, paid:hoMap[k].paid, adj:hoMap[k].adj, count:hoMap[k].count||0, portAmt:0, portCnt:0});
+  });
+
+  return {
+    uploadDate: new Date().toISOString().split('T')[0],
+    totalRecords: rows.length,
+    regions, debtCompanies, headOffice
+  };
 }
 
 
-
-
-
-// ── إعدادات المزامنة ──────────────────────────────────────────────────────
 const FIREBASE_URL = "https://oneic-dashboard-default-rtdb.firebaseio.com";
 
 // ── Firebase Realtime Database helpers ───────────────────────────────────────
@@ -6590,198 +6603,147 @@ function SummaryCard({label,paid,adj,cnt,cntPaid,cntAdj,cntTotal,portAmt,color,i
 // ── RegionRow ──────────────────────────────────────────────────────────────
 const RCOLS = ["#e85d20","#c44b10","#d4601a","#b03808","#f07030"];
 
-function RegionRow({region,idx,open,onToggle,small,cRegion}) {
-  const col = RCOLS[idx%RCOLS.length];
-  const maxV = region.collectors?.length ? Math.max(...region.collectors.map(c=>c.paid+c.adj),1) : 1;
+// ── RegionRow ─────────────────────────────────────────────────────────────
+// يعرض كل محافظة مع: المدفوع + عدد الحسابات / التسويات + عدد الحسابات / الإجمالي + عدد الحسابات
+// عند الضغط على "المحصّلون" تنفتح قائمة بنفس التنسيق لكل محصّل
+function RegionRow({region, idx, open, onToggle, small}) {
+  const col = RCOLS[idx % RCOLS.length];
+  const paidCnt  = region.paidCount || 0;
+  const adjCnt   = region.adjCount  || 0;
+  const totalCnt = region.count     || 0;
+  const total    = (region.paid||0) + (region.adj||0);
+
+  // ── مكوّن خلية المبلغ + عدد الحسابات ─────────────────────────────────
+  function AmtCell({label, val, cnt, color, big, noBorder}) {
+    return (
+      <div style={{flex:1, textAlign:"center", padding:small?"6px 6px":"8px 12px",
+        borderRight: noBorder ? "none" : "1.5px solid #f0ece8", minWidth:0}}>
+        <div style={{fontSize:small?10:11, color:"#777", fontWeight:800, marginBottom:3, letterSpacing:0.3}}>{label}</div>
+        <div style={{fontSize:big?(small?16:20):(small?13:17), fontWeight:900, color:color, lineHeight:1}}>{omr(val)}</div>
+        {cnt > 0 && <div style={{fontSize:small?9:10, color:"#aaa", marginTop:3, fontWeight:700,
+          background:"#f5f5f5", borderRadius:10, padding:"1px 6px", display:"inline-block"}}>
+          {cnt.toLocaleString()} حساب
+        </div>}
+      </div>
+    );
+  }
+
   return (
-    <div className="region-card" style={{borderRadius:14,overflow:"hidden",
-      boxShadow:open?"0 4px 20px rgba(232,93,32,0.15)":"0 2px 8px rgba(0,0,0,0.06)",
-      border:`1.5px solid ${open?col+"55":"#f0ece8"}`,background:"#fff",transition:"all 0.2s"}}>
-      <div onClick={onToggle} style={{display:"flex",alignItems:"center",gap:small?10:14,
-        padding:small?"12px 14px":"14px 18px",cursor:"pointer",
-        background:open?`${col}08`:"#fff",borderBottom:open?`2px solid ${col}22`:"none",flexWrap:small?"wrap":"nowrap"}}>
-        <div style={{width:small?34:40,height:small?34:40,borderRadius:11,background:col,flexShrink:0,
-          display:"flex",alignItems:"center",justifyContent:"center",fontSize:small?16:18,fontWeight:800,color:"#fff"}}>{idx+1}</div>
-        <div style={{flex:1,minWidth:small?120:160}}>
-          <div className="region-name" style={{fontSize:small?15:19,fontWeight:900,color:"#000",lineHeight:1.2}}>{region.nameAr}</div>
-          <div className="region-name-en" style={{fontSize:small?11:14,color:"#555",marginTop:3,fontWeight:700}}>{region.nameEn}</div>
-        </div>
-        <div className="region-amounts" style={{display:"flex",flex:small?1:0,gap:0,minWidth:small?0:460}}>
-          {(()=>{
-            // مطابقة دقيقة: نبحث بـ nameEn أو بمطابقة جزئية
-            const rKey = Object.keys(cRegion||{}).find(k =>
-              k.trim()===region.nameEn?.trim() ||
-              region.nameEn?.includes(k) ||
-              k.includes(region.nameEn||'__')
-            );
-            const cD = rKey ? (cRegion||{})[rKey] : null;
-            return [["المدفوع","#16a34a",region.paid],["التسويات","#d97706",region.adj],["الإجمالي",col,region.paid+region.adj]].map(([lbl,clr,val],i)=>(
-              <div key={lbl} style={{flex:1,textAlign:"center",padding:small?"4px 8px":"6px 14px",borderRight:i<2?"1.5px solid #f0ece8":"none"}}>
-                <div style={{fontSize:small?11:13,color:"#333",fontWeight:800,marginBottom:4,letterSpacing:0.3}}>{lbl}</div>
-                <div style={{fontSize:i===2?(small?16:20):(small?13:18),fontWeight:900,color:clr,lineHeight:1}}>{omr(val)}</div>
-                {cD&&<div style={{fontSize:small?9:10,color:"#888",marginTop:2,fontWeight:700}}>{cD.count.toLocaleString()} حساب</div>}
-                {cD&&i===2&&<div style={{fontSize:small?9:10,color:col,marginTop:1,fontWeight:700}}>{omr(cD.amt)}</div>}
-              </div>
-            ));
-          })()}
-        </div>
-        <div className="toggle-btn" style={{display:"flex",alignItems:"center",gap:5,flexShrink:0,
-          background:open?col:"#fff",color:open?"#fff":col,
-          border:`1.5px solid ${col}`,borderRadius:9,
-          padding:small?"6px 10px":"8px 14px",fontSize:small?12:13,fontWeight:800,
-          transition:"all 0.2s",whiteSpace:"nowrap"}}>
-          {open?"▲":"▼"} {small?`(${region.collectors?.length||0})`:`المحصّلون (${region.collectors?.length||0})`}
+    <div style={{borderRadius:14, overflow:"hidden",
+      boxShadow: open ? "0 4px 20px rgba(232,93,32,0.15)" : "0 2px 8px rgba(0,0,0,0.06)",
+      border:`1.5px solid ${open ? col+"55" : "#f0ece8"}`,
+      background:"#fff", transition:"all 0.2s"}}>
+
+      {/* ── صف المحافظة الرئيسي ── */}
+      <div onClick={onToggle} style={{cursor:"pointer", background: open ? `${col}08` : "#fff",
+        borderBottom: open ? `2px solid ${col}22` : "none"}}>
+        <div style={{display:"flex", alignItems:"center", gap:small?10:14,
+          padding:small?"12px 14px":"14px 18px", flexWrap:small?"wrap":"nowrap"}}>
+
+          {/* رقم + اسم */}
+          <div style={{width:small?34:40, height:small?34:40, borderRadius:11, background:col,
+            flexShrink:0, display:"flex", alignItems:"center", justifyContent:"center",
+            fontSize:small?16:18, fontWeight:800, color:"#fff"}}>{idx+1}</div>
+          <div style={{flex:1, minWidth:small?120:160}}>
+            <div style={{fontSize:small?15:19, fontWeight:900, color:"#000", lineHeight:1.2}}>{region.nameAr}</div>
+            <div style={{fontSize:small?11:13, color:"#666", marginTop:3, fontWeight:600}}>{region.nameEn}</div>
+          </div>
+
+          {/* المبالغ + عدد الحسابات */}
+          <div style={{display:"flex", flex: small?1:0, minWidth:small?0:480,
+            border:"1.5px solid #f0ece8", borderRadius:12, overflow:"hidden", background:"#fafafa"}}>
+            <AmtCell label="المدفوع"   val={region.paid}  cnt={paidCnt}  color="#16a34a"/>
+            <AmtCell label="التسويات" val={region.adj}   cnt={adjCnt}   color="#d97706"/>
+            <AmtCell label="الإجمالي" val={total}        cnt={totalCnt} color={col} big noBorder/>
+          </div>
+
+          {/* زر المحصّلون */}
+          <div style={{display:"flex", alignItems:"center", gap:5, flexShrink:0,
+            background: open ? col : "#fff", color: open ? "#fff" : col,
+            border:`1.5px solid ${col}`, borderRadius:9,
+            padding:small?"6px 10px":"8px 14px", fontSize:small?11:13,
+            fontWeight:800, transition:"all 0.2s", whiteSpace:"nowrap"}}>
+            {open ? "▲" : "▼"} {small ? `(${region.collectors?.length||0})` : `المحصّلون (${region.collectors?.length||0})`}
+          </div>
         </div>
       </div>
-      {open&&(
-        <div style={{padding:small?"10px":"16px 20px 18px",background:"#fffaf7"}}>
-          <div style={{display:"grid",gridTemplateColumns:small?"32px 1fr 100px 100px 110px":"40px 1fr 155px 155px 165px 70px",
-            gap:8,padding:small?"10px 12px":"12px 16px",background:col,borderRadius:12,marginBottom:8}}>
-            {(small?["#","اسم المحصّل","المدفوع","التسويات","الإجمالي"]:["#","اسم المحصّل","المدفوع","التسويات","الإجمالي","%"]).map((h,i)=>(
-              <div key={i} style={{fontSize:small?13:15,fontWeight:900,color:"#fff",letterSpacing:0.3}}>{h}</div>))}
+
+      {/* ── قائمة المحصّلين (عند الفتح) ── */}
+      {open && (
+        <div style={{padding:small?"10px":"14px 18px 18px", background:"#fffaf7"}}>
+
+          {/* عنوان */}
+          <div style={{fontSize:small?12:14, fontWeight:800, color:col, marginBottom:10,
+            display:"flex", alignItems:"center", gap:6}}>
+            <span style={{background:col, color:"#fff", borderRadius:7, padding:"2px 8px",
+              fontSize:small?10:12}}>👥 المحصّلون</span>
+            <span style={{color:"#888", fontWeight:600}}>{region.collectors?.length||0} محصّل</span>
           </div>
-          {(region.collectors||[]).map((c,i)=>{
-            const ct=c.paid+c.adj;
-            const pct=Math.round((ct/maxV)*100);
-            return(
-            <div key={i} style={{display:"grid",gridTemplateColumns:small?"32px 1fr 100px 100px 110px":"40px 1fr 155px 155px 165px 70px",
-              gap:8,alignItems:"center",padding:small?"10px 12px":"13px 16px",
-              borderRadius:10,background:i%2===0?"#fff":"#fdf8f5",marginBottom:4,
-              border:`1px solid ${i%2===0?"#f0ece8":"#f5ede6"}`,boxShadow:"0 1px 4px rgba(0,0,0,0.04)"}}>
-              <div style={{width:small?28:36,height:small?28:36,borderRadius:9,background:`${col}18`,
-                border:`1.5px solid ${col}44`,display:"flex",alignItems:"center",
-                justifyContent:"center",fontSize:small?13:15,color:col,fontWeight:900}}>{i+1}</div>
-              <div style={{fontSize:small?14:17,color:"#000",fontWeight:800,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{c.name}</div>
-              <div style={{textAlign:"center"}}>
-                <div style={{fontSize:10,color:"#888",fontWeight:700,marginBottom:2}}>المدفوع</div>
-                <div style={{fontSize:small?14:17,color:"#16a34a",fontWeight:900}}>{omr(c.paid)}</div>
+
+          {/* صفوف المحصّلين */}
+          {(region.collectors||[]).map((c, i) => {
+            const ct = (c.paid||0) + (c.adj||0);
+            const cPaidCnt  = c.paidCount || 0;
+            const cAdjCnt   = c.adjCount  || 0;
+            const cTotalCnt = c.count     || 0;
+            return (
+              <div key={i} style={{borderRadius:12, marginBottom:8, overflow:"hidden",
+                border:`1.5px solid ${col}22`,
+                boxShadow:"0 1px 6px rgba(0,0,0,0.05)"}}>
+
+                {/* اسم المحصّل */}
+                <div style={{display:"flex", alignItems:"center", gap:10,
+                  padding:small?"8px 12px":"10px 14px",
+                  background: i%2===0 ? "#fff" : `${col}05`}}>
+                  <div style={{width:small?26:32, height:small?26:32, borderRadius:8,
+                    background:`${col}18`, border:`1.5px solid ${col}44`,
+                    display:"flex", alignItems:"center", justifyContent:"center",
+                    fontSize:small?12:14, color:col, fontWeight:900}}>{i+1}</div>
+                  <div style={{fontSize:small?13:16, color:"#000", fontWeight:800,
+                    flex:1, overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap"}}>{c.name}</div>
+                </div>
+
+                {/* مبالغ المحصّل بنفس تنسيق المحافظة */}
+                <div style={{display:"flex", borderTop:`1px solid ${col}15`,
+                  background: i%2===0 ? "#fafafa" : "#fff"}}>
+                  <AmtCell label="المدفوع"   val={c.paid} cnt={cPaidCnt}  color="#16a34a"/>
+                  <AmtCell label="التسويات" val={c.adj}  cnt={cAdjCnt}   color="#d97706"/>
+                  <AmtCell label="الإجمالي" val={ct}     cnt={cTotalCnt} color={col} big noBorder/>
+                </div>
               </div>
-              <div style={{textAlign:"center"}}>
-                <div style={{fontSize:10,color:"#888",fontWeight:700,marginBottom:2}}>التسويات</div>
-                <div style={{fontSize:small?14:17,color:"#d97706",fontWeight:900}}>{omr(c.adj)}</div>
-              </div>
-              <div style={{textAlign:"center",background:`${col}10`,borderRadius:8,padding:"6px 8px",border:`1px solid ${col}30`}}>
-                <div style={{fontSize:10,color:"#888",fontWeight:700,marginBottom:2}}>الإجمالي</div>
-                <div style={{fontSize:small?15:19,color:col,fontWeight:900}}>{omr(ct)}</div>
-              </div>
-              {!small&&<div style={{textAlign:"center"}}>
-                <div style={{fontSize:10,color:"#888",fontWeight:700,marginBottom:4}}>النسبة</div>
-                <div style={{background:col,color:"#fff",borderRadius:8,padding:"4px 8px",fontSize:14,fontWeight:900,display:"inline-block"}}>{pct}%</div>
-              </div>}
-            </div>);
+            );
           })}
-          <div style={{display:"grid",gridTemplateColumns:small?"32px 1fr 100px 100px 110px":"40px 1fr 155px 155px 165px 70px",
-            gap:8,alignItems:"center",padding:small?"12px":"14px 16px",
-            borderRadius:12,marginTop:8,background:`linear-gradient(120deg,${col}15,${col}08)`,border:`2px solid ${col}44`}}>
-            <div style={{width:small?28:36,height:small?28:36,borderRadius:9,background:col,
-              display:"flex",alignItems:"center",justifyContent:"center",fontSize:small?14:17,color:"#fff",fontWeight:900}}>Σ</div>
-            <div style={{fontSize:small?15:18,color:col,fontWeight:900}}>
-              الإجمالي الكلي
-              <div style={{fontSize:12,color:"#888",fontWeight:600,marginTop:1}}>{region.collectors?.length||0} محصّل</div>
+
+          {/* إجمالي المحافظة */}
+          {(region.collectors||[]).length > 0 && (
+            <div style={{borderRadius:12, overflow:"hidden", border:`2px solid ${col}55`,
+              marginTop:10, boxShadow:`0 2px 10px ${col}25`}}>
+              <div style={{padding:small?"8px 12px":"10px 14px",
+                background:`linear-gradient(120deg,${col},${col}cc)`,
+                display:"flex", alignItems:"center", gap:8}}>
+                <div style={{width:small?26:32, height:small?26:32, borderRadius:8,
+                  background:"rgba(255,255,255,0.25)", display:"flex", alignItems:"center",
+                  justifyContent:"center", fontSize:small?14:17, color:"#fff", fontWeight:900}}>Σ</div>
+                <div style={{fontSize:small?13:16, color:"#fff", fontWeight:900}}>
+                  الإجمالي الكلي
+                  <div style={{fontSize:small?10:11, color:"rgba(255,255,255,0.75)", fontWeight:600, marginTop:1}}>
+                    {region.collectors?.length||0} محصّل · {totalCnt.toLocaleString()} حساب
+                  </div>
+                </div>
+              </div>
+              <div style={{display:"flex", background:"#fff"}}>
+                <AmtCell label="المدفوع"   val={region.paid} cnt={paidCnt}  color="#16a34a"/>
+                <AmtCell label="التسويات" val={region.adj}  cnt={adjCnt}   color="#d97706"/>
+                <AmtCell label="الإجمالي" val={total}       cnt={totalCnt} color={col} big noBorder/>
+              </div>
             </div>
-            <div style={{textAlign:"center"}}>
-              <div style={{fontSize:10,color:"#888",fontWeight:700,marginBottom:2}}>المدفوع</div>
-              <div style={{fontSize:small?15:18,color:"#16a34a",fontWeight:900}}>{omr(region.paid)}</div>
-            </div>
-            <div style={{textAlign:"center"}}>
-              <div style={{fontSize:10,color:"#888",fontWeight:700,marginBottom:2}}>التسويات</div>
-              <div style={{fontSize:small?15:18,color:"#d97706",fontWeight:900}}>{omr(region.adj)}</div>
-            </div>
-            <div style={{textAlign:"center",background:col,borderRadius:10,padding:"8px",border:`2px solid ${col}`}}>
-              <div style={{fontSize:10,color:"rgba(255,255,255,0.75)",fontWeight:700,marginBottom:2}}>الإجمالي</div>
-              <div style={{fontSize:small?16:20,color:"#fff",fontWeight:900}}>{omr(region.paid+region.adj)}</div>
-            </div>
-            {!small&&<div/>}
-          </div>
+          )}
         </div>
       )}
     </div>
   );
 }
 
-// ── VerifyModal ────────────────────────────────────────────────────────────
-function VerifyModal({pending,onConfirm,onReject}) {
-  if (!pending) return null;
-  const d = pending.data;
-  const omrV = n => new Intl.NumberFormat("en-US",{minimumFractionDigits:3,maximumFractionDigits:3}).format(n||0);
-  const govPaid=d.regions?.reduce((s,r)=>s+r.paid,0)||0;
-  const govAdj =d.regions?.reduce((s,r)=>s+r.adj,0)||0;
-  const dcPaid =d.debtCompanies?.reduce((s,r)=>s+r.paid,0)||0;
-  const dcAdj  =d.debtCompanies?.reduce((s,r)=>s+r.adj,0)||0;
-  const hoPaid =d.headOffice?.reduce((s,r)=>s+r.paid,0)||0;
-  const hoAdj  =d.headOffice?.reduce((s,r)=>s+r.adj,0)||0;
-  const grand  =govPaid+govAdj+dcPaid+dcAdj+hoPaid+hoAdj;
-  const gPaid  =govPaid+dcPaid+hoPaid;
-  const gAdj   =govAdj+dcAdj+hoAdj;
-  const checks=[
-    {ok:d.totalRecords>0,label:"عدد السجلات",val:`${d.totalRecords?.toLocaleString()} سجل`,expect:"> 0"},
-    {ok:gPaid>0,label:"إجمالي المدفوع",val:omrV(gPaid),expect:"> 0 OMR"},
-    {ok:gAdj>=0,label:"إجمالي التسويات",val:omrV(gAdj),expect:">= 0"},
-    {ok:d.regions?.length===5,label:"المحافظات",val:`${d.regions?.length} منطقة`,expect:"5 مناطق"},
-    {ok:d.debtCompanies?.length>=1,label:"شركات التحصيل",val:`${d.debtCompanies?.length} شركة`,expect:">= 1"},
-    {ok:d.headOffice?.length>=1,label:"المكتب الرئيسي",val:`${d.headOffice?.length} قسم`,expect:">= 1"},
-  ];
-  const allOk=checks.every(c=>c.ok);
-  return (
-    <div style={{position:"fixed",top:0,left:0,right:0,bottom:0,
-      background:"rgba(0,0,0,0.75)",display:"flex",
-      alignItems:"center",justifyContent:"center",zIndex:9999,
-      padding:"16px",direction:"rtl",minHeight:"100vh"}}>
-      <div style={{background:"#fff",borderRadius:20,width:"100%",maxWidth:560,
-        overflow:"hidden",boxShadow:"0 20px 60px rgba(0,0,0,0.4)"}}>
-        <div style={{background:allOk?"linear-gradient(120deg,#1e3a5f,#2d5a8e)":"linear-gradient(120deg,#dc2626,#b91c1c)",padding:"18px 24px"}}>
-          <div style={{fontSize:18,fontWeight:900,color:"#fff",marginBottom:3}}>
-            {allOk?"✅ تحقق من البيانات قبل التطبيق":"⚠️ تحذير — يوجد مشاكل"}
-          </div>
-          <div style={{fontSize:12,color:"rgba(255,255,255,0.7)",fontWeight:600}}>
-            {pending.fileName} · {pending.fileSize} MB · {d.uploadDate}
-          </div>
-        </div>
-        <div style={{background:"#f8f4f1",padding:"14px 24px",borderBottom:"1px solid #f0ece8",
-          display:"flex",justifyContent:"space-between",alignItems:"center"}}>
-          <div>
-            <div style={{fontSize:11,color:"#888",fontWeight:700,marginBottom:3}}>الإجمالي الكلي</div>
-            <div style={{fontSize:26,fontWeight:900,color:"#1e3a5f"}}>{omrV(grand)} <span style={{fontSize:13,color:"#999"}}>OMR</span></div>
-          </div>
-          <div style={{display:"flex",gap:16}}>
-            {[["مدفوع",omrV(gPaid),"#16a34a"],["تسويات",omrV(gAdj),"#d97706"]].map(([l,v,c])=>(
-              <div key={l} style={{textAlign:"center"}}>
-                <div style={{fontSize:10,color:"#888",fontWeight:700,marginBottom:3}}>{l}</div>
-                <div style={{fontSize:15,fontWeight:800,color:c}}>{v}</div>
-              </div>))}
-          </div>
-        </div>
-        <div style={{padding:"14px 24px"}}>
-          <div style={{fontSize:12,color:"#555",fontWeight:800,marginBottom:10}}>فحص تلقائي:</div>
-          {checks.map((c,i)=>(
-            <div key={i} style={{display:"flex",justifyContent:"space-between",alignItems:"center",
-              padding:"8px 12px",marginBottom:5,borderRadius:8,
-              background:c.ok?"#f0fdf4":"#fef2f2",border:`1px solid ${c.ok?"#bbf7d0":"#fecaca"}`}}>
-              <div style={{display:"flex",alignItems:"center",gap:8}}>
-                <span style={{fontSize:16}}>{c.ok?"✅":"❌"}</span>
-                <span style={{fontSize:13,color:"#333",fontWeight:700}}>{c.label}</span>
-                <span style={{fontSize:11,color:"#888"}}>({c.expect})</span>
-              </div>
-              <span style={{fontSize:13,fontWeight:800,color:c.ok?"#16a34a":"#dc2626"}}>{c.val}</span>
-            </div>
-          ))}
-        </div>
-        <div style={{display:"flex",gap:12,padding:"0 24px 20px"}}>
-          <button onClick={onConfirm} style={{flex:1,background:allOk?"#16a34a":"#d97706",
-            color:"#fff",border:"none",borderRadius:12,padding:"13px",fontSize:15,
-            fontWeight:900,cursor:"pointer",fontFamily:"'Cairo',sans-serif"}}>
-            {allOk?"✅ تأكيد وتطبيق":"⚠️ تطبيق رغم المشاكل"}
-          </button>
-          <button onClick={onReject} style={{flex:1,background:"#f5f0eb",color:"#dc2626",
-            border:"2px solid #fecaca",borderRadius:12,padding:"13px",fontSize:15,
-            fontWeight:900,cursor:"pointer",fontFamily:"'Cairo',sans-serif"}}>
-            ❌ إلغاء
-          </button>
-        </div>
-      </div>
-    </div>
-  );
-}
 
 
 // ── DayDetail — تفاصيل اليوم المختار ────────────────────────────────────────
