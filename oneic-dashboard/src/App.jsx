@@ -6435,12 +6435,8 @@ function EntityCard({name,paid,adj,color,rank,small,cnt,cBranch,isHO}) {
 }
 
 // ── SummaryCard ────────────────────────────────────────────────────────────
-function SummaryCard({label,paid,adj,cnt,cntPaid,cntAdj,cntTotal,portAmt,color,icon,pct,small}) {
+function SummaryCard({label,paid,adj,cnt,portAmt,color,icon,pct,small}) {
   const total = paid+adj;
-  // دعم الأعداد المنفصلة لكل خانة — إذا لم تُمرَّر نستخدم cnt للجميع
-  const _cntPaid  = cntPaid  != null ? cntPaid  : (cnt||0);
-  const _cntAdj   = cntAdj   != null ? cntAdj   : (cnt||0);
-  const _cntTotal = cntTotal != null ? cntTotal : (cnt||0);
   return (
     <div style={{background:"#fff",borderRadius:15,overflow:"hidden",
       boxShadow:"0 3px 14px rgba(0,0,0,0.07)",border:"1.5px solid #f0ece8",minWidth:0}}>
@@ -6471,9 +6467,9 @@ function SummaryCard({label,paid,adj,cnt,cntPaid,cntAdj,cntTotal,portAmt,color,i
         <div style={{display:"grid",gridTemplateColumns:"1fr 1fr 1fr",gap:0,
           border:"1px solid #f0ece8",borderRadius:10,overflow:"hidden"}}>
           {[
-            ["المدفوع","#16a34a",paid,_cntPaid],
-            ["التسويات","#d97706",adj,_cntAdj],
-            ["الإجمالي",color,total,_cntTotal]
+            ["المدفوع","#16a34a",paid,cnt],
+            ["التسويات","#d97706",adj,cnt],
+            ["الإجمالي",color,total,cnt]
           ].map(([lbl,clr,val,c],i)=>(
             <div key={lbl} style={{textAlign:"center",padding:small?"6px 3px":"8px 5px",
               borderRight:i<2?"1px solid #f0ece8":"none",minWidth:0,overflow:"hidden"}}>
@@ -9259,45 +9255,6 @@ export default function Dashboard() {
   const gTotal = gPd+gAd+dPd+dAd+hPd+hAd;
   const p = v => gTotal>0 ? ((v/gTotal)*100).toFixed(1) : "0";
 
-  // ── عدد الحسابات لكل خانة (مدفوع / تسويات / إجمالي = مدفوع+تسويات بدون تكرار)
-  // نحسب بناءً على بيانات المحصّلين داخل كل منطقة/شركة
-  // إذا كان count متاحاً على المحصّل نستخدمه، وإلا نعود لـ count على المجموعة
-  const calcCntBreakdown = (arr) => {
-    let paidCnt=0, adjCnt=0, totalCnt=0;
-    (arr||[]).forEach(r => {
-      const cols = r.collectors || [];
-      const rCount = r.count||0;
-      if (cols.length > 0) {
-        // كل محصّل لديه count — نجمع الذين paid>0 والذين adj>0
-        let rPaidCnt=0, rAdjCnt=0;
-        cols.forEach(c => {
-          const cCnt = c.count||0;
-          if ((c.paid||0) > 0) rPaidCnt += cCnt;
-          if ((c.adj||0)  > 0) rAdjCnt  += cCnt;
-        });
-        // إذا كل المحصّلين بدون count — نستخدم count المنطقة كـ fallback
-        if (rPaidCnt===0 && rAdjCnt===0 && rCount>0) {
-          if ((r.paid||0)>0) paidCnt += rCount;
-          if ((r.adj||0) >0) adjCnt  += rCount;
-          totalCnt += rCount;
-        } else {
-          paidCnt  += rPaidCnt;
-          adjCnt   += rAdjCnt;
-          totalCnt += Math.max(rPaidCnt, rAdjCnt);
-        }
-      } else {
-        // لا يوجد محصّلون — نستخدم count المنطقة مباشرة
-        if ((r.paid||0)>0) paidCnt += rCount;
-        if ((r.adj||0) >0) adjCnt  += rCount;
-        totalCnt += rCount;
-      }
-    });
-    return { paidCnt, adjCnt, totalCnt };
-  };
-  const gBreak = calcCntBreakdown(data.regions);
-  const dBreak = calcCntBreakdown(data.debtCompanies);
-  const hBreak = calcCntBreakdown(data.headOffice);
-
   const pad = isMobile ? "12px" : isTablet ? "16px" : "20px 24px";
 
   return (
@@ -9750,43 +9707,118 @@ export default function Dashboard() {
         </div>
       </div>
 
-                {/* Summary cards */}
-        <div id="print-summary" style={{
-          display:"grid",
-          gridTemplateColumns: isMobile?"1fr":isTablet?"1fr 1fr":"repeat(3,1fr)",
-          gap: small?12:16, marginBottom: small?14:18
-        }}>
-          <SummaryCard
-            label="المحافظات الخمس"
-            paid={gPd} adj={gAd}
-            cnt={complaintsCounts.gov||gCnt||0}
-            cntPaid={gBreak.paidCnt||complaintsCounts.gov||gCnt||0}
-            cntAdj={gBreak.adjCnt||complaintsCounts.gov||gCnt||0}
-            cntTotal={gBreak.totalCnt||complaintsCounts.gov||gCnt||0}
-            portAmt={complaintsAmts.gov||0}
-            color="#e85d20" icon="🗺" pct={p(gPd+gAd)} small={small}
-          />
-          <SummaryCard
-            label="شركات التحصيل"
-            paid={dPd} adj={dAd}
-            cnt={complaintsCounts.dc||dCnt||0}
-            cntPaid={dBreak.paidCnt||complaintsCounts.dc||dCnt||0}
-            cntAdj={dBreak.adjCnt||complaintsCounts.dc||dCnt||0}
-            cntTotal={dBreak.totalCnt||complaintsCounts.dc||dCnt||0}
-            portAmt={complaintsAmts.dc||0}
-            color="#1a7a6b" icon="🏢" pct={p(dPd+dAd)} small={small}
-          />
-          <SummaryCard
-            label="المكتب الرئيسي"
-            paid={hPd} adj={hAd}
-            cnt={complaintsCounts.ho||hCnt||0}
-            cntPaid={hBreak.paidCnt||complaintsCounts.ho||hCnt||0}
-            cntAdj={hBreak.adjCnt||complaintsCounts.ho||hCnt||0}
-            cntTotal={hBreak.totalCnt||complaintsCounts.ho||hCnt||0}
-            portAmt={complaintsAmts.ho||0}
-            color="#6c3fa0" icon="🏛" pct={p(hPd+hAd)} small={small}
-          />
-        </div>
+                {/* ══ Portfolio Cards ══ */}
+        {(()=>{
+          // حساب عدد الحسابات لكل خانة بناءً على المحصّلين
+          const calcBreak = (arr) => {
+            let pCnt=0,aCnt=0;
+            (arr||[]).forEach(r=>{
+              const cols=r.collectors||[];
+              if(cols.length>0){
+                cols.forEach(c=>{
+                  if((c.paid||0)>0) pCnt+=(c.count||0);
+                  if((c.adj||0)>0)  aCnt+=(c.count||0);
+                });
+                if(pCnt===0&&aCnt===0){
+                  if((r.paid||0)>0) pCnt+=(r.count||0);
+                  if((r.adj||0)>0)  aCnt+=(r.count||0);
+                }
+              } else {
+                if((r.paid||0)>0) pCnt+=(r.count||0);
+                if((r.adj||0)>0)  aCnt+=(r.count||0);
+              }
+            });
+            return {pCnt,aCnt,tCnt:pCnt};
+          };
+          const gB=calcBreak(data.regions);
+          const dB=calcBreak(data.debtCompanies);
+          const hB=calcBreak(data.headOffice);
+          const gCntFinal = complaintsCounts.gov||gCnt||0;
+          const dCntFinal = complaintsCounts.dc||dCnt||0;
+          const hCntFinal = complaintsCounts.ho||hCnt||0;
+          const gPortAmt  = complaintsAmts.gov||0;
+          const dPortAmt  = complaintsAmts.dc||0;
+          const hPortAmt  = complaintsAmts.ho||0;
+
+          const cardStyle = (color) => ({
+            background:"#fff", borderRadius:15, overflow:"hidden",
+            boxShadow:"0 3px 14px rgba(0,0,0,0.07)",
+            border:"1.5px solid #f0ece8", minWidth:0
+          });
+          const omrF = n => new Intl.NumberFormat("en-US",{minimumFractionDigits:3,maximumFractionDigits:3}).format(n||0);
+          const cntF = n => (n||0).toLocaleString();
+
+          const PortCard = ({label,paid,adj,cntTotal,cntPaid,cntAdj,cntTot,portAmt,color,icon,pctVal})=>{
+            const total=paid+adj;
+            const _cntPaid  = (gB.pCnt>0||dB.pCnt>0||hB.pCnt>0) ? cntPaid  : cntTotal;
+            const _cntAdj   = (gB.aCnt>0||dB.aCnt>0||hB.aCnt>0) ? cntAdj   : cntTotal;
+            const _cntTot   = cntTot || cntTotal;
+            return (
+              <div style={cardStyle(color)}>
+                <div style={{background:color,padding:small?"10px 12px":"13px 16px",
+                  display:"flex",justifyContent:"space-between",alignItems:"center",gap:6,flexWrap:"wrap"}}>
+                  <div style={{display:"flex",alignItems:"center",gap:6}}>
+                    <span style={{fontSize:small?16:20}}>{icon}</span>
+                    <span style={{fontSize:small?13:15,fontWeight:900,color:"#fff"}}>{label}</span>
+                  </div>
+                  <div style={{background:"rgba(255,255,255,0.25)",borderRadius:20,
+                    padding:"2px 10px",fontSize:small?12:13,fontWeight:800,color:"#fff"}}>{pctVal}%</div>
+                </div>
+                <div style={{background:`${color}0f`,padding:small?"8px 12px":"10px 16px",
+                  borderBottom:"1px solid #f0ece8",display:"flex",justifyContent:"space-between",alignItems:"center"}}>
+                  <div style={{fontSize:small?10:11,color:"#888",fontWeight:700}}>إجمالي الحسابات</div>
+                  <div style={{display:"flex",flexDirection:"column",alignItems:"flex-end",gap:2}}>
+                    <div style={{fontSize:small?15:18,fontWeight:900,color:color,lineHeight:1}}>
+                      {portAmt>0 ? omrF(portAmt) : omrF(total)}
+                    </div>
+                    <div style={{fontSize:small?10:11,color:"#aaa",fontWeight:600}}>{cntF(cntTotal)} حساب</div>
+                  </div>
+                </div>
+                <div style={{padding:small?"8px":"10px"}}>
+                  <div style={{display:"grid",gridTemplateColumns:"1fr 1fr 1fr",gap:0,
+                    border:"1px solid #f0ece8",borderRadius:10,overflow:"hidden"}}>
+                    {[
+                      ["المدفوع","#16a34a",paid,_cntPaid],
+                      ["التسويات","#d97706",adj,_cntAdj],
+                      ["الإجمالي",color,total,_cntTot]
+                    ].map(([lbl,clr,val,cnt],i)=>(
+                      <div key={lbl} style={{textAlign:"center",padding:small?"6px 3px":"9px 6px",
+                        borderRight:i<2?"1px solid #f0ece8":"none",minWidth:0}}>
+                        <div style={{fontSize:small?9:11,color:"#333",fontWeight:800,marginBottom:3,whiteSpace:"nowrap"}}>{lbl}</div>
+                        <div style={{fontSize:small?12:14,fontWeight:900,color:clr,lineHeight:1,wordBreak:"break-all"}}>{omrF(val)}</div>
+                        <div style={{fontSize:small?9:10,color:"#aaa",marginTop:2,fontWeight:600}}>{cntF(cnt)} حساب</div>
+                      </div>
+                    ))}
+                  </div>
+                  <div style={{display:"flex",alignItems:"center",gap:8,marginTop:10}}>
+                    <div style={{flex:1,height:5,background:"#f0ece8",borderRadius:4,overflow:"hidden"}}>
+                      <div style={{height:"100%",borderRadius:4,background:color,width:`${Math.min(parseFloat(pctVal),100)}%`}}/>
+                    </div>
+                    <div style={{fontSize:12,color:"#888",minWidth:38,textAlign:"left"}}>{pctVal}%</div>
+                  </div>
+                </div>
+              </div>
+            );
+          };
+
+          return (
+            <div id="print-summary" style={{
+              display:"grid",
+              gridTemplateColumns: isMobile?"1fr":isTablet?"1fr 1fr":"repeat(3,1fr)",
+              gap: small?12:16, marginBottom: small?14:18
+            }}>
+              <PortCard label="المحافظات الخمس" paid={gPd} adj={gAd}
+                cntTotal={gCntFinal} cntPaid={gB.pCnt||gCntFinal} cntAdj={gB.aCnt||gCntFinal} cntTot={gB.tCnt||gCntFinal}
+                portAmt={gPortAmt} color="#e85d20" icon="🗺" pctVal={p(gPd+gAd)}/>
+              <PortCard label="شركات التحصيل" paid={dPd} adj={dAd}
+                cntTotal={dCntFinal} cntPaid={dB.pCnt||dCntFinal} cntAdj={dB.aCnt||dCntFinal} cntTot={dB.tCnt||dCntFinal}
+                portAmt={dPortAmt} color="#1a7a6b" icon="🏢" pctVal={p(dPd+dAd)}/>
+              <PortCard label="المكتب الرئيسي" paid={hPd} adj={hAd}
+                cntTotal={hCntFinal} cntPaid={hB.pCnt||hCntFinal} cntAdj={hB.aCnt||hCntFinal} cntTot={hB.tCnt||hCntFinal}
+                portAmt={hPortAmt} color="#6c3fa0" icon="🏛" pctVal={p(hPd+hAd)}/>
+            </div>
+          );
+        })()}
 
         {/* Regions */}
         <div id="print-regions" style={{
