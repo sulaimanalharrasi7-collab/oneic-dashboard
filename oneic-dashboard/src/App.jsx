@@ -8925,6 +8925,251 @@ function handlePrint(data) {
 
 
 // ── MAIN ───────────────────────────────────────────────────────────────────
+
+// ── Smart Notifications & Celebration System ──────────────────────────────────
+function useSmartNotifications(gTotal, hoPrincipal, bestDayEver, currentDayTotal) {
+  const [notifications, setNotifications] = useState([]);
+  const [celebration, setCelebration] = useState(null);
+  const [confettiActive, setConfettiActive] = useState(false);
+  const prevTotal = useRef(0);
+  const shownMilestones = useRef(null);
+  if (!shownMilestones.current) {
+    try { shownMilestones.current = new Set(JSON.parse(localStorage.getItem('oneic_shown_milestones')||'[]')); }
+    catch(e) { shownMilestones.current = new Set(); }
+  }
+
+  const addNotification = useCallback((notif) => {
+    const id = Date.now() + Math.random();
+    setNotifications(prev => [{...notif, id, time: new Date()}, ...prev].slice(0,10));
+    if (notif.celebrate) {
+      setCelebration(notif);
+      setConfettiActive(true);
+      setTimeout(() => setConfettiActive(false), 6000);
+      setTimeout(() => setCelebration(null), 8000);
+    }
+    setTimeout(() => {
+      setNotifications(prev => prev.filter(n => n.id !== id));
+    }, notif.duration || 7000);
+  }, []);
+
+  useEffect(() => {
+    if (!gTotal || gTotal === prevTotal.current) return;
+    const prev = prevTotal.current;
+    prevTotal.current = gTotal;
+
+    // ── مراقبة الإجمالي الكلي ─────────────────────────────────────────────
+    const milestones = [
+      { val: 500000,   label: "نصف مليون ريال! 🎉",   color: "#16a34a", icon: "💰", celebrate: true  },
+      { val: 1000000,  label: "مليون ريال كاملة! 🏆",  color: "#e85d20", icon: "🏆", celebrate: true  },
+      { val: 1500000,  label: "مليون ونص ريال! 🚀",    color: "#7c3aed", icon: "🚀", celebrate: true  },
+      { val: 2000000,  label: "مليونين ريال! 🎊",       color: "#0891b2", icon: "💎", celebrate: true  },
+      { val: 2500000,  label: "مليونين ونص! ⭐",        color: "#d97706", icon: "⭐", celebrate: true  },
+      { val: 3000000,  label: "3 ملايين ريال! 🔥",      color: "#dc2626", icon: "🔥", celebrate: true  },
+      { val: 4000000,  label: "4 ملايين ريال! 🌟",      color: "#059669", icon: "🌟", celebrate: true  },
+      { val: 5000000,  label: "5 ملايين ريال! 👑",      color: "#7c3aed", icon: "👑", celebrate: true  },
+    ];
+
+    milestones.forEach(m => {
+      const key = `milestone_${m.val}`;
+      if (prev < m.val && gTotal >= m.val && !shownMilestones.current.has(key)) {
+        shownMilestones.current.add(key);
+        try { localStorage.setItem('oneic_shown_milestones', JSON.stringify([...shownMilestones.current])); } catch(e){}
+        addNotification({
+          type: 'milestone',
+          title: `🎯 تم تحقيق الهدف!`,
+          message: `الإجمالي الكلي وصل ${m.label}`,
+          sub: `الإجمالي الحالي: ${new Intl.NumberFormat('en-US',{minimumFractionDigits:3}).format(gTotal)} OMR`,
+          color: m.color, icon: m.icon,
+          celebrate: m.celebrate,
+          priority: 'high',
+          duration: 10000,
+        });
+      }
+    });
+
+    // ── تحذير انخفاض حاد ─────────────────────────────────────────────────
+    if (prev > 0 && gTotal < prev * 0.95 && gTotal > 100000) {
+      addNotification({
+        type: 'warning', title: '⚠️ تحذير: انخفاض في التحصيل',
+        message: `انخفاض ملحوظ في الإجمالي`,
+        sub: `المبلغ الحالي: ${new Intl.NumberFormat('en-US',{minimumFractionDigits:3}).format(gTotal)} OMR`,
+        color: '#dc2626', icon: '⚠️', celebrate: false, duration: 8000,
+      });
+    }
+  }, [gTotal, addNotification]);
+
+  // ── مراقبة Principal Amount لـ Legal DR Sarhaan ─────────────────────────
+  useEffect(() => {
+    if (!hoPrincipal) return;
+    const key = 'principal_4m';
+    if (hoPrincipal >= 4000000 && !shownMilestones.current.has(key)) {
+      shownMilestones.current.add(key);
+      try { localStorage.setItem('oneic_shown_milestones', JSON.stringify([...shownMilestones.current])); } catch(e){}
+      addNotification({
+        type: 'special',
+        title: '🎊 إنجاز استثنائي — Legal DR. Sarhaan!',
+        message: 'Principal Amount تجاوز 4 ملايين ريال!',
+        sub: `${new Intl.NumberFormat('en-US',{minimumFractionDigits:3}).format(hoPrincipal)} OMR`,
+        color: '#9333ea', icon: '💜', celebrate: true, priority: 'critical', duration: 15000,
+      });
+    }
+  }, [hoPrincipal, addNotification]);
+
+  // ── مراقبة أفضل دفعة يومية ──────────────────────────────────────────────
+  const prevBest = useRef(0);
+  useEffect(() => {
+    if (!currentDayTotal || currentDayTotal <= 0) return;
+    const storedBest = (() => { try { return parseFloat(localStorage.getItem('oneic_best_day')||'0'); } catch(e){return 0;} })();
+    if (currentDayTotal > storedBest && currentDayTotal > prevBest.current) {
+      prevBest.current = currentDayTotal;
+      if (currentDayTotal > storedBest) {
+        try { localStorage.setItem('oneic_best_day', String(currentDayTotal)); } catch(e){}
+        addNotification({
+          type: 'record',
+          title: '🏆 رقم قياسي جديد!',
+          message: 'أفضل دفعة يومية في تاريخ المشروع!',
+          sub: `${new Intl.NumberFormat('en-US',{minimumFractionDigits:3}).format(currentDayTotal)} OMR في يوم واحد`,
+          color: '#f59e0b', icon: '🥇', celebrate: true, duration: 10000,
+        });
+      }
+    }
+  }, [currentDayTotal, addNotification]);
+
+  return { notifications, celebration, confettiActive, addNotification, setNotifications };
+}
+
+// ── Confetti Component ─────────────────────────────────────────────────────────
+function ConfettiRain({ active }) {
+  if (!active) return null;
+  const colors = ['#e85d20','#ffd700','#16a34a','#7c3aed','#0891b2','#f59e0b','#ec4899','#06b6d4'];
+  const pieces = Array.from({length: 80}, (_,i) => ({
+    id: i,
+    x: Math.random() * 100,
+    delay: Math.random() * 3,
+    duration: 2 + Math.random() * 3,
+    size: 6 + Math.random() * 10,
+    color: colors[Math.floor(Math.random() * colors.length)],
+    shape: Math.random() > 0.5 ? 'circle' : 'rect',
+    rotation: Math.random() * 360,
+  }));
+  return (
+    <div style={{position:'fixed',inset:0,pointerEvents:'none',zIndex:99999,overflow:'hidden'}}>
+      <style>{`
+        @keyframes confettiFall {
+          0%   { transform: translateY(-20px) rotate(0deg); opacity: 1; }
+          100% { transform: translateY(110vh) rotate(720deg); opacity: 0; }
+        }
+        @keyframes confettiSway {
+          0%,100% { margin-left: 0; }
+          50%      { margin-left: 30px; }
+        }
+      `}</style>
+      {pieces.map(p => (
+        <div key={p.id} style={{
+          position:'absolute', left: p.x+'%', top:'-20px',
+          width: p.size, height: p.size,
+          background: p.color,
+          borderRadius: p.shape==='circle' ? '50%' : '2px',
+          animation: `confettiFall ${p.duration}s ease-in ${p.delay}s forwards, confettiSway ${p.duration/2}s ease-in-out ${p.delay}s infinite`,
+          transform: `rotate(${p.rotation}deg)`,
+        }}/>
+      ))}
+    </div>
+  );
+}
+
+// ── Celebration Modal ──────────────────────────────────────────────────────────
+function CelebrationModal({ celebration }) {
+  if (!celebration) return null;
+  return (
+    <div style={{
+      position:'fixed', inset:0, background:'rgba(0,0,0,0.75)',
+      display:'flex', alignItems:'center', justifyContent:'center',
+      zIndex:99998, padding:20, direction:'rtl',
+      animation:'fadeIn 0.4s ease',
+    }}>
+      <style>{`
+        @keyframes fadeIn { from{opacity:0;transform:scale(0.8)} to{opacity:1;transform:scale(1)} }
+        @keyframes pulse  { 0%,100%{transform:scale(1)} 50%{transform:scale(1.05)} }
+        @keyframes shimmer {
+          0%   { background-position: -200% center; }
+          100% { background-position: 200% center; }
+        }
+      `}</style>
+      <div style={{
+        background: `linear-gradient(135deg, ${celebration.color}22, #fff, ${celebration.color}11)`,
+        border: `3px solid ${celebration.color}`,
+        borderRadius: 24, padding: '40px 32px',
+        maxWidth: 480, width: '100%',
+        textAlign: 'center',
+        boxShadow: `0 0 60px ${celebration.color}66`,
+        animation: 'pulse 2s ease infinite',
+      }}>
+        <div style={{fontSize: 72, marginBottom: 16, lineHeight: 1}}>{celebration.icon}</div>
+        <div style={{
+          fontSize: 26, fontWeight: 900, color: celebration.color,
+          marginBottom: 10, lineHeight: 1.2,
+          background: `linear-gradient(90deg, ${celebration.color}, #fff, ${celebration.color})`,
+          backgroundSize: '200% auto',
+          WebkitBackgroundClip: 'text',
+          WebkitTextFillColor: 'transparent',
+          animation: 'shimmer 2s linear infinite',
+        }}>{celebration.title}</div>
+        <div style={{fontSize: 18, fontWeight: 800, color: '#111', marginBottom: 8}}>{celebration.message}</div>
+        {celebration.sub && <div style={{
+          fontSize: 20, fontWeight: 900, color: celebration.color,
+          background: `${celebration.color}18`, borderRadius: 12,
+          padding: '10px 20px', margin: '12px auto', display: 'inline-block',
+        }}>{celebration.sub}</div>}
+        <div style={{fontSize: 13, color: '#888', marginTop: 16, fontStyle: 'italic'}}>
+          🎊 تهانينا لفريق ONEIC بأكمله! 🎊
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// ── Notification Toast Stack ───────────────────────────────────────────────────
+function NotificationStack({ notifications, onDismiss }) {
+  if (!notifications.length) return null;
+  return (
+    <div style={{
+      position: 'fixed', top: 80, left: 16,
+      zIndex: 9997, display: 'flex', flexDirection: 'column', gap: 8,
+      maxWidth: 360, pointerEvents: 'none',
+    }}>
+      {notifications.map(n => (
+        <div key={n.id} style={{
+          background: '#fff', borderRadius: 14,
+          border: `2px solid ${n.color}`,
+          borderRight: `6px solid ${n.color}`,
+          padding: '12px 14px',
+          boxShadow: `0 4px 20px ${n.color}33`,
+          display: 'flex', gap: 10, alignItems: 'flex-start',
+          pointerEvents: 'auto',
+          animation: 'slideIn 0.3s ease',
+        }}>
+          <style>{`@keyframes slideIn{from{opacity:0;transform:translateX(-20px)}to{opacity:1;transform:translateX(0)}}`}</style>
+          <div style={{fontSize: 24, flexShrink: 0, lineHeight: 1}}>{n.icon}</div>
+          <div style={{flex: 1, minWidth: 0}}>
+            <div style={{fontSize: 13, fontWeight: 900, color: n.color, marginBottom: 2}}>{n.title}</div>
+            <div style={{fontSize: 12, fontWeight: 700, color: '#111', marginBottom: 2}}>{n.message}</div>
+            {n.sub && <div style={{fontSize: 11, color: '#555', fontWeight: 600}}>{n.sub}</div>}
+            <div style={{fontSize: 10, color: '#aaa', marginTop: 4}}>
+              {n.time?.toLocaleTimeString('ar-OM',{hour:'2-digit',minute:'2-digit'})}
+            </div>
+          </div>
+          <button onClick={()=>onDismiss(n.id)} style={{
+            background: 'none', border: 'none', cursor: 'pointer',
+            color: '#aaa', fontSize: 14, padding: 0, flexShrink: 0,
+            lineHeight: 1, pointerEvents: 'auto',
+          }}>✕</button>
+        </div>
+      ))}
+    </div>
+  );
+}
+
 export default function Dashboard() {
   const { w } = useWindowSize();
   const isMobile  = w < 640;
@@ -9183,6 +9428,17 @@ export default function Dashboard() {
   const gTotal = totalPaid+totalAdj;
   const p = v => gTotal>0 ? ((v/gTotal)*100).toFixed(1) : "0";
 
+  // ── Smart Notifications ───────────────────────────────────────────────────
+  const hoPrincipalCurrent = (data.headOffice||[]).find(c=>c.name==='Legal - DR. Sarhaan')?.principalAmt||0;
+  const currentBestDay = (() => {
+    try {
+      const saved = localStorage.getItem('oneic_bulk_data');
+      if (saved) { const b = JSON.parse(saved); if (b?.daily?.length) return Math.max(...b.daily.map(d=>d.paid+(d.adj||0))); }
+    } catch(e) {} return 0;
+  })();
+  const { notifications, celebration, confettiActive, addNotification, setNotifications } =
+    useSmartNotifications(gTotal, hoPrincipalCurrent, 0, currentBestDay);
+
   const pad = isMobile ? "12px" : isTablet ? "16px" : "20px 24px";
 
   return (
@@ -9192,6 +9448,10 @@ export default function Dashboard() {
       fontFamily:"'Cairo','Tajawal','Segoe UI',sans-serif",
       direction:"rtl", color:"#111", overflow:"hidden"
     }}>
+      {/* ── Notification System ── */}
+      <ConfettiRain active={confettiActive}/>
+      <CelebrationModal celebration={celebration}/>
+      <NotificationStack notifications={notifications} onDismiss={id=>setNotifications(prev=>prev.filter(n=>n.id!==id))}/>
       {showHistory && <HistoryModal history={history} onClose={()=>setShowHistory(false)} small={small}/>}
       <VerifyModal pending={pending} onConfirm={confirmData} onReject={rejectData}/>
 
