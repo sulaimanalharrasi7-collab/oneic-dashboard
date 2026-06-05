@@ -6208,6 +6208,42 @@ function handleBulkPrint(d, filterFrom, filterTo) {
   w.document.close();
 }
 
+
+// ── VerifyModal ────────────────────────────────────────────────────────────
+function VerifyModal({pending, onConfirm, onReject}) {
+  if (!pending) return null;
+  const { fileName, fileSize, data } = pending;
+  const totalPaid = (data.regions||[]).reduce((s,r)=>s+r.paid,0)
+    + (data.debtCompanies||[]).reduce((s,r)=>s+r.paid,0)
+    + (data.headOffice||[]).reduce((s,r)=>s+r.paid,0);
+  const totalAdj = (data.regions||[]).reduce((s,r)=>s+r.adj,0)
+    + (data.debtCompanies||[]).reduce((s,r)=>s+r.adj,0)
+    + (data.headOffice||[]).reduce((s,r)=>s+r.adj,0);
+  return (
+    <div style={{position:"fixed",inset:0,background:"rgba(0,0,0,0.6)",zIndex:9999,display:"flex",alignItems:"center",justifyContent:"center",padding:16}}>
+      <div style={{background:"#fff",borderRadius:18,padding:28,maxWidth:460,width:"100%",boxShadow:"0 20px 60px rgba(0,0,0,0.3)"}}>
+        <div style={{fontSize:18,fontWeight:900,color:"#1e3a5f",marginBottom:8}}>📂 تأكيد رفع الملف</div>
+        <div style={{fontSize:13,color:"#555",marginBottom:16}}>{fileName} — {fileSize} MB</div>
+        <div style={{display:"flex",gap:10,marginBottom:16}}>
+          {[["المدفوع",totalPaid,"#16a34a"],["التسويات",totalAdj,"#d97706"],["الإجمالي",totalPaid+totalAdj,"#e85d20"]].map(([l,v,c])=>(
+            <div key={l} style={{flex:1,background:"#f8f4f1",borderRadius:10,padding:"10px 8px",textAlign:"center"}}>
+              <div style={{fontSize:10,color:"#888",marginBottom:3}}>{l}</div>
+              <div style={{fontSize:13,fontWeight:900,color:c}}>{new Intl.NumberFormat("en-US",{minimumFractionDigits:3}).format(v)}</div>
+            </div>
+          ))}
+        </div>
+        <div style={{fontSize:12,color:"#888",marginBottom:20}}>
+          {data.totalRecords?.toLocaleString()} سجل · {data.regions?.length} منطقة · {data.debtCompanies?.length} شركة
+        </div>
+        <div style={{display:"flex",gap:10}}>
+          <button onClick={onConfirm} style={{flex:1,background:"#e85d20",color:"#fff",border:"none",borderRadius:10,padding:"12px",fontSize:14,fontWeight:800,cursor:"pointer"}}>✅ تأكيد الحفظ</button>
+          <button onClick={onReject} style={{flex:1,background:"#f0ece8",color:"#666",border:"none",borderRadius:10,padding:"12px",fontSize:14,fontWeight:700,cursor:"pointer"}}>❌ إلغاء</button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 // ── useWindowSize ──────────────────────────────────────────────────────────
 function useWindowSize() {
   const [size, setSize] = useState({ w: window.innerWidth, h: window.innerHeight });
