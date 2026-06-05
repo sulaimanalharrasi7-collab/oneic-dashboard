@@ -137,7 +137,7 @@ const SEED = {
     { name: "Tahseel United",                paid: 0.000,       adj: 0.000,       portAmt: 0,           portCnt: 108   },
     { name: "High Speed Company",            paid: 0.000,       adj: 0.000,       portAmt: 0,           portCnt: 35    }],
   headOffice: [
-    { name: "Legal - DR. Sarhaan", paid: 46866.090, adj: 14781.368, portAmt: 3229651.681, portCnt: 3662 },
+    { name: "Legal - DR. Sarhaan", paid: 46866.090, adj: 14781.368, portAmt: 3229651.681, portCnt: 3662, principalAmt: 3301711.348 },
     { name: "Documentation Legal",  paid: 1915.939,  adj: 3468.859,  portAmt: 489409.003,  portCnt: 1136 },
     { name: "Over Paid",                   paid: 0.000,     adj: 0.000,     portAmt: 0,           portCnt: 340  },
     { name: "Saif Legal",           paid: 0.000,     adj: 0.000,     portAmt: 27215.336,   portCnt: 136  }
@@ -6127,7 +6127,7 @@ async function parseXLS(file) {
       "High Speed company":            { portAmt: 0,           portCnt: 35    }
     },
     ho: {
-      "Legal - DR. Sarhaan": { portAmt: 3229651.681, portCnt: 3662 },
+      "Legal - DR. Sarhaan": { portAmt: 3229651.681, portCnt: 3662, principalAmt: 3301711.348 },
       "Documentation Legal": { portAmt: 489409.003,  portCnt: 1136 },
       "Saif Legal":          { portAmt: 27215.336,   portCnt: 136  },
       "Over Paid":                  { portAmt: 0,           portCnt: 340  }
@@ -6222,7 +6222,9 @@ async function parseXLS(file) {
   const headOffice = HO_KEYS.map(nm => {
     const d = hoMap[nm]||{paid:0,adj:0,count:0};
     const p = PORT.ho[nm]||{portAmt:0,portCnt:0};
-    return {name:nm, paid:d.paid, adj:d.adj, count:d.count||0, portAmt:p.portAmt, portCnt:p.portCnt};
+    return {name:nm, paid:d.paid, adj:d.adj, count:d.count||0,
+      portAmt: Math.max(0, p.portAmt||0), portCnt: p.portCnt||0,
+      principalAmt: p.principalAmt||0};
   });
   Object.keys(hoMap).forEach(k => {
     if (!HO_KEYS.includes(k))
@@ -6452,7 +6454,7 @@ function SectionHeader({title,paid,adj,color,small}) {
 }
 
 // ── EntityCard ─────────────────────────────────────────────────────────────
-function EntityCard({name,paid,adj,color,rank,small,cnt,cBranch,portAmt,portCnt}) {
+function EntityCard({name,paid,adj,color,rank,small,cnt,cBranch,portAmt,portCnt,principalAmt}) {
   // البحث عن بيانات إضافية من complaints برانش ماب
   const bKey = Object.keys(cBranch||{}).find(k => k.trim()===name?.trim() || name?.includes(k) || k.includes(name||'__'));
   const bD = bKey ? (cBranch||{})[bKey] : null;
@@ -6514,9 +6516,24 @@ function EntityCard({name,paid,adj,color,rank,small,cnt,cBranch,portAmt,portCnt}
       {/* ── شريط المحفظة (إذا وُجدت) ── */}
       {hasPort && (
         <div style={{background:`${color}10`,borderRadius:8,padding:small?"4px 8px":"5px 10px",
-          marginBottom:8,display:"flex",justifyContent:"space-between",alignItems:"center"}}>
+          marginBottom:4,display:"flex",justifyContent:"space-between",alignItems:"center"}}>
           <span style={{fontSize:small?9:10,color:"#777",fontWeight:700}}>إجمالي المحفظة</span>
           <span style={{fontSize:small?11:13,fontWeight:900,color:color}}>{omr(portAmt)}</span>
+        </div>
+      )}
+      {/* ── Principal Amount (لـ Legal - DR. Sarhaan فقط) ── */}
+      {(principalAmt||0) > 0 && (
+        <div style={{background:"#f0f9ff",borderRadius:8,padding:small?"4px 8px":"5px 10px",
+          marginBottom:8,display:"flex",justifyContent:"space-between",alignItems:"center",
+          border:"1px solid #bae6fd"}}>
+          <div style={{display:"flex",alignItems:"center",gap:6}}>
+            <span style={{fontSize:small?9:10,color:"#0369a1",fontWeight:700}}>Principal Amount</span>
+            <span style={{fontSize:small?8:9,background:"#0369a1",color:"#fff",
+              borderRadius:10,padding:"1px 6px",fontWeight:800}}>
+              {(portCnt||0).toLocaleString()} حساب
+            </span>
+          </div>
+          <span style={{fontSize:small?11:13,fontWeight:900,color:"#0369a1"}}>{omr(principalAmt)}</span>
         </div>
       )}
 
@@ -8960,7 +8977,7 @@ export default function Dashboard() {
         if (row?.regions?.length > 0) {
           // ضمان 4 أقسام للمكتب الرئيسي
           const HO_REQ = ["Legal - DR. Sarhaan","Documentation Legal","Over Paid","Saif Legal"];
-          const HO_P = {"Legal - DR. Sarhaan":{portAmt:3850803.888,portCnt:5274},"Documentation Legal":{portAmt:0,portCnt:0},"Over Paid":{portAmt:0,portCnt:0},"Saif Legal":{portAmt:0,portCnt:0}};
+          const HO_P = {"Legal - DR. Sarhaan":{portAmt:3229651.681,portCnt:3662,principalAmt:3301711.348},"Documentation Legal":{portAmt:489409.003,portCnt:1136},"Over Paid":{portAmt:0,portCnt:340},"Saif Legal":{portAmt:27215.336,portCnt:136}};
           const existingHO = row.headOffice || [];
           const fullHO = HO_REQ.map(nm => existingHO.find(c=>c.name===nm) || {name:nm,paid:0,adj:0,count:0,...HO_P[nm]});
           const d = { ...row, headOffice: fullHO };
@@ -9064,7 +9081,7 @@ export default function Dashboard() {
     // ضمان وجود كل أقسام المكتب الرئيسي الأربعة دائماً
     const HO_REQUIRED = ["Legal - DR. Sarhaan","Documentation Legal","Over Paid","Saif Legal"];
     const HO_PORT_DATA = {
-      "Legal - DR. Sarhaan": { portAmt: 3229651.681, portCnt: 3662 },
+      "Legal - DR. Sarhaan": { portAmt: 3229651.681, portCnt: 3662, principalAmt: 3301711.348 },
       "Documentation Legal":  { portAmt: 489409.003,  portCnt: 1136 },
       "Over Paid":                   { portAmt: 0,           portCnt: 340  },
       "Saif Legal":           { portAmt: 27215.336,   portCnt: 136  }
@@ -9158,7 +9175,7 @@ export default function Dashboard() {
   const hPd = data.headOffice.reduce((s,r)=>s+Math.max(0,r.paid||0),0);
   const hAd = data.headOffice.reduce((s,r)=>s+Math.max(0,r.adj||0),0);
   const hCnt = data.headOffice.reduce((s,r)=>s+(r.count||0),0);
-  const hPortAmt = data.headOffice.reduce((s,r)=>s+(r.portAmt||0),0);
+  const hPortAmt = data.headOffice.reduce((s,r)=>s+Math.max(0,r.portAmt||0),0);
   const hPortCnt = data.headOffice.reduce((s,r)=>s+(r.portCnt||0),0);
   const totalPaid = data.totalCollection?.paid || (gPd+dPd+hPd);
   const totalAdj  = data.totalCollection?.adj  || (gAd+dAd+hAd);
@@ -9753,7 +9770,7 @@ export default function Dashboard() {
             <SectionHeader title="🏛 المكتب الرئيسي" paid={hPd} adj={hAd} color="#6c3fa0" small={small}/>
             <div style={{ padding: small?"10px":"14px 16px", display:"flex", flexDirection:"column", gap: small?8:10 }}>
               {data.headOffice.map((c,i) => (
-                <EntityCard key={c.name} name={c.name} paid={c.paid} adj={c.adj} cBranch={complaintsBranchMap} color="#6c3fa0" rank={i+1} small={small} portAmt={c.portAmt||0} portCnt={c.portCnt||0}/>
+                <EntityCard key={c.name} name={c.name} paid={c.paid} adj={c.adj} cBranch={complaintsBranchMap} color="#6c3fa0" rank={i+1} small={small} portAmt={c.portAmt||0} portCnt={c.portCnt||0} principalAmt={c.principalAmt||0}/>
               ))}
             </div>
           </div>
