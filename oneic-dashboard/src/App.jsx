@@ -8800,7 +8800,12 @@ export default function Dashboard() {
       try {
         const row = await sbGet('oneic_data');
         if (row?.regions?.length > 0) {
-          const d = row;
+          // ضمان 4 أقسام للمكتب الرئيسي
+          const HO_REQ = ["Legal - DR. Sarhaan","Documentation Legal","HO","Saif Legal"];
+          const HO_P = {"Legal - DR. Sarhaan":{portAmt:3850803.888,portCnt:5274},"Documentation Legal":{portAmt:0,portCnt:0},"HO":{portAmt:0,portCnt:0},"Saif Legal":{portAmt:0,portCnt:0}};
+          const existingHO = row.headOffice || [];
+          const fullHO = HO_REQ.map(nm => existingHO.find(c=>c.name===nm) || {name:nm,paid:0,adj:0,count:0,...HO_P[nm]});
+          const d = { ...row, headOffice: fullHO };
           setData(d);
           try { localStorage.setItem('oneic_dashboard_data', JSON.stringify(d)); } catch(e) {}
           setLoadingServer(false);
@@ -8867,9 +8872,21 @@ export default function Dashboard() {
       const existing = data.debtCompanies?.find(d=>d.name===c.name);
       return { ...c, portAmt: c.portAmt||existing?.portAmt||0, portCnt: c.portCnt||existing?.portCnt||0 };
     });
-    const mergedHO = (newData.headOffice||[]).map(c => {
-      const existing = data.headOffice?.find(d=>d.name===c.name);
-      return { ...c, portAmt: c.portAmt||existing?.portAmt||0, portCnt: c.portCnt||existing?.portCnt||0 };
+    // ضمان وجود كل أقسام المكتب الرئيسي الأربعة دائماً
+    const HO_REQUIRED = ["Legal - DR. Sarhaan","Documentation Legal","HO","Saif Legal"];
+    const HO_PORT_DATA = {
+      "Legal - DR. Sarhaan": { portAmt: 3850803.888, portCnt: 5274 },
+      "Documentation Legal":  { portAmt: 0, portCnt: 0 },
+      "HO":                   { portAmt: 0, portCnt: 0 },
+      "Saif Legal":           { portAmt: 0, portCnt: 0 }
+    };
+    const mergedHO = HO_REQUIRED.map(nm => {
+      const fromNew = (newData.headOffice||[]).find(c=>c.name===nm);
+      const fromExisting = data.headOffice?.find(d=>d.name===nm);
+      const portInfo = HO_PORT_DATA[nm]||{};
+      if (fromNew) return { ...fromNew, portAmt: fromNew.portAmt||portInfo.portAmt||0, portCnt: fromNew.portCnt||portInfo.portCnt||0 };
+      if (fromExisting) return { ...fromExisting, portAmt: fromExisting.portAmt||portInfo.portAmt||0, portCnt: fromExisting.portCnt||portInfo.portCnt||0 };
+      return { name:nm, paid:0, adj:0, count:0, portAmt:portInfo.portAmt||0, portCnt:portInfo.portCnt||0 };
     });
     const dataToSave = {
       ...newData,
@@ -9190,6 +9207,7 @@ export default function Dashboard() {
       {/* ══ PRINT HEADER — يظهر فقط عند الطباعة ══ */}
       <div style={{display:"none"}} className="print-only">
         {showHistory && <HistoryModal history={history} onClose={()=>setShowHistory(false)} small={small}/>}
+      </div>
       <VerifyModal pending={pending} onConfirm={confirmData} onReject={rejectData}/>
 
       {/* ── نافذة إعدادات المزامنة ── */}
