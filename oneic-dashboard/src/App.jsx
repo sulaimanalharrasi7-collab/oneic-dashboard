@@ -9260,21 +9260,39 @@ export default function Dashboard() {
   const p = v => gTotal>0 ? ((v/gTotal)*100).toFixed(1) : "0";
 
   // ── عدد الحسابات لكل خانة (مدفوع / تسويات / إجمالي = مدفوع+تسويات بدون تكرار)
+  // نحسب بناءً على بيانات المحصّلين داخل كل منطقة/شركة
+  // إذا كان count متاحاً على المحصّل نستخدمه، وإلا نعود لـ count على المجموعة
   const calcCntBreakdown = (arr) => {
-    let paidCnt=0, adjCnt=0;
+    let paidCnt=0, adjCnt=0, totalCnt=0;
     (arr||[]).forEach(r => {
       const cols = r.collectors || [];
+      const rCount = r.count||0;
       if (cols.length > 0) {
+        // كل محصّل لديه count — نجمع الذين paid>0 والذين adj>0
+        let rPaidCnt=0, rAdjCnt=0;
         cols.forEach(c => {
-          if ((c.paid||0) > 0) paidCnt += (c.count||0);
-          if ((c.adj||0)  > 0) adjCnt  += (c.count||0);
+          const cCnt = c.count||0;
+          if ((c.paid||0) > 0) rPaidCnt += cCnt;
+          if ((c.adj||0)  > 0) rAdjCnt  += cCnt;
         });
+        // إذا كل المحصّلين بدون count — نستخدم count المنطقة كـ fallback
+        if (rPaidCnt===0 && rAdjCnt===0 && rCount>0) {
+          if ((r.paid||0)>0) paidCnt += rCount;
+          if ((r.adj||0) >0) adjCnt  += rCount;
+          totalCnt += rCount;
+        } else {
+          paidCnt  += rPaidCnt;
+          adjCnt   += rAdjCnt;
+          totalCnt += Math.max(rPaidCnt, rAdjCnt);
+        }
       } else {
-        if ((r.paid||0) > 0) paidCnt += (r.count||0);
-        if ((r.adj||0)  > 0) adjCnt  += (r.count||0);
+        // لا يوجد محصّلون — نستخدم count المنطقة مباشرة
+        if ((r.paid||0)>0) paidCnt += rCount;
+        if ((r.adj||0) >0) adjCnt  += rCount;
+        totalCnt += rCount;
       }
     });
-    return { paidCnt, adjCnt, totalCnt: paidCnt };
+    return { paidCnt, adjCnt, totalCnt };
   };
   const gBreak = calcCntBreakdown(data.regions);
   const dBreak = calcCntBreakdown(data.debtCompanies);
