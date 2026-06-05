@@ -5975,8 +5975,7 @@ function parseXLS(file) {
         // كشف تلقائي للـ encoding وقراءة الملف
         const text = detectAndDecode(e.target.result);
         const lines = text.split(/\r?\n/).filter(l => l.trim());
-        console.log('📂 parseXLS: lines=', lines.length, 'first=', lines[0]?.substring(0,80));
-        if (lines.length < 2) return reject(new Error("الملف فارغ — عدد السطور: " + lines.length));
+        if (lines.length < 2) return reject(new Error("الملف فارغ"));
         const headers = lines[0].split("\t").map(h => 
           h.replace(/\uFEFF/g, '')
            .replace(/ÿþ/g, '')
@@ -6004,22 +6003,43 @@ function parseXLS(file) {
           const branch = (row["Branch"] || "").trim();
           if (region === "Debt Collection Company") {
             const key = branch.trim() || "Unknown";
-            if (!dcMap[key]) dcMap[key] = { paid: 0, adj: 0 };
-            dcMap[key].paid += paid; dcMap[key].adj += adj;
+            if (!dcMap[key]) dcMap[key] = { paid: 0, adj: 0, count: 0, paidCount: 0, adjCount: 0 };
+            dcMap[key].paid  += paid;
+            dcMap[key].adj   += adj;
+            dcMap[key].count += 1;
+            if (paid > 0) dcMap[key].paidCount += 1;
+            if (adj  > 0) dcMap[key].adjCount  += 1;
           } else if (region === "Head Office") {
-            const key = col.toLowerCase().includes("dr") ? "Legal - DR. Sarhaan"
-                       : col.toLowerCase().includes("doc") ? "Documentation Legal"
-                       : null;
-            if (key) {
-              if (!hoMap[key]) hoMap[key] = { paid: 0, adj: 0 };
-              hoMap[key].paid += paid; hoMap[key].adj += adj;
+            // تصنيف دقيق: DR. Sarhaan | Documentation Legal | HO | Saif Legal (Blanks)
+            let key;
+            const colL = col.toLowerCase();
+            if (colL.includes("dr") || colL.includes("sarhaan")) {
+              key = "Legal - DR. Sarhaan";
+            } else if (colL.includes("doc")) {
+              key = "Documentation Legal";
+            } else if (colL === "" || col.trim() === "") {
+              key = "Saif Legal";
+            } else {
+              key = "HO";
             }
+            if (!hoMap[key]) hoMap[key] = { paid: 0, adj: 0, count: 0 };
+            hoMap[key].paid  += paid;
+            hoMap[key].adj   += adj;
+            hoMap[key].count += 1;
           } else if (REG_AR[region]) {
-            if (!regMap[region]) regMap[region] = { paid: 0, adj: 0, cMap: {} };
-            regMap[region].paid += paid; regMap[region].adj += adj;
+            if (!regMap[region]) regMap[region] = { paid: 0, adj: 0, count: 0, paidCount: 0, adjCount: 0, cMap: {} };
+            regMap[region].paid  += paid;
+            regMap[region].adj   += adj;
+            regMap[region].count += 1;
+            if (paid > 0) regMap[region].paidCount += 1;
+            if (adj  > 0) regMap[region].adjCount  += 1;
             if (col) {
-              if (!regMap[region].cMap[col]) regMap[region].cMap[col] = { paid: 0, adj: 0 };
-              regMap[region].cMap[col].paid += paid; regMap[region].cMap[col].adj += adj;
+              if (!regMap[region].cMap[col]) regMap[region].cMap[col] = { paid: 0, adj: 0, count: 0, paidCount: 0, adjCount: 0 };
+              regMap[region].cMap[col].paid  += paid;
+              regMap[region].cMap[col].adj   += adj;
+              regMap[region].cMap[col].count += 1;
+              if (paid > 0) regMap[region].cMap[col].paidCount += 1;
+              if (adj  > 0) regMap[region].cMap[col].adjCount  += 1;
             }
           }
         });
@@ -6028,21 +6048,37 @@ function parseXLS(file) {
           id: k.toLowerCase().replace(/\s+/g,"_").replace(/[,]/g,""),
           nameAr: REG_AR[k], nameEn: k.trim(),
           paid: regMap[k].paid, adj: regMap[k].adj,
+          count: regMap[k].count||0,
+          paidCount: regMap[k].paidCount||0,
+          adjCount:  regMap[k].adjCount||0,
           collectors: Object.entries(regMap[k].cMap)
-            .map(([nm,d]) => ({name: nm, paid: d.paid, adj: d.adj}))
+            .map(([nm,d]) => ({
+              name: nm, paid: d.paid, adj: d.adj,
+              count: d.count||0, paidCount: d.paidCount||0, adjCount: d.adjCount||0
+            }))
             .sort((a,b) => (b.paid+b.adj)-(a.paid+a.adj))
         }));
         // كل شركات DC مرتبة بالإجمالي
         const debtCompanies = Object.entries(dcMap)
-          .map(([nm,d]) => ({name: nm.trim(), paid: d.paid, adj: d.adj}))
+          .map(([nm,d]) => ({
+            name: nm.trim(), paid: d.paid, adj: d.adj,
+            count: d.count||0, paidCount: d.paidCount||0, adjCount: d.adjCount||0
+          }))
           .sort((a,b) => (b.paid+b.adj)-(a.paid+a.adj));
-        // المكتب الرئيسي
-        const headOffice = ["Legal - DR. Sarhaan","Documentation Legal"]
-          .map(nm => hoMap[nm] ? {name:nm,...hoMap[nm]} : {name:nm, paid:0, adj:0})
-          .filter(c => c.paid > 0 || c.adj > 0);
-        const result = { uploadDate: new Date().toISOString().split("T")[0], totalRecords: rows.length, regions, debtCompanies, headOffice };
-        console.log('✅ parseXLS result:', {records:result.totalRecords, regions:result.regions.length, dc:result.debtCompanies.length, ho:result.headOffice.length});
-        resolve(result);
+        // المكتب الرئيسي — أربعة أقسام
+        const HO_KEYS = ["Legal - DR. Sarhaan","Documentation Legal","HO","Saif Legal"];
+        const headOffice = HO_KEYS
+          .map(nm => hoMap[nm]
+            ? {name:nm, paid:hoMap[nm].paid, adj:hoMap[nm].adj, count:hoMap[nm].count||0}
+            : {name:nm, paid:0, adj:0, count:0})
+          .filter(c => c.paid > 0 || c.adj > 0 || c.count > 0);
+        // إضافة أي أقسام جديدة لم تكن في القائمة
+        Object.keys(hoMap).forEach(k => {
+          if (!HO_KEYS.includes(k)) {
+            headOffice.push({name:k, paid:hoMap[k].paid, adj:hoMap[k].adj, count:hoMap[k].count||0});
+          }
+        });
+        resolve({ uploadDate: new Date().toISOString().split("T")[0], totalRecords: rows.length, regions, debtCompanies, headOffice });
       } catch(err) { reject(err); }
     };
     reader.onerror = () => reject(new Error("فشل قراءة الملف"));
@@ -6071,7 +6107,7 @@ async function sbUpsert(table, obj) {
   const res = await fetch(`${FIREBASE_URL}/${key}.json`, {
     method: 'PUT',
     headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify(data)
+    body: JSON.stringify({...data, _updatedAt: new Date().toISOString()})
   });
   if (!res.ok) throw new Error(await res.text());
   return await res.json();
@@ -6438,8 +6474,16 @@ function EntityCard({name,paid,adj,color,rank,small,cnt,cBranch,isHO}) {
 }
 
 // ── SummaryCard ────────────────────────────────────────────────────────────
-function SummaryCard({label,paid,adj,cnt,portAmt,color,icon,pct,small}) {
-  const total = paid+adj;
+function SummaryCard({label,paid,adj,cnt,cntPaid,cntAdj,cntTotal,portAmt,color,icon,pct,small,isMobile,isTablet}) {
+  // المعادلة الصحيحة: الإجمالي = المدفوع + التسويات
+  const total = paid + adj;
+  // عدد الحسابات المنفصل لكل خانة
+  const _cntPaid  = (cntPaid  != null && cntPaid  > 0) ? cntPaid  : (cnt||0);
+  const _cntAdj   = (cntAdj   != null && cntAdj   > 0) ? cntAdj   : (cnt||0);
+  const _cntTotal = (cntTotal != null && cntTotal > 0) ? cntTotal : _cntPaid;
+  const fs = isMobile ? {title:13,sub:10,num:14,cnt:9,cell:7} :
+             isTablet  ? {title:14,sub:11,num:15,cnt:10,cell:8} :
+                         {title:15,sub:11,num:15,cnt:10,cell:9};
   return (
     <div style={{background:"#fff",borderRadius:15,overflow:"hidden",
       boxShadow:"0 3px 14px rgba(0,0,0,0.07)",border:"1.5px solid #f0ece8",minWidth:0}}>
@@ -6448,37 +6492,37 @@ function SummaryCard({label,paid,adj,cnt,portAmt,color,icon,pct,small}) {
         display:"flex",justifyContent:"space-between",alignItems:"center",gap:6,flexWrap:"wrap"}}>
         <div style={{display:"flex",alignItems:"center",gap:6,minWidth:0}}>
           <span style={{fontSize:small?16:20,flexShrink:0}}>{icon}</span>
-          <span style={{fontSize:small?13:15,fontWeight:900,color:"#fff",lineHeight:1.2,wordBreak:"keep-all"}}>{label}</span>
+          <span style={{fontSize:fs.title,fontWeight:900,color:"#fff",lineHeight:1.2,wordBreak:"keep-all"}}>{label}</span>
         </div>
         <div style={{background:"rgba(255,255,255,0.25)",borderRadius:20,
           padding:"2px 8px",fontSize:small?12:13,fontWeight:800,color:"#fff",flexShrink:0}}>{pct}%</div>
       </div>
-      {/* إجمالي الحسابات */}
+      {/* إجمالي الحسابات — يعرض قيمة المحفظة الكلية وعدد الحسابات */}
       <div style={{background:`${color}0f`,padding:small?"8px 12px":"10px 14px",
         borderBottom:"1px solid #f0ece8",display:"flex",justifyContent:"space-between",alignItems:"center"}}>
-        <div style={{fontSize:small?10:11,color:"#888",fontWeight:700}}>إجمالي الحسابات</div>
+        <div style={{fontSize:fs.sub,color:"#888",fontWeight:700}}>إجمالي الحسابات</div>
         <div style={{display:"flex",flexDirection:"column",alignItems:"flex-end",gap:2}}>
           {portAmt>0
-            ? <div style={{fontSize:small?14:16,fontWeight:900,color:color,lineHeight:1}}>{omr(portAmt)}</div>
-            : <div style={{fontSize:small?15:18,fontWeight:900,color:color,lineHeight:1}}>{omr(total)}</div>
+            ? <div style={{fontSize:small?14:17,fontWeight:900,color:color,lineHeight:1}}>{omr(portAmt)}</div>
+            : <div style={{fontSize:small?14:17,fontWeight:900,color:color,lineHeight:1}}>{omr(total)}</div>
           }
-          <div style={{fontSize:small?10:11,color:"#aaa",fontWeight:600}}>{(cnt||0).toLocaleString()} حساب</div>
+          <div style={{fontSize:fs.sub,color:"#aaa",fontWeight:600}}>{(cnt||0).toLocaleString()} حساب</div>
         </div>
       </div>
-      {/* التفاصيل */}
+      {/* المدفوع | التسويات | الإجمالي — كل خانة بعدد حساباتها */}
       <div style={{padding:small?"8px":"10px"}}>
         <div style={{display:"grid",gridTemplateColumns:"1fr 1fr 1fr",gap:0,
           border:"1px solid #f0ece8",borderRadius:10,overflow:"hidden"}}>
           {[
-            ["المدفوع","#16a34a",paid,cnt],
-            ["التسويات","#d97706",adj,cnt],
-            ["الإجمالي",color,total,cnt]
+            ["المدفوع","#16a34a",paid,_cntPaid],
+            ["التسويات","#d97706",adj,_cntAdj],
+            ["الإجمالي",color,total,_cntTotal]
           ].map(([lbl,clr,val,c],i)=>(
-            <div key={lbl} style={{textAlign:"center",padding:small?"6px 3px":"8px 5px",
+            <div key={lbl} style={{textAlign:"center",padding:small?"6px 3px":"9px 6px",
               borderRight:i<2?"1px solid #f0ece8":"none",minWidth:0,overflow:"hidden"}}>
-              <div style={{fontSize:small?9:11,color:"#333",fontWeight:800,marginBottom:3,whiteSpace:"nowrap"}}>{lbl}</div>
-              <div style={{fontSize:small?12:14,fontWeight:900,color:clr,lineHeight:1,wordBreak:"break-all"}}>{omr(val)}</div>
-              {c!=null && <div style={{fontSize:small?9:10,color:"#aaa",marginTop:2,fontWeight:600}}>{(c||0).toLocaleString()} حساب</div>}
+              <div style={{fontSize:fs.cell,color:"#333",fontWeight:800,marginBottom:3,whiteSpace:"nowrap"}}>{lbl}</div>
+              <div style={{fontSize:fs.num,fontWeight:900,color:clr,lineHeight:1,wordBreak:"break-all"}}>{omr(val)}</div>
+              {c!=null && <div style={{fontSize:fs.cnt,color:"#aaa",marginTop:2,fontWeight:600}}>{(c||0).toLocaleString()} حساب</div>}
             </div>
           ))}
         </div>
@@ -6614,19 +6658,19 @@ function VerifyModal({pending,onConfirm,onReject}) {
   const gPaid  =govPaid+dcPaid+hoPaid;
   const gAdj   =govAdj+dcAdj+hoAdj;
   const checks=[
-    {ok:d.totalRecords>0,label:"عدد السجلات",val:`${d.totalRecords?.toLocaleString()} سجل`,expect:"> 0 سجل"},
+    {ok:d.totalRecords>0,label:"عدد السجلات",val:`${d.totalRecords?.toLocaleString()} سجل`,expect:"> 0"},
     {ok:gPaid>0,label:"إجمالي المدفوع",val:omrV(gPaid),expect:"> 0 OMR"},
     {ok:gAdj>=0,label:"إجمالي التسويات",val:omrV(gAdj),expect:">= 0"},
     {ok:d.regions?.length===5,label:"المحافظات",val:`${d.regions?.length} منطقة`,expect:"5 مناطق"},
-    {ok:d.debtCompanies?.length>=1,label:"شركات التحصيل",val:`${d.debtCompanies?.length} شركة`,expect:">= 1 شركة"},
+    {ok:d.debtCompanies?.length>=1,label:"شركات التحصيل",val:`${d.debtCompanies?.length} شركة`,expect:">= 1"},
     {ok:d.headOffice?.length>=1,label:"المكتب الرئيسي",val:`${d.headOffice?.length} قسم`,expect:">= 1"},
   ];
   const allOk=checks.every(c=>c.ok);
   return (
     <div style={{position:"fixed",top:0,left:0,right:0,bottom:0,
-      background:"rgba(0,0,0,0.7)",display:"flex",
-      alignItems:"center",justifyContent:"center",zIndex:9999,padding:"16px",direction:"rtl",
-      minHeight:"100vh",minWidth:"100vw"}}>
+      background:"rgba(0,0,0,0.75)",display:"flex",
+      alignItems:"center",justifyContent:"center",zIndex:9999,
+      padding:"16px",direction:"rtl",minHeight:"100vh"}}>
       <div style={{background:"#fff",borderRadius:20,width:"100%",maxWidth:560,
         overflow:"hidden",boxShadow:"0 20px 60px rgba(0,0,0,0.4)"}}>
         <div style={{background:allOk?"linear-gradient(120deg,#1e3a5f,#2d5a8e)":"linear-gradient(120deg,#dc2626,#b91c1c)",padding:"18px 24px"}}>
@@ -9173,7 +9217,6 @@ export default function Dashboard() {
       } else {
         // ملف bulk payment → يحدّث بيانات الداشبورد
         const p = await parseXLS(file);
-        console.log('📋 setPending:', p?.totalRecords, 'records');
         setPending({ data: p, fileName: file.name, fileSize: (file.size/1024/1024).toFixed(1) });
       }
     }
@@ -9191,7 +9234,13 @@ export default function Dashboard() {
     const ga = newData.regions.reduce((s,r)=>s+r.adj,0)
              + newData.debtCompanies.reduce((s,r)=>s+r.adj,0)
              + newData.headOffice.reduce((s,r)=>s+r.adj,0);
-    const dataToSave = { ...newData, grandPaid: gp, grandAdj: ga };
+    const dataToSave = {
+      ...newData,
+      grandPaid: gp,
+      grandAdj: ga,
+      lastUpdated: new Date().toISOString(),
+      lastUpdatedDate: new Date().toISOString().split('T')[0]
+    };
 
     // ── رفع لـ JSONbin + localStorage ───────────────────────────────────
     setUploading(true);
@@ -9719,9 +9768,55 @@ export default function Dashboard() {
           gridTemplateColumns: isMobile?"1fr":isTablet?"1fr 1fr":"repeat(3,1fr)",
           gap: small?12:16, marginBottom: small?14:18
         }}>
-          <SummaryCard label="المحافظات الخمس" paid={gPd} adj={gAd} cnt={complaintsCounts.gov||gCnt||0} portAmt={complaintsAmts.gov||0} color="#e85d20" icon="🗺" pct={p(gPd+gAd)} small={small}/>
-          <SummaryCard label="شركات التحصيل"   paid={dPd} adj={dAd} cnt={complaintsCounts.dc||dCnt||0}  portAmt={complaintsAmts.dc||0}  color="#1a7a6b" icon="🏢" pct={p(dPd+dAd)} small={small}/>
-          <SummaryCard label="المكتب الرئيسي"  paid={hPd} adj={hAd} cnt={complaintsCounts.ho||hCnt||0}  portAmt={complaintsAmts.ho||0}  color="#6c3fa0" icon="🏛" pct={p(hPd+hAd)} small={small}/>
+          {(()=>{
+            // حساب عدد الحسابات الصحيح لكل خانة من بيانات المحصّلين
+            const calcCounts = (arr) => {
+              let total=0, paid=0, adj=0;
+              (arr||[]).forEach(r => {
+                const rTotal = r.count || 0;
+                total += rTotal;
+                // إذا البيانات فيها paidCount و adjCount نستخدمها
+                if ((r.paidCount||0) > 0 || (r.adjCount||0) > 0) {
+                  paid += (r.paidCount||0);
+                  adj  += (r.adjCount||0);
+                } else {
+                  // fallback: كل من عنده paid > 0 يُعدّ في المدفوع
+                  if ((r.paid||0) > 0) paid += rTotal;
+                  if ((r.adj||0)  > 0) adj  += rTotal;
+                }
+              });
+              return { total, paid, adj, combined: Math.max(paid,adj) };
+            };
+            const gCounts = calcCounts(data.regions);
+            const dCounts = calcCounts(data.debtCompanies);
+            const hCounts = calcCounts(data.headOffice);
+            return (<>
+              <SummaryCard label="المحافظات الخمس"
+                paid={gPd} adj={gAd}
+                cnt={complaintsCounts.gov||gCounts.total||gCnt||0}
+                cntPaid={complaintsCounts.govPaid||gCounts.paid||null}
+                cntAdj={complaintsCounts.govAdj||gCounts.adj||null}
+                cntTotal={complaintsCounts.govTotal||gCounts.combined||null}
+                portAmt={complaintsAmts.gov||0}
+                color="#e85d20" icon="🗺" pct={p(gPd+gAd)} small={small} isMobile={isMobile} isTablet={isTablet}/>
+              <SummaryCard label="شركات التحصيل"
+                paid={dPd} adj={dAd}
+                cnt={complaintsCounts.dc||dCounts.total||dCnt||0}
+                cntPaid={complaintsCounts.dcPaid||dCounts.paid||null}
+                cntAdj={complaintsCounts.dcAdj||dCounts.adj||null}
+                cntTotal={complaintsCounts.dcTotal||dCounts.combined||null}
+                portAmt={complaintsAmts.dc||0}
+                color="#1a7a6b" icon="🏢" pct={p(dPd+dAd)} small={small} isMobile={isMobile} isTablet={isTablet}/>
+              <SummaryCard label="المكتب الرئيسي"
+                paid={hPd} adj={hAd}
+                cnt={complaintsCounts.ho||hCounts.total||hCnt||0}
+                cntPaid={complaintsCounts.hoPaid||hCounts.paid||null}
+                cntAdj={complaintsCounts.hoAdj||hCounts.adj||null}
+                cntTotal={complaintsCounts.hoTotal||hCounts.combined||null}
+                portAmt={complaintsAmts.ho||0}
+                color="#6c3fa0" icon="🏛" pct={p(hPd+hAd)} small={small} isMobile={isMobile} isTablet={isTablet}/>
+            </>);
+          })()}
         </div>
 
         {/* Regions */}
