@@ -6018,9 +6018,6 @@ async function parseXLS(file) {
       const v = line.split('\t');
       const o = {}; headers.forEach((h,i) => { o[h] = (v[i]||'').replace(/\r$/,''); }); return o;
     });
-  } catch(xlsxErr) {
-    // SheetJS failed — file may not be xlsx
-    console.warn('SheetJS parse failed, trying as text:', xlsxErr.message);
   }
 
   if (!rows || rows.length < 1) throw new Error('لا توجد بيانات في الملف');
