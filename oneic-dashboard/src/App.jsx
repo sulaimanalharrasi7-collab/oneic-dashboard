@@ -139,7 +139,7 @@ const SEED = {
   headOffice: [
     { name: "Legal - DR. Sarhaan", paid: 46866.090, adj: 14781.368, portAmt: 3229651.681, portCnt: 3662 },
     { name: "Documentation Legal",  paid: 1915.939,  adj: 3468.859,  portAmt: 489409.003,  portCnt: 1136 },
-    { name: "HO",                   paid: 0.000,     adj: 0.000,     portAmt: 0,           portCnt: 340  },
+    { name: "Over Paid",                   paid: 0.000,     adj: 0.000,     portAmt: 0,           portCnt: 340  },
     { name: "Saif Legal",           paid: 0.000,     adj: 0.000,     portAmt: 27215.336,   portCnt: 136  }
   ],
   totalPortfolio: { amt: 9414256.834, cnt: 47963, outstanding: 8394362.802 },
@@ -6130,7 +6130,7 @@ async function parseXLS(file) {
       "Legal - DR. Sarhaan": { portAmt: 3229651.681, portCnt: 3662 },
       "Documentation Legal": { portAmt: 489409.003,  portCnt: 1136 },
       "Saif Legal":          { portAmt: 27215.336,   portCnt: 136  },
-      "HO":                  { portAmt: 0,           portCnt: 340  }
+      "Over Paid":                  { portAmt: 0,           portCnt: 340  }
     }
   };
 
@@ -6152,7 +6152,7 @@ async function parseXLS(file) {
 
     } else if (region === 'Head Office') {
       const colL = col.toLowerCase();
-      let key = 'HO';
+      let key = 'Over Paid';
       if      (colL.includes('dr') || colL.includes('sarhaan') || colL.includes('sarhan')) key = 'Legal - DR. Sarhaan';
       else if (colL.includes('doc'))  key = 'Documentation Legal';
       else if (colL.includes('saif')) key = 'Saif Legal';
@@ -6218,7 +6218,7 @@ async function parseXLS(file) {
   const debtCompanies = dcList.sort((a,b)=>(b.paid+b.adj)-(a.paid+a.adj));
 
   // ── المكتب الرئيسي ────────────────────────────────────────────────────
-  const HO_KEYS = ["Legal - DR. Sarhaan","Documentation Legal","HO","Saif Legal"];
+  const HO_KEYS = ["Legal - DR. Sarhaan","Documentation Legal","Over Paid","Saif Legal"];
   const headOffice = HO_KEYS.map(nm => {
     const d = hoMap[nm]||{paid:0,adj:0,count:0};
     const p = PORT.ho[nm]||{portAmt:0,portCnt:0};
@@ -6324,10 +6324,10 @@ function VerifyModal({pending, onConfirm, onReject}) {
   const { fileName, fileSize, data } = pending;
   const totalPaid = (data.regions||[]).reduce((s,r)=>s+r.paid,0)
     + (data.debtCompanies||[]).reduce((s,r)=>s+r.paid,0)
-    + (data.headOffice||[]).reduce((s,r)=>s+r.paid,0);
+    + (data.headOffice||[]).reduce((s,r)=>s+Math.max(0,r.paid||0),0);
   const totalAdj = (data.regions||[]).reduce((s,r)=>s+r.adj,0)
     + (data.debtCompanies||[]).reduce((s,r)=>s+r.adj,0)
-    + (data.headOffice||[]).reduce((s,r)=>s+r.adj,0);
+    + (data.headOffice||[]).reduce((s,r)=>s+Math.max(0,r.adj||0),0);
   return (
     <div style={{position:"fixed",inset:0,background:"rgba(0,0,0,0.6)",zIndex:9999,display:"flex",alignItems:"center",justifyContent:"center",padding:16}}>
       <div style={{background:"#fff",borderRadius:18,padding:28,maxWidth:460,width:"100%",boxShadow:"0 20px 60px rgba(0,0,0,0.3)"}}>
@@ -8839,8 +8839,8 @@ function handlePrint(data) {
   const govAdj  = (data.regions||[]).reduce((s,r)=>s+r.adj,0);
   const dcPaid  = (data.debtCompanies||[]).reduce((s,r)=>s+r.paid,0);
   const dcAdj   = (data.debtCompanies||[]).reduce((s,r)=>s+r.adj,0);
-  const hoPaid  = (data.headOffice||[]).reduce((s,r)=>s+r.paid,0);
-  const hoAdj   = (data.headOffice||[]).reduce((s,r)=>s+r.adj,0);
+  const hoPaid  = (data.headOffice||[]).reduce((s,r)=>s+Math.max(0,r.paid||0),0);
+  const hoAdj   = (data.headOffice||[]).reduce((s,r)=>s+Math.max(0,r.adj||0),0);
   const total   = govPaid+govAdj+dcPaid+dcAdj+hoPaid+hoAdj;
 
   const secRow = (name, p, a) =>
@@ -8959,8 +8959,8 @@ export default function Dashboard() {
         const row = await sbGet('oneic_data');
         if (row?.regions?.length > 0) {
           // ضمان 4 أقسام للمكتب الرئيسي
-          const HO_REQ = ["Legal - DR. Sarhaan","Documentation Legal","HO","Saif Legal"];
-          const HO_P = {"Legal - DR. Sarhaan":{portAmt:3850803.888,portCnt:5274},"Documentation Legal":{portAmt:0,portCnt:0},"HO":{portAmt:0,portCnt:0},"Saif Legal":{portAmt:0,portCnt:0}};
+          const HO_REQ = ["Legal - DR. Sarhaan","Documentation Legal","Over Paid","Saif Legal"];
+          const HO_P = {"Legal - DR. Sarhaan":{portAmt:3850803.888,portCnt:5274},"Documentation Legal":{portAmt:0,portCnt:0},"Over Paid":{portAmt:0,portCnt:0},"Saif Legal":{portAmt:0,portCnt:0}};
           const existingHO = row.headOffice || [];
           const fullHO = HO_REQ.map(nm => existingHO.find(c=>c.name===nm) || {name:nm,paid:0,adj:0,count:0,...HO_P[nm]});
           const d = { ...row, headOffice: fullHO };
@@ -9052,21 +9052,21 @@ export default function Dashboard() {
     const newData = pending.data;
     const gp = newData.regions.reduce((s,r)=>s+r.paid,0)
              + newData.debtCompanies.reduce((s,r)=>s+r.paid,0)
-             + newData.headOffice.reduce((s,r)=>s+r.paid,0);
+             + newData.headOffice.reduce((s,r)=>s+Math.max(0,r.paid||0),0);
     const ga = newData.regions.reduce((s,r)=>s+r.adj,0)
              + newData.debtCompanies.reduce((s,r)=>s+r.adj,0)
-             + newData.headOffice.reduce((s,r)=>s+r.adj,0);
+             + newData.headOffice.reduce((s,r)=>s+Math.max(0,r.adj||0),0);
     // حفظ portAmt/portCnt من البيانات الحالية إذا لم تكن في newData
     const mergedCompanies = (newData.debtCompanies||[]).map(c => {
       const existing = data.debtCompanies?.find(d=>d.name===c.name);
       return { ...c, portAmt: c.portAmt||existing?.portAmt||0, portCnt: c.portCnt||existing?.portCnt||0 };
     });
     // ضمان وجود كل أقسام المكتب الرئيسي الأربعة دائماً
-    const HO_REQUIRED = ["Legal - DR. Sarhaan","Documentation Legal","HO","Saif Legal"];
+    const HO_REQUIRED = ["Legal - DR. Sarhaan","Documentation Legal","Over Paid","Saif Legal"];
     const HO_PORT_DATA = {
       "Legal - DR. Sarhaan": { portAmt: 3229651.681, portCnt: 3662 },
       "Documentation Legal":  { portAmt: 489409.003,  portCnt: 1136 },
-      "HO":                   { portAmt: 0,           portCnt: 340  },
+      "Over Paid":                   { portAmt: 0,           portCnt: 340  },
       "Saif Legal":           { portAmt: 27215.336,   portCnt: 136  }
     };
     const mergedHO = HO_REQUIRED.map(nm => {
@@ -9155,8 +9155,8 @@ export default function Dashboard() {
   const dCnt = data.debtCompanies.reduce((s,r)=>s+(r.count||0),0);
   const dPortAmt = data.debtCompanies.reduce((s,r)=>s+(r.portAmt||0),0);
   const dPortCnt = data.debtCompanies.reduce((s,r)=>s+(r.portCnt||0),0);
-  const hPd = data.headOffice.reduce((s,r)=>s+r.paid,0);
-  const hAd = data.headOffice.reduce((s,r)=>s+r.adj,0);
+  const hPd = data.headOffice.reduce((s,r)=>s+Math.max(0,r.paid||0),0);
+  const hAd = data.headOffice.reduce((s,r)=>s+Math.max(0,r.adj||0),0);
   const hCnt = data.headOffice.reduce((s,r)=>s+(r.count||0),0);
   const hPortAmt = data.headOffice.reduce((s,r)=>s+(r.portAmt||0),0);
   const hPortCnt = data.headOffice.reduce((s,r)=>s+(r.portCnt||0),0);
