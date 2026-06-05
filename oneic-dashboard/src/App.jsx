@@ -12207,33 +12207,33 @@ function handleBulkPrint(d, filterFrom, filterTo) {
     : `${d.dateRange?.from} → ${d.dateRange?.to}`;
 
   const pageHeader = `
-    <div style="display:flex;justify-content:space-between;align-items:center;
-      padding-bottom:4mm;border-bottom:3px solid #1e3a5f;margin-bottom:5mm;direction:rtl">
-      <div style="text-align:right">
-        <div style="font-size:16pt;font-weight:900;color:#1e3a5f">💳 Bulk Payment Report</div>
-        <div style="font-size:9pt;color:#555;margin-top:2px">
+    \x3cdiv style="display:flex;justify-content:space-between;align-items:center;
+      padding-bottom:4mm;border-bottom:3px solid #1e3a5f;margin-bottom:5mm;direction:rtl"\x3e
+      \x3cdiv style="text-align:right"\x3e
+        \x3cdiv style="font-size:16pt;font-weight:900;color:#1e3a5f"\x3e💳 Bulk Payment Report\x3c/div\x3e
+        \x3cdiv style="font-size:9pt;color:#555;margin-top:2px"\x3e
           ${dateLabel} &nbsp;·&nbsp; ${totalCount.toLocaleString()} دفعة
-        </div>
-      </div>
-      <div style="display:flex;align-items:center;gap:10px">
-        <div style="text-align:left">
-          <div style="font-size:9pt;color:#555">تاريخ الطباعة: ${new Date().toLocaleDateString('ar-OM')}</div>
-          <div style="font-size:10pt;font-weight:800;color:#1e3a5f">ONEIC © 2026</div>
-        </div>
-        <img src="${LOGO_B64}" style="height:44px;object-fit:contain">
-      </div>
-    </div>`;
+        \x3c/div\x3e
+      \x3c/div\x3e
+      \x3cdiv style="display:flex;align-items:center;gap:10px"\x3e
+        \x3cdiv style="text-align:left"\x3e
+          \x3cdiv style="font-size:9pt;color:#555"\x3eتاريخ الطباعة: ${new Date().toLocaleDateString('ar-OM')}\x3c/div\x3e
+          \x3cdiv style="font-size:10pt;font-weight:800;color:#1e3a5f"\x3eONEIC © 2026\x3c/div\x3e
+        \x3c/div\x3e
+        \x3cimg src="${LOGO_B64}" style="height:44px;object-fit:contain"\x3e
+      \x3c/div\x3e
+    \x3c/div\x3e`;
 
   const summaryBanner = `
-    <div style="background:linear-gradient(120deg,#1e3a5f,#2d5a8e);border-radius:10px;
-      padding:5mm 6mm;margin-bottom:5mm;display:flex;justify-content:space-between;align-items:center;direction:rtl">
-      <div>
-        <div style="font-size:9pt;color:rgba(255,255,255,0.75);font-weight:700;margin-bottom:2mm">الإجمالي الكلي للفترة</div>
-        <div style="font-size:26pt;font-weight:900;color:#fff;line-height:1">
-          ${omr(totalPaid+totalAdj)} <span style="font-size:12pt;opacity:0.7">OMR</span>
-        </div>
-      </div>
-      <div style="display:flex;gap:6mm">
+    \x3cdiv style="background:linear-gradient(120deg,#1e3a5f,#2d5a8e);border-radius:10px;
+      padding:5mm 6mm;margin-bottom:5mm;display:flex;justify-content:space-between;align-items:center;direction:rtl"\x3e
+      \x3cdiv\x3e
+        \x3cdiv style="font-size:9pt;color:rgba(255,255,255,0.75);font-weight:700;margin-bottom:2mm"\x3eالإجمالي الكلي للفترة\x3c/div\x3e
+        \x3cdiv style="font-size:26pt;font-weight:900;color:#fff;line-height:1"\x3e
+          ${omr(totalPaid+totalAdj)} \x3cspan style="font-size:12pt;opacity:0.7"\x3eOMR\x3c/span\x3e
+        \x3c/div\x3e
+      \x3c/div\x3e
+      \x3cdiv style="display:flex;gap:6mm"\x3e
         ${[["إجمالي المدفوع",omr(totalPaid),"#86efac"],
            ["إجمالي التسويات",omr(totalAdj),"#fde68a"],
            ["عدد الدفعات",totalCount.toLocaleString(),"#bfdbfe"],
@@ -12243,28 +12243,28 @@ function handleBulkPrint(d, filterFrom, filterTo) {
             <div style="font-size:8pt;color:rgba(255,255,255,0.7);font-weight:700;margin-bottom:2mm">${l}</div>
             <div style="font-size:13pt;font-weight:900;color:${c}">${v}</div>
           </div>`).join('<div style="width:1px;background:rgba(255,255,255,0.2)"></div>')}
-      </div>
-    </div>`;
+      \x3c/div\x3e
+    \x3c/div\x3e`;
 
   // جدول الأيام
   const dailyTable = `
-    <div style="margin-bottom:6mm">
-      <div style="background:linear-gradient(120deg,#1e3a5f,#2d5a8e);border-radius:8px 8px 0 0;
-        padding:3mm 4mm;font-size:12pt;font-weight:900;color:#fff;direction:rtl">
+    \x3cdiv style="margin-bottom:6mm"\x3e
+      \x3cdiv style="background:linear-gradient(120deg,#1e3a5f,#2d5a8e);border-radius:8px 8px 0 0;
+        padding:3mm 4mm;font-size:12pt;font-weight:900;color:#fff;direction:rtl"\x3e
         📅 تفصيل الأيام
-      </div>
-      <table style="width:100%;border-collapse:collapse;border:1.5px solid #f0ece8;border-top:none;direction:rtl">
-        <thead>
-          <tr style="background:#f0f4ff">
-            <th style="padding:2.5mm 3mm;text-align:right;font-size:9pt;font-weight:800;color:#555;border-bottom:1.5px solid #ddd">#</th>
-            <th style="padding:2.5mm 3mm;text-align:right;font-size:9pt;font-weight:800;color:#555;border-bottom:1.5px solid #ddd">التاريخ</th>
-            <th style="padding:2.5mm 3mm;text-align:center;font-size:9pt;font-weight:800;color:#16a34a;border-bottom:1.5px solid #ddd">المدفوع</th>
-            <th style="padding:2.5mm 3mm;text-align:center;font-size:9pt;font-weight:800;color:#d97706;border-bottom:1.5px solid #ddd">التسويات</th>
-            <th style="padding:2.5mm 3mm;text-align:center;font-size:9pt;font-weight:800;color:#1e3a5f;border-bottom:1.5px solid #ddd">الإجمالي</th>
-            <th style="padding:2.5mm 3mm;text-align:center;font-size:9pt;font-weight:800;color:#555;border-bottom:1.5px solid #ddd">دفعات</th>
-          </tr>
-        </thead>
-        <tbody>
+      \x3c/div\x3e
+      \x3ctable style="width:100%;border-collapse:collapse;border:1.5px solid #f0ece8;border-top:none;direction:rtl"\x3e
+        \x3cthead\x3e
+          \x3ctr style="background:#f0f4ff"\x3e
+            \x3cth style="padding:2.5mm 3mm;text-align:right;font-size:9pt;font-weight:800;color:#555;border-bottom:1.5px solid #ddd"\x3e#\x3c/th\x3e
+            \x3cth style="padding:2.5mm 3mm;text-align:right;font-size:9pt;font-weight:800;color:#555;border-bottom:1.5px solid #ddd"\x3eالتاريخ\x3c/th\x3e
+            \x3cth style="padding:2.5mm 3mm;text-align:center;font-size:9pt;font-weight:800;color:#16a34a;border-bottom:1.5px solid #ddd"\x3eالمدفوع\x3c/th\x3e
+            \x3cth style="padding:2.5mm 3mm;text-align:center;font-size:9pt;font-weight:800;color:#d97706;border-bottom:1.5px solid #ddd"\x3eالتسويات\x3c/th\x3e
+            \x3cth style="padding:2.5mm 3mm;text-align:center;font-size:9pt;font-weight:800;color:#1e3a5f;border-bottom:1.5px solid #ddd"\x3eالإجمالي\x3c/th\x3e
+            \x3cth style="padding:2.5mm 3mm;text-align:center;font-size:9pt;font-weight:800;color:#555;border-bottom:1.5px solid #ddd"\x3eدفعات\x3c/th\x3e
+          \x3c/tr\x3e
+        \x3c/thead\x3e
+        \x3ctbody\x3e
           ${filteredDays.map((day,i)=>'<tr style="background:'+(i%2===0?'#fff':'#f8f4f1')+'">' +
             '<td style="padding:2.5mm 3mm;border-bottom:1px solid #f0ece8;font-size:9pt;color:#888">'+(i+1)+'</td>'+
             '<td style="padding:2.5mm 3mm;border-bottom:1px solid #f0ece8;font-size:11pt;font-weight:800;color:#111">'+day.date+'</td>'+
@@ -12273,36 +12273,36 @@ function handleBulkPrint(d, filterFrom, filterTo) {
             '<td style="padding:2.5mm 3mm;border-bottom:1px solid #f0ece8;text-align:center;font-size:12pt;font-weight:900;color:#1e3a5f">'+omr(day.paid+day.adj)+'</td>'+
             '<td style="padding:2.5mm 3mm;border-bottom:1px solid #f0ece8;text-align:center;font-size:11pt;font-weight:700;color:#555">'+day.count+'</td></tr>'
           ).join('')}
-          <tr style="background:#f0f4ff">
-            <td colspan="2" style="padding:3mm;font-size:11pt;font-weight:900;color:#1e3a5f">الإجمالي</td>
-            <td style="padding:3mm;text-align:center;font-size:12pt;font-weight:900;color:#16a34a">${omr(totalPaid)}</td>
-            <td style="padding:3mm;text-align:center;font-size:12pt;font-weight:900;color:#d97706">${omr(totalAdj)}</td>
-            <td style="padding:3mm;text-align:center;font-size:13pt;font-weight:900;color:#1e3a5f">${omr(totalPaid+totalAdj)}</td>
-            <td style="padding:3mm;text-align:center;font-size:12pt;font-weight:800;color:#555">${totalCount}</td>
-          </tr>
-        </tbody>
-      </table>
-    </div>`;
+          \x3ctr style="background:#f0f4ff"\x3e
+            \x3ctd colspan="2" style="padding:3mm;font-size:11pt;font-weight:900;color:#1e3a5f"\x3eالإجمالي\x3c/td\x3e
+            \x3ctd style="padding:3mm;text-align:center;font-size:12pt;font-weight:900;color:#16a34a"\x3e${omr(totalPaid)}\x3c/td\x3e
+            \x3ctd style="padding:3mm;text-align:center;font-size:12pt;font-weight:900;color:#d97706"\x3e${omr(totalAdj)}\x3c/td\x3e
+            \x3ctd style="padding:3mm;text-align:center;font-size:13pt;font-weight:900;color:#1e3a5f"\x3e${omr(totalPaid+totalAdj)}\x3c/td\x3e
+            \x3ctd style="padding:3mm;text-align:center;font-size:12pt;font-weight:800;color:#555"\x3e${totalCount}\x3c/td\x3e
+          \x3c/tr\x3e
+        \x3c/tbody\x3e
+      \x3c/table\x3e
+    \x3c/div\x3e`;
 
   // جدول المناطق
   const regionsTable = `
-    <div style="margin-bottom:6mm">
-      <div style="background:linear-gradient(120deg,#1a7a6b,#0f5a4d);border-radius:8px 8px 0 0;
-        padding:3mm 4mm;font-size:12pt;font-weight:900;color:#fff;direction:rtl">
+    \x3cdiv style="margin-bottom:6mm"\x3e
+      \x3cdiv style="background:linear-gradient(120deg,#1a7a6b,#0f5a4d);border-radius:8px 8px 0 0;
+        padding:3mm 4mm;font-size:12pt;font-weight:900;color:#fff;direction:rtl"\x3e
         🗺 تفصيل المناطق
-      </div>
-      <table style="width:100%;border-collapse:collapse;border:1.5px solid #f0ece8;border-top:none;direction:rtl">
-        <thead>
-          <tr style="background:#f0faf8">
-            <th style="padding:2.5mm 3mm;text-align:right;font-size:9pt;font-weight:800;color:#555;border-bottom:1.5px solid #d0ece8">#</th>
-            <th style="padding:2.5mm 3mm;text-align:right;font-size:9pt;font-weight:800;color:#555;border-bottom:1.5px solid #d0ece8">المنطقة</th>
-            <th style="padding:2.5mm 3mm;text-align:center;font-size:9pt;font-weight:800;color:#16a34a;border-bottom:1.5px solid #d0ece8">المدفوع</th>
-            <th style="padding:2.5mm 3mm;text-align:center;font-size:9pt;font-weight:800;color:#d97706;border-bottom:1.5px solid #d0ece8">التسويات</th>
-            <th style="padding:2.5mm 3mm;text-align:center;font-size:9pt;font-weight:800;color:#1a7a6b;border-bottom:1.5px solid #d0ece8">الإجمالي</th>
-            <th style="padding:2.5mm 3mm;text-align:center;font-size:9pt;font-weight:800;color:#555;border-bottom:1.5px solid #d0ece8">دفعات</th>
-          </tr>
-        </thead>
-        <tbody>
+      \x3c/div\x3e
+      \x3ctable style="width:100%;border-collapse:collapse;border:1.5px solid #f0ece8;border-top:none;direction:rtl"\x3e
+        \x3cthead\x3e
+          \x3ctr style="background:#f0faf8"\x3e
+            \x3cth style="padding:2.5mm 3mm;text-align:right;font-size:9pt;font-weight:800;color:#555;border-bottom:1.5px solid #d0ece8"\x3e#\x3c/th\x3e
+            \x3cth style="padding:2.5mm 3mm;text-align:right;font-size:9pt;font-weight:800;color:#555;border-bottom:1.5px solid #d0ece8"\x3eالمنطقة\x3c/th\x3e
+            \x3cth style="padding:2.5mm 3mm;text-align:center;font-size:9pt;font-weight:800;color:#16a34a;border-bottom:1.5px solid #d0ece8"\x3eالمدفوع\x3c/th\x3e
+            \x3cth style="padding:2.5mm 3mm;text-align:center;font-size:9pt;font-weight:800;color:#d97706;border-bottom:1.5px solid #d0ece8"\x3eالتسويات\x3c/th\x3e
+            \x3cth style="padding:2.5mm 3mm;text-align:center;font-size:9pt;font-weight:800;color:#1a7a6b;border-bottom:1.5px solid #d0ece8"\x3eالإجمالي\x3c/th\x3e
+            \x3cth style="padding:2.5mm 3mm;text-align:center;font-size:9pt;font-weight:800;color:#555;border-bottom:1.5px solid #d0ece8"\x3eدفعات\x3c/th\x3e
+          \x3c/tr\x3e
+        \x3c/thead\x3e
+        \x3ctbody\x3e
           ${(d.byRegion||[]).map((r,i)=>{
             const ar=REG_AR[r.nameEn]||r.nameAr||r.nameEn;
             const col=REG_COL[ar]||'#555';
@@ -12320,29 +12320,29 @@ function handleBulkPrint(d, filterFrom, filterTo) {
             <td style="padding:2.5mm 3mm;text-align:center;font-size:12pt;font-weight:900;border-bottom:1px solid #f0ece8;color:${col}">${omr(r.paid+r.adj)}</td>
             <td style="padding:2.5mm 3mm;text-align:center;font-size:11pt;font-weight:700;color:#555;border-bottom:1px solid #f0ece8">${r.count}</td>
           </tr>`}).join('')}
-        </tbody>
-      </table>
-    </div>`;
+        \x3c/tbody\x3e
+      \x3c/table\x3e
+    \x3c/div\x3e`;
 
   // جدول المحصّلين
   const collectorsTable = `
-    <div>
-      <div style="background:linear-gradient(120deg,#6c3fa0,#4e2a80);border-radius:8px 8px 0 0;
-        padding:3mm 4mm;font-size:12pt;font-weight:900;color:#fff;direction:rtl">
+    \x3cdiv\x3e
+      \x3cdiv style="background:linear-gradient(120deg,#6c3fa0,#4e2a80);border-radius:8px 8px 0 0;
+        padding:3mm 4mm;font-size:12pt;font-weight:900;color:#fff;direction:rtl"\x3e
         👤 تفصيل المحصّلين (أعلى ${Math.min((d.topCollectors||[]).length,20)})
-      </div>
-      <table style="width:100%;border-collapse:collapse;border:1.5px solid #f0ece8;border-top:none;direction:rtl">
-        <thead>
-          <tr style="background:#faf5ff">
-            <th style="padding:2.5mm 3mm;text-align:right;font-size:9pt;font-weight:800;color:#555;border-bottom:1.5px solid #ddd6fe">#</th>
-            <th style="padding:2.5mm 3mm;text-align:right;font-size:9pt;font-weight:800;color:#555;border-bottom:1.5px solid #ddd6fe">المحصّل</th>
-            <th style="padding:2.5mm 3mm;text-align:right;font-size:9pt;font-weight:800;color:#555;border-bottom:1.5px solid #ddd6fe">المنطقة</th>
-            <th style="padding:2.5mm 3mm;text-align:center;font-size:9pt;font-weight:800;color:#16a34a;border-bottom:1.5px solid #ddd6fe">المدفوع</th>
-            <th style="padding:2.5mm 3mm;text-align:center;font-size:9pt;font-weight:800;color:#6c3fa0;border-bottom:1.5px solid #ddd6fe">الإجمالي</th>
-            <th style="padding:2.5mm 3mm;text-align:center;font-size:9pt;font-weight:800;color:#555;border-bottom:1.5px solid #ddd6fe">دفعات</th>
-          </tr>
-        </thead>
-        <tbody>
+      \x3c/div\x3e
+      \x3ctable style="width:100%;border-collapse:collapse;border:1.5px solid #f0ece8;border-top:none;direction:rtl"\x3e
+        \x3cthead\x3e
+          \x3ctr style="background:#faf5ff"\x3e
+            \x3cth style="padding:2.5mm 3mm;text-align:right;font-size:9pt;font-weight:800;color:#555;border-bottom:1.5px solid #ddd6fe"\x3e#\x3c/th\x3e
+            \x3cth style="padding:2.5mm 3mm;text-align:right;font-size:9pt;font-weight:800;color:#555;border-bottom:1.5px solid #ddd6fe"\x3eالمحصّل\x3c/th\x3e
+            \x3cth style="padding:2.5mm 3mm;text-align:right;font-size:9pt;font-weight:800;color:#555;border-bottom:1.5px solid #ddd6fe"\x3eالمنطقة\x3c/th\x3e
+            \x3cth style="padding:2.5mm 3mm;text-align:center;font-size:9pt;font-weight:800;color:#16a34a;border-bottom:1.5px solid #ddd6fe"\x3eالمدفوع\x3c/th\x3e
+            \x3cth style="padding:2.5mm 3mm;text-align:center;font-size:9pt;font-weight:800;color:#6c3fa0;border-bottom:1.5px solid #ddd6fe"\x3eالإجمالي\x3c/th\x3e
+            \x3cth style="padding:2.5mm 3mm;text-align:center;font-size:9pt;font-weight:800;color:#555;border-bottom:1.5px solid #ddd6fe"\x3eدفعات\x3c/th\x3e
+          \x3c/tr\x3e
+        \x3c/thead\x3e
+        \x3ctbody\x3e
           ${(d.topCollectors||[]).slice(0,20).map((c,i)=>{
             const ar=REG_AR[c.regionEn||'']||c.region||'';
             return `
@@ -12354,44 +12354,44 @@ function handleBulkPrint(d, filterFrom, filterTo) {
             <td style="padding:2.5mm 3mm;text-align:center;font-size:12pt;font-weight:900;color:#6c3fa0;border-bottom:1px solid #f0ece8">${omr(c.paid+c.adj)}</td>
             <td style="padding:2.5mm 3mm;text-align:center;font-size:11pt;font-weight:700;color:#555;border-bottom:1px solid #f0ece8">${c.count}</td>
           </tr>`}).join('')}
-        </tbody>
-      </table>
-    </div>`;
+        \x3c/tbody\x3e
+      \x3c/table\x3e
+    \x3c/div\x3e`;
 
-  const html = `<!DOCTYPE html>
-<html lang="ar" dir="rtl">
-<head>
-<meta charset="UTF-8">
-<title>تقرير Bulk Payment — ${dateLabel}</title>
-<link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;600;700;800;900&display=swap" rel="stylesheet">
-<style>
+  const html = `\x3c!DOCTYPE html\x3e
+\x3chtml lang="ar" dir="rtl"\x3e
+\x3chead\x3e
+\x3cmeta charset="UTF-8"\x3e
+\x3ctitle\x3eتقرير Bulk Payment — ${dateLabel}\x3c/title\x3e
+\x3clink href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;600;700;800;900&display=swap" rel="stylesheet"\x3e
+\x3cstyle\x3e
   *{box-sizing:border-box;margin:0;padding:0;-webkit-print-color-adjust:exact!important;print-color-adjust:exact!important}
   body{font-family:'Cairo',sans-serif;background:#f5f0eb;direction:rtl}
   .page{width:210mm;min-height:297mm;margin:8mm auto;background:#fff;padding:11mm 10mm;box-shadow:0 4px 32px rgba(0,0,0,0.15);page-break-after:always}
   .page:last-child{page-break-after:auto}
   @media print{@page{size:A4 portrait;margin:0}body{background:#fff}.page{margin:0;padding:10mm 9mm;box-shadow:none}.no-print{display:none!important}}
   table{width:100%;border-collapse:collapse}
-</style>
-</head>
-<body>
-<button class="no-print" onclick="window.print()" style="position:fixed;top:10mm;left:10mm;background:#1e3a5f;color:#fff;border:none;border-radius:10px;padding:10px 24px;font-size:14px;font-weight:800;cursor:pointer;font-family:'Cairo',sans-serif;box-shadow:0 4px 16px rgba(30,58,95,0.4);z-index:999">🖨️ طباعة / PDF</button>
+\x3c/style\x3e
+\x3c/head\x3e
+\x3cbody\x3e
+\x3cbutton class="no-print" onclick="window.print()" style="position:fixed;top:10mm;left:10mm;background:#1e3a5f;color:#fff;border:none;border-radius:10px;padding:10px 24px;font-size:14px;font-weight:800;cursor:pointer;font-family:'Cairo',sans-serif;box-shadow:0 4px 16px rgba(30,58,95,0.4);z-index:999"\x3e🖨️ طباعة / PDF\x3c/button\x3e
 
-<div class="page">
+\x3cdiv class="page"\x3e
   ${pageHeader}
   ${summaryBanner}
   ${dailyTable}
-</div>
+\x3c/div\x3e
 
-<div class="page">
+\x3cdiv class="page"\x3e
   ${pageHeader}
   ${regionsTable}
   ${collectorsTable}
-  <div style="text-align:center;font-size:8pt;color:#aaa;margin-top:5mm;padding-top:3mm;border-top:1px solid #eee">
+  \x3cdiv style="text-align:center;font-size:8pt;color:#aaa;margin-top:5mm;padding-top:3mm;border-top:1px solid #eee"\x3e
     ONEIC — Bulk Payment Report &nbsp;·&nbsp; ${dateLabel} &nbsp;·&nbsp; © 2026
-  </div>
-</div>
+  \x3c/div\x3e
+\x3c/div\x3e
 
-</body></html>`;
+\x3c/body\x3e\x3c/html\x3e`;
 
   const w = window.open('','_blank','width=1000,height=800');
   w.document.write(html);
@@ -13040,134 +13040,134 @@ function AnalyticsModal({ bulk, onClose, small }) {
     const regBarsHTML = regions.map((r,i)=>{
       const pct=Math.round(((r.paid+r.adj)/Math.max(...regions.map(x=>x.paid+x.adj),1))*100);
       const col=getRegColor(r);
-      return `<div style="margin-bottom:12px">
-        <div style="display:flex;justify-content:space-between;margin-bottom:4px;direction:rtl">
-          <span style="font-size:13px;font-weight:800;color:#000">${r.nameAr||r.nameEn}</span>
-          <div style="display:flex;gap:16px">
-            <span style="font-size:11px;color:#16a34a">مدفوع: ${omrP(r.paid)}</span>
-            <span style="font-size:11px;color:#d97706">تسويات: ${omrP(r.adj)}</span>
-            <span style="font-size:13px;font-weight:900;color:${col}">${omrP(r.paid+r.adj)}</span>
-          </div>
-        </div>
-        <div style="background:#f0ece8;border-radius:6px;height:14px;overflow:hidden">
-          <div style="width:${pct}%;height:100%;background:${col};border-radius:6px"></div>
-        </div>
-      </div>`;
+      return `\x3cdiv style="margin-bottom:12px"\x3e
+        \x3cdiv style="display:flex;justify-content:space-between;margin-bottom:4px;direction:rtl"\x3e
+          \x3cspan style="font-size:13px;font-weight:800;color:#000"\x3e${r.nameAr||r.nameEn}\x3c/span\x3e
+          \x3cdiv style="display:flex;gap:16px"\x3e
+            \x3cspan style="font-size:11px;color:#16a34a"\x3eمدفوع: ${omrP(r.paid)}\x3c/span\x3e
+            \x3cspan style="font-size:11px;color:#d97706"\x3eتسويات: ${omrP(r.adj)}\x3c/span\x3e
+            \x3cspan style="font-size:13px;font-weight:900;color:${col}"\x3e${omrP(r.paid+r.adj)}\x3c/span\x3e
+          \x3c/div\x3e
+        \x3c/div\x3e
+        \x3cdiv style="background:#f0ece8;border-radius:6px;height:14px;overflow:hidden"\x3e
+          \x3cdiv style="width:${pct}%;height:100%;background:${col};border-radius:6px"\x3e\x3c/div\x3e
+        \x3c/div\x3e
+      \x3c/div\x3e`;
     }).join('');
 
     const collectorsHTML = collectors.map((c,i)=>{
       const total=c.paid+c.adj;
       const pct=Math.round((total/Math.max(...collectors.map(x=>x.paid+x.adj),1))*100);
       const medals=["🥇","🥈","🥉"];
-      return `<tr style="background:${i%2===0?'#fff':'#f8f4f1'}">
-        <td style="padding:2.5mm 3mm;font-size:14px;text-align:center">${i<3?medals[i]:i+1}</td>
-        <td style="padding:2.5mm 3mm;font-size:12px;font-weight:800;color:#000">${c.name}</td>
-        <td style="padding:2.5mm 3mm;font-size:11px;color:#555">${c.region||''}</td>
-        <td style="padding:2.5mm 3mm;text-align:center;font-size:12px;font-weight:800;color:#16a34a">${omrP(c.paid)}</td>
-        <td style="padding:2.5mm 3mm;text-align:center;font-size:13px;font-weight:900;color:#1e3a5f">${omrP(total)}</td>
-        <td style="padding:2.5mm 3mm;text-align:center;font-size:11px;color:#555">${c.count}</td>
-      </tr>`;
+      return `\x3ctr style="background:${i%2===0?'#fff':'#f8f4f1'}"\x3e
+        \x3ctd style="padding:2.5mm 3mm;font-size:14px;text-align:center"\x3e${i<3?medals[i]:i+1}\x3c/td\x3e
+        \x3ctd style="padding:2.5mm 3mm;font-size:12px;font-weight:800;color:#000"\x3e${c.name}\x3c/td\x3e
+        \x3ctd style="padding:2.5mm 3mm;font-size:11px;color:#555"\x3e${c.region||''}\x3c/td\x3e
+        \x3ctd style="padding:2.5mm 3mm;text-align:center;font-size:12px;font-weight:800;color:#16a34a"\x3e${omrP(c.paid)}\x3c/td\x3e
+        \x3ctd style="padding:2.5mm 3mm;text-align:center;font-size:13px;font-weight:900;color:#1e3a5f"\x3e${omrP(total)}\x3c/td\x3e
+        \x3ctd style="padding:2.5mm 3mm;text-align:center;font-size:11px;color:#555"\x3e${c.count}\x3c/td\x3e
+      \x3c/tr\x3e`;
     }).join('');
 
     const dailyHTML = [...daily].reverse().map((day,i)=>{
       const total=day.paid+day.adj;
-      return `<tr style="background:${i%2===0?'#fff':'#f8f4f1'}">
-        <td style="padding:2.5mm 3mm;font-size:11px;color:#888">${i+1}</td>
-        <td style="padding:2.5mm 3mm;font-size:13px;font-weight:800;color:#111">${day.date}</td>
-        <td style="padding:2.5mm 3mm;text-align:center;font-size:12px;font-weight:800;color:#16a34a">${omrP(day.paid)}</td>
-        <td style="padding:2.5mm 3mm;text-align:center;font-size:12px;font-weight:800;color:#d97706">${omrP(day.adj)}</td>
-        <td style="padding:2.5mm 3mm;text-align:center;font-size:13px;font-weight:900;color:#1e3a5f">${omrP(total)}</td>
-        <td style="padding:2.5mm 3mm;text-align:center;font-size:11px;color:#555">${day.count}</td>
-      </tr>`;
+      return `\x3ctr style="background:${i%2===0?'#fff':'#f8f4f1'}"\x3e
+        \x3ctd style="padding:2.5mm 3mm;font-size:11px;color:#888"\x3e${i+1}\x3c/td\x3e
+        \x3ctd style="padding:2.5mm 3mm;font-size:13px;font-weight:800;color:#111"\x3e${day.date}\x3c/td\x3e
+        \x3ctd style="padding:2.5mm 3mm;text-align:center;font-size:12px;font-weight:800;color:#16a34a"\x3e${omrP(day.paid)}\x3c/td\x3e
+        \x3ctd style="padding:2.5mm 3mm;text-align:center;font-size:12px;font-weight:800;color:#d97706"\x3e${omrP(day.adj)}\x3c/td\x3e
+        \x3ctd style="padding:2.5mm 3mm;text-align:center;font-size:13px;font-weight:900;color:#1e3a5f"\x3e${omrP(total)}\x3c/td\x3e
+        \x3ctd style="padding:2.5mm 3mm;text-align:center;font-size:11px;color:#555"\x3e${day.count}\x3c/td\x3e
+      \x3c/tr\x3e`;
     }).join('');
 
-    const pageHeader = `<div style="display:flex;justify-content:space-between;align-items:center;
-      border-bottom:3px solid #1e3a5f;padding-bottom:6mm;margin-bottom:6mm;direction:rtl">
-      <div>
-        <div style="font-size:18pt;font-weight:900;color:#1e3a5f">📊 تقرير التحليل البياني</div>
-        <div style="font-size:9pt;color:#888;margin-top:3px">${periodLabel} · ${daily.length} يوم نشط · ${d.totalRecords?.toLocaleString()} دفعة</div>
-      </div>
-      <div style="text-align:left;font-size:9pt;color:#888">
-        <div>تاريخ الطباعة: ${new Date().toLocaleDateString('ar-OM')}</div>
-        <div style="font-weight:800;color:#1e3a5f">ONEIC © 2026</div>
-      </div>
-    </div>`;
+    const pageHeader = `\x3cdiv style="display:flex;justify-content:space-between;align-items:center;
+      border-bottom:3px solid #1e3a5f;padding-bottom:6mm;margin-bottom:6mm;direction:rtl"\x3e
+      \x3cdiv\x3e
+        \x3cdiv style="font-size:18pt;font-weight:900;color:#1e3a5f"\x3e📊 تقرير التحليل البياني\x3c/div\x3e
+        \x3cdiv style="font-size:9pt;color:#888;margin-top:3px"\x3e${periodLabel} · ${daily.length} يوم نشط · ${d.totalRecords?.toLocaleString()} دفعة\x3c/div\x3e
+      \x3c/div\x3e
+      \x3cdiv style="text-align:left;font-size:9pt;color:#888"\x3e
+        \x3cdiv\x3eتاريخ الطباعة: ${new Date().toLocaleDateString('ar-OM')}\x3c/div\x3e
+        \x3cdiv style="font-weight:800;color:#1e3a5f"\x3eONEIC © 2026\x3c/div\x3e
+      \x3c/div\x3e
+    \x3c/div\x3e`;
 
-    const summaryBanner = `<div style="background:linear-gradient(120deg,#1e3a5f,#2d5a8e);
+    const summaryBanner = `\x3cdiv style="background:linear-gradient(120deg,#1e3a5f,#2d5a8e);
       border-radius:12px;padding:5mm 6mm;margin-bottom:6mm;
-      display:grid;grid-template-columns:repeat(4,1fr);gap:4mm;direction:rtl">
+      display:grid;grid-template-columns:repeat(4,1fr);gap:4mm;direction:rtl"\x3e
       ${[["💰 المدفوع",omrP(totalPaid),"#86efac"],["📊 التسويات",omrP(totalAdj),"#fde68a"],
          ["🏆 الإجمالي",omrP(grandTotal),"#fff"],["📈 متوسط يومي",omrP(avgDaily),"#e9d5ff"]
-        ].map(([l,v,c])=>`<div style="text-align:center;background:rgba(255,255,255,0.1);border-radius:8px;padding:3mm">
-        <div style="font-size:8pt;color:rgba(255,255,255,0.7);font-weight:700">${l}</div>
-        <div style="font-size:14pt;font-weight:900;color:${c};margin-top:2mm">${v}</div>
-      </div>`).join('')}
-    </div>`;
+        ].map(([l,v,c])=>'<div style="text-align:center;background:rgba(255,255,255,0.1);border-radius:8px;padding:3mm">'+
+        '<div style="font-size:8pt;color:rgba(255,255,255,0.7);font-weight:700">'+l+'</div>'+
+        '<div style="font-size:14pt;font-weight:900;color:'+c+';margin-top:2mm">'+v+'</div>'+
+      '</div>').join('')}
+    \x3c/div\x3e`;
 
     const w = window.open('','_blank','width=1100,height=800');
-    w.document.write(`<!DOCTYPE html><html lang="ar" dir="rtl">
-    <head><meta charset="UTF-8"><title>تقرير التحليل — ${periodLabel}</title>
-    <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;700;800;900&display=swap" rel="stylesheet">
-    <style>*{box-sizing:border-box;margin:0;padding:0;-webkit-print-color-adjust:exact!important;print-color-adjust:exact!important}
+    w.document.write(`\x3c!DOCTYPE html\x3e\x3chtml lang="ar" dir="rtl"\x3e
+    \x3chead\x3e\x3cmeta charset="UTF-8"\x3e\x3ctitle\x3eتقرير التحليل — ${periodLabel}\x3c/title\x3e
+    \x3clink href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;700;800;900&display=swap" rel="stylesheet"\x3e
+    \x3cstyle\x3e*{box-sizing:border-box;margin:0;padding:0;-webkit-print-color-adjust:exact!important;print-color-adjust:exact!important}
     body{font-family:'Cairo',sans-serif;background:#f5f0eb;direction:rtl}
     .page{width:210mm;min-height:297mm;margin:8mm auto;background:#fff;padding:11mm;
       box-shadow:0 4px 32px rgba(0,0,0,.15);page-break-after:always}
     .page:last-child{page-break-after:auto}
     @media print{@page{size:A4;margin:0}body{background:#fff}.page{margin:0;padding:10mm;box-shadow:none}.no-print{display:none!important}}
     table{width:100%;border-collapse:collapse}th,td{border-bottom:1px solid #f0ece8}
-    </style></head><body>
-    <button class="no-print" onclick="window.print()" style="position:fixed;top:10px;left:10px;
+    \x3c/style\x3e\x3c/head\x3e\x3cbody\x3e
+    \x3cbutton class="no-print" onclick="window.print()" style="position:fixed;top:10px;left:10px;
       background:#1e3a5f;color:#fff;border:none;border-radius:10px;padding:10px 24px;
-      font-size:14px;font-weight:800;cursor:pointer;z-index:999">🖨️ طباعة / PDF</button>
+      font-size:14px;font-weight:800;cursor:pointer;z-index:999"\x3e🖨️ طباعة / PDF\x3c/button\x3e
 
-    <div class="page">
+    \x3cdiv class="page"\x3e
       ${pageHeader}
       ${summaryBanner}
-      <div style="font-size:13pt;font-weight:900;color:#1e3a5f;margin-bottom:4mm">📅 تفصيل الأيام (${daily.length} يوم)</div>
-      <table>
-        <thead><tr style="background:#1e3a5f">
-          <th style="padding:2.5mm 3mm;color:#fff;font-size:9pt">#</th>
-          <th style="padding:2.5mm 3mm;color:#fff;font-size:9pt;text-align:right">التاريخ</th>
-          <th style="padding:2.5mm 3mm;color:#fff;font-size:9pt;text-align:center">المدفوع</th>
-          <th style="padding:2.5mm 3mm;color:#fff;font-size:9pt;text-align:center">التسويات</th>
-          <th style="padding:2.5mm 3mm;color:#fff;font-size:9pt;text-align:center">الإجمالي</th>
-          <th style="padding:2.5mm 3mm;color:#fff;font-size:9pt;text-align:center">دفعات</th>
-        </tr></thead>
-        <tbody>${dailyHTML}</tbody>
-        <tfoot><tr style="background:#f0f4ff">
-          <td colspan="2" style="padding:3mm;font-size:12pt;font-weight:900;color:#1e3a5f">الإجمالي</td>
-          <td style="padding:3mm;text-align:center;font-size:13pt;font-weight:900;color:#16a34a">${omrP(totalPaid)}</td>
-          <td style="padding:3mm;text-align:center;font-size:13pt;font-weight:900;color:#d97706">${omrP(totalAdj)}</td>
-          <td style="padding:3mm;text-align:center;font-size:14pt;font-weight:900;color:#1e3a5f">${omrP(grandTotal)}</td>
-          <td style="padding:3mm;text-align:center;font-size:12pt;font-weight:800;color:#555">${daily.reduce((s,x)=>s+x.count,0)}</td>
-        </tfoot>
-      </table>
-    </div>
+      \x3cdiv style="font-size:13pt;font-weight:900;color:#1e3a5f;margin-bottom:4mm"\x3e📅 تفصيل الأيام (${daily.length} يوم)\x3c/div\x3e
+      \x3ctable\x3e
+        \x3cthead\x3e\x3ctr style="background:#1e3a5f"\x3e
+          \x3cth style="padding:2.5mm 3mm;color:#fff;font-size:9pt"\x3e#\x3c/th\x3e
+          \x3cth style="padding:2.5mm 3mm;color:#fff;font-size:9pt;text-align:right"\x3eالتاريخ\x3c/th\x3e
+          \x3cth style="padding:2.5mm 3mm;color:#fff;font-size:9pt;text-align:center"\x3eالمدفوع\x3c/th\x3e
+          \x3cth style="padding:2.5mm 3mm;color:#fff;font-size:9pt;text-align:center"\x3eالتسويات\x3c/th\x3e
+          \x3cth style="padding:2.5mm 3mm;color:#fff;font-size:9pt;text-align:center"\x3eالإجمالي\x3c/th\x3e
+          \x3cth style="padding:2.5mm 3mm;color:#fff;font-size:9pt;text-align:center"\x3eدفعات\x3c/th\x3e
+        \x3c/tr\x3e\x3c/thead\x3e
+        \x3ctbody\x3e${dailyHTML}\x3c/tbody\x3e
+        \x3ctfoot\x3e\x3ctr style="background:#f0f4ff"\x3e
+          \x3ctd colspan="2" style="padding:3mm;font-size:12pt;font-weight:900;color:#1e3a5f"\x3eالإجمالي\x3c/td\x3e
+          \x3ctd style="padding:3mm;text-align:center;font-size:13pt;font-weight:900;color:#16a34a"\x3e${omrP(totalPaid)}\x3c/td\x3e
+          \x3ctd style="padding:3mm;text-align:center;font-size:13pt;font-weight:900;color:#d97706"\x3e${omrP(totalAdj)}\x3c/td\x3e
+          \x3ctd style="padding:3mm;text-align:center;font-size:14pt;font-weight:900;color:#1e3a5f"\x3e${omrP(grandTotal)}\x3c/td\x3e
+          \x3ctd style="padding:3mm;text-align:center;font-size:12pt;font-weight:800;color:#555"\x3e${daily.reduce((s,x)=>s+x.count,0)}\x3c/td\x3e
+        \x3c/tfoot\x3e
+      \x3c/table\x3e
+    \x3c/div\x3e
 
-    <div class="page">
+    \x3cdiv class="page"\x3e
       ${pageHeader}
-      <div style="font-size:13pt;font-weight:900;color:#1e3a5f;margin-bottom:4mm">🗺 التوزيع بالمنطقة</div>
+      \x3cdiv style="font-size:13pt;font-weight:900;color:#1e3a5f;margin-bottom:4mm"\x3e🗺 التوزيع بالمنطقة\x3c/div\x3e
       ${regBarsHTML}
-      <div style="margin-top:6mm;font-size:13pt;font-weight:900;color:#1e3a5f;margin-bottom:4mm">
+      \x3cdiv style="margin-top:6mm;font-size:13pt;font-weight:900;color:#1e3a5f;margin-bottom:4mm"\x3e
         👤 أعلى المحصّلين (${collectors.length})
-      </div>
-      <table>
-        <thead><tr style="background:#1e3a5f">
-          <th style="padding:2.5mm 3mm;color:#fff;font-size:9pt">#</th>
-          <th style="padding:2.5mm 3mm;color:#fff;font-size:9pt;text-align:right">المحصّل</th>
-          <th style="padding:2.5mm 3mm;color:#fff;font-size:9pt;text-align:right">المنطقة</th>
-          <th style="padding:2.5mm 3mm;color:#fff;font-size:9pt;text-align:center">المدفوع</th>
-          <th style="padding:2.5mm 3mm;color:#fff;font-size:9pt;text-align:center">الإجمالي</th>
-          <th style="padding:2.5mm 3mm;color:#fff;font-size:9pt;text-align:center">دفعات</th>
-        </tr></thead>
-        <tbody>${collectorsHTML}</tbody>
-      </table>
-      <div style="text-align:center;font-size:8pt;color:#aaa;margin-top:6mm;
-        padding-top:3mm;border-top:1px solid #eee">
+      \x3c/div\x3e
+      \x3ctable\x3e
+        \x3cthead\x3e\x3ctr style="background:#1e3a5f"\x3e
+          \x3cth style="padding:2.5mm 3mm;color:#fff;font-size:9pt"\x3e#\x3c/th\x3e
+          \x3cth style="padding:2.5mm 3mm;color:#fff;font-size:9pt;text-align:right"\x3eالمحصّل\x3c/th\x3e
+          \x3cth style="padding:2.5mm 3mm;color:#fff;font-size:9pt;text-align:right"\x3eالمنطقة\x3c/th\x3e
+          \x3cth style="padding:2.5mm 3mm;color:#fff;font-size:9pt;text-align:center"\x3eالمدفوع\x3c/th\x3e
+          \x3cth style="padding:2.5mm 3mm;color:#fff;font-size:9pt;text-align:center"\x3eالإجمالي\x3c/th\x3e
+          \x3cth style="padding:2.5mm 3mm;color:#fff;font-size:9pt;text-align:center"\x3eدفعات\x3c/th\x3e
+        \x3c/tr\x3e\x3c/thead\x3e
+        \x3ctbody\x3e${collectorsHTML}\x3c/tbody\x3e
+      \x3c/table\x3e
+      \x3cdiv style="text-align:center;font-size:8pt;color:#aaa;margin-top:6mm;
+        padding-top:3mm;border-top:1px solid #eee"\x3e
         ONEIC — تقرير التحليل البياني · ${periodLabel} · © 2026
-      </div>
-    </div>
-    </body></html>`);
+      \x3c/div\x3e
+    \x3c/div\x3e
+    \x3c/body\x3e\x3c/html\x3e`);
     w.document.close();
     setTimeout(()=>w.print(), 2000);
   };
@@ -14830,165 +14830,165 @@ function parseBulkPayment(file) {
 // ── handlePrint: يولّد تقرير PDF قابل للطباعة ─────────────────────────────
 // مبني بـ Function constructor لتجنب مشاكل JSX parser مع template literals
 const _printFn = new Function('data', `
-  const omr = n => new Intl.NumberFormat("en-US",{minimumFractionDigits:3,maximumFractionDigits:3}).format(n||0) + " OMR";
-  const tot = r => (r.paid||0)+(r.adj||0);
-  const govPaid = data.regions.reduce((s,r)=>s+r.paid,0);
-  const govAdj  = data.regions.reduce((s,r)=>s+r.adj,0);
-  const dcPaid  = data.debtCompanies.reduce((s,r)=>s+r.paid,0);
-  const dcAdj   = data.debtCompanies.reduce((s,r)=>s+r.adj,0);
-  const hoPaid  = data.headOffice.reduce((s,r)=>s+r.paid,0);
-  const hoAdj   = data.headOffice.reduce((s,r)=>s+r.adj,0);
+  const omr = n =\x3e new Intl.NumberFormat("en-US",{minimumFractionDigits:3,maximumFractionDigits:3}).format(n||0) + " OMR";
+  const tot = r =\x3e (r.paid||0)+(r.adj||0);
+  const govPaid = data.regions.reduce((s,r)=\x3es+r.paid,0);
+  const govAdj  = data.regions.reduce((s,r)=\x3es+r.adj,0);
+  const dcPaid  = data.debtCompanies.reduce((s,r)=\x3es+r.paid,0);
+  const dcAdj   = data.debtCompanies.reduce((s,r)=\x3es+r.adj,0);
+  const hoPaid  = data.headOffice.reduce((s,r)=\x3es+r.paid,0);
+  const hoAdj   = data.headOffice.reduce((s,r)=\x3es+r.adj,0);
   const totalPaid = govPaid+dcPaid+hoPaid;
   const totalAdj  = govAdj+dcAdj+hoAdj;
   const totalAll  = totalPaid+totalAdj;
-  const pct = v => totalAll > 0 ? ((v/totalAll)*100).toFixed(1)+'%' : '0%';
+  const pct = v =\x3e totalAll \x3e 0 ? ((v/totalAll)*100).toFixed(1)+'%' : '0%';
   
-  const amtBox = (label, val, color) =>
-    '<div style="flex:1;text-align:center;padding:5px 8px;border-right:1px solid rgba(255,255,255,0.15)">'+
-    '<div style="font-size:8pt;color:rgba(255,255,255,0.7);margin-bottom:2px">'+label+'</div>'+
-    '<div style="font-size:9pt;font-weight:800;color:'+color+'">'+omr(val)+'</div></div>';
+  const amtBox = (label, val, color) =\x3e
+    '\x3cdiv style="flex:1;text-align:center;padding:5px 8px;border-right:1px solid rgba(255,255,255,0.15)"\x3e'+
+    '\x3cdiv style="font-size:8pt;color:rgba(255,255,255,0.7);margin-bottom:2px"\x3e'+label+'\x3c/div\x3e'+
+    '\x3cdiv style="font-size:9pt;font-weight:800;color:'+color+'"\x3e'+omr(val)+'\x3c/div\x3e\x3c/div\x3e';
   
-  const amtBoxLight = (label, val, color) =>
-    '<div style="flex:1;text-align:center;padding:5px 8px;border-right:1px solid #f0ece8">'+
-    '<div style="font-size:8pt;color:#777;margin-bottom:2px">'+label+'</div>'+
-    '<div style="font-size:10pt;font-weight:900;color:'+color+'">'+omr(val)+'</div></div>';
+  const amtBoxLight = (label, val, color) =\x3e
+    '\x3cdiv style="flex:1;text-align:center;padding:5px 8px;border-right:1px solid #f0ece8"\x3e'+
+    '\x3cdiv style="font-size:8pt;color:#777;margin-bottom:2px"\x3e'+label+'\x3c/div\x3e'+
+    '\x3cdiv style="font-size:10pt;font-weight:900;color:'+color+'"\x3e'+omr(val)+'\x3c/div\x3e\x3c/div\x3e';
 
-  const sectionHeader = (title, paid, adj, color) =>
-    '<div style="background:'+color+';padding:8px 12px;display:flex;justify-content:space-between;align-items:center">'+
-    '<span style="font-size:13pt;font-weight:900;color:#fff">'+title+'</span>'+
-    '<div style="display:flex;gap:12px;font-size:9pt;color:rgba(255,255,255,0.9)">'+
-    '<span>مدفوع: '+omr(paid)+'</span><span>تسويات: '+omr(adj)+'</span>'+
-    '<span style="font-weight:900">إجمالي: '+omr(paid+adj)+'</span></div></div>';
+  const sectionHeader = (title, paid, adj, color) =\x3e
+    '\x3cdiv style="background:'+color+';padding:8px 12px;display:flex;justify-content:space-between;align-items:center"\x3e'+
+    '\x3cspan style="font-size:13pt;font-weight:900;color:#fff"\x3e'+title+'\x3c/span\x3e'+
+    '\x3cdiv style="display:flex;gap:12px;font-size:9pt;color:rgba(255,255,255,0.9)"\x3e'+
+    '\x3cspan\x3eمدفوع: '+omr(paid)+'\x3c/span\x3e\x3cspan\x3eتسويات: '+omr(adj)+'\x3c/span\x3e'+
+    '\x3cspan style="font-weight:900"\x3eإجمالي: '+omr(paid+adj)+'\x3c/span\x3e\x3c/div\x3e\x3c/div\x3e';
 
   // ── الصفحة الأولى ──
-  const page1 = '<div class="page">'+
-    '<div style="text-align:center;padding:8mm 0 6mm;border-bottom:2px solid #e85d20;margin-bottom:6mm">'+
-    '<div style="font-size:18pt;font-weight:900;color:#e85d20">ONEIC</div>'+
-    '<div style="font-size:12pt;font-weight:700;color:#333;margin-top:3px">تقرير أداء التحصيل</div>'+
-    '<div style="font-size:9pt;color:#888;margin-top:2px">'+( data.uploadDate||'' )+'</div></div>'+
+  const page1 = '\x3cdiv class="page"\x3e'+
+    '\x3cdiv style="text-align:center;padding:8mm 0 6mm;border-bottom:2px solid #e85d20;margin-bottom:6mm"\x3e'+
+    '\x3cdiv style="font-size:18pt;font-weight:900;color:#e85d20"\x3eONEIC\x3c/div\x3e'+
+    '\x3cdiv style="font-size:12pt;font-weight:700;color:#333;margin-top:3px"\x3eتقرير أداء التحصيل\x3c/div\x3e'+
+    '\x3cdiv style="font-size:9pt;color:#888;margin-top:2px"\x3e'+( data.uploadDate||'' )+'\x3c/div\x3e\x3c/div\x3e'+
     
-    '<div style="background:linear-gradient(120deg,#e85d20,#c44b10);border-radius:10px;padding:8px 12px;'+
-    'margin-bottom:6mm;display:flex;justify-content:space-between;align-items:center">'+
-    '<div style="color:rgba(255,255,255,0.9);font-size:9pt">إجمالي المحفظة: '+omr(data.totalPortfolio&&data.totalPortfolio.amt||9414256.834)+
-    ' · '+(data.totalPortfolio&&data.totalPortfolio.cnt||47963).toLocaleString()+' حساب</div>'+
-    '<div style="display:flex;gap:8px">'+
+    '\x3cdiv style="background:linear-gradient(120deg,#e85d20,#c44b10);border-radius:10px;padding:8px 12px;'+
+    'margin-bottom:6mm;display:flex;justify-content:space-between;align-items:center"\x3e'+
+    '\x3cdiv style="color:rgba(255,255,255,0.9);font-size:9pt"\x3eإجمالي المحفظة: '+omr(data.totalPortfolio&&data.totalPortfolio.amt||9414256.834)+
+    ' · '+(data.totalPortfolio&&data.totalPortfolio.cnt||47963).toLocaleString()+' حساب\x3c/div\x3e'+
+    '\x3cdiv style="display:flex;gap:8px"\x3e'+
     amtBox('المدفوعات',totalPaid,'#fff')+
     amtBox('التسويات',totalAdj,'#fde68a')+
     amtBox('الإجمالي',totalAll,'#fff')+
-    '</div></div>'+
+    '\x3c/div\x3e\x3c/div\x3e'+
     
-    '<table style="width:100%;border-collapse:collapse;margin-bottom:5mm">'+
-    '<thead><tr style="background:#e85d20;color:#fff">'+
-    '<th style="padding:6px 10px;text-align:right">القسم</th>'+
-    '<th style="padding:6px 10px">المدفوع</th>'+
-    '<th style="padding:6px 10px">التسويات</th>'+
-    '<th style="padding:6px 10px">الإجمالي</th>'+
-    '<th style="padding:6px 10px">%</th></tr></thead><tbody>'+
+    '\x3ctable style="width:100%;border-collapse:collapse;margin-bottom:5mm"\x3e'+
+    '\x3cthead\x3e\x3ctr style="background:#e85d20;color:#fff"\x3e'+
+    '\x3cth style="padding:6px 10px;text-align:right"\x3eالقسم\x3c/th\x3e'+
+    '\x3cth style="padding:6px 10px"\x3eالمدفوع\x3c/th\x3e'+
+    '\x3cth style="padding:6px 10px"\x3eالتسويات\x3c/th\x3e'+
+    '\x3cth style="padding:6px 10px"\x3eالإجمالي\x3c/th\x3e'+
+    '\x3cth style="padding:6px 10px"\x3e%\x3c/th\x3e\x3c/tr\x3e\x3c/thead\x3e\x3ctbody\x3e'+
     [
       ['🗺 المحافظات الخمس', govPaid, govAdj],
       ['🏢 شركات التحصيل', dcPaid, dcAdj],
       ['🏛 المكتب الرئيسي', hoPaid, hoAdj]
-    ].map(([name, p, a], i) =>
-      '<tr style="background:'+(i%2?'#fdf8f5':'#fff')+'">'+
-      '<td style="padding:6px 10px;font-weight:800;font-size:10pt">'+name+'</td>'+
-      '<td style="padding:6px 10px;text-align:center;color:#16a34a;font-weight:700">'+omr(p)+'</td>'+
-      '<td style="padding:6px 10px;text-align:center;color:#d97706;font-weight:700">'+omr(a)+'</td>'+
-      '<td style="padding:6px 10px;text-align:center;font-weight:900">'+omr(p+a)+'</td>'+
-      '<td style="padding:6px 10px;text-align:center;color:#e85d20;font-weight:800">'+pct(p+a)+'</td></tr>'
+    ].map(([name, p, a], i) =\x3e
+      '\x3ctr style="background:'+(i%2?'#fdf8f5':'#fff')+'"\x3e'+
+      '\x3ctd style="padding:6px 10px;font-weight:800;font-size:10pt"\x3e'+name+'\x3c/td\x3e'+
+      '\x3ctd style="padding:6px 10px;text-align:center;color:#16a34a;font-weight:700"\x3e'+omr(p)+'\x3c/td\x3e'+
+      '\x3ctd style="padding:6px 10px;text-align:center;color:#d97706;font-weight:700"\x3e'+omr(a)+'\x3c/td\x3e'+
+      '\x3ctd style="padding:6px 10px;text-align:center;font-weight:900"\x3e'+omr(p+a)+'\x3c/td\x3e'+
+      '\x3ctd style="padding:6px 10px;text-align:center;color:#e85d20;font-weight:800"\x3e'+pct(p+a)+'\x3c/td\x3e\x3c/tr\x3e'
     ).join('')+
-    '</tbody></table>'+
-    '</div>';
+    '\x3c/tbody\x3e\x3c/table\x3e'+
+    '\x3c/div\x3e';
 
   // ── صفحات المحافظات ──
   const RCOLS = ['#e85d20','#c44b10','#d4601a','#b03808','#f07040'];
-  const regionPages = data.regions.map((r, i) => {
+  const regionPages = data.regions.map((r, i) =\x3e {
     const rcolor = RCOLS[i % RCOLS.length];
     const rTotal = tot(r);
-    return '<div class="page">'+
+    return '\x3cdiv class="page"\x3e'+
       sectionHeader((i+1)+'. '+( r.nameAr||'' ), r.paid, r.adj, rcolor)+
-      '<div style="margin:4mm 0;font-size:9pt;color:#666">'+( r.nameEn||'' )+'</div>'+
-      '<table style="width:100%;border-collapse:collapse">'+
-      '<thead><tr style="background:'+rcolor+';color:#fff">'+
-      '<th style="padding:5px 8px;text-align:right">#</th>'+
-      '<th style="padding:5px 8px;text-align:right">المحصّل</th>'+
-      '<th style="padding:5px 8px">المدفوع</th>'+
-      '<th style="padding:5px 8px">التسويات</th>'+
-      '<th style="padding:5px 8px">الإجمالي</th></tr></thead><tbody>'+
-      (r.collectors||[]).map((c,j) =>
-        '<tr style="background:'+(j%2?'#fdf8f5':'#fff')+'">'+
-        '<td style="padding:5px 8px;color:'+rcolor+';font-weight:800">'+(j+1)+'</td>'+
-        '<td style="padding:5px 8px;font-weight:700">'+c.name+'</td>'+
-        '<td style="padding:5px 8px;text-align:center;color:#16a34a;font-weight:700">'+omr(c.paid)+'</td>'+
-        '<td style="padding:5px 8px;text-align:center;color:#d97706;font-weight:700">'+omr(c.adj)+'</td>'+
-        '<td style="padding:5px 8px;text-align:center;font-weight:900">'+omr(tot(c))+'</td></tr>'
+      '\x3cdiv style="margin:4mm 0;font-size:9pt;color:#666"\x3e'+( r.nameEn||'' )+'\x3c/div\x3e'+
+      '\x3ctable style="width:100%;border-collapse:collapse"\x3e'+
+      '\x3cthead\x3e\x3ctr style="background:'+rcolor+';color:#fff"\x3e'+
+      '\x3cth style="padding:5px 8px;text-align:right"\x3e#\x3c/th\x3e'+
+      '\x3cth style="padding:5px 8px;text-align:right"\x3eالمحصّل\x3c/th\x3e'+
+      '\x3cth style="padding:5px 8px"\x3eالمدفوع\x3c/th\x3e'+
+      '\x3cth style="padding:5px 8px"\x3eالتسويات\x3c/th\x3e'+
+      '\x3cth style="padding:5px 8px"\x3eالإجمالي\x3c/th\x3e\x3c/tr\x3e\x3c/thead\x3e\x3ctbody\x3e'+
+      (r.collectors||[]).map((c,j) =\x3e
+        '\x3ctr style="background:'+(j%2?'#fdf8f5':'#fff')+'"\x3e'+
+        '\x3ctd style="padding:5px 8px;color:'+rcolor+';font-weight:800"\x3e'+(j+1)+'\x3c/td\x3e'+
+        '\x3ctd style="padding:5px 8px;font-weight:700"\x3e'+c.name+'\x3c/td\x3e'+
+        '\x3ctd style="padding:5px 8px;text-align:center;color:#16a34a;font-weight:700"\x3e'+omr(c.paid)+'\x3c/td\x3e'+
+        '\x3ctd style="padding:5px 8px;text-align:center;color:#d97706;font-weight:700"\x3e'+omr(c.adj)+'\x3c/td\x3e'+
+        '\x3ctd style="padding:5px 8px;text-align:center;font-weight:900"\x3e'+omr(tot(c))+'\x3c/td\x3e\x3c/tr\x3e'
       ).join('')+
-      '<tr style="background:'+rcolor+'22;font-weight:900">'+
-      '<td colspan="2" style="padding:6px 8px;color:'+rcolor+'">الإجمالي</td>'+
-      '<td style="padding:6px 8px;text-align:center;color:#16a34a">'+omr(r.paid)+'</td>'+
-      '<td style="padding:6px 8px;text-align:center;color:#d97706">'+omr(r.adj)+'</td>'+
-      '<td style="padding:6px 8px;text-align:center;color:'+rcolor+'">'+omr(rTotal)+'</td></tr>'+
-      '</tbody></table></div>';
+      '\x3ctr style="background:'+rcolor+'22;font-weight:900"\x3e'+
+      '\x3ctd colspan="2" style="padding:6px 8px;color:'+rcolor+'"\x3eالإجمالي\x3c/td\x3e'+
+      '\x3ctd style="padding:6px 8px;text-align:center;color:#16a34a"\x3e'+omr(r.paid)+'\x3c/td\x3e'+
+      '\x3ctd style="padding:6px 8px;text-align:center;color:#d97706"\x3e'+omr(r.adj)+'\x3c/td\x3e'+
+      '\x3ctd style="padding:6px 8px;text-align:center;color:'+rcolor+'"\x3e'+omr(rTotal)+'\x3c/td\x3e\x3c/tr\x3e'+
+      '\x3c/tbody\x3e\x3c/table\x3e\x3c/div\x3e';
   }).join('');
 
   // ── صفحة شركات التحصيل والمكتب الرئيسي ──
   const page_dc_ho =
-    '<div class="page">'+
+    '\x3cdiv class="page"\x3e'+
     sectionHeader('🏢 شركات التحصيل', dcPaid, dcAdj, '#1a7a6b')+
-    '<table style="width:100%;border-collapse:collapse;margin:4mm 0">'+
-    '<thead><tr style="background:#1a7a6b;color:#fff">'+
-    '<th style="padding:5px 8px">#</th><th style="padding:5px 8px;text-align:right">الشركة</th>'+
-    '<th style="padding:5px 8px">المدفوع</th><th style="padding:5px 8px">التسويات</th>'+
-    '<th style="padding:5px 8px">الإجمالي</th></tr></thead><tbody>'+
-    (data.debtCompanies||[]).map((c,i) =>
-      '<tr style="background:'+(i%2?'#f5faf9':'#fff')+'">'+
-      '<td style="padding:5px 8px;color:#1a7a6b;font-weight:800;text-align:center">'+(i+1)+'</td>'+
-      '<td style="padding:5px 8px;font-weight:700">'+c.name+'</td>'+
-      '<td style="padding:5px 8px;text-align:center;color:#16a34a;font-weight:700">'+omr(c.paid)+'</td>'+
-      '<td style="padding:5px 8px;text-align:center;color:#d97706;font-weight:700">'+omr(c.adj)+'</td>'+
-      '<td style="padding:5px 8px;text-align:center;font-weight:900">'+omr(tot(c))+'</td></tr>'
+    '\x3ctable style="width:100%;border-collapse:collapse;margin:4mm 0"\x3e'+
+    '\x3cthead\x3e\x3ctr style="background:#1a7a6b;color:#fff"\x3e'+
+    '\x3cth style="padding:5px 8px"\x3e#\x3c/th\x3e\x3cth style="padding:5px 8px;text-align:right"\x3eالشركة\x3c/th\x3e'+
+    '\x3cth style="padding:5px 8px"\x3eالمدفوع\x3c/th\x3e\x3cth style="padding:5px 8px"\x3eالتسويات\x3c/th\x3e'+
+    '\x3cth style="padding:5px 8px"\x3eالإجمالي\x3c/th\x3e\x3c/tr\x3e\x3c/thead\x3e\x3ctbody\x3e'+
+    (data.debtCompanies||[]).map((c,i) =\x3e
+      '\x3ctr style="background:'+(i%2?'#f5faf9':'#fff')+'"\x3e'+
+      '\x3ctd style="padding:5px 8px;color:#1a7a6b;font-weight:800;text-align:center"\x3e'+(i+1)+'\x3c/td\x3e'+
+      '\x3ctd style="padding:5px 8px;font-weight:700"\x3e'+c.name+'\x3c/td\x3e'+
+      '\x3ctd style="padding:5px 8px;text-align:center;color:#16a34a;font-weight:700"\x3e'+omr(c.paid)+'\x3c/td\x3e'+
+      '\x3ctd style="padding:5px 8px;text-align:center;color:#d97706;font-weight:700"\x3e'+omr(c.adj)+'\x3c/td\x3e'+
+      '\x3ctd style="padding:5px 8px;text-align:center;font-weight:900"\x3e'+omr(tot(c))+'\x3c/td\x3e\x3c/tr\x3e'
     ).join('')+
-    '</tbody></table>'+
+    '\x3c/tbody\x3e\x3c/table\x3e'+
     sectionHeader('🏛 المكتب الرئيسي', hoPaid, hoAdj, '#6c3fa0')+
-    '<table style="width:100%;border-collapse:collapse;margin:4mm 0">'+
-    '<thead><tr style="background:#6c3fa0;color:#fff">'+
-    '<th style="padding:5px 8px">#</th><th style="padding:5px 8px;text-align:right">القسم</th>'+
-    '<th style="padding:5px 8px">المدفوع</th><th style="padding:5px 8px">التسويات</th>'+
-    '<th style="padding:5px 8px">الإجمالي</th></tr></thead><tbody>'+
-    (data.headOffice||[]).map((c,i) =>
-      '<tr style="background:'+(i%2?'#f7f4fb':'#fff')+'">'+
-      '<td style="padding:5px 8px;color:#6c3fa0;font-weight:800;text-align:center">'+(i+1)+'</td>'+
-      '<td style="padding:5px 8px;font-weight:700">'+c.name+'</td>'+
-      '<td style="padding:5px 8px;text-align:center;color:#16a34a;font-weight:700">'+omr(c.paid)+'</td>'+
-      '<td style="padding:5px 8px;text-align:center;color:#d97706;font-weight:700">'+omr(c.adj)+'</td>'+
-      '<td style="padding:5px 8px;text-align:center;font-weight:900">'+omr(tot(c))+'</td></tr>'
+    '\x3ctable style="width:100%;border-collapse:collapse;margin:4mm 0"\x3e'+
+    '\x3cthead\x3e\x3ctr style="background:#6c3fa0;color:#fff"\x3e'+
+    '\x3cth style="padding:5px 8px"\x3e#\x3c/th\x3e\x3cth style="padding:5px 8px;text-align:right"\x3eالقسم\x3c/th\x3e'+
+    '\x3cth style="padding:5px 8px"\x3eالمدفوع\x3c/th\x3e\x3cth style="padding:5px 8px"\x3eالتسويات\x3c/th\x3e'+
+    '\x3cth style="padding:5px 8px"\x3eالإجمالي\x3c/th\x3e\x3c/tr\x3e\x3c/thead\x3e\x3ctbody\x3e'+
+    (data.headOffice||[]).map((c,i) =\x3e
+      '\x3ctr style="background:'+(i%2?'#f7f4fb':'#fff')+'"\x3e'+
+      '\x3ctd style="padding:5px 8px;color:#6c3fa0;font-weight:800;text-align:center"\x3e'+(i+1)+'\x3c/td\x3e'+
+      '\x3ctd style="padding:5px 8px;font-weight:700"\x3e'+c.name+'\x3c/td\x3e'+
+      '\x3ctd style="padding:5px 8px;text-align:center;color:#16a34a;font-weight:700"\x3e'+omr(c.paid)+'\x3c/td\x3e'+
+      '\x3ctd style="padding:5px 8px;text-align:center;color:#d97706;font-weight:700"\x3e'+omr(c.adj)+'\x3c/td\x3e'+
+      '\x3ctd style="padding:5px 8px;text-align:center;font-weight:900"\x3e'+omr(tot(c))+'\x3c/td\x3e\x3c/tr\x3e'
     ).join('')+
-    '</tbody></table>'+
-    '<div style="text-align:center;font-size:8pt;color:#aaa;margin-top:5mm">'+
-    'ONEIC — لوحة تحكم إدارة تحصيل الديون · '+(data.uploadDate||'')+'</div></div>';
+    '\x3c/tbody\x3e\x3c/table\x3e'+
+    '\x3cdiv style="text-align:center;font-size:8pt;color:#aaa;margin-top:5mm"\x3e'+
+    'ONEIC — لوحة تحكم إدارة تحصيل الديون · '+(data.uploadDate||'')+'\x3c/div\x3e\x3c/div\x3e';
 
-  const html = '<!DOCTYPE html><html lang="ar" dir="rtl"><head>'+
-    '<meta charset="UTF-8">'+
-    '<title>تقرير ONEIC — '+(data.uploadDate||'')+'</title>'+
-    '<link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;600;700;800;900&display=swap" rel="stylesheet">'+
-    '<style>*{box-sizing:border-box;margin:0;padding:0;-webkit-print-color-adjust:exact!important}'+
+  const html = '\x3c!DOCTYPE html\x3e\x3chtml lang="ar" dir="rtl"\x3e\x3chead\x3e'+
+    '\x3cmeta charset="UTF-8"\x3e'+
+    '\x3ctitle\x3eتقرير ONEIC — '+(data.uploadDate||'')+'\x3c/title\x3e'+
+    '\x3clink href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;600;700;800;900&display=swap" rel="stylesheet"\x3e'+
+    '\x3cstyle\x3e*{box-sizing:border-box;margin:0;padding:0;-webkit-print-color-adjust:exact!important}'+
     'body{font-family:Cairo,sans-serif;background:#f5f0eb;direction:rtl}'+
     '.page{width:210mm;min-height:297mm;margin:8mm auto;background:#fff;padding:12mm 10mm;'+
     'box-shadow:0 4px 32px rgba(0,0,0,.15);page-break-after:always}'+
     '.page:last-child{page-break-after:auto}'+
     '@media print{@page{size:A4 portrait;margin:0}body{background:#fff}'+
     '.page{margin:0;box-shadow:none;padding:10mm 9mm}.no-print{display:none!important}}'+
-    'table{width:100%;border-collapse:collapse}</style></head><body>'+
-    '<button class="no-print" onclick="window.print()" style="position:fixed;top:10mm;left:10mm;'+
+    'table{width:100%;border-collapse:collapse}\x3c/style\x3e\x3c/head\x3e\x3cbody\x3e'+
+    '\x3cbutton class="no-print" onclick="window.print()" style="position:fixed;top:10mm;left:10mm;'+
     'background:#e85d20;color:#fff;border:none;border-radius:10px;padding:10px 24px;'+
     'font-size:14px;font-weight:800;cursor:pointer;font-family:Cairo,sans-serif;'+
-    'box-shadow:0 4px 16px rgba(232,93,32,.4);z-index:999">طباعة / حفظ PDF</button>'+
+    'box-shadow:0 4px 16px rgba(232,93,32,.4);z-index:999"\x3eطباعة / حفظ PDF\x3c/button\x3e'+
     page1 + regionPages + page_dc_ho +
-    '</body></html>';
+    '\x3c/body\x3e\x3c/html\x3e';
 
   const w = window.open('','_blank','width=1000,height=800');
   w.document.write(html);
   w.document.close();
-  setTimeout(() => w.print(), 2000);
+  setTimeout(() =\x3e w.print(), 2000);
 `);
 function handlePrint(data) { _printFn(data); }
 
@@ -15296,7 +15296,7 @@ export default function Dashboard() {
           #main-header { display: none !important; }
 
           /* ── إصلاح overflow ── */
-          #root, #root > div, #root > div > div {
+          #root, #root \x3e div, #root \x3e div \x3e div {
             height: auto !important;
             min-height: 0 !important;
             overflow: visible !important;
@@ -15331,15 +15331,15 @@ export default function Dashboard() {
             page-break-inside: avoid !important;
             width: 190mm !important;
           }
-          #print-summary > div {
+          #print-summary \x3e div {
             width: 62mm !important;
             overflow: hidden !important;
             border-radius: 6px !important;
           }
-          #print-summary > div > div:first-child {
+          #print-summary \x3e div \x3e div:first-child {
             padding: 3mm 4mm !important;
           }
-          #print-summary > div > div:last-child {
+          #print-summary \x3e div \x3e div:last-child {
             padding: 3mm 4mm !important;
           }
           #print-summary .amount-cell {
@@ -15354,7 +15354,7 @@ export default function Dashboard() {
             width: 190mm !important;
             page-break-inside: avoid !important;
           }
-          #print-regions > div:first-child {
+          #print-regions \x3e div:first-child {
             padding: 3mm 4mm !important;
             border-radius: 6px 6px 0 0 !important;
           }
@@ -15365,7 +15365,7 @@ export default function Dashboard() {
             overflow: hidden !important;
             page-break-inside: avoid !important;
           }
-          #print-regions .region-card > div:first-child {
+          #print-regions .region-card \x3e div:first-child {
             padding: 2mm 3mm !important;
             flex-wrap: nowrap !important;
           }
@@ -15374,7 +15374,7 @@ export default function Dashboard() {
             display: flex !important;
             flex-wrap: nowrap !important;
           }
-          #print-regions .region-amounts > div {
+          #print-regions .region-amounts \x3e div {
             width: 42mm !important;
             padding: 2mm 3mm !important;
           }
@@ -15395,13 +15395,13 @@ export default function Dashboard() {
             page-break-before: auto !important;
             page-break-inside: avoid !important;
           }
-          #print-dc-ho > div {
+          #print-dc-ho \x3e div {
             width: 93mm !important;
             overflow: hidden !important;
             border-radius: 6px !important;
           }
           /* هيدر DC/HO */
-          #print-dc-ho > div > div:first-child {
+          #print-dc-ho \x3e div \x3e div:first-child {
             padding: 3mm 4mm !important;
           }
           /* بطاقات الشركات */
@@ -15411,11 +15411,11 @@ export default function Dashboard() {
             border-radius: 4px !important;
           }
           #print-dc-ho .entity-card .entity-name { font-size: 9pt !important; }
-          #print-dc-ho .entity-card .amount-row > div > div:first-child { font-size: 7pt !important; }
-          #print-dc-ho .entity-card .amount-row > div > div:last-child  { font-size: 10pt !important; }
+          #print-dc-ho .entity-card .amount-row \x3e div \x3e div:first-child { font-size: 7pt !important; }
+          #print-dc-ho .entity-card .amount-row \x3e div \x3e div:last-child  { font-size: 10pt !important; }
 
           /* ── منع قطع الأرقام ── */
-          .amount-cell, .entity-card, #print-summary > div,
+          .amount-cell, .entity-card, #print-summary \x3e div,
           #print-regions .region-card { overflow: hidden !important; }
 
           /* ── فوتر ── */
