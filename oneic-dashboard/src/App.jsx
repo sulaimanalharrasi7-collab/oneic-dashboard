@@ -5914,14 +5914,11 @@ function detectAndDecode(buffer) {
   }
 
   if (bomPos >= 0) {
-    // ── UTF-16-LE مع BOM — استخدم TextDecoder الأسرع ──────────────────
     try {
       const decoder = new TextDecoder("utf-16-le");
-      // تخطى BOM (بايتان)
       const slice = buffer.slice(bomPos + 2);
       return decoder.decode(slice);
     } catch(e) {
-      // fallback manual
       const start = bomPos + 2;
       const chars = [];
       for (let i = start; i + 1 < bytes.length; i += 2) {
@@ -5933,7 +5930,6 @@ function detectAndDecode(buffer) {
   }
 
   // ── فحص UTF-16-LE بدون BOM ──────────────────────────────────────────────
-  // فحص 50 بايت بعد تخطي المسافات
   let scanStart = 0;
   while (scanStart < 10 && bytes[scanStart] === 0x20) scanStart++;
   let nullCount = 0;
@@ -5944,10 +5940,8 @@ function detectAndDecode(buffer) {
   if (nullCount > 5) {
     try {
       const decoder = new TextDecoder("utf-16-le");
-      // تخطى المسافات الأولى فقط (بدون BOM)
       const slice = buffer.slice(scanStart);
       const text = decoder.decode(slice);
-      // إزالة BOM character إن وجد
       return text.replace(/^\uFEFF/, '');
     } catch(e) {
       const chars = [];
@@ -5959,7 +5953,7 @@ function detectAndDecode(buffer) {
     }
   }
 
-  // ── Latin-1 / UTF-8 ────────────────────────────────────────────────────
+  // ── UTF-8 / Latin-1 ────────────────────────────────────────────────────
   try {
     const decoder = new TextDecoder("utf-8");
     let start = 0;
@@ -5976,166 +5970,254 @@ function detectAndDecode(buffer) {
 
 // ── parseXLS: يقرأ ملف Excel بـ SheetJS ويدعم .xlsx/.xls/.tsv ────────────
 async function parseXLS(file) {
-  // قراءة الملف كـ ArrayBuffer
-  const buffer = await file.arrayBuffer();
-
-  let rows = [];
-
-  // ── محاولة القراءة بـ SheetJS (إذا كان متاحاً في window) ────────────────
-  try {
-    // Load SheetJS via script tag injection (more reliable than dynamic import)
-    if (!window.XLSX) {
-      await new Promise((resolve, reject) => {
-        const s = document.createElement('script');
-        s.src = 'https://cdn.sheetjs.com/xlsx-0.20.3/package/dist/xlsx.full.min.js';
-        s.onload = resolve;
-        s.onerror = reject;
-        document.head.appendChild(s);
-      });
-    }
-    const XLSX = window.XLSX;
-    if (!XLSX) throw new Error('XLSX not available');
-    const wb = XLSX.read(new Uint8Array(buffer), { type: 'array', cellDates: true });
-    let wsName = wb.SheetNames[0];
-    for (const name of wb.SheetNames) {
-      const ws = wb.Sheets[name];
-      const sample = XLSX.utils.sheet_to_json(ws, { header: 1, range: 0, defval: '' });
-      const header = (sample[0] || []).map(v => String(v||'').trim());
-      if (header.includes('Region') || header.includes('Paid Amount') || header.includes('Branch')) {
-        wsName = name; break;
+  return new Promise((resolve, reject) => {
+    // ── محاولة SheetJS أولاً (إذا كان محملاً في window) ─────────────────
+    const trySheetJS = (buffer) => {
+      try {
+        const XLSX = window.XLSX;
+        if (!XLSX) return false;
+        const data = new Uint8Array(buffer);
+        const wb = XLSX.read(data, { type: 'array', cellDates: true });
+        let wsName = wb.SheetNames[0];
+        for (const name of wb.SheetNames) {
+          const ws = wb.Sheets[name];
+          const sample = XLSX.utils.sheet_to_json(ws, { header: 1, range: 0, defval: '' });
+          const header = (sample[0] || []).map(v => String(v||'').trim());
+          if (header.includes('Region') || header.includes('Paid Amount') || header.includes('Branch')) {
+            wsName = name; break;
+          }
+        }
+        const ws = wb.Sheets[wsName];
+        return XLSX.utils.sheet_to_json(ws, { raw: false, defval: '' });
+      } catch(e) {
+        return false;
       }
-    }
-    const ws = wb.Sheets[wsName];
-    rows = XLSX.utils.sheet_to_json(ws, { raw: false, defval: '' });
-  } catch(xlsxErr) {
-    // ── fallback: قراءة كـ text (TSV/CSV) ──────────────────────────────
-    const text = (() => {
-      const bytes = new Uint8Array(buffer);
-      let bomPos = -1;
-      for (let i = 0; i < Math.min(10, bytes.length - 1); i++) {
-        if (bytes[i] === 0xFF && bytes[i+1] === 0xFE) { bomPos = i; break; }
+    };
+
+    const reader = new FileReader();
+    reader.onload = (e) => {
+      try {
+        const buffer = e.target.result;
+        let rows = [];
+
+        // ── أولاً: SheetJS ──────────────────────────────────────────────
+        const xlsxRows = trySheetJS(buffer);
+        if (xlsxRows && xlsxRows.length > 0) {
+          rows = xlsxRows;
+          console.log('[parseXLS] SheetJS OK, rows:', rows.length);
+        } else {
+          // ── ثانياً: TSV/Text fallback ──────────────────────────────────
+          const text = detectAndDecode(buffer);
+          const lines = text.split(/\r?\n/).filter(l => l.trim());
+          if (lines.length < 2) return reject(new Error('الملف فارغ أو لا يحتوي بيانات'));
+          
+          const headers = lines[0].split('\t').map(h =>
+            h.replace(/\uFEFF/g,'').replace(/ÿþ/g,'').replace(/[\r\n"]/g,'').trim()
+          );
+          
+          console.log('[parseXLS] TSV headers:', headers.slice(0,8).join(', '));
+          
+          if (!headers.includes('Region') && !headers.includes('Paid Amount')) {
+            return reject(new Error(
+              'الملف لا يحتوي الأعمدة المطلوبة (Region, Paid Amount). ' +
+              'الأعمدة الموجودة: ' + headers.slice(0,5).join(', ')
+            ));
+          }
+          
+          rows = lines.slice(1).filter(l => l.trim()).map(line => {
+            const v = line.split('\t');
+            const o = {};
+            headers.forEach((h, i) => { o[h] = (v[i]||'').replace(/[\r\n"]/g,'').trim(); });
+            return o;
+          });
+          console.log('[parseXLS] TSV OK, rows:', rows.length);
+        }
+
+        if (!rows.length) return reject(new Error('لا توجد بيانات في الملف'));
+
+        // ══════════════════════════════════════════════════════════════════
+        // تحليل البيانات — دقيق وشامل
+        // ══════════════════════════════════════════════════════════════════
+        const n = v => parseFloat(String(v||'').replace(/,/g,'').replace(/[^0-9.-]/g,'')) || 0;
+
+        const REG_AR = {
+          "Dhofar":                                        "ظفار",
+          "Dhofar ":                                       "ظفار",
+          "Musandam, Al Burimai and Al Dahirah":           "مسندم، البريمي والظاهرة",
+          "MUSCAT AND AL DAKHILIYAH":                      "مسقط والداخلية",
+          "North and South Al Shaurqiah and Al Wasatah":   "الشرقية الشمالية والجنوبية والوسطى",
+          "South and North Al Batinah":                    "الباطنة الشمالية والجنوبية"
+        };
+
+        // قاموس المحافظ (portAmt, portCnt) — ثابت من مشروع ONEIC
+        const PORT_DATA = {
+          regions: {
+            "Dhofar":                                      { portAmt: 0,          portCnt: 0    },
+            "Dhofar ":                                     { portAmt: 0,          portCnt: 0    },
+            "Musandam, Al Burimai and Al Dahirah":         { portAmt: 0,          portCnt: 0    },
+            "MUSCAT AND AL DAKHILIYAH":                    { portAmt: 0,          portCnt: 0    },
+            "North and South Al Shaurqiah and Al Wasatah": { portAmt: 0,          portCnt: 0    },
+            "South and North Al Batinah":                  { portAmt: 0,          portCnt: 0    }
+          },
+          dc: {
+            "Ejada":                         { portAmt: 261235.000,  portCnt: 1938  },
+            "Matrix Debt Collection":        { portAmt: 3084947.000, portCnt: 23398 },
+            "Compass Risk Support Services": { portAmt: 510610.000,  portCnt: 3992  },
+            "National Center":               { portAmt: 1089657.000, portCnt: 6741  },
+            "Tahseel United":                { portAmt: 0,           portCnt: 0     },
+            "High Speed Company":            { portAmt: 0,           portCnt: 0     }
+          },
+          ho: {
+            "Legal - DR. Sarhaan":  { portAmt: 3850803.888, portCnt: 5274 },
+            "Documentation Legal":  { portAmt: 0,           portCnt: 0    },
+            "HO":                   { portAmt: 0,           portCnt: 0    },
+            "Saif Legal":           { portAmt: 0,           portCnt: 0    }
+          }
+        };
+
+        const regMap = {}, dcMap = {}, hoMap = {};
+        let totalPortAmt = 0, totalPortCnt = 0;
+
+        rows.forEach(row => {
+          const region = (row['Region'] || row['region'] || '').trim();
+          const paid   = n(row['Paid Amount'] || row['paid_amount'] || row['Paid'] || 0);
+          const adj    = n(row['Adjustment']  || row['adjustment']  || row['Adj']  || 0);
+          const col    = (row['Collector'] || row['collector'] || '').trim();
+          const branch = (row['Branch']    || row['branch']    || '').trim();
+
+          if (region === 'Debt Collection Company') {
+            const key = branch.trim() || col.trim() || 'Unknown';
+            if (!dcMap[key]) dcMap[key] = { paid: 0, adj: 0, count: 0, paidCount: 0, adjCount: 0 };
+            dcMap[key].paid  += paid;
+            dcMap[key].adj   += adj;
+            dcMap[key].count += 1;
+            if (paid > 0) dcMap[key].paidCount += 1;
+            if (adj  > 0) dcMap[key].adjCount  += 1;
+
+          } else if (region === 'Head Office') {
+            // تصنيف دقيق لأقسام المكتب الرئيسي
+            let key;
+            const colL = col.toLowerCase();
+            if (colL.includes('dr') || colL.includes('sarhaan') || colL.includes('sarhan')) {
+              key = 'Legal - DR. Sarhaan';
+            } else if (colL.includes('doc')) {
+              key = 'Documentation Legal';
+            } else if (colL.includes('saif')) {
+              key = 'Saif Legal';
+            } else if (col.trim() === '') {
+              key = 'Saif Legal'; // Blanks → Saif Legal
+            } else {
+              key = 'HO';
+            }
+            if (!hoMap[key]) hoMap[key] = { paid: 0, adj: 0, count: 0 };
+            hoMap[key].paid  += paid;
+            hoMap[key].adj   += adj;
+            hoMap[key].count += 1;
+
+          } else if (REG_AR[region]) {
+            if (!regMap[region]) regMap[region] = { paid: 0, adj: 0, count: 0, paidCount: 0, adjCount: 0, cMap: {} };
+            regMap[region].paid  += paid;
+            regMap[region].adj   += adj;
+            regMap[region].count += 1;
+            if (paid > 0) regMap[region].paidCount += 1;
+            if (adj  > 0) regMap[region].adjCount  += 1;
+            if (col) {
+              if (!regMap[region].cMap[col]) regMap[region].cMap[col] = { paid: 0, adj: 0, count: 0, paidCount: 0, adjCount: 0 };
+              regMap[region].cMap[col].paid  += paid;
+              regMap[region].cMap[col].adj   += adj;
+              regMap[region].cMap[col].count += 1;
+              if (paid > 0) regMap[region].cMap[col].paidCount += 1;
+              if (adj  > 0) regMap[region].cMap[col].adjCount  += 1;
+            }
+          }
+        });
+
+        // ── بناء المناطق مع بيانات المحفظة ──────────────────────────────
+        const REG_ORDER = [
+          "Dhofar ", "Dhofar",
+          "Musandam, Al Burimai and Al Dahirah",
+          "MUSCAT AND AL DAKHILIYAH",
+          "North and South Al Shaurqiah and Al Wasatah",
+          "South and North Al Batinah"
+        ];
+        const regions = REG_ORDER.filter(k => regMap[k]).map(k => {
+          const port = PORT_DATA.regions[k] || { portAmt: 0, portCnt: 0 };
+          return {
+            id: k.toLowerCase().replace(/\s+/g,'_').replace(/[^a-z0-9_]/g,''),
+            nameAr: REG_AR[k], nameEn: k.trim(),
+            paid: regMap[k].paid, adj: regMap[k].adj,
+            count: regMap[k].count||0,
+            paidCount: regMap[k].paidCount||0,
+            adjCount:  regMap[k].adjCount||0,
+            portAmt: port.portAmt, portCnt: port.portCnt,
+            collectors: Object.entries(regMap[k].cMap)
+              .map(([nm,d]) => ({
+                name: nm, paid: d.paid, adj: d.adj,
+                count: d.count||0, paidCount: d.paidCount||0, adjCount: d.adjCount||0
+              }))
+              .sort((a,b) => (b.paid+b.adj)-(a.paid+a.adj))
+          };
+        });
+
+        // ── شركات التحصيل مع المحفظة ─────────────────────────────────────
+        const DC_REQUIRED = [
+          "Ejada","Matrix Debt Collection","Compass Risk Support Services",
+          "National Center","Tahseel United","High Speed Company"
+        ];
+        const dcList = Object.entries(dcMap).map(([nm,d]) => {
+          const port = PORT_DATA.dc[nm.trim()] || { portAmt: 0, portCnt: 0 };
+          return {
+            name: nm.trim(), paid: d.paid, adj: d.adj,
+            count: d.count||0, paidCount: d.paidCount||0, adjCount: d.adjCount||0,
+            portAmt: port.portAmt, portCnt: port.portCnt
+          };
+        });
+        DC_REQUIRED.forEach(nm => {
+          if (!dcList.find(c => c.name === nm)) {
+            const port = PORT_DATA.dc[nm] || { portAmt: 0, portCnt: 0 };
+            dcList.push({ name: nm, paid: 0, adj: 0, count: 0, paidCount: 0, adjCount: 0,
+              portAmt: port.portAmt, portCnt: port.portCnt });
+          }
+        });
+        const debtCompanies = dcList.sort((a,b) => (b.paid+b.adj)-(a.paid+a.adj));
+
+        // ── المكتب الرئيسي — أربعة أقسام دائماً مع المحفظة ─────────────
+        const HO_KEYS = ["Legal - DR. Sarhaan","Documentation Legal","HO","Saif Legal"];
+        const headOffice = HO_KEYS.map(nm => {
+          const d    = hoMap[nm] || { paid: 0, adj: 0, count: 0 };
+          const port = PORT_DATA.ho[nm] || { portAmt: 0, portCnt: 0 };
+          return { name: nm, paid: d.paid, adj: d.adj, count: d.count||0,
+            portAmt: port.portAmt, portCnt: port.portCnt };
+        });
+        // أضف أقسام غير معروفة من الملف
+        Object.keys(hoMap).forEach(k => {
+          if (!HO_KEYS.includes(k))
+            headOffice.push({ name: k, paid: hoMap[k].paid, adj: hoMap[k].adj,
+              count: hoMap[k].count||0, portAmt: 0, portCnt: 0 });
+        });
+
+        // ── إجمالي المحفظة الكلية ─────────────────────────────────────────
+        const allPortAmt = Object.values(PORT_DATA.dc).reduce((s,p)=>s+p.portAmt,0)
+                        + Object.values(PORT_DATA.ho).reduce((s,p)=>s+p.portAmt,0);
+        const allPortCnt = Object.values(PORT_DATA.dc).reduce((s,p)=>s+p.portCnt,0)
+                        + Object.values(PORT_DATA.ho).reduce((s,p)=>s+p.portCnt,0);
+
+        resolve({
+          uploadDate: new Date().toISOString().split('T')[0],
+          totalRecords: rows.length,
+          regions,
+          debtCompanies,
+          headOffice,
+          totalPortfolio: { amt: 9414256.834, cnt: 47963 }
+        });
+
+      } catch(err) {
+        reject(new Error('فشل تحليل الملف: ' + err.message));
       }
-      if (bomPos >= 0) {
-        try { return new TextDecoder('utf-16-le').decode(buffer.slice(bomPos + 2)); } catch(e){}
-      }
-      try { return new TextDecoder('utf-8').decode(buffer); } catch(e){}
-      return Array.from(new Uint8Array(buffer)).map(b => String.fromCharCode(b)).join('');
-    })();
-    const lines = text.split('\n').map(l => l.replace(/\r$/, '')).filter(l => l.trim());
-    if (lines.length < 2) throw new Error('الملف فارغ');
-    const headers = lines[0].split('\t').map(h => h.replace(/\uFEFF/g,'').replace(/\r/g,'').trim());
-    rows = lines.slice(1).filter(l => l.trim()).map(line => {
-      const v = line.split('\t');
-      const o = {}; headers.forEach((h,i) => { o[h] = (v[i]||'').replace(/\r$/,''); }); return o;
-    });
-  }
-
-  if (!rows || rows.length < 1) throw new Error('لا توجد بيانات في الملف');
-
-  const n = v => { if (v == null || v === '') return 0; return parseFloat(String(v).replace(/,/g,'')) || 0; };
-
-  const REG_AR = {
-    "Dhofar": "ظفار", "Dhofar ": "ظفار",
-    "Musandam, Al Burimai and Al Dahirah": "مسندم، البريمي والظاهرة",
-    "MUSCAT AND AL DAKHILIYAH": "مسقط والداخلية",
-    "North and South Al Shaurqiah and Al Wasatah": "الشرقية الشمالية والجنوبية والوسطى",
-    "South and North Al Batinah": "الباطنة الشمالية والجنوبية"
-  };
-
-  const regMap = {}, dcMap = {}, hoMap = {};
-
-  rows.forEach(row => {
-    const region = String(row['Region'] || row['region'] || '').trim();
-    const paid   = n(row['Paid Amount'] || row['paid_amount'] || row['Paid'] || 0);
-    const adj    = n(row['Adjustment'] || row['adjustment'] || row['Adj'] || 0);
-    const col    = String(row['Collector'] || row['collector'] || '').trim();
-    const branch = String(row['Branch'] || row['branch'] || '').trim();
-
-    if (region === 'Debt Collection Company') {
-      const key = branch || 'Unknown';
-      if (!dcMap[key]) dcMap[key] = { paid: 0, adj: 0, count: 0, paidCount: 0, adjCount: 0 };
-      dcMap[key].paid += paid; dcMap[key].adj += adj; dcMap[key].count += 1;
-      if (paid > 0) dcMap[key].paidCount += 1;
-      if (adj  > 0) dcMap[key].adjCount  += 1;
-    } else if (region === 'Head Office') {
-      const colL = col.toLowerCase();
-      let key;
-      if (colL.includes('dr') || colL.includes('sarhaan')) key = 'Legal - DR. Sarhaan';
-      else if (colL.includes('doc')) key = 'Documentation Legal';
-      else if (col.trim() === '') key = 'Saif Legal';
-      else key = 'HO';
-      if (!hoMap[key]) hoMap[key] = { paid: 0, adj: 0, count: 0 };
-      hoMap[key].paid += paid; hoMap[key].adj += adj; hoMap[key].count += 1;
-    } else if (REG_AR[region]) {
-      if (!regMap[region]) regMap[region] = { paid: 0, adj: 0, count: 0, paidCount: 0, adjCount: 0, cMap: {} };
-      regMap[region].paid += paid; regMap[region].adj += adj; regMap[region].count += 1;
-      if (paid > 0) regMap[region].paidCount += 1;
-      if (adj  > 0) regMap[region].adjCount  += 1;
-      if (col) {
-        if (!regMap[region].cMap[col]) regMap[region].cMap[col] = { paid: 0, adj: 0, count: 0, paidCount: 0, adjCount: 0 };
-        regMap[region].cMap[col].paid += paid; regMap[region].cMap[col].adj += adj;
-        regMap[region].cMap[col].count += 1;
-        if (paid > 0) regMap[region].cMap[col].paidCount += 1;
-        if (adj  > 0) regMap[region].cMap[col].adjCount  += 1;
-      }
-    }
+    };
+    reader.onerror = () => reject(new Error('فشل قراءة الملف'));
+    reader.readAsArrayBuffer(file);
   });
-
-  const REG_ORDER = ["Dhofar ","Dhofar","Musandam, Al Burimai and Al Dahirah","MUSCAT AND AL DAKHILIYAH","North and South Al Shaurqiah and Al Wasatah","South and North Al Batinah"];
-  const regions = REG_ORDER.filter(k => regMap[k]).map((k,i) => ({
-    id: k.toLowerCase().replace(/\s+/g,'_').replace(/[,]/g,''),
-    nameAr: REG_AR[k], nameEn: k.trim(),
-    paid: regMap[k].paid, adj: regMap[k].adj, count: regMap[k].count||0,
-    paidCount: regMap[k].paidCount||0, adjCount: regMap[k].adjCount||0,
-    collectors: Object.entries(regMap[k].cMap)
-      .map(([nm,d]) => ({name:nm, paid:d.paid, adj:d.adj, count:d.count||0, paidCount:d.paidCount||0, adjCount:d.adjCount||0}))
-      .sort((a,b) => (b.paid+b.adj)-(a.paid+a.adj))
-  }));
-
-  const DC_PORT_MAP = {
-    "Ejada":                         { portAmt: 261235.000,  portCnt: 1938  },
-    "Matrix Debt Collection":        { portAmt: 3084947.000, portCnt: 23398 },
-    "Compass Risk Support Services": { portAmt: 510610.000,  portCnt: 3992  },
-    "National Center":               { portAmt: 1089657.000, portCnt: 6741  },
-    "Tahseel United":                { portAmt: 0, portCnt: 0 },
-    "High Speed Company":            { portAmt: 0, portCnt: 0 }
-  };
-  const DC_REQUIRED = ["Ejada","Matrix Debt Collection","Compass Risk Support Services","National Center","Tahseel United","High Speed Company"];
-  const dcList = Object.entries(dcMap).map(([nm,d]) => {
-    const p = DC_PORT_MAP[nm.trim()]||{};
-    return {name:nm.trim(), paid:d.paid, adj:d.adj, count:d.count||0, paidCount:d.paidCount||0, adjCount:d.adjCount||0, portAmt:p.portAmt||0, portCnt:p.portCnt||0};
-  });
-  DC_REQUIRED.forEach(nm => {
-    if (!dcList.find(c=>c.name===nm)) {
-      const p = DC_PORT_MAP[nm]||{};
-      dcList.push({name:nm, paid:0, adj:0, count:0, paidCount:0, adjCount:0, portAmt:p.portAmt||0, portCnt:p.portCnt||0});
-    }
-  });
-  const debtCompanies = dcList.sort((a,b) => (b.paid+b.adj)-(a.paid+a.adj));
-
-  const HO_KEYS = ["Legal - DR. Sarhaan","Documentation Legal","HO","Saif Legal"];
-  const HO_PORT = {
-    "Legal - DR. Sarhaan": { portAmt: 3850803.888, portCnt: 5274 },
-    "Documentation Legal":  { portAmt: 0, portCnt: 0 },
-    "HO":                   { portAmt: 0, portCnt: 0 },
-    "Saif Legal":           { portAmt: 0, portCnt: 0 }
-  };
-  const headOffice = HO_KEYS.map(nm => {
-    const p = HO_PORT[nm]||{};
-    return hoMap[nm]
-      ? {name:nm, paid:hoMap[nm].paid, adj:hoMap[nm].adj, count:hoMap[nm].count||0, portAmt:p.portAmt||0, portCnt:p.portCnt||0}
-      : {name:nm, paid:0, adj:0, count:0, portAmt:p.portAmt||0, portCnt:p.portCnt||0};
-  });
-  Object.keys(hoMap).forEach(k => {
-    if (!HO_KEYS.includes(k))
-      headOffice.push({name:k, paid:hoMap[k].paid, adj:hoMap[k].adj, count:hoMap[k].count||0, portAmt:0, portCnt:0});
-  });
-
-  return {
-    uploadDate: new Date().toISOString().split('T')[0],
-    totalRecords: rows.length,
-    regions, debtCompanies, headOffice
-  };
 }
 
 
