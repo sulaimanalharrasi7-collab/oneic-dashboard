@@ -9007,12 +9007,11 @@ export default function Dashboard() {
         } catch(e) { return ''; }
       })();
       
-      // كشف النوع: complaints تحتوي "Complaint ID" أو "Agreement No"
-      // performance تحتوي "Paid Amount" + "Region" + "Collector"
-      const hasComplaintCols = sniffText.includes('Complaint ID') || sniffText.includes('Agreement No') || sniffText.includes('Complaint Code');
-      const hasPerformanceCols = sniffText.includes('Paid Amount') || sniffText.includes('Collector');
-      const isComplaints = hasComplaintCols || 
-        (file.name.toLowerCase().includes('complaint') && !hasPerformanceCols);
+      // كشف النوع: الأولوية لـ performance إذا وُجد Region + Paid Amount + Collector
+      const hasComplaintCols   = sniffText.includes('Complaint ID') || sniffText.includes('Agreement No');
+      const hasPerformanceCols = sniffText.includes('Paid Amount') && sniffText.includes('Region') && sniffText.includes('Collector');
+      // Performance يأخذ الأولوية دائماً إذا وُجدت الأعمدة الثلاثة
+      const isComplaints = !hasPerformanceCols && hasComplaintCols;
       
       console.log('[handleFile]', file.name, '→', isComplaints ? 'complaints' : 'performance',
         '| complaint cols:', hasComplaintCols, '| performance cols:', hasPerformanceCols);
