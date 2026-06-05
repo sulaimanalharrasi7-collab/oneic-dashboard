@@ -5981,11 +5981,21 @@ async function parseXLS(file) {
 
   let rows = [];
 
-  // ── محاولة القراءة بـ SheetJS أولاً (للملفات .xlsx/.xls) ────────────────
+  // ── محاولة القراءة بـ SheetJS (إذا كان متاحاً في window) ────────────────
   try {
-    const XLSX = await import('https://cdn.sheetjs.com/xlsx-0.20.3/package/xlsx.mjs');
-    const wb = XLSX.read(buffer, { type: 'array', cellDates: true });
-    // نبحث عن الشيت المناسب — يحتوي على "Region" و "Paid Amount"
+    // Load SheetJS via script tag injection (more reliable than dynamic import)
+    if (!window.XLSX) {
+      await new Promise((resolve, reject) => {
+        const s = document.createElement('script');
+        s.src = 'https://cdn.sheetjs.com/xlsx-0.20.3/package/dist/xlsx.full.min.js';
+        s.onload = resolve;
+        s.onerror = reject;
+        document.head.appendChild(s);
+      });
+    }
+    const XLSX = window.XLSX;
+    if (!XLSX) throw new Error('XLSX not available');
+    const wb = XLSX.read(new Uint8Array(buffer), { type: 'array', cellDates: true });
     let wsName = wb.SheetNames[0];
     for (const name of wb.SheetNames) {
       const ws = wb.Sheets[name];
@@ -6350,10 +6360,30 @@ function EntityCard({name,paid,adj,color,rank,small,cnt,cBranch,portAmt,portCnt}
 
   // إجمالي التحصيل لهذا القسم/الشركة
   const total = (paid||0) + (adj||0);
+  
+  // إذا كانت جميع الأرقام أصفار — اظهر بطاقة مبسطة
+  const allZero = total === 0;
   // هل يوجد مبلغ محفظة من البيانات المُحمّلة
   const hasPort = (portAmt||0) > 0;
   const hasCnt  = (portCnt||0) > 0;
   const pctVal  = hasPort ? Math.min(100, Math.round(total/portAmt*100)) : 0;
+
+  // بطاقة بسيطة للأقسام بدون أرقام
+  if (allZero) {
+    return (
+      <div style={{background:"#fafafa",borderRadius:13,border:"1.5px dashed #e0dbd6",
+        padding:small?"10px 14px":"12px 18px",
+        display:"flex",justifyContent:"space-between",alignItems:"center",
+        borderRight:`4px solid ${color}30`}}>
+        <div style={{fontSize:13,fontWeight:800,color:"#888"}}>{name}</div>
+        <div style={{display:"flex",gap:small?8:12,alignItems:"center"}}>
+          <span style={{fontSize:11,color:"#bbb",fontStyle:"italic"}}>لا توجد حركات</span>
+          <div style={{background:color,color:"#fff",borderRadius:"50%",width:22,height:22,
+            display:"flex",alignItems:"center",justifyContent:"center",fontSize:11,fontWeight:900}}>{rank}</div>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="entity-card" style={{background:"#fff",borderRadius:13,
