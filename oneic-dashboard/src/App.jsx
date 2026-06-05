@@ -8849,9 +8849,11 @@ function parseBulkPayment(file) {
 
 // ── handlePrint ──────────────────────────────────────────────────────────────
 function handlePrint(data) {
-  const w = window.open('','_blank','width=1000,height=800');
+  const w = window.open('','_blank','width=1200,height=900');
   if (!w) return;
+
   const omr = n => new Intl.NumberFormat('en-US',{minimumFractionDigits:3,maximumFractionDigits:3}).format(n||0)+' OMR';
+  const omrN = n => new Intl.NumberFormat('en-US',{minimumFractionDigits:3,maximumFractionDigits:3}).format(n||0);
   const govPaid = (data.regions||[]).reduce((s,r)=>s+r.paid,0);
   const govAdj  = (data.regions||[]).reduce((s,r)=>s+r.adj,0);
   const dcPaid  = (data.debtCompanies||[]).reduce((s,r)=>s+r.paid,0);
@@ -8859,66 +8861,343 @@ function handlePrint(data) {
   const hoPaid  = (data.headOffice||[]).reduce((s,r)=>s+Math.max(0,r.paid||0),0);
   const hoAdj   = (data.headOffice||[]).reduce((s,r)=>s+Math.max(0,r.adj||0),0);
   const total   = govPaid+govAdj+dcPaid+dcAdj+hoPaid+hoAdj;
+  const portAmt = data.totalPortfolio?.amt || 9414256.834;
+  const pctDone = Math.min(100, Math.round(total/portAmt*100));
+  const date    = data.uploadDate || new Date().toISOString().split('T')[0];
+  const records = (data.totalRecords||47963).toLocaleString();
+  const printDate = new Date().toLocaleDateString('ar-OM',{year:'numeric',month:'long',day:'numeric'});
 
-  const secRow = (name, p, a) =>
-    '<tr><td style="font-weight:800">'+name+'</td>'+
-    '<td style="color:#16a34a;text-align:center;font-weight:700">'+omr(p)+'</td>'+
-    '<td style="color:#d97706;text-align:center;font-weight:700">'+omr(a)+'</td>'+
-    '<td style="text-align:center;font-weight:900">'+omr(p+a)+'</td></tr>';
-
-  const colRow = (nm, p, a, i) =>
-    '<tr style="background:'+(i%2?'#fdf8f5':'#fff')+'">'+
-    '<td style="color:#e85d20;font-weight:700">'+(i+1)+'</td>'+
-    '<td style="font-weight:700">'+nm+'</td>'+
-    '<td style="color:#16a34a;text-align:center">'+omr(p)+'</td>'+
-    '<td style="color:#d97706;text-align:center">'+omr(a)+'</td>'+
-    '<td style="text-align:center;font-weight:900">'+omr(p+a)+'</td></tr>';
-
+  // ── صفوف المحافظات ──
   let regsHTML = '';
   (data.regions||[]).forEach((r,ri) => {
-    regsHTML += '<tr style="background:#fff8f5"><td colspan="5" style="font-weight:900;color:#e85d20;padding:10px 12px">'+(ri+1)+'. '+r.nameAr+'</td></tr>';
-    (r.collectors||[]).forEach((c,ci) => { regsHTML += colRow(c.name, c.paid, c.adj, ci); });
+    const rTotal = r.paid + r.adj;
+    const rPct   = total>0 ? Math.min(100, Math.round(rTotal/total*100)) : 0;
+    regsHTML += `
+      <tr class="sec-header">
+        <td colspan="5">
+          <div class="sec-title">
+            <span>${ri+1}. ${r.nameAr}</span>
+            <span class="badge">${rPct}% من الإجمالي</span>
+          </div>
+          <div class="prog-wrap"><div class="prog-bar" style="width:${rPct}%"></div></div>
+        </td>
+      </tr>`;
+    (r.collectors||[]).forEach((c,ci) => {
+      regsHTML += `
+        <tr class="col-row ${ci%2===0?'even':'odd'}">
+          <td class="rank">${ci+1}</td>
+          <td class="col-name">${c.name}</td>
+          <td class="amt green">${omrN(c.paid)}</td>
+          <td class="amt amber">${omrN(c.adj)}</td>
+          <td class="amt total">${omrN(c.paid+c.adj)}</td>
+        </tr>`;
+    });
+    regsHTML += `
+      <tr class="subtotal">
+        <td colspan="2">إجمالي ${r.nameAr}</td>
+        <td class="green">${omrN(r.paid)}</td>
+        <td class="amber">${omrN(r.adj)}</td>
+        <td class="total">${omrN(rTotal)}</td>
+      </tr>`;
   });
 
-  const html = '<!DOCTYPE html><html dir="rtl"><head><meta charset="UTF-8">'+
-    '<title>تقرير ONEIC — '+( data.uploadDate||'' )+'</title>'+
-    '<link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;700;800;900&display=swap" rel="stylesheet">'+
-    '<style>body{font-family:Cairo,sans-serif;direction:rtl;background:#f5f0eb;padding:16px}'+
-    '.page{background:#fff;padding:16px 20px;border-radius:12px;max-width:960px;margin:0 auto 16px}'+
-    'table{width:100%;border-collapse:collapse}th{background:#e85d20;color:#fff;padding:7px 10px}'+
-    'td{padding:6px 10px;border-bottom:1px solid #f0ece8}@media print{body{background:#fff}.no-print{display:none}}'+
-    '</style></head><body>'+
-    '<div class="page">'+
-    '<div style="display:flex;justify-content:space-between;align-items:center;border-bottom:2px solid #e85d20;padding-bottom:10px;margin-bottom:14px">'+
-    '<div><div style="font-size:20px;font-weight:900;color:#e85d20">ONEIC</div>'+
-    '<div style="font-size:12px;color:#555">تقرير أداء التحصيل — '+( data.uploadDate||'' )+'</div></div>'+
-    '<button class="no-print" onclick="window.print()" style="background:#e85d20;color:#fff;border:none;border-radius:8px;padding:8px 20px;font-family:Cairo,sans-serif;font-weight:700;cursor:pointer">طباعة</button></div>'+
-    '<div style="display:flex;gap:12px;margin-bottom:14px">'+
-    [['إجمالي المحفظة',omr(data.totalPortfolio?.amt||9414256.834),'#e85d20'],
-     ['المدفوعات',omr(data.totalCollection?.paid||govPaid+dcPaid+hoPaid),'#16a34a'],
-     ['التسويات',omr(data.totalCollection?.adj||govAdj+dcAdj+hoAdj),'#d97706'],
-     ['الإجمالي',omr(total),'#1e3a5f']].map(([l,v,c])=>
-      '<div style="flex:1;background:#f8f4f1;border-radius:8px;padding:10px;text-align:center">'+
-      '<div style="font-size:10px;color:#888">'+l+'</div>'+
-      '<div style="font-size:14px;font-weight:900;color:'+c+'">'+v+'</div></div>'
-    ).join('')+'</div>'+
-    '<table><thead><tr><th>القسم</th><th>المدفوع</th><th>التسويات</th><th>الإجمالي</th></tr></thead><tbody>'+
-    secRow('🗺 المحافظات الخمس', govPaid, govAdj)+
-    secRow('🏢 شركات التحصيل', dcPaid, dcAdj)+
-    secRow('🏛 المكتب الرئيسي', hoPaid, hoAdj)+
-    '</tbody></table></div>'+
-    '<div class="page">'+
-    '<div style="font-size:15px;font-weight:900;color:#e85d20;margin-bottom:10px">🗺 تفصيل المحافظات والمحصّلين</div>'+
-    '<table><thead><tr><th>#</th><th>الاسم</th><th>المدفوع</th><th>التسويات</th><th>الإجمالي</th></tr></thead>'+
-    '<tbody>'+regsHTML+'</tbody></table></div>'+
-    '<div class="page">'+
-    '<div style="font-size:15px;font-weight:900;color:#1a7a6b;margin-bottom:10px">🏢 شركات التحصيل</div>'+
-    '<table><thead><tr><th>#</th><th>الشركة</th><th>المدفوع</th><th>التسويات</th><th>الإجمالي</th></tr></thead>'+
-    '<tbody>'+(data.debtCompanies||[]).map((c,i)=>colRow(c.name,c.paid,c.adj,i)).join('')+'</tbody></table>'+
-    '<div style="font-size:15px;font-weight:900;color:#6c3fa0;margin:14px 0 10px">🏛 المكتب الرئيسي</div>'+
-    '<table><thead><tr><th>#</th><th>القسم</th><th>المدفوع</th><th>التسويات</th><th>الإجمالي</th></tr></thead>'+
-    '<tbody>'+(data.headOffice||[]).map((c,i)=>colRow(c.name,c.paid,c.adj,i)).join('')+'</tbody></table></div>'+
-    '</body></html>';
+  // ── صفوف DC ──
+  let dcHTML = (data.debtCompanies||[]).map((c,i) => `
+    <tr class="${i%2===0?'even':'odd'}">
+      <td class="rank">${i+1}</td>
+      <td class="col-name">${c.name}</td>
+      <td class="amt green">${omrN(c.paid)}</td>
+      <td class="amt amber">${omrN(c.adj)}</td>
+      <td class="amt total">${omrN(c.paid+c.adj)}</td>
+    </tr>`).join('');
+
+  // ── صفوف HO ──
+  let hoHTML = (data.headOffice||[]).map((c,i) => {
+    const p = Math.max(0, c.paid||0), a = Math.max(0, c.adj||0);
+    return `
+    <tr class="${i%2===0?'even':'odd'}">
+      <td class="rank">${i+1}</td>
+      <td class="col-name">${c.name}${(c.principalAmt||0)>0?` <span class="badge-sm">PA: ${omrN(c.principalAmt)}</span>`:''}</td>
+      <td class="amt green">${omrN(p)}</td>
+      <td class="amt amber">${omrN(a)}</td>
+      <td class="amt total">${omrN(p+a)}</td>
+    </tr>`;
+  }).join('');
+
+  const html = `<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<title>تقرير ONEIC — ${date}</title>
+<link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;600;700;800;900&display=swap" rel="stylesheet">
+<style>
+*{box-sizing:border-box;margin:0;padding:0;-webkit-print-color-adjust:exact!important;print-color-adjust:exact!important}
+body{font-family:'Cairo',sans-serif;background:#f0ece8;direction:rtl;color:#111}
+.page{width:210mm;margin:0 auto;background:#fff;padding:0;box-shadow:0 0 40px rgba(0,0,0,.2)}
+
+/* ── HEADER HERO ── */
+.hero{background:linear-gradient(135deg,#1a1a2e 0%,#16213e 40%,#0f3460 70%,#e85d20 100%);padding:10mm 12mm 8mm;position:relative;overflow:hidden}
+.hero::before{content:'';position:absolute;top:-40%;right:-10%;width:280px;height:280px;background:rgba(232,93,32,.15);border-radius:50%}
+.hero::after{content:'';position:absolute;bottom:-30%;left:5%;width:180px;height:180px;background:rgba(255,255,255,.05);border-radius:50%}
+.hero-inner{position:relative;z-index:1;display:flex;justify-content:space-between;align-items:center}
+.hero-logo img{height:52px;filter:brightness(0) invert(1);opacity:.95}
+.hero-title{text-align:center;flex:1;padding:0 16mm}
+.hero-title h1{font-size:22pt;font-weight:900;color:#fff;line-height:1.1;letter-spacing:-.5px}
+.hero-title p{font-size:10pt;color:rgba(255,255,255,.7);margin-top:3px;font-weight:600}
+.hero-meta{text-align:left;font-size:9pt;color:rgba(255,255,255,.65)}
+.hero-meta strong{color:#fbbf24;font-size:11pt;display:block;margin-bottom:2px}
+
+/* ── PROGRESS STRIP ── */
+.progress-strip{background:linear-gradient(90deg,#1a1a2e,#0f3460);padding:5mm 12mm;display:flex;align-items:center;gap:12mm}
+.prog-label{color:rgba(255,255,255,.7);font-size:9pt;font-weight:700;white-space:nowrap}
+.prog-track{flex:1;height:12px;background:rgba(255,255,255,.15);border-radius:6px;overflow:hidden;position:relative}
+.prog-fill{height:100%;background:linear-gradient(90deg,#16a34a,#4ade80);border-radius:6px;transition:width .5s;position:relative}
+.prog-fill::after{content:'';position:absolute;top:0;right:0;width:4px;height:100%;background:rgba(255,255,255,.5);border-radius:2px}
+.prog-pct{color:#4ade80;font-size:14pt;font-weight:900;white-space:nowrap}
+.prog-detail{color:rgba(255,255,255,.6);font-size:8pt}
+
+/* ── KPI CARDS ── */
+.kpi-row{display:grid;grid-template-columns:repeat(4,1fr);gap:0;border-bottom:3px solid #f0ece8}
+.kpi-card{padding:5mm 6mm;text-align:center;border-left:1px solid #f0ece8;position:relative;overflow:hidden}
+.kpi-card::before{content:'';position:absolute;top:0;left:0;right:0;height:3px;background:var(--accent)}
+.kpi-card:nth-child(1){--accent:linear-gradient(90deg,#e85d20,#f07030)}
+.kpi-card:nth-child(2){--accent:linear-gradient(90deg,#16a34a,#4ade80)}
+.kpi-card:nth-child(3){--accent:linear-gradient(90deg,#d97706,#fbbf24)}
+.kpi-card:nth-child(4){--accent:linear-gradient(90deg,#7c3aed,#a78bfa)}
+.kpi-label{font-size:8.5pt;color:#777;font-weight:700;margin-bottom:4px}
+.kpi-value{font-size:13.5pt;font-weight:900;color:#111;line-height:1}
+.kpi-value.orange{color:#e85d20}
+.kpi-value.green{color:#16a34a}
+.kpi-value.amber{color:#d97706}
+.kpi-value.purple{color:#7c3aed}
+
+/* ── SECTION OVERVIEW ── */
+.sec-overview{padding:6mm 12mm 4mm}
+.sec-overview h2{font-size:12pt;font-weight:900;color:#1a1a2e;margin-bottom:4mm;display:flex;align-items:center;gap:6px}
+.sec-overview h2::after{content:'';flex:1;height:2px;background:linear-gradient(90deg,#e85d20,transparent)}
+.overview-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:4mm}
+.ov-card{border-radius:10px;overflow:hidden;box-shadow:0 2px 12px rgba(0,0,0,.08)}
+.ov-card-head{padding:3.5mm 5mm;display:flex;align-items:center;gap:8px}
+.ov-card-head span{font-size:16pt}
+.ov-card-head div{font-size:10.5pt;font-weight:900;color:#fff}
+.ov-card-body{padding:3.5mm 5mm;background:#fafafa;display:grid;grid-template-columns:1fr 1fr 1fr;gap:4px}
+.ov-item label{display:block;font-size:7.5pt;color:#888;font-weight:700;margin-bottom:1px}
+.ov-item span{display:block;font-size:9.5pt;font-weight:800;color:#111}
+.ov-item span.g{color:#16a34a}
+.ov-item span.a{color:#d97706}
+.ov-item span.b{color:#e85d20;font-size:10.5pt}
+
+/* ── TABLE SECTION ── */
+.tbl-section{padding:4mm 12mm}
+.tbl-title{font-size:11pt;font-weight:900;margin-bottom:3mm;display:flex;align-items:center;gap:8px;padding:2mm 3mm;border-radius:6px}
+.tbl-title.gov{color:#e85d20;border-right:4px solid #e85d20;background:#fff7f3}
+.tbl-title.dc{color:#1a7a6b;border-right:4px solid #1a7a6b;background:#f0faf8}
+.tbl-title.ho{color:#6c3fa0;border-right:4px solid #6c3fa0;background:#faf5ff}
+table{width:100%;border-collapse:collapse;font-size:9pt;margin-bottom:5mm}
+th{padding:2.5mm 3mm;font-weight:800;font-size:8.5pt;text-align:center}
+th:first-child{text-align:right}
+th:nth-child(2){text-align:right}
+thead tr{color:#fff}
+thead.gov{background:linear-gradient(135deg,#e85d20,#c44b10)}
+thead.dc{background:linear-gradient(135deg,#1a7a6b,#0d5a4f)}
+thead.ho{background:linear-gradient(135deg,#6c3fa0,#4f2d7a)}
+td{padding:2mm 3mm;border-bottom:1px solid #f0ece8;font-size:8.5pt}
+td.rank{width:22px;text-align:center;color:#bbb;font-weight:700}
+td.col-name{font-weight:700;color:#111}
+td.amt{text-align:center;font-weight:700;font-family:monospace}
+td.green{color:#16a34a}
+td.amber{color:#d97706}
+td.total{color:#111;font-weight:900;font-size:9.5pt}
+.amt{font-family:monospace}
+tr.even{background:#fff}
+tr.odd{background:#fafafa}
+tr.sec-header td{background:linear-gradient(135deg,#e85d20ee,#c44b10ee);color:#fff;padding:2.5mm 3mm}
+.sec-title{display:flex;justify-content:space-between;align-items:center;font-weight:800;font-size:9.5pt}
+.badge{background:rgba(255,255,255,.25);padding:1px 7px;border-radius:10px;font-size:8pt;font-weight:700}
+.badge-sm{background:#7c3aed;color:#fff;padding:1px 5px;border-radius:6px;font-size:7pt;font-weight:700;vertical-align:middle}
+.prog-wrap{height:4px;background:rgba(255,255,255,.2);border-radius:2px;margin-top:3px}
+.prog-bar{height:100%;background:rgba(255,255,255,.7);border-radius:2px}
+tr.subtotal{background:linear-gradient(90deg,#fff7f3,#fff)}
+tr.subtotal td{font-weight:900;border-top:2px solid #fde8d8;font-size:9pt;color:#e85d20;padding:2mm 3mm}
+tr.subtotal td.green{color:#16a34a}
+tr.subtotal td.amber{color:#d97706}
+tr.subtotal td:first-child{color:#e85d20}
+.col-row td{transition:background .2s}
+
+/* ── FOOTER ── */
+.footer{background:linear-gradient(135deg,#1a1a2e,#0f3460);padding:5mm 12mm;display:flex;justify-content:space-between;align-items:center}
+.footer-left{color:rgba(255,255,255,.6);font-size:8pt}
+.footer-left strong{color:#e85d20;font-size:10pt;display:block;margin-bottom:2px}
+.footer-right{text-align:left;color:rgba(255,255,255,.5);font-size:7.5pt;line-height:1.8}
+.footer-mid{text-align:center}
+.footer-mid .seal{width:44px;height:44px;border:2px solid rgba(232,93,32,.5);border-radius:50%;display:flex;align-items:center;justify-content:center;margin:0 auto 3px;font-size:20px}
+.footer-mid p{font-size:7.5pt;color:rgba(255,255,255,.4)}
+
+/* ── PRINT ── */
+@media print{
+  @page{size:A4 portrait;margin:0}
+  body{background:#fff}
+  .page{box-shadow:none;width:100%}
+  .no-print{display:none!important}
+}
+</style>
+</head>
+<body>
+<div class="page">
+
+  <!-- HERO HEADER -->
+  <div class="hero">
+    <div class="hero-inner">
+      <div class="hero-logo">
+        <img src="${LOGO}" alt="ONEIC"/>
+        <div style="font-size:7pt;color:rgba(255,255,255,.5);margin-top:3px;text-align:center">ONEIC Dashboard</div>
+      </div>
+      <div class="hero-title">
+        <h1>تقرير أداء التحصيل</h1>
+        <p>Debt Collection Performance Report</p>
+      </div>
+      <div class="hero-meta">
+        <strong>${date}</strong>
+        <div>📋 ${records} سجل</div>
+        <div style="margin-top:3px">🖨️ ${printDate}</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- PROGRESS STRIP -->
+  <div class="progress-strip">
+    <div class="prog-label">نسبة الإنجاز الكلي</div>
+    <div class="prog-track"><div class="prog-fill" style="width:${pctDone}%"></div></div>
+    <div>
+      <div class="prog-pct">${pctDone}%</div>
+      <div class="prog-detail">من إجمالي المحفظة</div>
+    </div>
+    <div style="color:rgba(255,255,255,.5);font-size:8pt;margin-right:auto">
+      <div>المحفظة: ${omrN(portAmt)}</div>
+      <div style="color:rgba(255,255,255,.3)">OMR</div>
+    </div>
+  </div>
+
+  <!-- KPI CARDS -->
+  <div class="kpi-row">
+    <div class="kpi-card">
+      <div class="kpi-label">💼 إجمالي المحفظة</div>
+      <div class="kpi-value orange">${omrN(portAmt)}</div>
+    </div>
+    <div class="kpi-card">
+      <div class="kpi-label">💰 إجمالي المدفوع</div>
+      <div class="kpi-value green">${omrN(govPaid+dcPaid+hoPaid)}</div>
+    </div>
+    <div class="kpi-card">
+      <div class="kpi-label">📊 إجمالي التسويات</div>
+      <div class="kpi-value amber">${omrN(govAdj+dcAdj+hoAdj)}</div>
+    </div>
+    <div class="kpi-card">
+      <div class="kpi-label">🏆 الإجمالي الكلي</div>
+      <div class="kpi-value purple">${omrN(total)}</div>
+    </div>
+  </div>
+
+  <!-- SECTION OVERVIEW CARDS -->
+  <div class="sec-overview">
+    <h2>📌 ملخص الأقسام الرئيسية</h2>
+    <div class="overview-grid">
+      <div class="ov-card">
+        <div class="ov-card-head" style="background:linear-gradient(135deg,#e85d20,#c44b10)">
+          <span>🗺</span><div>المحافظات الخمس</div>
+        </div>
+        <div class="ov-card-body">
+          <div class="ov-item"><label>المدفوع</label><span class="g">${omrN(govPaid)}</span></div>
+          <div class="ov-item"><label>التسويات</label><span class="a">${omrN(govAdj)}</span></div>
+          <div class="ov-item"><label>الإجمالي</label><span class="b">${omrN(govPaid+govAdj)}</span></div>
+        </div>
+      </div>
+      <div class="ov-card">
+        <div class="ov-card-head" style="background:linear-gradient(135deg,#1a7a6b,#0d5a4f)">
+          <span>🏢</span><div>شركات التحصيل</div>
+        </div>
+        <div class="ov-card-body">
+          <div class="ov-item"><label>المدفوع</label><span class="g">${omrN(dcPaid)}</span></div>
+          <div class="ov-item"><label>التسويات</label><span class="a">${omrN(dcAdj)}</span></div>
+          <div class="ov-item"><label>الإجمالي</label><span style="color:#1a7a6b;font-size:10.5pt;font-weight:800">${omrN(dcPaid+dcAdj)}</span></div>
+        </div>
+      </div>
+      <div class="ov-card">
+        <div class="ov-card-head" style="background:linear-gradient(135deg,#6c3fa0,#4f2d7a)">
+          <span>🏛</span><div>المكتب الرئيسي</div>
+        </div>
+        <div class="ov-card-body">
+          <div class="ov-item"><label>المدفوع</label><span class="g">${omrN(hoPaid)}</span></div>
+          <div class="ov-item"><label>التسويات</label><span class="a">${omrN(hoAdj)}</span></div>
+          <div class="ov-item"><label>الإجمالي</label><span style="color:#6c3fa0;font-size:10.5pt;font-weight:800">${omrN(hoPaid+hoAdj)}</span></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- REGIONS TABLE -->
+  <div class="tbl-section">
+    <div class="tbl-title gov">🗺 تفصيل المحافظات والمحصّلين</div>
+    <table>
+      <thead class="gov"><tr>
+        <th>#</th><th>الاسم</th>
+        <th>المدفوع (OMR)</th><th>التسويات (OMR)</th><th>الإجمالي (OMR)</th>
+      </tr></thead>
+      <tbody>${regsHTML}</tbody>
+    </table>
+  </div>
+
+  <!-- DC TABLE -->
+  <div class="tbl-section">
+    <div class="tbl-title dc">🏢 شركات التحصيل</div>
+    <table>
+      <thead class="dc"><tr>
+        <th>#</th><th>الشركة</th>
+        <th>المدفوع (OMR)</th><th>التسويات (OMR)</th><th>الإجمالي (OMR)</th>
+      </tr></thead>
+      <tbody>${dcHTML}</tbody>
+    </table>
+  </div>
+
+  <!-- HO TABLE -->
+  <div class="tbl-section">
+    <div class="tbl-title ho">🏛 المكتب الرئيسي</div>
+    <table>
+      <thead class="ho"><tr>
+        <th>#</th><th>القسم</th>
+        <th>المدفوع (OMR)</th><th>التسويات (OMR)</th><th>الإجمالي (OMR)</th>
+      </tr></thead>
+      <tbody>${hoHTML}</tbody>
+    </table>
+  </div>
+
+  <!-- FOOTER -->
+  <div class="footer">
+    <div class="footer-left">
+      <strong>ONEIC</strong>
+      <div>Oman National Electronic Information Center</div>
+      <div style="margin-top:3px;color:rgba(255,255,255,.4)">نظام إدارة التحصيل © 2026</div>
+    </div>
+    <div class="footer-mid">
+      <div class="seal">🔒</div>
+      <p>وثيقة سرية</p>
+    </div>
+    <div class="footer-right">
+      <div>تاريخ التقرير: ${date}</div>
+      <div>تاريخ الطباعة: ${printDate}</div>
+      <div>عدد السجلات: ${records}</div>
+      <div>نسبة الإنجاز: ${pctDone}%</div>
+    </div>
+  </div>
+
+</div>
+
+<div class="no-print" style="position:fixed;bottom:20px;left:50%;transform:translateX(-50%);display:flex;gap:10px;z-index:999">
+  <button onclick="window.print()" style="background:#e85d20;color:#fff;border:none;border-radius:12px;padding:12px 28px;font-size:15px;font-weight:800;cursor:pointer;font-family:'Cairo',sans-serif;box-shadow:0 4px 20px rgba(232,93,32,.5)">🖨️ طباعة / حفظ PDF</button>
+  <button onclick="window.close()" style="background:#1a1a2e;color:#fff;border:none;border-radius:12px;padding:12px 20px;font-size:15px;font-weight:700;cursor:pointer;font-family:'Cairo',sans-serif">✕ إغلاق</button>
+</div>
+</body></html>`;
+
   w.document.write(html);
   w.document.close();
 }
