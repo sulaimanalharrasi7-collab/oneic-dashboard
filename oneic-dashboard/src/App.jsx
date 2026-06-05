@@ -138,10 +138,10 @@ const SEED = {
     { name: "High Speed Company",            paid: 0.000,       adj: 0.000,       portAmt: 0.000,       portCnt: 0     }
   ],
   headOffice: [
-    { name: "Legal - DR. Sarhaan", paid: 46866.090, adj: 14781.368, portAmt: 0, portCnt: 0 },
-    { name: "Documentation Legal",  paid: 1915.939,  adj: 3468.859,  portAmt: 0, portCnt: 0 },
-    { name: "HO",                   paid: 0.000,     adj: 0.000,     portAmt: 0, portCnt: 0 },
-    { name: "Saif Legal",           paid: 0.000,     adj: 0.000,     portAmt: 0, portCnt: 0 }
+    { name: "Legal - DR. Sarhaan", paid: 46866.090, adj: 14781.368, portAmt: 3850803.888, portCnt: 5274 },
+    { name: "Documentation Legal",  paid: 1915.939,  adj: 3468.859,  portAmt: 0,           portCnt: 0    },
+    { name: "HO",                   paid: 0.000,     adj: 0.000,     portAmt: 0,           portCnt: 0    },
+    { name: "Saif Legal",           paid: 0.000,     adj: 0.000,     portAmt: 0,           portCnt: 0    }
   ],
   totalPortfolio: { amt: 9414256.834, cnt: 47963 },
   totalCollection: { paid: 863165.364, adj: 128508.848 }
@@ -6066,19 +6066,43 @@ function parseXLS(file) {
             .sort((a,b) => (b.paid+b.adj)-(a.paid+a.adj))
         }));
         // كل شركات DC مرتبة بالإجمالي
-        const debtCompanies = Object.entries(dcMap)
-          .map(([nm,d]) => ({
-            name: nm.trim(), paid: d.paid, adj: d.adj,
-            count: d.count||0, paidCount: d.paidCount||0, adjCount: d.adjCount||0
-          }))
-          .sort((a,b) => (b.paid+b.adj)-(a.paid+a.adj));
+        const debtCompanies = (() => {
+          const DC_PORT_MAP = {
+            "Ejada":                         { portAmt: 261235.000,  portCnt: 1938  },
+            "Matrix Debt Collection":        { portAmt: 3084947.000, portCnt: 23398 },
+            "Compass Risk Support Services": { portAmt: 510610.000,  portCnt: 3992  },
+            "National Center":               { portAmt: 1089657.000, portCnt: 6741  },
+            "Tahseel United":                { portAmt: 0, portCnt: 0 },
+            "High Speed Company":            { portAmt: 0, portCnt: 0 }
+          };
+          const DC_REQUIRED = ["Ejada","Matrix Debt Collection","Compass Risk Support Services","National Center","Tahseel United","High Speed Company"];
+          const list = Object.entries(dcMap).map(([nm,d]) => {
+            const p = DC_PORT_MAP[nm.trim()]||{};
+            return {name:nm.trim(),paid:d.paid,adj:d.adj,count:d.count||0,paidCount:d.paidCount||0,adjCount:d.adjCount||0,portAmt:p.portAmt||0,portCnt:p.portCnt||0};
+          });
+          DC_REQUIRED.forEach(nm => {
+            if (!list.find(c=>c.name===nm)) {
+              const p = DC_PORT_MAP[nm]||{};
+              list.push({name:nm,paid:0,adj:0,count:0,paidCount:0,adjCount:0,portAmt:p.portAmt||0,portCnt:p.portCnt||0});
+            }
+          });
+          return list.sort((a,b)=>(b.paid+b.adj)-(a.paid+a.adj));
+        })();
         // المكتب الرئيسي — أربعة أقسام
         const HO_KEYS = ["Legal - DR. Sarhaan","Documentation Legal","HO","Saif Legal"];
+        const HO_PORT = {
+          "Legal - DR. Sarhaan": { portAmt: 3850803.888, portCnt: 5274 },
+          "Documentation Legal":  { portAmt: 0, portCnt: 0 },
+          "HO":                   { portAmt: 0, portCnt: 0 },
+          "Saif Legal":           { portAmt: 0, portCnt: 0 }
+        };
         const headOffice = HO_KEYS
-          .map(nm => hoMap[nm]
-            ? {name:nm, paid:hoMap[nm].paid, adj:hoMap[nm].adj, count:hoMap[nm].count||0}
-            : {name:nm, paid:0, adj:0, count:0})
-          .filter(c => c.paid > 0 || c.adj > 0 || c.count > 0);
+          .map(nm => {
+            const p = HO_PORT[nm]||{};
+            return hoMap[nm]
+              ? {name:nm, paid:hoMap[nm].paid, adj:hoMap[nm].adj, count:hoMap[nm].count||0, portAmt:p.portAmt||0, portCnt:p.portCnt||0}
+              : {name:nm, paid:0, adj:0, count:0, portAmt:p.portAmt||0, portCnt:p.portCnt||0};
+          });
         // إضافة أي أقسام جديدة لم تكن في القائمة
         Object.keys(hoMap).forEach(k => {
           if (!HO_KEYS.includes(k)) {
@@ -6451,44 +6475,55 @@ function SectionHeader({title,paid,adj,color,small}) {
 }
 
 // ── EntityCard ─────────────────────────────────────────────────────────────
-function EntityCard({name,paid,adj,color,rank,small,cnt,cBranch,isHO,portAmt,portCnt}) {
-  // للمكتب الرئيسي: نستخدم HEAD_OFFICE_TOTAL، للشركات: نبحث بالاسم
-  let bD = null;
-  if (isHO) {
-    bD = (cBranch||{})['HEAD_OFFICE_TOTAL'] || null;
-  } else {
-    const bKey = Object.keys(cBranch||{}).find(k => k.trim()===name?.trim() || name?.includes(k) || k.includes(name||'__'));
-    bD = bKey ? (cBranch||{})[bKey] : null;
-  }
-  const showPort = (portAmt||0) > 0 || (portCnt||0) > 0;
+function EntityCard({name,paid,adj,color,rank,small,cnt,cBranch,portAmt,portCnt}) {
+  // البحث عن بيانات إضافية من complaints برانش ماب
+  const bKey = Object.keys(cBranch||{}).find(k => k.trim()===name?.trim() || name?.includes(k) || k.includes(name||'__'));
+  const bD = bKey ? (cBranch||{})[bKey] : null;
+
+  // إجمالي التحصيل لهذا القسم/الشركة
   const total = (paid||0) + (adj||0);
-  const pctVal = (portAmt||0) > 0 ? Math.min(100, Math.round(total/(portAmt)*100)) : 0;
+  // هل يوجد مبلغ محفظة من البيانات المُحمّلة
+  const hasPort = (portAmt||0) > 0;
+  const hasCnt  = (portCnt||0) > 0;
+  const pctVal  = hasPort ? Math.min(100, Math.round(total/portAmt*100)) : 0;
+
   return (
     <div className="entity-card" style={{background:"#fff",borderRadius:13,
       border:"1.5px solid #f0ece8",boxShadow:"0 2px 10px rgba(0,0,0,0.05)",
       padding:small?"12px 14px":"14px 18px",borderRight:`5px solid ${color}`}}>
-      <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",gap:10,marginBottom:showPort?8:10}}>
+
+      {/* ── Header: رقم + اسم + معلومات المحفظة ── */}
+      <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",gap:10,marginBottom:8}}>
         <div style={{display:"flex",alignItems:"center",gap:10}}>
           <div style={{width:small?30:36,height:small?30:36,borderRadius:9,background:color,flexShrink:0,
             display:"flex",alignItems:"center",justifyContent:"center",fontSize:small?14:16,fontWeight:800,color:"#fff"}}>{rank}</div>
-          <div className="entity-name" style={{fontSize:small?14:17,fontWeight:900,color:"#000"}}>{name}</div>
+          <div className="entity-name" style={{fontSize:small?13:16,fontWeight:900,color:"#000",lineHeight:1.2}}>{name}</div>
         </div>
-        {showPort && <div style={{textAlign:"right",flexShrink:0}}>
-          <div style={{fontSize:small?10:12,fontWeight:900,color:color}}>{(portCnt||0).toLocaleString()} حساب</div>
-          <div style={{fontSize:small?10:11,color:"#888",fontWeight:700}}>{omr(portAmt||0)}</div>
-          {pctVal>0&&<div style={{fontSize:small?9:10,color:color,fontWeight:700}}>{pctVal}%</div>}
-        </div>}
-        {!showPort && bD&&<div style={{textAlign:"right",flexShrink:0}}>
-          <div style={{fontSize:small?10:12,fontWeight:900,color:color}}>{bD.count.toLocaleString()} حساب</div>
-          <div style={{fontSize:small?10:11,color:"#888",fontWeight:700}}>{omr(bD.amt)}</div>
-        </div>}
+        {/* يعرض معلومات المحفظة إذا وُجدت، وإلا من branchMap */}
+        {(hasPort||hasCnt) ? (
+          <div style={{textAlign:"right",flexShrink:0}}>
+            {hasCnt && <div style={{fontSize:small?9:11,fontWeight:900,color:color}}>{(portCnt).toLocaleString()} حساب</div>}
+            {hasPort && <div style={{fontSize:small?9:10,color:"#888",fontWeight:700}}>{omr(portAmt)}</div>}
+            {pctVal>0 && <div style={{fontSize:small?9:10,color:color,fontWeight:800}}>{pctVal}% إنجاز</div>}
+          </div>
+        ) : bD ? (
+          <div style={{textAlign:"right",flexShrink:0}}>
+            <div style={{fontSize:small?9:11,fontWeight:900,color:color}}>{bD.count.toLocaleString()} حساب</div>
+            <div style={{fontSize:small?9:10,color:"#888",fontWeight:700}}>{omr(bD.amt)}</div>
+          </div>
+        ) : null}
       </div>
-      {/* مبلغ المحفظة */}
-      {showPort && <div style={{background:`${color}0d`,borderRadius:8,padding:small?"5px 8px":"6px 10px",
-        marginBottom:8,display:"flex",justifyContent:"space-between",alignItems:"center"}}>
-        <span style={{fontSize:small?9:10,color:"#888",fontWeight:700}}>إجمالي المحفظة</span>
-        <span style={{fontSize:small?11:13,fontWeight:900,color:color}}>{omr(portAmt||0)}</span>
-      </div>}
+
+      {/* ── شريط المحفظة (إذا وُجدت) ── */}
+      {hasPort && (
+        <div style={{background:`${color}10`,borderRadius:8,padding:small?"4px 8px":"5px 10px",
+          marginBottom:8,display:"flex",justifyContent:"space-between",alignItems:"center"}}>
+          <span style={{fontSize:small?9:10,color:"#777",fontWeight:700}}>إجمالي المحفظة</span>
+          <span style={{fontSize:small?11:13,fontWeight:900,color:color}}>{omr(portAmt)}</span>
+        </div>
+      )}
+
+      {/* ── صف المبالغ: مدفوع / تسويات / إجمالي ── */}
       <AmountRow paid={paid} adj={adj} color={color} small={small} cnt={cnt}/>
     </div>
   );
@@ -9940,7 +9975,7 @@ export default function Dashboard() {
             <SectionHeader title="🏛 المكتب الرئيسي" paid={hPd} adj={hAd} color="#6c3fa0" small={small}/>
             <div style={{ padding: small?"10px":"14px 16px", display:"flex", flexDirection:"column", gap: small?8:10 }}>
               {data.headOffice.map((c,i) => (
-                <EntityCard key={c.name} name={c.name} paid={c.paid} adj={c.adj} cBranch={complaintsBranchMap} isHO={true} color="#6c3fa0" rank={i+1} small={small} portAmt={c.portAmt||0} portCnt={c.portCnt||0}/>
+                <EntityCard key={c.name} name={c.name} paid={c.paid} adj={c.adj} cBranch={complaintsBranchMap} color="#6c3fa0" rank={i+1} small={small} portAmt={c.portAmt||0} portCnt={c.portCnt||0}/>
               ))}
             </div>
           </div>
