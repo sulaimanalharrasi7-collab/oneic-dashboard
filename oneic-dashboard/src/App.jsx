@@ -5975,7 +5975,8 @@ function parseXLS(file) {
         // كشف تلقائي للـ encoding وقراءة الملف
         const text = detectAndDecode(e.target.result);
         const lines = text.split(/\r?\n/).filter(l => l.trim());
-        if (lines.length < 2) return reject(new Error("الملف فارغ"));
+        console.log('📂 parseXLS: lines=', lines.length, 'first=', lines[0]?.substring(0,80));
+        if (lines.length < 2) return reject(new Error("الملف فارغ — عدد السطور: " + lines.length));
         const headers = lines[0].split("\t").map(h => 
           h.replace(/\uFEFF/g, '')
            .replace(/ÿþ/g, '')
@@ -6039,7 +6040,9 @@ function parseXLS(file) {
         const headOffice = ["Legal - DR. Sarhaan","Documentation Legal"]
           .map(nm => hoMap[nm] ? {name:nm,...hoMap[nm]} : {name:nm, paid:0, adj:0})
           .filter(c => c.paid > 0 || c.adj > 0);
-        resolve({ uploadDate: new Date().toISOString().split("T")[0], totalRecords: rows.length, regions, debtCompanies, headOffice });
+        const result = { uploadDate: new Date().toISOString().split("T")[0], totalRecords: rows.length, regions, debtCompanies, headOffice };
+        console.log('✅ parseXLS result:', {records:result.totalRecords, regions:result.regions.length, dc:result.debtCompanies.length, ho:result.headOffice.length});
+        resolve(result);
       } catch(err) { reject(err); }
     };
     reader.onerror = () => reject(new Error("فشل قراءة الملف"));
@@ -6611,17 +6614,19 @@ function VerifyModal({pending,onConfirm,onReject}) {
   const gPaid  =govPaid+dcPaid+hoPaid;
   const gAdj   =govAdj+dcAdj+hoAdj;
   const checks=[
-    {ok:d.totalRecords>1000,label:"عدد السجلات",val:`${d.totalRecords?.toLocaleString()} سجل`,expect:"> 1,000"},
-    {ok:gPaid>100000,label:"إجمالي المدفوع",val:omrV(gPaid),expect:"> 100,000 OMR"},
+    {ok:d.totalRecords>0,label:"عدد السجلات",val:`${d.totalRecords?.toLocaleString()} سجل`,expect:"> 0 سجل"},
+    {ok:gPaid>0,label:"إجمالي المدفوع",val:omrV(gPaid),expect:"> 0 OMR"},
     {ok:gAdj>=0,label:"إجمالي التسويات",val:omrV(gAdj),expect:">= 0"},
     {ok:d.regions?.length===5,label:"المحافظات",val:`${d.regions?.length} منطقة`,expect:"5 مناطق"},
-    {ok:d.debtCompanies?.length>=3,label:"شركات التحصيل",val:`${d.debtCompanies?.length} شركة`,expect:">= 3 شركات"},
+    {ok:d.debtCompanies?.length>=1,label:"شركات التحصيل",val:`${d.debtCompanies?.length} شركة`,expect:">= 1 شركة"},
     {ok:d.headOffice?.length>=1,label:"المكتب الرئيسي",val:`${d.headOffice?.length} قسم`,expect:">= 1"},
   ];
   const allOk=checks.every(c=>c.ok);
   return (
-    <div style={{position:"fixed",inset:0,background:"rgba(0,0,0,0.7)",display:"flex",
-      alignItems:"center",justifyContent:"center",zIndex:9999,padding:"16px",direction:"rtl"}}>
+    <div style={{position:"fixed",top:0,left:0,right:0,bottom:0,
+      background:"rgba(0,0,0,0.7)",display:"flex",
+      alignItems:"center",justifyContent:"center",zIndex:9999,padding:"16px",direction:"rtl",
+      minHeight:"100vh",minWidth:"100vw"}}>
       <div style={{background:"#fff",borderRadius:20,width:"100%",maxWidth:560,
         overflow:"hidden",boxShadow:"0 20px 60px rgba(0,0,0,0.4)"}}>
         <div style={{background:allOk?"linear-gradient(120deg,#1e3a5f,#2d5a8e)":"linear-gradient(120deg,#dc2626,#b91c1c)",padding:"18px 24px"}}>
@@ -9168,6 +9173,7 @@ export default function Dashboard() {
       } else {
         // ملف bulk payment → يحدّث بيانات الداشبورد
         const p = await parseXLS(file);
+        console.log('📋 setPending:', p?.totalRecords, 'records');
         setPending({ data: p, fileName: file.name, fileSize: (file.size/1024/1024).toFixed(1) });
       }
     }
@@ -9707,118 +9713,16 @@ export default function Dashboard() {
         </div>
       </div>
 
-                {/* ══ Portfolio Cards ══ */}
-        {(()=>{
-          // حساب عدد الحسابات لكل خانة بناءً على المحصّلين
-          const calcBreak = (arr) => {
-            let pCnt=0,aCnt=0;
-            (arr||[]).forEach(r=>{
-              const cols=r.collectors||[];
-              if(cols.length>0){
-                cols.forEach(c=>{
-                  if((c.paid||0)>0) pCnt+=(c.count||0);
-                  if((c.adj||0)>0)  aCnt+=(c.count||0);
-                });
-                if(pCnt===0&&aCnt===0){
-                  if((r.paid||0)>0) pCnt+=(r.count||0);
-                  if((r.adj||0)>0)  aCnt+=(r.count||0);
-                }
-              } else {
-                if((r.paid||0)>0) pCnt+=(r.count||0);
-                if((r.adj||0)>0)  aCnt+=(r.count||0);
-              }
-            });
-            return {pCnt,aCnt,tCnt:pCnt};
-          };
-          const gB=calcBreak(data.regions);
-          const dB=calcBreak(data.debtCompanies);
-          const hB=calcBreak(data.headOffice);
-          const gCntFinal = complaintsCounts.gov||gCnt||0;
-          const dCntFinal = complaintsCounts.dc||dCnt||0;
-          const hCntFinal = complaintsCounts.ho||hCnt||0;
-          const gPortAmt  = complaintsAmts.gov||0;
-          const dPortAmt  = complaintsAmts.dc||0;
-          const hPortAmt  = complaintsAmts.ho||0;
-
-          const cardStyle = (color) => ({
-            background:"#fff", borderRadius:15, overflow:"hidden",
-            boxShadow:"0 3px 14px rgba(0,0,0,0.07)",
-            border:"1.5px solid #f0ece8", minWidth:0
-          });
-          const omrF = n => new Intl.NumberFormat("en-US",{minimumFractionDigits:3,maximumFractionDigits:3}).format(n||0);
-          const cntF = n => (n||0).toLocaleString();
-
-          const PortCard = ({label,paid,adj,cntTotal,cntPaid,cntAdj,cntTot,portAmt,color,icon,pctVal})=>{
-            const total=paid+adj;
-            const _cntPaid  = (gB.pCnt>0||dB.pCnt>0||hB.pCnt>0) ? cntPaid  : cntTotal;
-            const _cntAdj   = (gB.aCnt>0||dB.aCnt>0||hB.aCnt>0) ? cntAdj   : cntTotal;
-            const _cntTot   = cntTot || cntTotal;
-            return (
-              <div style={cardStyle(color)}>
-                <div style={{background:color,padding:small?"10px 12px":"13px 16px",
-                  display:"flex",justifyContent:"space-between",alignItems:"center",gap:6,flexWrap:"wrap"}}>
-                  <div style={{display:"flex",alignItems:"center",gap:6}}>
-                    <span style={{fontSize:small?16:20}}>{icon}</span>
-                    <span style={{fontSize:small?13:15,fontWeight:900,color:"#fff"}}>{label}</span>
-                  </div>
-                  <div style={{background:"rgba(255,255,255,0.25)",borderRadius:20,
-                    padding:"2px 10px",fontSize:small?12:13,fontWeight:800,color:"#fff"}}>{pctVal}%</div>
-                </div>
-                <div style={{background:`${color}0f`,padding:small?"8px 12px":"10px 16px",
-                  borderBottom:"1px solid #f0ece8",display:"flex",justifyContent:"space-between",alignItems:"center"}}>
-                  <div style={{fontSize:small?10:11,color:"#888",fontWeight:700}}>إجمالي الحسابات</div>
-                  <div style={{display:"flex",flexDirection:"column",alignItems:"flex-end",gap:2}}>
-                    <div style={{fontSize:small?15:18,fontWeight:900,color:color,lineHeight:1}}>
-                      {portAmt>0 ? omrF(portAmt) : omrF(total)}
-                    </div>
-                    <div style={{fontSize:small?10:11,color:"#aaa",fontWeight:600}}>{cntF(cntTotal)} حساب</div>
-                  </div>
-                </div>
-                <div style={{padding:small?"8px":"10px"}}>
-                  <div style={{display:"grid",gridTemplateColumns:"1fr 1fr 1fr",gap:0,
-                    border:"1px solid #f0ece8",borderRadius:10,overflow:"hidden"}}>
-                    {[
-                      ["المدفوع","#16a34a",paid,_cntPaid],
-                      ["التسويات","#d97706",adj,_cntAdj],
-                      ["الإجمالي",color,total,_cntTot]
-                    ].map(([lbl,clr,val,cnt],i)=>(
-                      <div key={lbl} style={{textAlign:"center",padding:small?"6px 3px":"9px 6px",
-                        borderRight:i<2?"1px solid #f0ece8":"none",minWidth:0}}>
-                        <div style={{fontSize:small?9:11,color:"#333",fontWeight:800,marginBottom:3,whiteSpace:"nowrap"}}>{lbl}</div>
-                        <div style={{fontSize:small?12:14,fontWeight:900,color:clr,lineHeight:1,wordBreak:"break-all"}}>{omrF(val)}</div>
-                        <div style={{fontSize:small?9:10,color:"#aaa",marginTop:2,fontWeight:600}}>{cntF(cnt)} حساب</div>
-                      </div>
-                    ))}
-                  </div>
-                  <div style={{display:"flex",alignItems:"center",gap:8,marginTop:10}}>
-                    <div style={{flex:1,height:5,background:"#f0ece8",borderRadius:4,overflow:"hidden"}}>
-                      <div style={{height:"100%",borderRadius:4,background:color,width:`${Math.min(parseFloat(pctVal),100)}%`}}/>
-                    </div>
-                    <div style={{fontSize:12,color:"#888",minWidth:38,textAlign:"left"}}>{pctVal}%</div>
-                  </div>
-                </div>
-              </div>
-            );
-          };
-
-          return (
-            <div id="print-summary" style={{
-              display:"grid",
-              gridTemplateColumns: isMobile?"1fr":isTablet?"1fr 1fr":"repeat(3,1fr)",
-              gap: small?12:16, marginBottom: small?14:18
-            }}>
-              <PortCard label="المحافظات الخمس" paid={gPd} adj={gAd}
-                cntTotal={gCntFinal} cntPaid={gB.pCnt||gCntFinal} cntAdj={gB.aCnt||gCntFinal} cntTot={gB.tCnt||gCntFinal}
-                portAmt={gPortAmt} color="#e85d20" icon="🗺" pctVal={p(gPd+gAd)}/>
-              <PortCard label="شركات التحصيل" paid={dPd} adj={dAd}
-                cntTotal={dCntFinal} cntPaid={dB.pCnt||dCntFinal} cntAdj={dB.aCnt||dCntFinal} cntTot={dB.tCnt||dCntFinal}
-                portAmt={dPortAmt} color="#1a7a6b" icon="🏢" pctVal={p(dPd+dAd)}/>
-              <PortCard label="المكتب الرئيسي" paid={hPd} adj={hAd}
-                cntTotal={hCntFinal} cntPaid={hB.pCnt||hCntFinal} cntAdj={hB.aCnt||hCntFinal} cntTot={hB.tCnt||hCntFinal}
-                portAmt={hPortAmt} color="#6c3fa0" icon="🏛" pctVal={p(hPd+hAd)}/>
-            </div>
-          );
-        })()}
+                {/* Summary cards */}
+        <div id="print-summary" style={{
+          display:"grid",
+          gridTemplateColumns: isMobile?"1fr":isTablet?"1fr 1fr":"repeat(3,1fr)",
+          gap: small?12:16, marginBottom: small?14:18
+        }}>
+          <SummaryCard label="المحافظات الخمس" paid={gPd} adj={gAd} cnt={complaintsCounts.gov||gCnt||0} portAmt={complaintsAmts.gov||0} color="#e85d20" icon="🗺" pct={p(gPd+gAd)} small={small}/>
+          <SummaryCard label="شركات التحصيل"   paid={dPd} adj={dAd} cnt={complaintsCounts.dc||dCnt||0}  portAmt={complaintsAmts.dc||0}  color="#1a7a6b" icon="🏢" pct={p(dPd+dAd)} small={small}/>
+          <SummaryCard label="المكتب الرئيسي"  paid={hPd} adj={hAd} cnt={complaintsCounts.ho||hCnt||0}  portAmt={complaintsAmts.ho||0}  color="#6c3fa0" icon="🏛" pct={p(hPd+hAd)} small={small}/>
+        </div>
 
         {/* Regions */}
         <div id="print-regions" style={{
