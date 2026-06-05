@@ -130,20 +130,19 @@ const SEED = {
     }
   ],
   debtCompanies: [
-    { name: "Ejada",                         paid: 0.000,       adj: 0.000,       portAmt: 261235.000,  portCnt: 1938  },
-    { name: "Matrix Debt Collection",        paid: 169090.790,  adj: 29481.071,   portAmt: 3084947.000, portCnt: 23398 },
-    { name: "Compass Risk Support Services", paid: 113050.394,  adj: 10489.486,   portAmt: 510610.000,  portCnt: 3992  },
-    { name: "National Center",               paid: 66523.667,   adj: 4600.167,    portAmt: 1089657.000, portCnt: 6741  },
-    { name: "Tahseel United",                paid: 0.000,       adj: 0.000,       portAmt: 0.000,       portCnt: 0     },
-    { name: "High Speed Company",            paid: 0.000,       adj: 0.000,       portAmt: 0.000,       portCnt: 0     }
-  ],
+    { name: "Ejada",                         paid: 0.000,       adj: 0.000,       portAmt: 0,           portCnt: 1938  },
+    { name: "Matrix Debt Collection",        paid: 169090.790,  adj: 29481.071,   portAmt: 2882018.894, portCnt: 23398 },
+    { name: "Compass Risk Support Services", paid: 113050.394,  adj: 0.000,       portAmt: 386199.737,  portCnt: 3992  },
+    { name: "National Center",               paid: 133891.609,  adj: 3174.667,    portAmt: 1014744.033, portCnt: 6741  },
+    { name: "Tahseel United",                paid: 0.000,       adj: 0.000,       portAmt: 0,           portCnt: 108   },
+    { name: "High Speed Company",            paid: 0.000,       adj: 0.000,       portAmt: 0,           portCnt: 35    }],
   headOffice: [
-    { name: "Legal - DR. Sarhaan", paid: 46866.090, adj: 14781.368, portAmt: 3850803.888, portCnt: 5274 },
-    { name: "Documentation Legal",  paid: 1915.939,  adj: 3468.859,  portAmt: 0,           portCnt: 0    },
-    { name: "HO",                   paid: 0.000,     adj: 0.000,     portAmt: 0,           portCnt: 0    },
-    { name: "Saif Legal",           paid: 0.000,     adj: 0.000,     portAmt: 0,           portCnt: 0    }
+    { name: "Legal - DR. Sarhaan", paid: 46866.090, adj: 14781.368, portAmt: 3229651.681, portCnt: 3662 },
+    { name: "Documentation Legal",  paid: 1915.939,  adj: 3468.859,  portAmt: 489409.003,  portCnt: 1136 },
+    { name: "HO",                   paid: 0.000,     adj: 0.000,     portAmt: 0,           portCnt: 340  },
+    { name: "Saif Legal",           paid: 0.000,     adj: 0.000,     portAmt: 27215.336,   portCnt: 136  }
   ],
-  totalPortfolio: { amt: 9414256.834, cnt: 47963 },
+  totalPortfolio: { amt: 9414256.834, cnt: 47963, outstanding: 8394362.802 },
   totalCollection: { paid: 863165.364, adj: 128508.848 }
 };
 
@@ -6049,29 +6048,33 @@ async function parseXLS(file) {
           "South and North Al Batinah":                    "الباطنة الشمالية والجنوبية"
         };
 
-        // قاموس المحافظ (portAmt, portCnt) — ثابت من مشروع ONEIC
+        // ══════════════════════════════════════════════════════════════
+        // قاموس المحافظ — مبني من ملف complaints الفعلي (O/S Amount)
+        // 47,963 حساب | 8,394,362.802 OMR إجمالي
+        // ══════════════════════════════════════════════════════════════
         const PORT_DATA = {
           regions: {
-            "Dhofar":                                      { portAmt: 0,          portCnt: 0    },
-            "Dhofar ":                                     { portAmt: 0,          portCnt: 0    },
-            "Musandam, Al Burimai and Al Dahirah":         { portAmt: 0,          portCnt: 0    },
-            "MUSCAT AND AL DAKHILIYAH":                    { portAmt: 0,          portCnt: 0    },
-            "North and South Al Shaurqiah and Al Wasatah": { portAmt: 0,          portCnt: 0    },
-            "South and North Al Batinah":                  { portAmt: 0,          portCnt: 0    }
+            "Dhofar":                                        { portAmt: 1946.119,    portCnt: 25    },
+            "Dhofar ":                                       { portAmt: 1946.119,    portCnt: 25    },
+            "Musandam, Al Burimai and Al Dahirah":           { portAmt: 37449.515,   portCnt: 491   },
+            "MUSCAT AND AL DAKHILIYAH":                      { portAmt: 68131.760,   portCnt: 1279  },
+            "North and South Al Shaurqiah and Al Wasatah":   { portAmt: 164461.982,  portCnt: 2463  },
+            "South and North Al Batinah":                    { portAmt: 93541.029,   portCnt: 2219  }
           },
           dc: {
-            "Ejada":                         { portAmt: 261235.000,  portCnt: 1938  },
-            "Matrix Debt Collection":        { portAmt: 3084947.000, portCnt: 23398 },
-            "Compass Risk Support Services": { portAmt: 510610.000,  portCnt: 3992  },
-            "National Center":               { portAmt: 1089657.000, portCnt: 6741  },
-            "Tahseel United":                { portAmt: 0,           portCnt: 0     },
-            "High Speed Company":            { portAmt: 0,           portCnt: 0     }
+            "Matrix Debt Collection":        { portAmt: 2882018.894, portCnt: 23398 },
+            "National Center":               { portAmt: 1014744.033, portCnt: 6741  },
+            "Compass Risk Support Services": { portAmt: 386199.737,  portCnt: 3992  },
+            "Ejada":                         { portAmt: 0,           portCnt: 1938  },
+            "Tahseel United":                { portAmt: 0,           portCnt: 108   },
+            "High Speed Company":            { portAmt: 0,           portCnt: 35    },
+            "High Speed company":            { portAmt: 0,           portCnt: 35    }
           },
           ho: {
-            "Legal - DR. Sarhaan":  { portAmt: 3850803.888, portCnt: 5274 },
-            "Documentation Legal":  { portAmt: 0,           portCnt: 0    },
-            "HO":                   { portAmt: 0,           portCnt: 0    },
-            "Saif Legal":           { portAmt: 0,           portCnt: 0    }
+            "Legal - DR. Sarhaan":  { portAmt: 3229651.681, portCnt: 3662 },
+            "Documentation Legal":  { portAmt: 489409.003,  portCnt: 1136 },
+            "Saif Legal":           { portAmt: 27215.336,   portCnt: 136  },
+            "HO":                   { portAmt: 0,           portCnt: 340  }
           }
         };
 
@@ -6208,7 +6211,7 @@ async function parseXLS(file) {
           regions,
           debtCompanies,
           headOffice,
-          totalPortfolio: { amt: 9414256.834, cnt: 47963 }
+          totalPortfolio: { amt: 9414256.834, cnt: 47963, outstanding: 8394362.802 }
         });
 
       } catch(err) {
@@ -8987,10 +8990,10 @@ export default function Dashboard() {
     // ضمان وجود كل أقسام المكتب الرئيسي الأربعة دائماً
     const HO_REQUIRED = ["Legal - DR. Sarhaan","Documentation Legal","HO","Saif Legal"];
     const HO_PORT_DATA = {
-      "Legal - DR. Sarhaan": { portAmt: 3850803.888, portCnt: 5274 },
-      "Documentation Legal":  { portAmt: 0, portCnt: 0 },
-      "HO":                   { portAmt: 0, portCnt: 0 },
-      "Saif Legal":           { portAmt: 0, portCnt: 0 }
+      "Legal - DR. Sarhaan": { portAmt: 3229651.681, portCnt: 3662 },
+      "Documentation Legal":  { portAmt: 489409.003,  portCnt: 1136 },
+      "HO":                   { portAmt: 0,           portCnt: 340  },
+      "Saif Legal":           { portAmt: 27215.336,   portCnt: 136  }
     };
     const mergedHO = HO_REQUIRED.map(nm => {
       const fromNew = (newData.headOffice||[]).find(c=>c.name===nm);
