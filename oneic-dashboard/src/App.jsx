@@ -130,14 +130,21 @@ const SEED = {
     }
   ],
   debtCompanies: [
-    { name: "Compass Risk Support Services", paid: 113050.394, adj: 10489.486 },
-    { name: "Matrix Debt Collection",        paid: 169090.790, adj: 29481.071 },
-    { name: "National Center",               paid: 66523.667,  adj: 4600.167  }
+    { name: "Ejada",                         paid: 0.000,       adj: 0.000,       portAmt: 261235.000,  portCnt: 1938  },
+    { name: "Matrix Debt Collection",        paid: 169090.790,  adj: 29481.071,   portAmt: 3084947.000, portCnt: 23398 },
+    { name: "Compass Risk Support Services", paid: 113050.394,  adj: 10489.486,   portAmt: 510610.000,  portCnt: 3992  },
+    { name: "National Center",               paid: 66523.667,   adj: 4600.167,    portAmt: 1089657.000, portCnt: 6741  },
+    { name: "Tahseel United",                paid: 0.000,       adj: 0.000,       portAmt: 0.000,       portCnt: 0     },
+    { name: "High Speed Company",            paid: 0.000,       adj: 0.000,       portAmt: 0.000,       portCnt: 0     }
   ],
   headOffice: [
-    { name: "Legal - DR. Sarhaan", paid: 46866.090, adj: 14781.368 },
-    { name: "Documentation Legal",  paid: 1915.939,  adj: 3468.859  }
-  ]
+    { name: "Legal - DR. Sarhaan", paid: 46866.090, adj: 14781.368, portAmt: 0, portCnt: 0 },
+    { name: "Documentation Legal",  paid: 1915.939,  adj: 3468.859,  portAmt: 0, portCnt: 0 },
+    { name: "HO",                   paid: 0.000,     adj: 0.000,     portAmt: 0, portCnt: 0 },
+    { name: "Saif Legal",           paid: 0.000,     adj: 0.000,     portAmt: 0, portCnt: 0 }
+  ],
+  totalPortfolio: { amt: 9414256.834, cnt: 47963 },
+  totalCollection: { paid: 863165.364, adj: 128508.848 }
 };
 
 // ── Bulk Payment Seed Data ────────────────────────────────────────────────────
@@ -6444,7 +6451,7 @@ function SectionHeader({title,paid,adj,color,small}) {
 }
 
 // ── EntityCard ─────────────────────────────────────────────────────────────
-function EntityCard({name,paid,adj,color,rank,small,cnt,cBranch,isHO}) {
+function EntityCard({name,paid,adj,color,rank,small,cnt,cBranch,isHO,portAmt,portCnt}) {
   // للمكتب الرئيسي: نستخدم HEAD_OFFICE_TOTAL، للشركات: نبحث بالاسم
   let bD = null;
   if (isHO) {
@@ -6453,21 +6460,35 @@ function EntityCard({name,paid,adj,color,rank,small,cnt,cBranch,isHO}) {
     const bKey = Object.keys(cBranch||{}).find(k => k.trim()===name?.trim() || name?.includes(k) || k.includes(name||'__'));
     bD = bKey ? (cBranch||{})[bKey] : null;
   }
+  const showPort = (portAmt||0) > 0 || (portCnt||0) > 0;
+  const total = (paid||0) + (adj||0);
+  const pctVal = (portAmt||0) > 0 ? Math.min(100, Math.round(total/(portAmt)*100)) : 0;
   return (
     <div className="entity-card" style={{background:"#fff",borderRadius:13,
       border:"1.5px solid #f0ece8",boxShadow:"0 2px 10px rgba(0,0,0,0.05)",
       padding:small?"12px 14px":"14px 18px",borderRight:`5px solid ${color}`}}>
-      <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",gap:10,marginBottom:10}}>
+      <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",gap:10,marginBottom:showPort?8:10}}>
         <div style={{display:"flex",alignItems:"center",gap:10}}>
           <div style={{width:small?30:36,height:small?30:36,borderRadius:9,background:color,flexShrink:0,
             display:"flex",alignItems:"center",justifyContent:"center",fontSize:small?14:16,fontWeight:800,color:"#fff"}}>{rank}</div>
           <div className="entity-name" style={{fontSize:small?14:17,fontWeight:900,color:"#000"}}>{name}</div>
         </div>
-        {bD&&<div style={{textAlign:"right",flexShrink:0}}>
+        {showPort && <div style={{textAlign:"right",flexShrink:0}}>
+          <div style={{fontSize:small?10:12,fontWeight:900,color:color}}>{(portCnt||0).toLocaleString()} حساب</div>
+          <div style={{fontSize:small?10:11,color:"#888",fontWeight:700}}>{omr(portAmt||0)}</div>
+          {pctVal>0&&<div style={{fontSize:small?9:10,color:color,fontWeight:700}}>{pctVal}%</div>}
+        </div>}
+        {!showPort && bD&&<div style={{textAlign:"right",flexShrink:0}}>
           <div style={{fontSize:small?10:12,fontWeight:900,color:color}}>{bD.count.toLocaleString()} حساب</div>
           <div style={{fontSize:small?10:11,color:"#888",fontWeight:700}}>{omr(bD.amt)}</div>
         </div>}
       </div>
+      {/* مبلغ المحفظة */}
+      {showPort && <div style={{background:`${color}0d`,borderRadius:8,padding:small?"5px 8px":"6px 10px",
+        marginBottom:8,display:"flex",justifyContent:"space-between",alignItems:"center"}}>
+        <span style={{fontSize:small?9:10,color:"#888",fontWeight:700}}>إجمالي المحفظة</span>
+        <span style={{fontSize:small?11:13,fontWeight:900,color:color}}>{omr(portAmt||0)}</span>
+      </div>}
       <AmountRow paid={paid} adj={adj} color={color} small={small} cnt={cnt}/>
     </div>
   );
@@ -9234,8 +9255,21 @@ export default function Dashboard() {
     const ga = newData.regions.reduce((s,r)=>s+r.adj,0)
              + newData.debtCompanies.reduce((s,r)=>s+r.adj,0)
              + newData.headOffice.reduce((s,r)=>s+r.adj,0);
+    // حفظ portAmt/portCnt من البيانات الحالية إذا لم تكن في newData
+    const mergedCompanies = (newData.debtCompanies||[]).map(c => {
+      const existing = data.debtCompanies?.find(d=>d.name===c.name);
+      return { ...c, portAmt: c.portAmt||existing?.portAmt||0, portCnt: c.portCnt||existing?.portCnt||0 };
+    });
+    const mergedHO = (newData.headOffice||[]).map(c => {
+      const existing = data.headOffice?.find(d=>d.name===c.name);
+      return { ...c, portAmt: c.portAmt||existing?.portAmt||0, portCnt: c.portCnt||existing?.portCnt||0 };
+    });
     const dataToSave = {
       ...newData,
+      debtCompanies: mergedCompanies,
+      headOffice: mergedHO,
+      totalPortfolio: newData.totalPortfolio || data.totalPortfolio || { amt: 9414256.834, cnt: 47963 },
+      totalCollection: { paid: gp, adj: ga },
       grandPaid: gp,
       grandAdj: ga,
       lastUpdated: new Date().toISOString(),
@@ -9301,13 +9335,22 @@ export default function Dashboard() {
   const gPd = data.regions.reduce((s,r)=>s+r.paid,0);
   const gAd = data.regions.reduce((s,r)=>s+r.adj,0);
   const gCnt = data.regions.reduce((s,r)=>s+(r.count||0),0);
+  const gPortAmt = data.regions.reduce((s,r)=>s+(r.portAmt||0),0);
+  const gPortCnt = data.regions.reduce((s,r)=>s+(r.portCnt||0),0);
   const dPd = data.debtCompanies.reduce((s,r)=>s+r.paid,0);
   const dAd = data.debtCompanies.reduce((s,r)=>s+r.adj,0);
   const dCnt = data.debtCompanies.reduce((s,r)=>s+(r.count||0),0);
+  const dPortAmt = data.debtCompanies.reduce((s,r)=>s+(r.portAmt||0),0);
+  const dPortCnt = data.debtCompanies.reduce((s,r)=>s+(r.portCnt||0),0);
   const hPd = data.headOffice.reduce((s,r)=>s+r.paid,0);
   const hAd = data.headOffice.reduce((s,r)=>s+r.adj,0);
   const hCnt = data.headOffice.reduce((s,r)=>s+(r.count||0),0);
-  const gTotal = gPd+gAd+dPd+dAd+hPd+hAd;
+  const hPortAmt = data.headOffice.reduce((s,r)=>s+(r.portAmt||0),0);
+  const hPortCnt = data.headOffice.reduce((s,r)=>s+(r.portCnt||0),0);
+  const totalPaid = data.totalCollection?.paid || (gPd+dPd+hPd);
+  const totalAdj  = data.totalCollection?.adj  || (gAd+dAd+hAd);
+  const totalPort = data.totalPortfolio?.amt    || 9414256.834;
+  const gTotal = totalPaid+totalAdj;
   const p = v => gTotal>0 ? ((v/gTotal)*100).toFixed(1) : "0";
 
   const pad = isMobile ? "12px" : isTablet ? "16px" : "20px 24px";
@@ -9791,29 +9834,67 @@ export default function Dashboard() {
             const dCounts = calcCounts(data.debtCompanies);
             const hCounts = calcCounts(data.headOffice);
             return (<>
+              {/* ── الإجمالي الكلي للمشروع ── */}
+              <div style={{gridColumn:"1 / -1",background:"linear-gradient(135deg,#1a1a2e 0%,#16213e 60%,#0f3460 100%)",
+                borderRadius:15,padding:small?"12px 14px":"16px 20px",
+                boxShadow:"0 4px 20px rgba(0,0,0,0.15)",marginBottom:4}}>
+                <div style={{display:"flex",flexWrap:"wrap",gap:8,alignItems:"center",justifyContent:"space-between"}}>
+                  <div style={{display:"flex",alignItems:"center",gap:10}}>
+                    <img src={LOGO} style={{height:small?28:36,width:"auto",filter:"brightness(0) invert(1)",opacity:0.9}} alt="ONEIC"/>
+                    <div>
+                      <div style={{fontSize:small?12:14,fontWeight:900,color:"#fff",lineHeight:1.1}}>إجمالي محفظة عُمانتل</div>
+                      <div style={{fontSize:small?10:11,color:"rgba(255,255,255,0.6)",fontWeight:600}}>{(data.totalPortfolio?.cnt||47963).toLocaleString()} حساب · {data.uploadDate}</div>
+                    </div>
+                  </div>
+                  <div style={{display:"flex",gap:small?10:20,flexWrap:"wrap",alignItems:"center"}}>
+                    <div style={{textAlign:"center"}}>
+                      <div style={{fontSize:small?9:10,color:"rgba(255,255,255,0.6)",fontWeight:700,marginBottom:2}}>إجمالي المحفظة</div>
+                      <div style={{fontSize:small?15:20,fontWeight:900,color:"#fff",lineHeight:1}}>{omr(data.totalPortfolio?.amt||9414256.834)}</div>
+                    </div>
+                    <div style={{width:1,height:small?30:40,background:"rgba(255,255,255,0.2)"}}/>
+                    <div style={{textAlign:"center"}}>
+                      <div style={{fontSize:small?9:10,color:"rgba(255,255,255,0.6)",fontWeight:700,marginBottom:2}}>المدفوعات</div>
+                      <div style={{fontSize:small?14:17,fontWeight:900,color:"#4ade80",lineHeight:1}}>{omr(data.totalCollection?.paid||863165.364)}</div>
+                    </div>
+                    <div style={{textAlign:"center"}}>
+                      <div style={{fontSize:small?9:10,color:"rgba(255,255,255,0.6)",fontWeight:700,marginBottom:2}}>التسويات</div>
+                      <div style={{fontSize:small?14:17,fontWeight:900,color:"#fbbf24",lineHeight:1}}>{omr(data.totalCollection?.adj||128508.848)}</div>
+                    </div>
+                    <div style={{width:1,height:small?30:40,background:"rgba(255,255,255,0.2)"}}/>
+                    <div style={{textAlign:"center"}}>
+                      <div style={{fontSize:small?9:10,color:"rgba(255,255,255,0.6)",fontWeight:700,marginBottom:2}}>الإجمالي الكلي</div>
+                      <div style={{fontSize:small?15:20,fontWeight:900,color:"#60a5fa",lineHeight:1}}>{omr((data.totalCollection?.paid||863165.364)+(data.totalCollection?.adj||128508.848))}</div>
+                    </div>
+                    <div style={{background:"rgba(255,255,255,0.12)",borderRadius:8,padding:small?"4px 8px":"6px 12px",textAlign:"center"}}>
+                      <div style={{fontSize:small?9:10,color:"rgba(255,255,255,0.6)",fontWeight:700}}>نسبة الإنجاز</div>
+                      <div style={{fontSize:small?14:16,fontWeight:900,color:"#60a5fa"}}>{Math.min(100,Math.round(((data.totalCollection?.paid||863165.364)+(data.totalCollection?.adj||128508.848))/(data.totalPortfolio?.amt||9414256.834)*100))}%</div>
+                    </div>
+                  </div>
+                </div>
+              </div>
               <SummaryCard label="المحافظات الخمس"
                 paid={gPd} adj={gAd}
-                cnt={complaintsCounts.gov||gCounts.total||gCnt||0}
+                cnt={complaintsCounts.gov||gCounts.total||gPortCnt||gCnt||0}
                 cntPaid={complaintsCounts.govPaid||gCounts.paid||null}
                 cntAdj={complaintsCounts.govAdj||gCounts.adj||null}
                 cntTotal={complaintsCounts.govTotal||gCounts.combined||null}
-                portAmt={complaintsAmts.gov||0}
+                portAmt={complaintsAmts.gov||gPortAmt||0}
                 color="#e85d20" icon="🗺" pct={p(gPd+gAd)} small={small} isMobile={isMobile} isTablet={isTablet}/>
               <SummaryCard label="شركات التحصيل"
                 paid={dPd} adj={dAd}
-                cnt={complaintsCounts.dc||dCounts.total||dCnt||0}
+                cnt={complaintsCounts.dc||dCounts.total||dPortCnt||dCnt||0}
                 cntPaid={complaintsCounts.dcPaid||dCounts.paid||null}
                 cntAdj={complaintsCounts.dcAdj||dCounts.adj||null}
                 cntTotal={complaintsCounts.dcTotal||dCounts.combined||null}
-                portAmt={complaintsAmts.dc||0}
+                portAmt={complaintsAmts.dc||dPortAmt||0}
                 color="#1a7a6b" icon="🏢" pct={p(dPd+dAd)} small={small} isMobile={isMobile} isTablet={isTablet}/>
               <SummaryCard label="المكتب الرئيسي"
                 paid={hPd} adj={hAd}
-                cnt={complaintsCounts.ho||hCounts.total||hCnt||0}
+                cnt={complaintsCounts.ho||hCounts.total||hPortCnt||hCnt||0}
                 cntPaid={complaintsCounts.hoPaid||hCounts.paid||null}
                 cntAdj={complaintsCounts.hoAdj||hCounts.adj||null}
                 cntTotal={complaintsCounts.hoTotal||hCounts.combined||null}
-                portAmt={complaintsAmts.ho||0}
+                portAmt={complaintsAmts.ho||hPortAmt||0}
                 color="#6c3fa0" icon="🏛" pct={p(hPd+hAd)} small={small} isMobile={isMobile} isTablet={isTablet}/>
             </>);
           })()}
@@ -9849,7 +9930,7 @@ export default function Dashboard() {
             <SectionHeader title="🏢 شركات التحصيل" paid={dPd} adj={dAd} color="#1a7a6b" small={small}/>
             <div style={{ padding: small?"10px":"14px 16px", display:"flex", flexDirection:"column", gap: small?8:10 }}>
               {data.debtCompanies.map((c,i) => (
-                <EntityCard key={c.name} name={c.name} paid={c.paid} adj={c.adj} cBranch={complaintsBranchMap} color="#1a7a6b" rank={i+1} small={small}/>
+                <EntityCard key={c.name} name={c.name} paid={c.paid} adj={c.adj} cBranch={complaintsBranchMap} color="#1a7a6b" rank={i+1} small={small} portAmt={c.portAmt||0} portCnt={c.portCnt||0}/>
               ))}
             </div>
           </div>
@@ -9859,7 +9940,7 @@ export default function Dashboard() {
             <SectionHeader title="🏛 المكتب الرئيسي" paid={hPd} adj={hAd} color="#6c3fa0" small={small}/>
             <div style={{ padding: small?"10px":"14px 16px", display:"flex", flexDirection:"column", gap: small?8:10 }}>
               {data.headOffice.map((c,i) => (
-                <EntityCard key={c.name} name={c.name} paid={c.paid} adj={c.adj} cBranch={complaintsBranchMap} isHO={true} color="#6c3fa0" rank={i+1} small={small}/>
+                <EntityCard key={c.name} name={c.name} paid={c.paid} adj={c.adj} cBranch={complaintsBranchMap} isHO={true} color="#6c3fa0" rank={i+1} small={small} portAmt={c.portAmt||0} portCnt={c.portCnt||0}/>
               ))}
             </div>
           </div>
