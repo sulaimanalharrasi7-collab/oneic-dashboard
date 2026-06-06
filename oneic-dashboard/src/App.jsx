@@ -7350,92 +7350,100 @@ function AnalyticsModal({ bulk, onClose, small }) {
                 الدفعات اليومية — من {d.dateRange?.from} إلى {d.dateRange?.to}
               </div>
 
-              {/* Line chart SVG — تواريخ واضحة */}
+              {/* ── رسم بياني SVG احترافي ── */}
               {(() => {
-                const CW = Math.max(daily.length * 38, 680);
-                const CH = 220;
-                const cpx = 60, cpy = 24;
-                const cw = CW - cpx*2, ch = CH - cpy*2 - 40;
-                const cpts = daily.map((d,i)=>{
-                  const x = cpx + (daily.length>1 ? (i/(daily.length-1))*cw : cw/2);
-                  const y = cpy + ch - ((d.paid+d.adj)/maxDaily)*ch;
-                  return [x, y, d];
-                });
-                const cLine = cpts.map(([x,y],i)=>i===0?`M${x},${y}`:`L${x},${y}`).join(' ');
-                const cArea = cpts.length
-                  ? cLine+` L${cpts[cpts.length-1][0]},${cpy+ch} L${cpts[0][0]},${cpy+ch} Z`
-                  : '';
+                const STEP=Math.max(36,Math.min(56,1100/Math.max(daily.length,1)));
+                const CW=Math.max(daily.length*STEP+120,700);
+                const CH=300, CPX=68, CPY=42, CPB=64;
+                const cw=CW-CPX-20, ch=CH-CPY-CPB;
+                const minVal=Math.min(...daily.map(d=>d.paid+d.adj));
+                const maxVal=Math.max(...daily.map(d=>d.paid+d.adj),1);
+                const range=maxVal-minVal||1;
+                const xOf=i=>CPX+(daily.length>1?(i/(daily.length-1))*cw:cw/2);
+                const yOf=v=>CPY+ch-((v-minVal)/range)*ch;
+                const cpts=daily.map((d,i)=>({x:xOf(i),y:yOf(d.paid+d.adj),d}));
+                const smooth=cpts.map((p,i,a)=>{
+                  if(i===0) return `M${p.x},${p.y}`;
+                  const pv=a[i-1],c1x=pv.x+(p.x-pv.x)*0.4,c2x=pv.x+(p.x-pv.x)*0.6;
+                  return `C${c1x},${pv.y} ${c2x},${p.y} ${p.x},${p.y}`;
+                }).join(' ');
+                const area=cpts.length?smooth+` L${cpts[cpts.length-1].x},${CPY+ch} L${cpts[0].x},${CPY+ch} Z`:'';
                 return (
-                <div style={{background:"#f8fafc",borderRadius:14,padding:"16px 0 8px",
-                  border:"1px solid #e8f0fe",marginBottom:20,overflowX:"auto"}}>
-                  <svg width={CW} height={CH} style={{display:"block",minWidth:680}}>
+                <div style={{background:"linear-gradient(135deg,#0f172a,#1e293b)",borderRadius:16,
+                  padding:"14px 0 0",marginBottom:20,overflowX:"auto",boxShadow:"0 8px 32px rgba(0,0,0,0.3)"}}>
+                  <div style={{padding:"0 16px 10px",display:"flex",justifyContent:"space-between",alignItems:"center"}}>
+                    <div style={{fontSize:13,color:"rgba(255,255,255,0.9)",fontWeight:800}}>
+                      📈 الدفعات اليومية — {d.dateRange?.from} إلى {d.dateRange?.to}
+                    </div>
+                    <div style={{fontSize:11,color:"rgba(255,255,255,0.4)"}}>{daily.length} يوم · أعلى: {fmtK(maxVal)}</div>
+                  </div>
+                  <svg width={CW} height={CH} style={{display:"block",overflow:"visible"}}>
                     <defs>
-                      <linearGradient id="aGrad2" x1="0" y1="0" x2="0" y2="1">
-                        <stop offset="0%" stopColor="#1e3a5f" stopOpacity="0.35"/>
-                        <stop offset="100%" stopColor="#1e3a5f" stopOpacity="0.02"/>
+                      <linearGradient id="aGradB" x1="0" y1="0" x2="0" y2="1">
+                        <stop offset="0%" stopColor="#e85d20" stopOpacity="0.4"/>
+                        <stop offset="100%" stopColor="#e85d20" stopOpacity="0"/>
                       </linearGradient>
+                      <linearGradient id="lineGB" x1="0" y1="0" x2="1" y2="0">
+                        <stop offset="0%" stopColor="#60a5fa"/>
+                        <stop offset="50%" stopColor="#e85d20"/>
+                        <stop offset="100%" stopColor="#f97316"/>
+                      </linearGradient>
+                      <filter id="dotGlowB">
+                        <feDropShadow dx="0" dy="0" stdDeviation="3" floodColor="#e85d20" floodOpacity="0.7"/>
+                      </filter>
                     </defs>
-                    {/* Grid */}
-                    {[0,0.25,0.5,0.75,1].map(r=>(
-                      <g key={r}>
-                        <line x1={cpx} y1={cpy+ch*(1-r)} x2={CW-cpx} y2={cpy+ch*(1-r)}
-                          stroke={r===0?"#ccc":"#e8f0fe"} strokeWidth={r===0?1.5:1}
-                          strokeDasharray={r===0?"":"4,4"}/>
-                        <text x={cpx-8} y={cpy+ch*(1-r)+4} textAnchor="end"
-                          fontSize="11" fill="#666" fontWeight="700" fontFamily="Cairo">
-                          {fmtK(maxDaily*r)}
+                    {[0,0.25,0.5,0.75,1].map((r,gi)=>(
+                      <g key={gi}>
+                        <line x1={CPX} y1={CPY+ch*(1-r)} x2={CW-20} y2={CPY+ch*(1-r)}
+                          stroke="rgba(255,255,255,0.07)" strokeWidth={r===0?1.5:1} strokeDasharray={r===0?"":"5,5"}/>
+                        <text x={CPX-8} y={CPY+ch*(1-r)+4} textAnchor="end"
+                          fontSize="10" fill="rgba(255,255,255,0.45)" fontWeight="600" fontFamily="Cairo">
+                          {fmtK(minVal+range*r)}
                         </text>
                       </g>
                     ))}
-                    {/* Area */}
-                    {cArea && <path d={cArea} fill="url(#aGrad2)"/>}
-                    {/* Line */}
-                    {cLine && <path d={cLine} fill="none" stroke="#1e3a5f"
-                      strokeWidth="2.5" strokeLinejoin="round" strokeLinecap="round"/>}
-                    {/* Points + Labels */}
-                    {cpts.map(([x,y,day],i)=>{
-                      const total = day.paid+day.adj;
-                      const isBest = total===maxDaily;
-                      const isWorst = total===Math.min(...daily.map(d=>d.paid+d.adj));
-                      // تواريخ: كل يوم إذا أقل من 15، وإلا كل 3
-                      const showLabel = daily.length<=15 || i%Math.ceil(daily.length/15)===0 || isBest;
+                    {area&&<path d={area} fill="url(#aGradB)"/>}
+                    {smooth&&<path d={smooth} fill="none" stroke="#e85d2044" strokeWidth="7" strokeLinejoin="round" strokeLinecap="round"/>}
+                    {smooth&&<path d={smooth} fill="none" stroke="url(#lineGB)" strokeWidth="2.5" strokeLinejoin="round" strokeLinecap="round"/>}
+                    {cpts.map((pt,i)=>{
+                      const total=pt.d.paid+pt.d.adj;
+                      const isBest=total===maxVal;
+                      const isWorst=total===Math.min(...daily.map(x=>x.paid+x.adj));
+                      const isLast=i===cpts.length-1;
+                      const lbl=total>=1000000?(total/1000000).toFixed(2)+'M':total>=1000?(total/1000).toFixed(1)+'K':total.toFixed(0);
+                      const lblW=Math.max(lbl.length*6.5+14,36);
+                      const lblAbove=pt.y>CPY+ch*0.78;
+                      const lblY=lblAbove?pt.y-32:pt.y-22;
+                      const dotR=isBest?7:isLast?6:isWorst?5:4;
+                      const dotCol=isBest?"#f97316":isLast?"#60a5fa":isWorst?"#64748b":"#e2e8f0";
+                      const showDate=daily.length<=20||i%Math.ceil(daily.length/20)===0||isBest||isLast;
                       return (
-                        <g key={i}>
-                          {/* خط عمودي خفيف */}
-                          <line x1={x} y1={cpy+ch} x2={x} y2={y+8}
-                            stroke={isBest?"#e85d2030":"#1e3a5f15"} strokeWidth="1"/>
-                          {/* النقطة */}
-                          <circle cx={x} cy={y}
-                            r={isBest?8:isWorst?6:4}
-                            fill={isBest?"#e85d20":isWorst?"#888":"#1e3a5f"}
-                            stroke="#fff" strokeWidth="2"/>
-                          {/* قيمة أفضل يوم */}
-                          {isBest && (
+                        <g key={i} filter={isBest?"url(#dotGlowB)":undefined}>
+                          <line x1={pt.x} y1={CPY+ch} x2={pt.x} y2={pt.y+dotR+2}
+                            stroke="rgba(255,255,255,0.04)" strokeWidth="1"/>
+                          <rect x={pt.x-lblW/2} y={lblY-11} width={lblW} height={15} rx="7.5"
+                            fill={isBest?"#f97316":isLast?"#1d4ed8":isWorst?"#334155":"#1e3a5f"}
+                            stroke={isBest?"rgba(255,255,255,0.6)":"rgba(255,255,255,0.2)"} strokeWidth="0.8"/>
+                          <text x={pt.x} y={lblY} textAnchor="middle"
+                            fontSize="8.5" fill="#fff" fontWeight="800" fontFamily="Cairo">{lbl}</text>
+                          {isBest&&<text x={pt.x} y={lblY-15} textAnchor="middle" fontSize="11">🏆</text>}
+                          <circle cx={pt.x} cy={pt.y} r={dotR+4} fill="rgba(255,255,255,0.05)"/>
+                          <circle cx={pt.x} cy={pt.y} r={dotR+1.5} fill="rgba(255,255,255,0.1)"/>
+                          <circle cx={pt.x} cy={pt.y} r={dotR} fill={dotCol}
+                            stroke="rgba(255,255,255,0.7)" strokeWidth={isBest?2.5:1.5}/>
+                          <circle cx={pt.x-dotR*0.3} cy={pt.y-dotR*0.3} r={dotR*0.28} fill="rgba(255,255,255,0.4)"/>
+                          {showDate&&(
                             <g>
-                              <rect x={x-32} y={y-32} width={64} height={20} rx="5"
-                                fill="#e85d20"/>
-                              <text x={x} y={y-18} textAnchor="middle"
-                                fontSize="10" fill="#fff" fontWeight="bold" fontFamily="Cairo">
-                                🏆 {fmtK(total)}
+                              <line x1={pt.x} y1={CPY+ch+3} x2={pt.x} y2={CPY+ch+9}
+                                stroke="rgba(255,255,255,0.2)" strokeWidth="1"/>
+                              <text x={pt.x} y={CPY+ch+20} textAnchor="middle" fontSize="9.5"
+                                fill={isBest?"#f97316":isLast?"#60a5fa":"rgba(255,255,255,0.5)"}
+                                fontWeight={isBest||isLast?"800":"600"} fontFamily="Cairo">
+                                {pt.d.date.slice(5,7)+'-'+pt.d.date.slice(8)}
                               </text>
-                            </g>
-                          )}
-                          {/* التاريخ */}
-                          {showLabel && (
-                            <g>
-                              <line x1={x} y1={cpy+ch+2} x2={x} y2={cpy+ch+8}
-                                stroke="#aaa" strokeWidth="1"/>
-                              <text x={x} y={cpy+ch+20}
-                                textAnchor="middle" fontSize="10"
-                                fill={isBest?"#e85d20":"#444"}
-                                fontWeight={isBest?"900":"700"}
-                                fontFamily="Cairo">
-                                {day.date.slice(5,7)+'-'+day.date.slice(8)}
-                              </text>
-                              <text x={x} y={cpy+ch+32}
-                                textAnchor="middle" fontSize="9"
-                                fill="#aaa" fontFamily="Cairo">
-                                {day.date.slice(0,4)}
+                              <text x={pt.x} y={CPY+ch+33} textAnchor="middle"
+                                fontSize="8" fill="rgba(255,255,255,0.22)" fontFamily="Cairo">
+                                {pt.d.date.slice(0,4)}
                               </text>
                             </g>
                           )}
@@ -7445,6 +7453,7 @@ function AnalyticsModal({ bulk, onClose, small }) {
                   </svg>
                 </div>);
               })()}
+
 
               {/* ملخص أسبوعي */}
               <div style={{display:"grid",gridTemplateColumns:"repeat(3,1fr)",gap:12,marginBottom:16}}>
@@ -8578,59 +8587,187 @@ function HistoryModal({ history, onClose, small }) {
                 </div>
               ) : (
                 <div>
-                  <div style={{fontSize:13,color:"#555",fontWeight:700,marginBottom:12}}>
-                    آخر {Math.min(sorted.length,30)} يوم — الإجمالي الكلي
-                  </div>
-                  {/* bars */}
+                  {/* ── رسم بياني SVG احترافي ── */}
                   {(() => {
-                    const items=[...sorted].slice(0,30).reverse();
-                    const maxV=Math.max(...items.map(h=>h.grandTotal||0),1);
-                    return(
-                      <div>
-                        <div style={{display:"flex",alignItems:"flex-end",gap:4,height:180,
-                          padding:"0 8px",borderBottom:"2px solid #f0ece8",marginBottom:8}}>
-                          {items.map((h,i)=>{
-                            const pct=((h.grandTotal||0)/maxV)*100;
-                            const isLast=i===items.length-1;
-                            return(
-                            <div key={i} style={{flex:1,display:"flex",flexDirection:"column",alignItems:"center",gap:3}}>
-                              <div style={{fontSize:8,color:isLast?"#e85d20":"#999",fontWeight:isLast?800:500,textAlign:"center",writing:"vertical"}}>
-                                {omr(h.grandTotal||0).slice(0,7)}
-                              </div>
-                              <div style={{
-                                width:"100%",height:Math.max(pct,2)+"%",minHeight:4,
-                                background:isLast?"linear-gradient(180deg,#e85d20,#c44b10)":"linear-gradient(180deg,#2d5a8e,#1e3a5f)",
-                                borderRadius:"4px 4px 0 0",
-                                border:isLast?"2px solid #c44b10":"none",
-                                opacity:isLast?1:0.7,
-                                transition:"height 0.5s"
-                              }}/>
-                            </div>);
-                          })}
+                    const items = [...sorted].slice(0,30).reverse();
+                    const maxV  = Math.max(...items.map(h=>h.grandTotal||0), 1);
+                    const minV  = Math.min(...items.map(h=>h.grandTotal||0), 0);
+                    const W=680, H=260, PL=70, PR=16, PT=24, PB=52;
+                    const cW=W-PL-PR, cH=H-PT-PB;
+                    const fmtK = n => n>=1000000?(n/1000000).toFixed(2)+'M':n>=1000?(n/1000).toFixed(0)+'K':n.toFixed(0);
+                    const barW  = Math.max(cW/items.length - 4, 8);
+                    const barX  = (i) => PL + (i/(items.length)) * cW + (cW/items.length - barW)/2;
+                    const barH  = (v) => Math.max(((v||0)/maxV)*cH, 3);
+                    const barY  = (v) => PT + cH - barH(v);
+                    // خط منحنى
+                    const pts = items.map((h,i)=>[
+                      PL + (i+0.5)/(items.length)*cW,
+                      PT + cH - ((h.grandTotal||0)/maxV)*cH
+                    ]);
+                    const linePath = pts.map((p,i)=>i===0?`M${p[0]},${p[1]}`:`L${p[0]},${p[1]}`).join(' ');
+                    const areaPath = pts.length ? linePath+` L${pts[pts.length-1][0]},${PT+cH} L${pts[0][0]},${PT+cH} Z` : '';
+                    const gridLines = [0,0.25,0.5,0.75,1];
+                    return (
+                      <div style={{background:"linear-gradient(135deg,#f8fafc,#fff)",borderRadius:16,
+                        padding:"16px 8px 8px",border:"1.5px solid #e8f0fe",marginBottom:16,
+                        boxShadow:"0 4px 20px rgba(30,58,95,0.08)",overflow:"hidden"}}>
+                        <div style={{fontSize:13,color:"#1e3a5f",fontWeight:800,marginBottom:8,paddingRight:8,
+                          display:"flex",justifyContent:"space-between",alignItems:"center"}}>
+                          <span>📊 آخر {items.length} يوم — الإجمالي الكلي</span>
+                          <span style={{fontSize:11,color:"#888",fontWeight:600}}>{items[0]?.date} → {items[items.length-1]?.date}</span>
                         </div>
-                        <div style={{display:"flex",gap:4,padding:"0 8px",marginBottom:16}}>
-                          {items.map((h,i)=>(
-                            <div key={i} style={{flex:1,textAlign:"center",fontSize:8,
-                              color:i===items.length-1?"#e85d20":"#aaa",fontWeight:700}}>
-                              {(h.date||'').slice(5)}
-                            </div>
+                        <svg width="100%" viewBox={`0 0 ${W} ${H}`} style={{display:"block",overflow:"visible"}}>
+                          <defs>
+                            <linearGradient id="barGrad" x1="0" y1="0" x2="0" y2="1">
+                              <stop offset="0%" stopColor="#2d5a8e" stopOpacity="0.9"/>
+                              <stop offset="100%" stopColor="#1e3a5f" stopOpacity="0.6"/>
+                            </linearGradient>
+                            <linearGradient id="barGradHot" x1="0" y1="0" x2="0" y2="1">
+                              <stop offset="0%" stopColor="#f97316"/>
+                              <stop offset="100%" stopColor="#e85d20"/>
+                            </linearGradient>
+                            <linearGradient id="areaGrad" x1="0" y1="0" x2="0" y2="1">
+                              <stop offset="0%" stopColor="#e85d20" stopOpacity="0.18"/>
+                              <stop offset="100%" stopColor="#e85d20" stopOpacity="0.01"/>
+                            </linearGradient>
+                            <filter id="shadow">
+                              <feDropShadow dx="0" dy="2" stdDeviation="2" floodColor="#e85d20" floodOpacity="0.3"/>
+                            </filter>
+                          </defs>
+
+                          {/* Grid lines */}
+                          {gridLines.map((r,gi) => (
+                            <g key={gi}>
+                              <line x1={PL} y1={PT+cH*(1-r)} x2={W-PR} y2={PT+cH*(1-r)}
+                                stroke={r===0?"#cbd5e1":"#e2e8f0"} strokeWidth={r===0?1.5:1}
+                                strokeDasharray={r===0?"":"4,4"}/>
+                              <text x={PL-8} y={PT+cH*(1-r)+4} textAnchor="end"
+                                fontSize="11" fill="#64748b" fontWeight="600" fontFamily="Cairo">
+                                {fmtK(maxV*r)}
+                              </text>
+                            </g>
                           ))}
-                        </div>
-                        {/* ملخص */}
-                        <div style={{display:"grid",gridTemplateColumns:"repeat(3,1fr)",gap:12}}>
+
+                          {/* Bars */}
+                          {items.map((h,i) => {
+                            const isMax = (h.grandTotal||0) === maxV;
+                            const isLast = i === items.length-1;
+                            const bx = barX(i), bw = barW;
+                            const bh = barH(h.grandTotal||0);
+                            const by = barY(h.grandTotal||0);
+                            return (
+                              <g key={i}>
+                                {/* Bar shadow */}
+                                <rect x={bx+2} y={by+3} width={bw} height={bh}
+                                  rx="3" fill="rgba(0,0,0,0.06)"/>
+                                {/* Bar */}
+                                <rect x={bx} y={by} width={bw} height={bh}
+                                  rx="3"
+                                  fill={isMax?"url(#barGradHot)":isLast?"url(#barGradHot)":"url(#barGrad)"}
+                                  opacity={isMax||isLast?1:0.75}
+                                />
+                                {/* Shine */}
+                                <rect x={bx+2} y={by+2} width={Math.max(bw/3,3)} height={Math.min(bh-4,12)}
+                                  rx="2" fill="rgba(255,255,255,0.25)"/>
+                                {/* Value label on top */}
+                                {(isMax||isLast||items.length<=10) && (
+                                  <text x={bx+bw/2} y={by-5} textAnchor="middle"
+                                    fontSize="9" fill={isMax?"#e85d20":"#1e3a5f"}
+                                    fontWeight="800" fontFamily="Cairo">
+                                    {fmtK(h.grandTotal||0)}
+                                  </text>
+                                )}
+                              </g>
+                            );
+                          })}
+
+                          {/* Area fill */}
+                          {areaPath && <path d={areaPath} fill="url(#areaGrad)"/>}
+
+                          {/* Line */}
+                          {linePath && (
+                            <path d={linePath} fill="none" stroke="#e85d20"
+                              strokeWidth="2" strokeLinejoin="round" strokeLinecap="round"
+                              strokeDasharray="0"
+                              filter="url(#shadow)"
+                            />
+                          )}
+
+                          {/* Dots on line + labels */}
+                          {pts.map(([x,y],i) => {
+                            const isMax  = (items[i]?.grandTotal||0) === maxV;
+                            const isLast = i === pts.length-1;
+                            const isMin  = (items[i]?.grandTotal||0) === Math.min(...items.map(h=>h.grandTotal||0));
+                            const val    = items[i]?.grandTotal||0;
+                            const lbl    = val>=1000000?(val/1000000).toFixed(3)+'M':val>=1000?(val/1000).toFixed(1)+'K':val.toFixed(0);
+                            // label above or below based on position
+                            const labelY = y > PT+cH*0.85 ? y-28 : y-12;
+                            const dotR   = isMax ? 7 : isLast ? 6 : 4;
+                            const dotFill= isMax ? "#e85d20" : isLast ? "#f97316" : "#1e3a5f";
+                            const dotStroke = isMax||isLast ? "#fff" : "#e85d20";
+                            return (
+                              <g key={i}>
+                                {/* Label background pill */}
+                                <rect
+                                  x={x - 22} y={labelY - 12}
+                                  width={44} height={14}
+                                  rx="7"
+                                  fill={isMax?"#e85d20":isLast?"#f97316":"#1e3a5f"}
+                                  opacity={isMax||isLast?1:0.82}
+                                />
+                                {/* Label text */}
+                                <text x={x} y={labelY-1} textAnchor="middle"
+                                  fontSize="8.5" fill="#fff"
+                                  fontWeight="800" fontFamily="Cairo">
+                                  {lbl}
+                                </text>
+                                {/* Dot */}
+                                <circle cx={x} cy={y} r={dotR+1}
+                                  fill="rgba(255,255,255,0.4)" />
+                                <circle cx={x} cy={y} r={dotR}
+                                  fill={dotFill}
+                                  stroke={dotStroke}
+                                  strokeWidth="2"/>
+                                {/* Crown for max */}
+                                {isMax && (
+                                  <text x={x} y={labelY-16} textAnchor="middle"
+                                    fontSize="12" fontFamily="Cairo">🏆</text>
+                                )}
+                              </g>
+                            );
+                          })}
+
+                          {/* X-axis date labels */}
+                          {items.map((h,i) => {
+                            const showLabel = items.length<=10 || i%Math.ceil(items.length/8)===0 || i===items.length-1;
+                            const x = PL + (i+0.5)/(items.length)*cW;
+                            return showLabel && (
+                              <text key={i} x={x} y={PT+cH+18} textAnchor="middle"
+                                fontSize="10" fill={i===items.length-1?"#e85d20":"#64748b"}
+                                fontWeight={i===items.length-1?800:600} fontFamily="Cairo">
+                                {(h.date||'').slice(5)}
+                              </text>
+                            );
+                          })}
+                        </svg>
+
+                        {/* ملخص بطاقات */}
+                        <div style={{display:"grid",gridTemplateColumns:"repeat(3,1fr)",gap:10,marginTop:8,padding:"0 8px"}}>
                           {[
-                            ["🏆 أعلى يوم",omr(Math.max(...sorted.map(h=>h.grandTotal||0))),"#16a34a"],
-                            ["📉 أدنى يوم",omr(Math.min(...sorted.map(h=>h.grandTotal||0))),"#dc2626"],
-                            ["📈 المتوسط",omr(sorted.reduce((s,h)=>s+(h.grandTotal||0),0)/sorted.length),"#e85d20"],
-                          ].map(([l,v,c])=>(
+                            ["🏆 أعلى يوم", omr(Math.max(...sorted.map(h=>h.grandTotal||0))), "#16a34a",
+                              sorted.find(h=>h.grandTotal===Math.max(...sorted.map(x=>x.grandTotal||0)))?.date||""],
+                            ["📉 أدنى يوم", omr(Math.min(...sorted.map(h=>h.grandTotal||0))), "#dc2626",
+                              sorted.find(h=>h.grandTotal===Math.min(...sorted.map(x=>x.grandTotal||0)))?.date||""],
+                            ["📈 المتوسط", omr(sorted.reduce((s,h)=>s+(h.grandTotal||0),0)/sorted.length), "#e85d20", "معدل يومي"],
+                          ].map(([l,v,c,sub])=>(
                             <div key={l} style={{
-                              background:"#fff",borderRadius:12,padding:"14px",
-                              border:"1.5px solid #f0ece8",textAlign:"center",
-                              boxShadow:"0 2px 8px rgba(0,0,0,0.05)"
+                              background:"#fff",borderRadius:12,padding:"12px 10px",
+                              border:`1.5px solid ${c}22`,textAlign:"center",
+                              boxShadow:`0 2px 12px ${c}15`
                             }}>
-                              <div style={{fontSize:12,color:"#888",fontWeight:700,marginBottom:6}}>{l}</div>
-                              <div style={{fontSize:16,fontWeight:900,color:c}}>{v}</div>
-                              <div style={{fontSize:10,color:"#aaa",marginTop:3}}>OMR</div>
+                              <div style={{fontSize:11,color:"#888",fontWeight:700,marginBottom:5}}>{l}</div>
+                              <div style={{fontSize:small?14:17,fontWeight:900,color:c,lineHeight:1}}>{v}</div>
+                              <div style={{fontSize:10,color:"#aaa",marginTop:4}}>{sub}</div>
                             </div>
                           ))}
                         </div>
