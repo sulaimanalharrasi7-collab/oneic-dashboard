@@ -6551,9 +6551,9 @@ function SummaryCard({label,paid,adj,cnt,cntPaid,cntAdj,cntTotal,portAmt,color,i
   const _cntPaid  = (cntPaid  != null && cntPaid  > 0) ? cntPaid  : (cnt||0);
   const _cntAdj   = (cntAdj   != null && cntAdj   > 0) ? cntAdj   : (cnt||0);
   const _cntTotal = (cntTotal != null && cntTotal > 0) ? cntTotal : _cntPaid;
-  const fs = isMobile ? {title:13,sub:10,num:14,cnt:9,cell:7} :
-             isTablet  ? {title:14,sub:11,num:15,cnt:10,cell:8} :
-                         {title:15,sub:11,num:15,cnt:10,cell:9};
+  const fs = isMobile ? {title:12,sub:9,num:11,cnt:8,cell:7} :
+             isTablet  ? {title:13,sub:10,num:12,cnt:9,cell:8} :
+                         {title:14,sub:11,num:13,cnt:10,cell:9};
   return (
     <div style={{background:"#fff",borderRadius:15,overflow:"hidden",
       boxShadow:"0 3px 14px rgba(0,0,0,0.07)",border:"1.5px solid #f0ece8",minWidth:0}}>
@@ -6589,9 +6589,9 @@ function SummaryCard({label,paid,adj,cnt,cntPaid,cntAdj,cntTotal,portAmt,color,i
             ["الإجمالي",color,total,_cntTotal]
           ].map(([lbl,clr,val,c],i)=>(
             <div key={lbl} style={{textAlign:"center",padding:small?"6px 3px":"9px 6px",
-              borderRight:i<2?"1px solid #f0ece8":"none",minWidth:0,overflow:"hidden"}}>
+              borderRight:i<2?"1px solid #f0ece8":"none",minWidth:0,overflow:"hidden",padding:small?"4px 2px":"6px 4px"}}>
               <div style={{fontSize:fs.cell,color:"#333",fontWeight:800,marginBottom:3,whiteSpace:"nowrap"}}>{lbl}</div>
-              <div style={{fontSize:fs.num,fontWeight:900,color:clr,lineHeight:1,wordBreak:"break-all"}}>{omr(val)}</div>
+              <div style={{fontSize:fs.num,fontWeight:900,color:clr,lineHeight:1,wordBreak:"break-all",overflow:"hidden",minWidth:0,maxWidth:"100%"}}>{omr(val)}</div>
               {c!=null && <div style={{fontSize:fs.cnt,color:"#aaa",marginTop:2,fontWeight:600}}>{(c||0).toLocaleString()} حساب</div>}
             </div>
           ))}
@@ -9079,7 +9079,7 @@ body{font-family:'Cairo',sans-serif;background:#f0ece8;direction:rtl;color:#111}
 .hero-inner{position:relative;z-index:1;display:flex;justify-content:space-between;align-items:center}
 .hero-logo img{height:52px;filter:brightness(0) invert(1);opacity:.95}
 .hero-title{text-align:center;flex:1;padding:0 16mm}
-.hero-title h1{font-size:22pt;font-weight:900;color:#fff;line-height:1.1;letter-spacing:-.5px}
+.hero-title h1{font-size:20pt;font-weight:900;color:#fff;line-height:1.1;letter-spacing:-.5px}
 .hero-title p{font-size:10pt;color:rgba(255,255,255,.7);margin-top:3px;font-weight:600}
 .hero-meta{text-align:left;font-size:9pt;color:rgba(255,255,255,.65)}
 .hero-meta strong{color:#fbbf24;font-size:11pt;display:block;margin-bottom:2px}
@@ -9117,12 +9117,13 @@ body{font-family:'Cairo',sans-serif;background:#f0ece8;direction:rtl;color:#111}
 .ov-card-head{padding:3.5mm 5mm;display:flex;align-items:center;gap:8px}
 .ov-card-head span{font-size:16pt}
 .ov-card-head div{font-size:10.5pt;font-weight:900;color:#fff}
-.ov-card-body{padding:3.5mm 5mm;background:#fafafa;display:grid;grid-template-columns:1fr 1fr 1fr;gap:4px}
-.ov-item label{display:block;font-size:7.5pt;color:#888;font-weight:700;margin-bottom:1px}
-.ov-item span{display:block;font-size:9.5pt;font-weight:800;color:#111}
+.ov-card-body{padding:3mm 4mm;background:#fafafa;display:flex;flex-direction:column;gap:3px;overflow:hidden}
+.ov-item{display:flex;justify-content:space-between;align-items:center}
+.ov-item label{font-size:7pt;color:#888;font-weight:700;white-space:nowrap;margin-left:4px}
+.ov-item span{font-size:8pt;font-weight:800;color:#111;text-align:left;font-family:monospace}
 .ov-item span.g{color:#16a34a}
 .ov-item span.a{color:#d97706}
-.ov-item span.b{color:#e85d20;font-size:10.5pt}
+.ov-item span.b{color:#e85d20;font-size:8pt}
 
 /* ── TABLE SECTION ── */
 .tbl-section{padding:4mm 12mm}
@@ -9313,7 +9314,7 @@ tr.subtotal td:first-child{color:#e85d20}
     <div class="footer-left">
       <strong>ONEIC</strong>
       <div>Oman National Engineering & Investment Co. (S.A.O.G)</div>
-      <div style="margin-top:3px;color:rgba(255,255,255,.4)">نظام إدارة التحصيل © 2026</div>
+      <div style="margin-top:3px;color:rgba(255,255,255,.4)">نظام إدارة تحصيل الديون © 2026</div>
     </div>
     <div class="footer-mid">
       <div class="seal">🔒</div>
