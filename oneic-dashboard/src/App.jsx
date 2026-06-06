@@ -7944,7 +7944,7 @@ function BulkPaymentSection({ bulk, small }) {
                 <span>📅 {d.dateRange?.from} → {d.dateRange?.to}</span>
                 <span>·</span>
                 <span>📋 {d.totalRecords?.toLocaleString()} دفعة</span>
-                {d.fileName&&<><span>·</span><span>📁 {d.fileName}</span></>}
+                {/* fileName hidden */}
               </div>
             </div>
           </div>
@@ -9485,6 +9485,33 @@ export default function Dashboard() {
   const [history, setHistory]   = useState(() => {
     try { return JSON.parse(localStorage.getItem('oneic_history')||'[]'); } catch(e){return [];}
   });
+
+  // ── تحميل السجل التاريخي من Firebase عند الفتح ──────────────────────────
+  useEffect(() => {
+    async function loadHistory() {
+      try {
+        // أولاً: جرّب node منفصل أسرع
+        const res = await fetch('https://oneic-dashboard-default-rtdb.firebaseio.com/history.json');
+        if (res.ok) {
+          const d = await res.json();
+          if (d?.entries?.length > 0) {
+            setHistory(d.entries);
+            try { localStorage.setItem('oneic_history', JSON.stringify(d.entries)); } catch(e) {}
+            return;
+          }
+        }
+      } catch(e) {}
+      // ثانياً: من oneic_data
+      try {
+        const row = await sbGet('oneic_data');
+        if (row?.history?.length > 0) {
+          setHistory(row.history);
+          try { localStorage.setItem('oneic_history', JSON.stringify(row.history)); } catch(e) {}
+        }
+      } catch(e) {}
+    }
+    loadHistory();
+  }, []);
   const [bulkData, setBulkDataMain] = useState(() => {
     try {
       const saved = localStorage.getItem('oneic_bulk_data');
@@ -9507,6 +9534,11 @@ export default function Dashboard() {
           const d = { ...row, headOffice: fullHO };
           setData(d);
           try { localStorage.setItem('oneic_dashboard_data', JSON.stringify(d)); } catch(e) {}
+          // ── تحميل السجل التاريخي من Firebase ──
+          if (row.history?.length > 0) {
+            setHistory(row.history);
+            try { localStorage.setItem('oneic_history', JSON.stringify(row.history)); } catch(e) {}
+          }
           setLoadingServer(false);
           return;
         }
@@ -9667,6 +9699,14 @@ export default function Dashboard() {
       try {
         const fullData = { ...dataToSave, history: newHistory };
         sbUpsert('oneic_data', { payload: fullData });
+      } catch(e) {}
+      // ── حفظ history منفصل في Firebase لسرعة التحميل ──
+      try {
+        fetch(`https://oneic-dashboard-default-rtdb.firebaseio.com/history.json`, {
+          method: 'PUT',
+          headers: {'Content-Type':'application/json'},
+          body: JSON.stringify({entries: newHistory, _updatedAt: new Date().toISOString()})
+        });
       } catch(e) {}
       return newHistory;
     });
