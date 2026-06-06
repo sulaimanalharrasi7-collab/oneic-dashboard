@@ -6445,7 +6445,7 @@ function SectionHeader({title,paid,adj,color,small}) {
         {[["المدفوع",omr(paid),"#fff"],["التسويات",omr(adj),"#fde68a"],["الإجمالي",omr(paid+adj),"#fff"]].map(([l,v,c])=>(
           <div key={l} style={{textAlign:"center"}}>
             <div style={{fontSize:small?11:13,color:"rgba(255,255,255,0.8)",fontWeight:700,marginBottom:2}}>{l}</div>
-            <div style={{fontSize:small?14:18,fontWeight:900,color:c}}>{v}</div>
+            <div style={{fontSize:small?13:17,fontWeight:900,color:c,fontFamily:"'IBM Plex Mono',monospace"}}>{v}</div>
           </div>
         ))}
       </div>
@@ -6551,9 +6551,10 @@ function SummaryCard({label,paid,adj,cnt,cntPaid,cntAdj,cntTotal,portAmt,color,i
   const _cntPaid  = (cntPaid  != null && cntPaid  > 0) ? cntPaid  : (cnt||0);
   const _cntAdj   = (cntAdj   != null && cntAdj   > 0) ? cntAdj   : (cnt||0);
   const _cntTotal = (cntTotal != null && cntTotal > 0) ? cntTotal : _cntPaid;
-  const fs = isMobile ? {title:12,sub:9,num:11,cnt:8,cell:7} :
-             isTablet  ? {title:13,sub:10,num:12,cnt:9,cell:8} :
-                         {title:14,sub:11,num:13,cnt:10,cell:9};
+  // ── حجم الخط يتكيف مع عرض الشاشة ──────────────────────────────
+  const fs = isMobile ? {title:12,sub:9,num:13,cnt:8,cell:7} :
+             isTablet  ? {title:13,sub:10,num:14,cnt:9,cell:8} :
+                         {title:14,sub:11,num:15,cnt:10,cell:9};
   return (
     <div style={{background:"#fff",borderRadius:15,overflow:"hidden",
       boxShadow:"0 3px 14px rgba(0,0,0,0.07)",border:"1.5px solid #f0ece8",minWidth:0}}>
@@ -6591,7 +6592,7 @@ function SummaryCard({label,paid,adj,cnt,cntPaid,cntAdj,cntTotal,portAmt,color,i
             <div key={lbl} style={{textAlign:"center",padding:small?"6px 3px":"9px 6px",
               borderRight:i<2?"1px solid #f0ece8":"none",minWidth:0,overflow:"hidden",padding:small?"4px 2px":"6px 4px"}}>
               <div style={{fontSize:fs.cell,color:"#333",fontWeight:800,marginBottom:3,whiteSpace:"nowrap"}}>{lbl}</div>
-              <div style={{fontSize:fs.num,fontWeight:900,color:clr,lineHeight:1,wordBreak:"break-all",overflow:"hidden",minWidth:0,maxWidth:"100%"}}>{omr(val)}</div>
+              <div style={{fontSize:fs.num,fontWeight:900,color:clr,lineHeight:1,fontFamily:"'IBM Plex Mono','Courier New',monospace",letterSpacing:"-0.5px",overflow:"hidden",minWidth:0,maxWidth:"100%",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{omr(val)}</div>
               {c!=null && <div style={{fontSize:fs.cnt,color:"#aaa",marginTop:2,fontWeight:600}}>{(c||0).toLocaleString()} حساب</div>}
             </div>
           ))}
@@ -7320,7 +7321,7 @@ function AnalyticsModal({ bulk, onClose, small }) {
               <div key={l} style={{textAlign:"center",padding:"10px",
                 background:"rgba(255,255,255,0.08)",border:"1px solid rgba(255,255,255,0.12)",borderRadius:10}}>
                 <div style={{fontSize:10,color:"rgba(255,255,255,0.6)",fontWeight:700,marginBottom:4}}>{l}</div>
-                <div style={{fontSize:small?14:18,fontWeight:900,color:c,lineHeight:1}}>{v}</div>
+                <div style={{fontSize:small?13:17,fontWeight:900,color:c,fontFamily:"'IBM Plex Mono',monospace",lineHeight:1}}>{v}</div>
               </div>
             ))}
           </div>
@@ -8020,7 +8021,7 @@ function BulkPaymentSection({ bulk, small }) {
               borderRadius:12,padding:"12px 10px",textAlign:"center"
             }}>
               <div style={{fontSize:small?10:12,color:"rgba(255,255,255,0.65)",fontWeight:700,marginBottom:6}}>{l}</div>
-              <div style={{fontSize:small?16:22,fontWeight:900,color:c,lineHeight:1}}>{v}</div>
+              <div style={{fontSize:small?15:20,fontWeight:900,color:c,lineHeight:1,fontFamily:"'IBM Plex Mono',monospace"}}>{v}</div>
               <div style={{fontSize:10,color:"rgba(255,255,255,0.4)",marginTop:3}}>OMR</div>
             </div>))}
         </div>
@@ -9066,7 +9067,7 @@ function handlePrint(data) {
 <head>
 <meta charset="UTF-8">
 <title>تقرير ONEIC — ${date}</title>
-<link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;600;700;800;900&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;600;700;800;900&family=IBM+Plex+Mono:wght@400;600;700&display=swap" rel="stylesheet">
 <style>
 *{box-sizing:border-box;margin:0;padding:0;-webkit-print-color-adjust:exact!important;print-color-adjust:exact!important}
 body{font-family:'Cairo',sans-serif;background:#f0ece8;direction:rtl;color:#111}
@@ -9102,7 +9103,7 @@ body{font-family:'Cairo',sans-serif;background:#f0ece8;direction:rtl;color:#111}
 .kpi-card:nth-child(3){--accent:linear-gradient(90deg,#d97706,#fbbf24)}
 .kpi-card:nth-child(4){--accent:linear-gradient(90deg,#7c3aed,#a78bfa)}
 .kpi-label{font-size:8.5pt;color:#777;font-weight:700;margin-bottom:4px}
-.kpi-value{font-size:13.5pt;font-weight:900;color:#111;line-height:1}
+.kpi-value{font-size:12.5pt;font-weight:900;color:#111;line-height:1;font-family:"IBM Plex Mono",monospace;letter-spacing:-0.5px}
 .kpi-value.orange{color:#e85d20}
 .kpi-value.green{color:#16a34a}
 .kpi-value.amber{color:#d97706}
@@ -9120,7 +9121,7 @@ body{font-family:'Cairo',sans-serif;background:#f0ece8;direction:rtl;color:#111}
 .ov-card-body{padding:3mm 4mm;background:#fafafa;display:flex;flex-direction:column;gap:3px;overflow:hidden}
 .ov-item{display:flex;justify-content:space-between;align-items:center}
 .ov-item label{font-size:7pt;color:#888;font-weight:700;white-space:nowrap;margin-left:4px}
-.ov-item span{font-size:8pt;font-weight:800;color:#111;text-align:left;font-family:monospace}
+.ov-item span{font-size:8pt;font-weight:800;color:#111;text-align:left;font-family:"IBM Plex Mono",monospace;letter-spacing:-0.3px}
 .ov-item span.g{color:#16a34a}
 .ov-item span.a{color:#d97706}
 .ov-item span.b{color:#e85d20;font-size:8pt}
@@ -9142,7 +9143,7 @@ thead.ho{background:linear-gradient(135deg,#6c3fa0,#4f2d7a)}
 td{padding:2mm 3mm;border-bottom:1px solid #f0ece8;font-size:8.5pt}
 td.rank{width:22px;text-align:center;color:#bbb;font-weight:700}
 td.col-name{font-weight:700;color:#111}
-td.amt{text-align:center;font-weight:700;font-family:monospace}
+td.amt{text-align:center;font-weight:700;font-family:"IBM Plex Mono",monospace;letter-spacing:-0.3px}
 td.green{color:#16a34a}
 td.amber{color:#d97706}
 td.total{color:#111;font-weight:900;font-size:9.5pt}
@@ -9959,7 +9960,7 @@ export default function Dashboard() {
         </div>
       )}
       <style>{`
-        @import url('https://fonts.googleapis.com/css2?family=Cairo:wght@400;500;600;700;800;900&display=swap');
+        @import url('https://fonts.googleapis.com/css2?family=Cairo:wght@400;500;600;700;800;900&family=IBM+Plex+Mono:wght@400;600;700&display=swap');
         * { box-sizing:border-box; margin:0; padding:0; }
         ::-webkit-scrollbar { width:5px; }
         ::-webkit-scrollbar-thumb { background:#e8c0a8; border-radius:3px; }
