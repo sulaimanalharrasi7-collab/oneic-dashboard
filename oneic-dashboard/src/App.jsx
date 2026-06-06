@@ -6445,7 +6445,7 @@ function SectionHeader({title,paid,adj,color,small}) {
         {[["المدفوع",omr(paid),"#fff"],["التسويات",omr(adj),"#fde68a"],["الإجمالي",omr(paid+adj),"#fff"]].map(([l,v,c])=>(
           <div key={l} style={{textAlign:"center"}}>
             <div style={{fontSize:small?11:13,color:"rgba(255,255,255,0.8)",fontWeight:700,marginBottom:2}}>{l}</div>
-            <div style={{fontSize:small?13:17,fontWeight:900,color:c,fontFamily:"'IBM Plex Mono',monospace"}}>{v}</div>
+            <div style={{fontSize:small?13:16,fontWeight:900,color:c,fontFamily:"'IBM Plex Mono',monospace"}}>{v}</div>
           </div>
         ))}
       </div>
@@ -6551,10 +6551,9 @@ function SummaryCard({label,paid,adj,cnt,cntPaid,cntAdj,cntTotal,portAmt,color,i
   const _cntPaid  = (cntPaid  != null && cntPaid  > 0) ? cntPaid  : (cnt||0);
   const _cntAdj   = (cntAdj   != null && cntAdj   > 0) ? cntAdj   : (cnt||0);
   const _cntTotal = (cntTotal != null && cntTotal > 0) ? cntTotal : _cntPaid;
-  // ── حجم الخط يتكيف مع عرض الشاشة ──────────────────────────────
-  const fs = isMobile ? {title:12,sub:9,num:13,cnt:8,cell:7} :
-             isTablet  ? {title:13,sub:10,num:14,cnt:9,cell:8} :
-                         {title:14,sub:11,num:15,cnt:10,cell:9};
+  const fs = isMobile ? {title:13,sub:10,num:14,cnt:9,cell:7} :
+             isTablet  ? {title:14,sub:11,num:15,cnt:10,cell:8} :
+                         {title:15,sub:11,num:15,cnt:10,cell:9};
   return (
     <div style={{background:"#fff",borderRadius:15,overflow:"hidden",
       boxShadow:"0 3px 14px rgba(0,0,0,0.07)",border:"1.5px solid #f0ece8",minWidth:0}}>
@@ -6582,17 +6581,16 @@ function SummaryCard({label,paid,adj,cnt,cntPaid,cntAdj,cntTotal,portAmt,color,i
       </div>
       {/* المدفوع | التسويات | الإجمالي — كل خانة بعدد حساباتها */}
       <div style={{padding:small?"8px":"10px"}}>
-        <div style={{display:"grid",gridTemplateColumns:"1fr 1fr 1fr",gap:0,
-          border:"1px solid #f0ece8",borderRadius:10,overflow:"hidden"}}>
+        <div style={{display:"flex",gap:0,border:"1px solid #f0ece8",borderRadius:10,overflow:"hidden"}}>
           {[
             ["المدفوع","#16a34a",paid,_cntPaid],
             ["التسويات","#d97706",adj,_cntAdj],
             ["الإجمالي",color,total,_cntTotal]
           ].map(([lbl,clr,val,c],i)=>(
-            <div key={lbl} style={{textAlign:"center",padding:small?"6px 3px":"9px 6px",
-              borderRight:i<2?"1px solid #f0ece8":"none",minWidth:0,overflow:"hidden",padding:small?"4px 2px":"6px 4px"}}>
+            <div key={lbl} style={{textAlign:"center",padding:small?"4px 2px":"7px 4px",
+              borderRight:i<2?"1px solid #f0ece8":"none",minWidth:0,overflow:"hidden",flex:1}}>
               <div style={{fontSize:fs.cell,color:"#333",fontWeight:800,marginBottom:3,whiteSpace:"nowrap"}}>{lbl}</div>
-              <div style={{fontSize:fs.num,fontWeight:900,color:clr,lineHeight:1,fontFamily:"'IBM Plex Mono','Courier New',monospace",letterSpacing:"-0.5px",overflow:"hidden",minWidth:0,maxWidth:"100%",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{omr(val)}</div>
+              <div style={{fontSize:fs.num,fontWeight:900,color:clr,lineHeight:1,wordBreak:"break-all"}}>{omr(val)}</div>
               {c!=null && <div style={{fontSize:fs.cnt,color:"#aaa",marginTop:2,fontWeight:600}}>{(c||0).toLocaleString()} حساب</div>}
             </div>
           ))}
@@ -7321,7 +7319,7 @@ function AnalyticsModal({ bulk, onClose, small }) {
               <div key={l} style={{textAlign:"center",padding:"10px",
                 background:"rgba(255,255,255,0.08)",border:"1px solid rgba(255,255,255,0.12)",borderRadius:10}}>
                 <div style={{fontSize:10,color:"rgba(255,255,255,0.6)",fontWeight:700,marginBottom:4}}>{l}</div>
-                <div style={{fontSize:small?13:17,fontWeight:900,color:c,fontFamily:"'IBM Plex Mono',monospace",lineHeight:1}}>{v}</div>
+                <div style={{fontSize:small?13:16,fontWeight:900,color:c,fontFamily:"'IBM Plex Mono',monospace",lineHeight:1}}>{v}</div>
               </div>
             ))}
           </div>
@@ -7351,12 +7349,12 @@ function AnalyticsModal({ bulk, onClose, small }) {
                 الدفعات اليومية — من {d.dateRange?.from} إلى {d.dateRange?.to}
               </div>
 
-              {/* ── رسم بياني SVG احترافي ── */}
+              {/* ── Bulk SVG Chart ── */}
               {(() => {
                 const STEP=Math.max(36,Math.min(56,1100/Math.max(daily.length,1)));
                 const CW=Math.max(daily.length*STEP+120,700);
-                const CH=300, CPX=68, CPY=42, CPB=64;
-                const cw=CW-CPX-20, ch=CH-CPY-CPB;
+                const CH=300,CPX=68,CPY=42,CPB=64;
+                const cw=CW-CPX-20,ch=CH-CPY-CPB;
                 const minVal=Math.min(...daily.map(d=>d.paid+d.adj));
                 const maxVal=Math.max(...daily.map(d=>d.paid+d.adj),1);
                 const range=maxVal-minVal||1;
@@ -7389,18 +7387,13 @@ function AnalyticsModal({ bulk, onClose, small }) {
                         <stop offset="50%" stopColor="#e85d20"/>
                         <stop offset="100%" stopColor="#f97316"/>
                       </linearGradient>
-                      <filter id="dotGlowB">
-                        <feDropShadow dx="0" dy="0" stdDeviation="3" floodColor="#e85d20" floodOpacity="0.7"/>
-                      </filter>
+                      <filter id="dotGlowB"><feDropShadow dx="0" dy="0" stdDeviation="3" floodColor="#e85d20" floodOpacity="0.7"/></filter>
                     </defs>
                     {[0,0.25,0.5,0.75,1].map((r,gi)=>(
                       <g key={gi}>
                         <line x1={CPX} y1={CPY+ch*(1-r)} x2={CW-20} y2={CPY+ch*(1-r)}
                           stroke="rgba(255,255,255,0.07)" strokeWidth={r===0?1.5:1} strokeDasharray={r===0?"":"5,5"}/>
-                        <text x={CPX-8} y={CPY+ch*(1-r)+4} textAnchor="end"
-                          fontSize="10" fill="rgba(255,255,255,0.45)" fontWeight="600" fontFamily="Cairo">
-                          {fmtK(minVal+range*r)}
-                        </text>
+                        <text x={CPX-8} y={CPY+ch*(1-r)+4} textAnchor="end" fontSize="10" fill="rgba(255,255,255,0.45)" fontWeight="600" fontFamily="Cairo">{fmtK(minVal+range*r)}</text>
                       </g>
                     ))}
                     {area&&<path d={area} fill="url(#aGradB)"/>}
@@ -7408,9 +7401,7 @@ function AnalyticsModal({ bulk, onClose, small }) {
                     {smooth&&<path d={smooth} fill="none" stroke="url(#lineGB)" strokeWidth="2.5" strokeLinejoin="round" strokeLinecap="round"/>}
                     {cpts.map((pt,i)=>{
                       const total=pt.d.paid+pt.d.adj;
-                      const isBest=total===maxVal;
-                      const isWorst=total===Math.min(...daily.map(x=>x.paid+x.adj));
-                      const isLast=i===cpts.length-1;
+                      const isBest=total===maxVal,isWorst=total===Math.min(...daily.map(x=>x.paid+x.adj)),isLast=i===cpts.length-1;
                       const lbl=total>=1000000?(total/1000000).toFixed(2)+'M':total>=1000?(total/1000).toFixed(1)+'K':total.toFixed(0);
                       const lblW=Math.max(lbl.length*6.5+14,36);
                       const lblAbove=pt.y>CPY+ch*0.78;
@@ -7420,32 +7411,24 @@ function AnalyticsModal({ bulk, onClose, small }) {
                       const showDate=daily.length<=20||i%Math.ceil(daily.length/20)===0||isBest||isLast;
                       return (
                         <g key={i} filter={isBest?"url(#dotGlowB)":undefined}>
-                          <line x1={pt.x} y1={CPY+ch} x2={pt.x} y2={pt.y+dotR+2}
-                            stroke="rgba(255,255,255,0.04)" strokeWidth="1"/>
+                          <line x1={pt.x} y1={CPY+ch} x2={pt.x} y2={pt.y+dotR+2} stroke="rgba(255,255,255,0.04)" strokeWidth="1"/>
                           <rect x={pt.x-lblW/2} y={lblY-11} width={lblW} height={15} rx="7.5"
                             fill={isBest?"#f97316":isLast?"#1d4ed8":isWorst?"#334155":"#1e3a5f"}
                             stroke={isBest?"rgba(255,255,255,0.6)":"rgba(255,255,255,0.2)"} strokeWidth="0.8"/>
-                          <text x={pt.x} y={lblY} textAnchor="middle"
-                            fontSize="8.5" fill="#fff" fontWeight="800" fontFamily="Cairo">{lbl}</text>
+                          <text x={pt.x} y={lblY} textAnchor="middle" fontSize="8.5" fill="#fff" fontWeight="800" fontFamily="Cairo">{lbl}</text>
                           {isBest&&<text x={pt.x} y={lblY-15} textAnchor="middle" fontSize="11">🏆</text>}
                           <circle cx={pt.x} cy={pt.y} r={dotR+4} fill="rgba(255,255,255,0.05)"/>
-                          <circle cx={pt.x} cy={pt.y} r={dotR+1.5} fill="rgba(255,255,255,0.1)"/>
-                          <circle cx={pt.x} cy={pt.y} r={dotR} fill={dotCol}
-                            stroke="rgba(255,255,255,0.7)" strokeWidth={isBest?2.5:1.5}/>
+                          <circle cx={pt.x} cy={pt.y} r={dotR} fill={dotCol} stroke="rgba(255,255,255,0.7)" strokeWidth={isBest?2.5:1.5}/>
                           <circle cx={pt.x-dotR*0.3} cy={pt.y-dotR*0.3} r={dotR*0.28} fill="rgba(255,255,255,0.4)"/>
                           {showDate&&(
                             <g>
-                              <line x1={pt.x} y1={CPY+ch+3} x2={pt.x} y2={CPY+ch+9}
-                                stroke="rgba(255,255,255,0.2)" strokeWidth="1"/>
+                              <line x1={pt.x} y1={CPY+ch+3} x2={pt.x} y2={CPY+ch+9} stroke="rgba(255,255,255,0.2)" strokeWidth="1"/>
                               <text x={pt.x} y={CPY+ch+20} textAnchor="middle" fontSize="9.5"
                                 fill={isBest?"#f97316":isLast?"#60a5fa":"rgba(255,255,255,0.5)"}
                                 fontWeight={isBest||isLast?"800":"600"} fontFamily="Cairo">
                                 {pt.d.date.slice(5,7)+'-'+pt.d.date.slice(8)}
                               </text>
-                              <text x={pt.x} y={CPY+ch+33} textAnchor="middle"
-                                fontSize="8" fill="rgba(255,255,255,0.22)" fontFamily="Cairo">
-                                {pt.d.date.slice(0,4)}
-                              </text>
+                              <text x={pt.x} y={CPY+ch+33} textAnchor="middle" fontSize="8" fill="rgba(255,255,255,0.22)" fontFamily="Cairo">{pt.d.date.slice(0,4)}</text>
                             </g>
                           )}
                         </g>
@@ -7454,7 +7437,6 @@ function AnalyticsModal({ bulk, onClose, small }) {
                   </svg>
                 </div>);
               })()}
-
 
               {/* ملخص أسبوعي */}
               <div style={{display:"grid",gridTemplateColumns:"repeat(3,1fr)",gap:12,marginBottom:16}}>
@@ -8021,7 +8003,7 @@ function BulkPaymentSection({ bulk, small }) {
               borderRadius:12,padding:"12px 10px",textAlign:"center"
             }}>
               <div style={{fontSize:small?10:12,color:"rgba(255,255,255,0.65)",fontWeight:700,marginBottom:6}}>{l}</div>
-              <div style={{fontSize:small?15:20,fontWeight:900,color:c,lineHeight:1,fontFamily:"'IBM Plex Mono',monospace"}}>{v}</div>
+              <div style={{fontSize:small?14:18,fontWeight:900,color:c,lineHeight:1,fontFamily:"'IBM Plex Mono',monospace"}}>{v}</div>
               <div style={{fontSize:10,color:"rgba(255,255,255,0.4)",marginTop:3}}>OMR</div>
             </div>))}
         </div>
@@ -8588,192 +8570,109 @@ function HistoryModal({ history, onClose, small }) {
                 </div>
               ) : (
                 <div>
-                  {/* ── رسم بياني SVG احترافي ── */}
-                  {(() => {
-                    const items = [...sorted].slice(0,30).reverse();
-                    const maxV  = Math.max(...items.map(h=>h.grandTotal||0), 1);
-                    const minV  = Math.min(...items.map(h=>h.grandTotal||0), 0);
-                    const W=680, H=260, PL=70, PR=16, PT=24, PB=52;
-                    const cW=W-PL-PR, cH=H-PT-PB;
-                    const fmtK = n => n>=1000000?(n/1000000).toFixed(2)+'M':n>=1000?(n/1000).toFixed(0)+'K':n.toFixed(0);
-                    const barW  = Math.max(cW/items.length - 4, 8);
-                    const barX  = (i) => PL + (i/(items.length)) * cW + (cW/items.length - barW)/2;
-                    const barH  = (v) => Math.max(((v||0)/maxV)*cH, 3);
-                    const barY  = (v) => PT + cH - barH(v);
-                    // خط منحنى
-                    const pts = items.map((h,i)=>[
-                      PL + (i+0.5)/(items.length)*cW,
-                      PT + cH - ((h.grandTotal||0)/maxV)*cH
-                    ]);
-                    const linePath = pts.map((p,i)=>i===0?`M${p[0]},${p[1]}`:`L${p[0]},${p[1]}`).join(' ');
-                    const areaPath = pts.length ? linePath+` L${pts[pts.length-1][0]},${PT+cH} L${pts[0][0]},${PT+cH} Z` : '';
-                    const gridLines = [0,0.25,0.5,0.75,1];
-                    return (
-                      <div style={{background:"linear-gradient(135deg,#f8fafc,#fff)",borderRadius:16,
-                        padding:"16px 8px 8px",border:"1.5px solid #e8f0fe",marginBottom:16,
-                        boxShadow:"0 4px 20px rgba(30,58,95,0.08)",overflow:"hidden"}}>
-                        <div style={{fontSize:13,color:"#1e3a5f",fontWeight:800,marginBottom:8,paddingRight:8,
-                          display:"flex",justifyContent:"space-between",alignItems:"center"}}>
-                          <span>📊 آخر {items.length} يوم — الإجمالي الكلي</span>
-                          <span style={{fontSize:11,color:"#888",fontWeight:600}}>{items[0]?.date} → {items[items.length-1]?.date}</span>
-                        </div>
-                        <svg width="100%" viewBox={`0 0 ${W} ${H}`} style={{display:"block",overflow:"visible"}}>
-                          <defs>
-                            <linearGradient id="barGrad" x1="0" y1="0" x2="0" y2="1">
-                              <stop offset="0%" stopColor="#2d5a8e" stopOpacity="0.9"/>
-                              <stop offset="100%" stopColor="#1e3a5f" stopOpacity="0.6"/>
-                            </linearGradient>
-                            <linearGradient id="barGradHot" x1="0" y1="0" x2="0" y2="1">
-                              <stop offset="0%" stopColor="#f97316"/>
-                              <stop offset="100%" stopColor="#e85d20"/>
-                            </linearGradient>
-                            <linearGradient id="areaGrad" x1="0" y1="0" x2="0" y2="1">
-                              <stop offset="0%" stopColor="#e85d20" stopOpacity="0.18"/>
-                              <stop offset="100%" stopColor="#e85d20" stopOpacity="0.01"/>
-                            </linearGradient>
-                            <filter id="shadow">
-                              <feDropShadow dx="0" dy="2" stdDeviation="2" floodColor="#e85d20" floodOpacity="0.3"/>
-                            </filter>
-                          </defs>
-
-                          {/* Grid lines */}
-                          {gridLines.map((r,gi) => (
-                            <g key={gi}>
-                              <line x1={PL} y1={PT+cH*(1-r)} x2={W-PR} y2={PT+cH*(1-r)}
-                                stroke={r===0?"#cbd5e1":"#e2e8f0"} strokeWidth={r===0?1.5:1}
-                                strokeDasharray={r===0?"":"4,4"}/>
-                              <text x={PL-8} y={PT+cH*(1-r)+4} textAnchor="end"
-                                fontSize="11" fill="#64748b" fontWeight="600" fontFamily="Cairo">
-                                {fmtK(maxV*r)}
-                              </text>
-                            </g>
-                          ))}
-
-                          {/* Bars */}
-                          {items.map((h,i) => {
-                            const isMax = (h.grandTotal||0) === maxV;
-                            const isLast = i === items.length-1;
-                            const bx = barX(i), bw = barW;
-                            const bh = barH(h.grandTotal||0);
-                            const by = barY(h.grandTotal||0);
-                            return (
-                              <g key={i}>
-                                {/* Bar shadow */}
-                                <rect x={bx+2} y={by+3} width={bw} height={bh}
-                                  rx="3" fill="rgba(0,0,0,0.06)"/>
-                                {/* Bar */}
-                                <rect x={bx} y={by} width={bw} height={bh}
-                                  rx="3"
-                                  fill={isMax?"url(#barGradHot)":isLast?"url(#barGradHot)":"url(#barGrad)"}
-                                  opacity={isMax||isLast?1:0.75}
-                                />
-                                {/* Shine */}
-                                <rect x={bx+2} y={by+2} width={Math.max(bw/3,3)} height={Math.min(bh-4,12)}
-                                  rx="2" fill="rgba(255,255,255,0.25)"/>
-                                {/* Value label on top */}
-                                {(isMax||isLast||items.length<=10) && (
-                                  <text x={bx+bw/2} y={by-5} textAnchor="middle"
-                                    fontSize="9" fill={isMax?"#e85d20":"#1e3a5f"}
-                                    fontWeight="800" fontFamily="Cairo">
-                                    {fmtK(h.grandTotal||0)}
-                                  </text>
-                                )}
-                              </g>
-                            );
-                          })}
-
-                          {/* Area fill */}
-                          {areaPath && <path d={areaPath} fill="url(#areaGrad)"/>}
-
-                          {/* Line */}
-                          {linePath && (
-                            <path d={linePath} fill="none" stroke="#e85d20"
-                              strokeWidth="2" strokeLinejoin="round" strokeLinecap="round"
-                              strokeDasharray="0"
-                              filter="url(#shadow)"
-                            />
-                          )}
-
-                          {/* Dots on line + labels */}
-                          {pts.map(([x,y],i) => {
-                            const isMax  = (items[i]?.grandTotal||0) === maxV;
-                            const isLast = i === pts.length-1;
-                            const isMin  = (items[i]?.grandTotal||0) === Math.min(...items.map(h=>h.grandTotal||0));
-                            const val    = items[i]?.grandTotal||0;
-                            const lbl    = val>=1000000?(val/1000000).toFixed(3)+'M':val>=1000?(val/1000).toFixed(1)+'K':val.toFixed(0);
-                            // label above or below based on position
-                            const labelY = y > PT+cH*0.85 ? y-28 : y-12;
-                            const dotR   = isMax ? 7 : isLast ? 6 : 4;
-                            const dotFill= isMax ? "#e85d20" : isLast ? "#f97316" : "#1e3a5f";
-                            const dotStroke = isMax||isLast ? "#fff" : "#e85d20";
-                            return (
-                              <g key={i}>
-                                {/* Label background pill */}
-                                <rect
-                                  x={x - 22} y={labelY - 12}
-                                  width={44} height={14}
-                                  rx="7"
-                                  fill={isMax?"#e85d20":isLast?"#f97316":"#1e3a5f"}
-                                  opacity={isMax||isLast?1:0.82}
-                                />
-                                {/* Label text */}
-                                <text x={x} y={labelY-1} textAnchor="middle"
-                                  fontSize="8.5" fill="#fff"
-                                  fontWeight="800" fontFamily="Cairo">
-                                  {lbl}
-                                </text>
-                                {/* Dot */}
-                                <circle cx={x} cy={y} r={dotR+1}
-                                  fill="rgba(255,255,255,0.4)" />
-                                <circle cx={x} cy={y} r={dotR}
-                                  fill={dotFill}
-                                  stroke={dotStroke}
-                                  strokeWidth="2"/>
-                                {/* Crown for max */}
-                                {isMax && (
-                                  <text x={x} y={labelY-16} textAnchor="middle"
-                                    fontSize="12" fontFamily="Cairo">🏆</text>
-                                )}
-                              </g>
-                            );
-                          })}
-
-                          {/* X-axis date labels */}
-                          {items.map((h,i) => {
-                            const showLabel = items.length<=10 || i%Math.ceil(items.length/8)===0 || i===items.length-1;
-                            const x = PL + (i+0.5)/(items.length)*cW;
-                            return showLabel && (
-                              <text key={i} x={x} y={PT+cH+18} textAnchor="middle"
-                                fontSize="10" fill={i===items.length-1?"#e85d20":"#64748b"}
-                                fontWeight={i===items.length-1?800:600} fontFamily="Cairo">
-                                {(h.date||'').slice(5)}
-                              </text>
-                            );
-                          })}
-                        </svg>
-
-                        {/* ملخص بطاقات */}
-                        <div style={{display:"grid",gridTemplateColumns:"repeat(3,1fr)",gap:10,marginTop:8,padding:"0 8px"}}>
-                          {[
-                            ["🏆 أعلى يوم", omr(Math.max(...sorted.map(h=>h.grandTotal||0))), "#16a34a",
-                              sorted.find(h=>h.grandTotal===Math.max(...sorted.map(x=>x.grandTotal||0)))?.date||""],
-                            ["📉 أدنى يوم", omr(Math.min(...sorted.map(h=>h.grandTotal||0))), "#dc2626",
-                              sorted.find(h=>h.grandTotal===Math.min(...sorted.map(x=>x.grandTotal||0)))?.date||""],
-                            ["📈 المتوسط", omr(sorted.reduce((s,h)=>s+(h.grandTotal||0),0)/sorted.length), "#e85d20", "معدل يومي"],
-                          ].map(([l,v,c,sub])=>(
-                            <div key={l} style={{
-                              background:"#fff",borderRadius:12,padding:"12px 10px",
-                              border:`1.5px solid ${c}22`,textAlign:"center",
-                              boxShadow:`0 2px 12px ${c}15`
-                            }}>
-                              <div style={{fontSize:11,color:"#888",fontWeight:700,marginBottom:5}}>{l}</div>
-                              <div style={{fontSize:small?14:17,fontWeight:900,color:c,lineHeight:1}}>{v}</div>
-                              <div style={{fontSize:10,color:"#aaa",marginTop:4}}>{sub}</div>
-                            </div>
-                          ))}
-                        </div>
+                  <div style={{fontSize:13,color:"#555",fontWeight:700,marginBottom:12}}>
+                    آخر {Math.min(sorted.length,30)} يوم — الإجمالي الكلي
+                  </div>
+                {/* ── SVG chart ── */}
+                {(() => {
+                  const items=[...sorted].slice(0,30).reverse();
+                  const maxV=Math.max(...items.map(h=>h.grandTotal||0),1);
+                  const W=680,H=260,PL=70,PR=16,PT=24,PB=52;
+                  const cW=W-PL-PR,cH=H-PT-PB;
+                  const fmtK=n=>n>=1000000?(n/1000000).toFixed(2)+'M':n>=1000?(n/1000).toFixed(0)+'K':n.toFixed(0);
+                  const barW=Math.max(cW/items.length-4,8);
+                  const barX=i=>PL+(i/items.length)*cW+(cW/items.length-barW)/2;
+                  const barH=v=>Math.max(((v||0)/maxV)*cH,3);
+                  const barY=v=>PT+cH-barH(v);
+                  const pts=items.map((h,i)=>[PL+(i+0.5)/items.length*cW, PT+cH-((h.grandTotal||0)/maxV)*cH]);
+                  const linePath=pts.map((p,i)=>i===0?`M${p[0]},${p[1]}`:`L${p[0]},${p[1]}`).join(' ');
+                  const areaPath=pts.length?linePath+` L${pts[pts.length-1][0]},${PT+cH} L${pts[0][0]},${PT+cH} Z`:'';
+                  return (
+                    <div style={{background:"linear-gradient(135deg,#f8fafc,#fff)",borderRadius:16,
+                      padding:"14px 6px 6px",border:"1.5px solid #e8f0fe",marginBottom:14,
+                      boxShadow:"0 4px 20px rgba(30,58,95,0.07)"}}>
+                      <div style={{fontSize:12,color:"#1e3a5f",fontWeight:800,marginBottom:6,paddingRight:8}}>
+                        📊 آخر {items.length} يوم — الإجمالي الكلي
                       </div>
-                    );
+                      <svg width="100%" viewBox={`0 0 ${W} ${H}`} style={{display:"block",overflow:"visible"}}>
+                        <defs>
+                          <linearGradient id="hBG" x1="0" y1="0" x2="0" y2="1">
+                            <stop offset="0%" stopColor="#2d5a8e" stopOpacity="0.9"/>
+                            <stop offset="100%" stopColor="#1e3a5f" stopOpacity="0.5"/>
+                          </linearGradient>
+                          <linearGradient id="hBGH" x1="0" y1="0" x2="0" y2="1">
+                            <stop offset="0%" stopColor="#f97316"/>
+                            <stop offset="100%" stopColor="#e85d20"/>
+                          </linearGradient>
+                          <linearGradient id="hArea" x1="0" y1="0" x2="0" y2="1">
+                            <stop offset="0%" stopColor="#e85d20" stopOpacity="0.18"/>
+                            <stop offset="100%" stopColor="#e85d20" stopOpacity="0.01"/>
+                          </linearGradient>
+                        </defs>
+                        {[0,0.25,0.5,0.75,1].map((r,gi)=>(
+                          <g key={gi}>
+                            <line x1={PL} y1={PT+cH*(1-r)} x2={W-PR} y2={PT+cH*(1-r)}
+                              stroke={r===0?"#cbd5e1":"#e2e8f0"} strokeWidth={r===0?1.5:1} strokeDasharray={r===0?"":"4,4"}/>
+                            <text x={PL-8} y={PT+cH*(1-r)+4} textAnchor="end" fontSize="11" fill="#64748b" fontWeight="600" fontFamily="Cairo">{fmtK(maxV*r)}</text>
+                          </g>
+                        ))}
+                        {items.map((h,i)=>{
+                          const isMax=(h.grandTotal||0)===maxV, isLast=i===items.length-1;
+                          const bx=barX(i),bh=barH(h.grandTotal||0),by=barY(h.grandTotal||0);
+                          return (
+                            <g key={i}>
+                              <rect x={bx+2} y={by+3} width={barW} height={bh} rx="3" fill="rgba(0,0,0,0.06)"/>
+                              <rect x={bx} y={by} width={barW} height={bh} rx="3"
+                                fill={isMax||isLast?"url(#hBGH)":"url(#hBG)"} opacity={isMax||isLast?1:0.75}/>
+                            </g>
+                          );
+                        })}
+                        {areaPath&&<path d={areaPath} fill="url(#hArea)"/>}
+                        {linePath&&<path d={linePath} fill="none" stroke="#e85d20" strokeWidth="2" strokeLinejoin="round" strokeLinecap="round"/>}
+                        {pts.map(([x,y],i)=>{
+                          const isMax=(items[i]?.grandTotal||0)===maxV, isLast=i===pts.length-1;
+                          const val=items[i]?.grandTotal||0;
+                          const lbl=val>=1000000?(val/1000000).toFixed(2)+'M':val>=1000?(val/1000).toFixed(1)+'K':val.toFixed(0);
+                          const lblW=Math.max(lbl.length*6+12,34);
+                          const lblY=y>PT+cH*0.85?y-28:y-14;
+                          return (
+                            <g key={i}>
+                              <rect x={x-lblW/2} y={lblY-11} width={lblW} height={14} rx="7"
+                                fill={isMax?"#e85d20":isLast?"#f97316":"#1e3a5f"} opacity={isMax||isLast?1:0.82}/>
+                              <text x={x} y={lblY-1} textAnchor="middle" fontSize="8.5" fill="#fff" fontWeight="800" fontFamily="Cairo">{lbl}</text>
+                              {isMax&&<text x={x} y={lblY-16} textAnchor="middle" fontSize="11">🏆</text>}
+                              <circle cx={x} cy={y} r={isMax?7:isLast?5:3}
+                                fill={isMax||isLast?"#e85d20":"#fff"}
+                                stroke={isMax||isLast?"#c44b10":"#e85d20"} strokeWidth="2"/>
+                            </g>
+                          );
+                        })}
+                        {items.map((h,i)=>{
+                          const show=items.length<=10||i%Math.ceil(items.length/8)===0||i===items.length-1;
+                          const x=PL+(i+0.5)/items.length*cW;
+                          return show&&(<text key={i} x={x} y={PT+cH+18} textAnchor="middle"
+                            fontSize="10" fill={i===items.length-1?"#e85d20":"#64748b"}
+                            fontWeight={i===items.length-1?800:600} fontFamily="Cairo">
+                            {(h.date||'').slice(5)}
+                          </text>);
+                        })}
+                      </svg>
+                      <div style={{display:"grid",gridTemplateColumns:"repeat(3,1fr)",gap:8,marginTop:6,padding:"0 6px"}}>
+                        {[
+                          ["🏆 أعلى يوم",omr(Math.max(...sorted.map(h=>h.grandTotal||0))),"#16a34a"],
+                          ["📉 أدنى يوم",omr(Math.min(...sorted.map(h=>h.grandTotal||0))),"#dc2626"],
+                          ["📈 المتوسط",omr(sorted.reduce((s,h)=>s+(h.grandTotal||0),0)/sorted.length),"#e85d20"],
+                        ].map(([l,v,c])=>(
+                          <div key={l} style={{background:"#fff",borderRadius:10,padding:"10px 8px",
+                            border:`1.5px solid ${c}22`,textAlign:"center",boxShadow:`0 2px 10px ${c}15`}}>
+                            <div style={{fontSize:10,color:"#888",fontWeight:700,marginBottom:4}}>{l}</div>
+                            <div style={{fontSize:small?13:16,fontWeight:900,color:c}}>{v}</div>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  );
+                })()}
                   })()}
                 </div>
               )}
@@ -8987,359 +8886,81 @@ function parseBulkPayment(file) {
 
 // ── handlePrint ──────────────────────────────────────────────────────────────
 function handlePrint(data) {
-  const w = window.open('','_blank','width=1200,height=900');
+  var w = window.open('','_blank','width=1200,height=900');
   if (!w) return;
-
-  const omr = n => new Intl.NumberFormat('en-US',{minimumFractionDigits:3,maximumFractionDigits:3}).format(n||0)+' OMR';
-  const omrN = n => new Intl.NumberFormat('en-US',{minimumFractionDigits:3,maximumFractionDigits:3}).format(n||0);
-  const govPaid = (data.regions||[]).reduce((s,r)=>s+r.paid,0);
-  const govAdj  = (data.regions||[]).reduce((s,r)=>s+r.adj,0);
-  const dcPaid  = (data.debtCompanies||[]).reduce((s,r)=>s+r.paid,0);
-  const dcAdj   = (data.debtCompanies||[]).reduce((s,r)=>s+r.adj,0);
-  const hoPaid  = (data.headOffice||[]).reduce((s,r)=>s+Math.max(0,r.paid||0),0);
-  const hoAdj   = (data.headOffice||[]).reduce((s,r)=>s+Math.max(0,r.adj||0),0);
-  const total   = govPaid+govAdj+dcPaid+dcAdj+hoPaid+hoAdj;
-  const portAmt = data.totalPortfolio?.amt || 9414256.834;
-  const pctDone = Math.min(100, Math.round(total/portAmt*100));
-  const date    = data.uploadDate || new Date().toISOString().split('T')[0];
-  const records = (data.totalRecords||47963).toLocaleString();
-  const printDate = new Date().toLocaleDateString('ar-OM',{year:'numeric',month:'long',day:'numeric'});
-
-  // ── صفوف المحافظات ──
-  let regsHTML = '';
-  (data.regions||[]).forEach((r,ri) => {
-    const rTotal = r.paid + r.adj;
-    const rPct   = total>0 ? Math.min(100, Math.round(rTotal/total*100)) : 0;
-    regsHTML += `
-      <tr class="sec-header">
-        <td colspan="5">
-          <div class="sec-title">
-            <span>${ri+1}. ${r.nameAr}</span>
-            <span class="badge">${rPct}% من الإجمالي</span>
-          </div>
-          <div class="prog-wrap"><div class="prog-bar" style="width:${rPct}%"></div></div>
-        </td>
-      </tr>`;
-    (r.collectors||[]).forEach((c,ci) => {
-      regsHTML += `
-        <tr class="col-row ${ci%2===0?'even':'odd'}">
-          <td class="rank">${ci+1}</td>
-          <td class="col-name">${c.name}</td>
-          <td class="amt green">${omrN(c.paid)}</td>
-          <td class="amt amber">${omrN(c.adj)}</td>
-          <td class="amt total">${omrN(c.paid+c.adj)}</td>
-        </tr>`;
+  var omrN = function(n) { return new Intl.NumberFormat('en-US',{minimumFractionDigits:3,maximumFractionDigits:3}).format(n||0); };
+  var govPaid=(data.regions||[]).reduce(function(s,r){return s+r.paid;},0);
+  var govAdj=(data.regions||[]).reduce(function(s,r){return s+r.adj;},0);
+  var dcPaid=(data.debtCompanies||[]).reduce(function(s,r){return s+r.paid;},0);
+  var dcAdj=(data.debtCompanies||[]).reduce(function(s,r){return s+r.adj;},0);
+  var hoPaid=(data.headOffice||[]).reduce(function(s,r){return s+Math.max(0,r.paid||0);},0);
+  var hoAdj=(data.headOffice||[]).reduce(function(s,r){return s+Math.max(0,r.adj||0);},0);
+  var total=govPaid+govAdj+dcPaid+dcAdj+hoPaid+hoAdj;
+  var portAmt=data.totalPortfolio?.amt||9414256.834;
+  var pctDone=Math.min(100,Math.round(total/portAmt*100));
+  var date=data.uploadDate||new Date().toISOString().split('T')[0];
+  var records=(data.totalRecords||47963).toLocaleString();
+  var printDate=new Date().toLocaleDateString('ar-OM',{year:'numeric',month:'long',day:'numeric'});
+  var LOGO_SRC=typeof LOGO!=='undefined'?LOGO:'';
+  var regsHTML='';
+  (data.regions||[]).forEach(function(r,ri){
+    var rTotal=r.paid+r.adj,rPct=total>0?Math.min(100,Math.round(rTotal/total*100)):0;
+    regsHTML+='<tr class="sec-header"><td colspan="5"><div class="sec-title"><span>'+String(ri+1)+'. '+r.nameAr+'</span><span class="badge">'+String(rPct)+'%</span></div><div class="prog-wrap"><div class="prog-bar" style="width:'+String(rPct)+'%"></div></div></td></tr>';
+    (r.collectors||[]).forEach(function(c,ci){
+      var rc=ci%2===0?'even':'odd';
+      regsHTML+='<tr class="'+rc+'"><td class="rank">'+String(ci+1)+'</td><td class="col-name">'+c.name+'</td><td class="amt green">'+omrN(c.paid)+'</td><td class="amt amber">'+omrN(c.adj)+'</td><td class="amt total">'+omrN(c.paid+c.adj)+'</td></tr>';
     });
-    regsHTML += `
-      <tr class="subtotal">
-        <td colspan="2">إجمالي ${r.nameAr}</td>
-        <td class="green">${omrN(r.paid)}</td>
-        <td class="amber">${omrN(r.adj)}</td>
-        <td class="total">${omrN(rTotal)}</td>
-      </tr>`;
+    regsHTML+='<tr class="subtotal"><td colspan="2">إجمالي '+r.nameAr+'</td><td class="green">'+omrN(r.paid)+'</td><td class="amber">'+omrN(r.adj)+'</td><td class="total">'+omrN(rTotal)+'</td></tr>';
   });
-
-  // ── صفوف DC ──
-  let dcHTML = (data.debtCompanies||[]).map((c,i) => `
-    <tr class="${i%2===0?'even':'odd'}">
-      <td class="rank">${i+1}</td>
-      <td class="col-name">${c.name}</td>
-      <td class="amt green">${omrN(c.paid)}</td>
-      <td class="amt amber">${omrN(c.adj)}</td>
-      <td class="amt total">${omrN(c.paid+c.adj)}</td>
-    </tr>`).join('');
-
-  // ── صفوف HO ──
-  let hoHTML = (data.headOffice||[]).map((c,i) => {
-    const p = Math.max(0, c.paid||0), a = Math.max(0, c.adj||0);
-    return `
-    <tr class="${i%2===0?'even':'odd'}">
-      <td class="rank">${i+1}</td>
-      <td class="col-name">${c.name}${(c.principalAmt||0)>0?` <span class="badge-sm">PA: ${omrN(c.principalAmt)}</span>`:''}</td>
-      <td class="amt green">${omrN(p)}</td>
-      <td class="amt amber">${omrN(a)}</td>
-      <td class="amt total">${omrN(p+a)}</td>
-    </tr>`;
-  }).join('');
-
-  const html = `<!DOCTYPE html>
-<html lang="ar" dir="rtl">
-<head>
-<meta charset="UTF-8">
-<title>تقرير ONEIC — ${date}</title>
-<link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;600;700;800;900&family=IBM+Plex+Mono:wght@400;600;700&display=swap" rel="stylesheet">
-<style>
-*{box-sizing:border-box;margin:0;padding:0;-webkit-print-color-adjust:exact!important;print-color-adjust:exact!important}
-body{font-family:'Cairo',sans-serif;background:#f0ece8;direction:rtl;color:#111}
-.page{width:210mm;margin:0 auto;background:#fff;padding:0;box-shadow:0 0 40px rgba(0,0,0,.2)}
-
-/* ── HEADER HERO ── */
-.hero{background:linear-gradient(135deg,#1a1a2e 0%,#16213e 40%,#0f3460 70%,#e85d20 100%);padding:10mm 12mm 8mm;position:relative;overflow:hidden}
-.hero::before{content:'';position:absolute;top:-40%;right:-10%;width:280px;height:280px;background:rgba(232,93,32,.15);border-radius:50%}
-.hero::after{content:'';position:absolute;bottom:-30%;left:5%;width:180px;height:180px;background:rgba(255,255,255,.05);border-radius:50%}
-.hero-inner{position:relative;z-index:1;display:flex;justify-content:space-between;align-items:center}
-.hero-logo img{height:52px;filter:brightness(0) invert(1);opacity:.95}
-.hero-title{text-align:center;flex:1;padding:0 16mm}
-.hero-title h1{font-size:20pt;font-weight:900;color:#fff;line-height:1.1;letter-spacing:-.5px}
-.hero-title p{font-size:10pt;color:rgba(255,255,255,.7);margin-top:3px;font-weight:600}
-.hero-meta{text-align:left;font-size:9pt;color:rgba(255,255,255,.65)}
-.hero-meta strong{color:#fbbf24;font-size:11pt;display:block;margin-bottom:2px}
-
-/* ── PROGRESS STRIP ── */
-.progress-strip{background:linear-gradient(90deg,#1a1a2e,#0f3460);padding:5mm 12mm;display:flex;align-items:center;gap:12mm}
-.prog-label{color:rgba(255,255,255,.7);font-size:9pt;font-weight:700;white-space:nowrap}
-.prog-track{flex:1;height:12px;background:rgba(255,255,255,.15);border-radius:6px;overflow:hidden;position:relative}
-.prog-fill{height:100%;background:linear-gradient(90deg,#16a34a,#4ade80);border-radius:6px;transition:width .5s;position:relative}
-.prog-fill::after{content:'';position:absolute;top:0;right:0;width:4px;height:100%;background:rgba(255,255,255,.5);border-radius:2px}
-.prog-pct{color:#4ade80;font-size:14pt;font-weight:900;white-space:nowrap}
-.prog-detail{color:rgba(255,255,255,.6);font-size:8pt}
-
-/* ── KPI CARDS ── */
-.kpi-row{display:grid;grid-template-columns:repeat(4,1fr);gap:0;border-bottom:3px solid #f0ece8}
-.kpi-card{padding:5mm 6mm;text-align:center;border-left:1px solid #f0ece8;position:relative;overflow:hidden}
-.kpi-card::before{content:'';position:absolute;top:0;left:0;right:0;height:3px;background:var(--accent)}
-.kpi-card:nth-child(1){--accent:linear-gradient(90deg,#e85d20,#f07030)}
-.kpi-card:nth-child(2){--accent:linear-gradient(90deg,#16a34a,#4ade80)}
-.kpi-card:nth-child(3){--accent:linear-gradient(90deg,#d97706,#fbbf24)}
-.kpi-card:nth-child(4){--accent:linear-gradient(90deg,#7c3aed,#a78bfa)}
-.kpi-label{font-size:8.5pt;color:#777;font-weight:700;margin-bottom:4px}
-.kpi-value{font-size:12.5pt;font-weight:900;color:#111;line-height:1;font-family:"IBM Plex Mono",monospace;letter-spacing:-0.5px}
-.kpi-value.orange{color:#e85d20}
-.kpi-value.green{color:#16a34a}
-.kpi-value.amber{color:#d97706}
-.kpi-value.purple{color:#7c3aed}
-
-/* ── SECTION OVERVIEW ── */
-.sec-overview{padding:6mm 12mm 4mm}
-.sec-overview h2{font-size:12pt;font-weight:900;color:#1a1a2e;margin-bottom:4mm;display:flex;align-items:center;gap:6px}
-.sec-overview h2::after{content:'';flex:1;height:2px;background:linear-gradient(90deg,#e85d20,transparent)}
-.overview-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:4mm}
-.ov-card{border-radius:10px;overflow:hidden;box-shadow:0 2px 12px rgba(0,0,0,.08)}
-.ov-card-head{padding:3.5mm 5mm;display:flex;align-items:center;gap:8px}
-.ov-card-head span{font-size:16pt}
-.ov-card-head div{font-size:10.5pt;font-weight:900;color:#fff}
-.ov-card-body{padding:3mm 4mm;background:#fafafa;display:flex;flex-direction:column;gap:3px;overflow:hidden}
-.ov-item{display:flex;justify-content:space-between;align-items:center}
-.ov-item label{font-size:7pt;color:#888;font-weight:700;white-space:nowrap;margin-left:4px}
-.ov-item span{font-size:8pt;font-weight:800;color:#111;text-align:left;font-family:"IBM Plex Mono",monospace;letter-spacing:-0.3px}
-.ov-item span.g{color:#16a34a}
-.ov-item span.a{color:#d97706}
-.ov-item span.b{color:#e85d20;font-size:8pt}
-
-/* ── TABLE SECTION ── */
-.tbl-section{padding:4mm 12mm}
-.tbl-title{font-size:11pt;font-weight:900;margin-bottom:3mm;display:flex;align-items:center;gap:8px;padding:2mm 3mm;border-radius:6px}
-.tbl-title.gov{color:#e85d20;border-right:4px solid #e85d20;background:#fff7f3}
-.tbl-title.dc{color:#1a7a6b;border-right:4px solid #1a7a6b;background:#f0faf8}
-.tbl-title.ho{color:#6c3fa0;border-right:4px solid #6c3fa0;background:#faf5ff}
-table{width:100%;border-collapse:collapse;font-size:9pt;margin-bottom:5mm}
-th{padding:2.5mm 3mm;font-weight:800;font-size:8.5pt;text-align:center}
-th:first-child{text-align:right}
-th:nth-child(2){text-align:right}
-thead tr{color:#fff}
-thead.gov{background:linear-gradient(135deg,#e85d20,#c44b10)}
-thead.dc{background:linear-gradient(135deg,#1a7a6b,#0d5a4f)}
-thead.ho{background:linear-gradient(135deg,#6c3fa0,#4f2d7a)}
-td{padding:2mm 3mm;border-bottom:1px solid #f0ece8;font-size:8.5pt}
-td.rank{width:22px;text-align:center;color:#bbb;font-weight:700}
-td.col-name{font-weight:700;color:#111}
-td.amt{text-align:center;font-weight:700;font-family:"IBM Plex Mono",monospace;letter-spacing:-0.3px}
-td.green{color:#16a34a}
-td.amber{color:#d97706}
-td.total{color:#111;font-weight:900;font-size:9.5pt}
-.amt{font-family:monospace}
-tr.even{background:#fff}
-tr.odd{background:#fafafa}
-tr.sec-header td{background:linear-gradient(135deg,#e85d20ee,#c44b10ee);color:#fff;padding:2.5mm 3mm}
-.sec-title{display:flex;justify-content:space-between;align-items:center;font-weight:800;font-size:9.5pt}
-.badge{background:rgba(255,255,255,.25);padding:1px 7px;border-radius:10px;font-size:8pt;font-weight:700}
-.badge-sm{background:#7c3aed;color:#fff;padding:1px 5px;border-radius:6px;font-size:7pt;font-weight:700;vertical-align:middle}
-.prog-wrap{height:4px;background:rgba(255,255,255,.2);border-radius:2px;margin-top:3px}
-.prog-bar{height:100%;background:rgba(255,255,255,.7);border-radius:2px}
-tr.subtotal{background:linear-gradient(90deg,#fff7f3,#fff)}
-tr.subtotal td{font-weight:900;border-top:2px solid #fde8d8;font-size:9pt;color:#e85d20;padding:2mm 3mm}
-tr.subtotal td.green{color:#16a34a}
-tr.subtotal td.amber{color:#d97706}
-tr.subtotal td:first-child{color:#e85d20}
-.col-row td{transition:background .2s}
-
-/* ── FOOTER ── */
-.footer{background:linear-gradient(135deg,#1a1a2e,#0f3460);padding:5mm 12mm;display:flex;justify-content:space-between;align-items:center}
-.footer-left{color:rgba(255,255,255,.6);font-size:8pt}
-.footer-left strong{color:#e85d20;font-size:10pt;display:block;margin-bottom:2px}
-.footer-right{text-align:left;color:rgba(255,255,255,.5);font-size:7.5pt;line-height:1.8}
-.footer-mid{text-align:center}
-.footer-mid .seal{width:44px;height:44px;border:2px solid rgba(232,93,32,.5);border-radius:50%;display:flex;align-items:center;justify-content:center;margin:0 auto 3px;font-size:20px}
-.footer-mid p{font-size:7.5pt;color:rgba(255,255,255,.4)}
-
-/* ── PRINT ── */
-@media print{
-  @page{size:A4 portrait;margin:0}
-  body{background:#fff}
-  .page{box-shadow:none;width:100%}
-  .no-print{display:none!important}
-}
-</style>
-</head>
-<body>
-<div class="page">
-
-  <!-- HERO HEADER -->
-  <div class="hero">
-    <div class="hero-inner">
-      <div class="hero-logo">
-        <img src="${LOGO}" alt="ONEIC"/>
-        <div style="font-size:7pt;color:rgba(255,255,255,.5);margin-top:3px;text-align:center">ONEIC Dashboard</div>
-      </div>
-      <div class="hero-title">
-        <h1>تقرير أداء التحصيل</h1>
-        <p>Debt Collection Performance Report</p>
-      </div>
-      <div class="hero-meta">
-        <strong>${date}</strong>
-        <div>📋 ${records} سجل</div>
-        <div style="margin-top:3px">🖨️ ${printDate}</div>
-      </div>
-    </div>
-  </div>
-
-  <!-- PROGRESS STRIP -->
-  <div class="progress-strip">
-    <div class="prog-label">نسبة الإنجاز الكلي</div>
-    <div class="prog-track"><div class="prog-fill" style="width:${pctDone}%"></div></div>
-    <div>
-      <div class="prog-pct">${pctDone}%</div>
-      <div class="prog-detail">من إجمالي المحفظة</div>
-    </div>
-    <div style="color:rgba(255,255,255,.5);font-size:8pt;margin-right:auto">
-      <div>المحفظة: ${omrN(portAmt)}</div>
-      <div style="color:rgba(255,255,255,.3)">OMR</div>
-    </div>
-  </div>
-
-  <!-- KPI CARDS -->
-  <div class="kpi-row">
-    <div class="kpi-card">
-      <div class="kpi-label">💼 إجمالي المحفظة</div>
-      <div class="kpi-value orange">${omrN(portAmt)}</div>
-    </div>
-    <div class="kpi-card">
-      <div class="kpi-label">💰 إجمالي المدفوع</div>
-      <div class="kpi-value green">${omrN(govPaid+dcPaid+hoPaid)}</div>
-    </div>
-    <div class="kpi-card">
-      <div class="kpi-label">📊 إجمالي التسويات</div>
-      <div class="kpi-value amber">${omrN(govAdj+dcAdj+hoAdj)}</div>
-    </div>
-    <div class="kpi-card">
-      <div class="kpi-label">🏆 الإجمالي الكلي</div>
-      <div class="kpi-value purple">${omrN(total)}</div>
-    </div>
-  </div>
-
-  <!-- SECTION OVERVIEW CARDS -->
-  <div class="sec-overview">
-    <h2>📌 ملخص الأقسام الرئيسية</h2>
-    <div class="overview-grid">
-      <div class="ov-card">
-        <div class="ov-card-head" style="background:linear-gradient(135deg,#e85d20,#c44b10)">
-          <span>🗺</span><div>المحافظات الخمس</div>
-        </div>
-        <div class="ov-card-body">
-          <div class="ov-item"><label>المدفوع</label><span class="g">${omrN(govPaid)}</span></div>
-          <div class="ov-item"><label>التسويات</label><span class="a">${omrN(govAdj)}</span></div>
-          <div class="ov-item"><label>الإجمالي</label><span class="b">${omrN(govPaid+govAdj)}</span></div>
-        </div>
-      </div>
-      <div class="ov-card">
-        <div class="ov-card-head" style="background:linear-gradient(135deg,#1a7a6b,#0d5a4f)">
-          <span>🏢</span><div>شركات التحصيل</div>
-        </div>
-        <div class="ov-card-body">
-          <div class="ov-item"><label>المدفوع</label><span class="g">${omrN(dcPaid)}</span></div>
-          <div class="ov-item"><label>التسويات</label><span class="a">${omrN(dcAdj)}</span></div>
-          <div class="ov-item"><label>الإجمالي</label><span style="color:#1a7a6b;font-size:10.5pt;font-weight:800">${omrN(dcPaid+dcAdj)}</span></div>
-        </div>
-      </div>
-      <div class="ov-card">
-        <div class="ov-card-head" style="background:linear-gradient(135deg,#6c3fa0,#4f2d7a)">
-          <span>🏛</span><div>المكتب الرئيسي</div>
-        </div>
-        <div class="ov-card-body">
-          <div class="ov-item"><label>المدفوع</label><span class="g">${omrN(hoPaid)}</span></div>
-          <div class="ov-item"><label>التسويات</label><span class="a">${omrN(hoAdj)}</span></div>
-          <div class="ov-item"><label>الإجمالي</label><span style="color:#6c3fa0;font-size:10.5pt;font-weight:800">${omrN(hoPaid+hoAdj)}</span></div>
-        </div>
-      </div>
-    </div>
-  </div>
-
-  <!-- REGIONS TABLE -->
-  <div class="tbl-section">
-    <div class="tbl-title gov">🗺 تفصيل المحافظات والمحصّلين</div>
-    <table>
-      <thead class="gov"><tr>
-        <th>#</th><th>الاسم</th>
-        <th>المدفوع (OMR)</th><th>التسويات (OMR)</th><th>الإجمالي (OMR)</th>
-      </tr></thead>
-      <tbody>${regsHTML}</tbody>
-    </table>
-  </div>
-
-  <!-- DC TABLE -->
-  <div class="tbl-section">
-    <div class="tbl-title dc">🏢 شركات التحصيل</div>
-    <table>
-      <thead class="dc"><tr>
-        <th>#</th><th>الشركة</th>
-        <th>المدفوع (OMR)</th><th>التسويات (OMR)</th><th>الإجمالي (OMR)</th>
-      </tr></thead>
-      <tbody>${dcHTML}</tbody>
-    </table>
-  </div>
-
-  <!-- HO TABLE -->
-  <div class="tbl-section">
-    <div class="tbl-title ho">🏛 المكتب الرئيسي</div>
-    <table>
-      <thead class="ho"><tr>
-        <th>#</th><th>القسم</th>
-        <th>المدفوع (OMR)</th><th>التسويات (OMR)</th><th>الإجمالي (OMR)</th>
-      </tr></thead>
-      <tbody>${hoHTML}</tbody>
-    </table>
-  </div>
-
-  <!-- FOOTER -->
-  <div class="footer">
-    <div class="footer-left">
-      <strong>ONEIC</strong>
-      <div>Oman National Engineering & Investment Co. (S.A.O.G)</div>
-      <div style="margin-top:3px;color:rgba(255,255,255,.4)">نظام إدارة تحصيل الديون © 2026</div>
-    </div>
-    <div class="footer-mid">
-      <div class="seal">🔒</div>
-      <p>وثيقة سرية</p>
-    </div>
-    <div class="footer-right">
-      <div>تاريخ التقرير: ${date}</div>
-      <div>تاريخ الطباعة: ${printDate}</div>
-      <div>عدد السجلات: ${records}</div>
-      <div>نسبة الإنجاز: ${pctDone}%</div>
-    </div>
-  </div>
-
-</div>
-
-<div class="no-print" style="position:fixed;bottom:20px;left:50%;transform:translateX(-50%);display:flex;gap:10px;z-index:999">
-  <button onclick="window.print()" style="background:#e85d20;color:#fff;border:none;border-radius:12px;padding:12px 28px;font-size:15px;font-weight:800;cursor:pointer;font-family:'Cairo',sans-serif;box-shadow:0 4px 20px rgba(232,93,32,.5)">🖨️ طباعة / حفظ PDF</button>
-  <button onclick="window.close()" style="background:#1a1a2e;color:#fff;border:none;border-radius:12px;padding:12px 20px;font-size:15px;font-weight:700;cursor:pointer;font-family:'Cairo',sans-serif">✕ إغلاق</button>
-</div>
-</body></html>`;
-
+  var dcHTML=(data.debtCompanies||[]).map(function(c,i){var rc=i%2===0?'even':'odd';return '<tr class="'+rc+'"><td class="rank">'+String(i+1)+'</td><td class="col-name">'+c.name+'</td><td class="amt green">'+omrN(c.paid)+'</td><td class="amt amber">'+omrN(c.adj)+'</td><td class="amt total">'+omrN(c.paid+c.adj)+'</td></tr>';}).join('');
+  var hoHTML=(data.headOffice||[]).map(function(c,i){var p=Math.max(0,c.paid||0),a=Math.max(0,c.adj||0),rc=i%2===0?'even':'odd';var pa=(c.principalAmt||0)>0?' <span class="badge-sm">PA: '+omrN(c.principalAmt)+'</span>':'';return '<tr class="'+rc+'"><td class="rank">'+String(i+1)+'</td><td class="col-name">'+c.name+pa+'</td><td class="amt green">'+omrN(p)+'</td><td class="amt amber">'+omrN(a)+'</td><td class="amt total">'+omrN(p+a)+'</td></tr>';}).join('');
+  var css='*{box-sizing:border-box;margin:0;padding:0;-webkit-print-color-adjust:exact!important;print-color-adjust:exact!important}body{font-family:\'Cairo\',sans-serif;background:#f0ece8;direction:rtl;color:#111}.page{width:210mm;margin:0 auto;background:#fff;box-shadow:0 0 40px rgba(0,0,0,.2)}.hero{background:linear-gradient(135deg,#1a1a2e 0%,#16213e 40%,#0f3460 70%,#e85d20 100%);padding:10mm 12mm 8mm}.hero-inner{display:flex;justify-content:space-between;align-items:center}.hero-logo img{height:50px;filter:brightness(0) invert(1);opacity:.95}.hero-title{text-align:center;flex:1;padding:0 12mm}.hero-title h1{font-size:20pt;font-weight:900;color:#fff;line-height:1.1}.hero-title p{font-size:9pt;color:rgba(255,255,255,.7);margin-top:3px;font-weight:600}.hero-meta{text-align:left;font-size:9pt;color:rgba(255,255,255,.65)}.hero-meta strong{color:#fbbf24;font-size:11pt;display:block;margin-bottom:2px}.progress-strip{background:linear-gradient(90deg,#1a1a2e,#0f3460);padding:4mm 12mm;display:flex;align-items:center;gap:10mm}.prog-label{color:rgba(255,255,255,.7);font-size:9pt;font-weight:700;white-space:nowrap}.prog-track{flex:1;height:12px;background:rgba(255,255,255,.15);border-radius:6px;overflow:hidden}.prog-fill{height:100%;background:linear-gradient(90deg,#16a34a,#4ade80);border-radius:6px}.prog-pct{color:#4ade80;font-size:14pt;font-weight:900;white-space:nowrap}.kpi-row{display:grid;grid-template-columns:repeat(4,1fr);border-bottom:3px solid #f0ece8}.kpi-card{padding:4mm 5mm;text-align:center;border-left:1px solid #f0ece8;position:relative;overflow:hidden}.kpi-card::before{content:\'\';position:absolute;top:0;left:0;right:0;height:3px;background:var(--accent)}.kpi-card:nth-child(1){--accent:linear-gradient(90deg,#e85d20,#f07030)}.kpi-card:nth-child(2){--accent:linear-gradient(90deg,#16a34a,#4ade80)}.kpi-card:nth-child(3){--accent:linear-gradient(90deg,#d97706,#fbbf24)}.kpi-card:nth-child(4){--accent:linear-gradient(90deg,#7c3aed,#a78bfa)}.kpi-label{font-size:8pt;color:#777;font-weight:700;margin-bottom:4px}.kpi-value{font-size:12pt;font-weight:900;color:#111;font-family:\'IBM Plex Mono\',monospace;letter-spacing:-0.5px}.kpi-value.orange{color:#e85d20}.kpi-value.green{color:#16a34a}.kpi-value.amber{color:#d97706}.kpi-value.purple{color:#7c3aed}.sec-overview{padding:5mm 12mm 3mm}.sec-overview h2{font-size:11pt;font-weight:900;color:#1a1a2e;margin-bottom:4mm;display:flex;align-items:center;gap:6px}.sec-overview h2::after{content:\'\';flex:1;height:2px;background:linear-gradient(90deg,#e85d20,transparent)}.overview-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:4mm}.ov-card{border-radius:10px;overflow:hidden;box-shadow:0 2px 12px rgba(0,0,0,.08)}.ov-card-head{padding:3mm 4mm;display:flex;align-items:center;gap:8px}.ov-card-head span{font-size:14pt}.ov-card-head div{font-size:10pt;font-weight:900;color:#fff}.ov-card-body{padding:3mm 4mm;background:#fafafa;display:flex;flex-direction:column;gap:3px}.ov-item{display:flex;justify-content:space-between;align-items:center}.ov-item label{font-size:7pt;color:#888;font-weight:700}.ov-item span{font-size:8pt;font-weight:800;font-family:\'IBM Plex Mono\',monospace;letter-spacing:-0.3px}.ov-item span.g{color:#16a34a}.ov-item span.a{color:#d97706}.ov-item span.b{color:#e85d20}.tbl-section{padding:3mm 12mm}.tbl-title{font-size:10pt;font-weight:900;margin-bottom:2mm;display:flex;align-items:center;gap:8px;padding:2mm 3mm;border-radius:6px}.tbl-title.gov{color:#e85d20;border-right:4px solid #e85d20;background:#fff7f3}.tbl-title.dc{color:#1a7a6b;border-right:4px solid #1a7a6b;background:#f0faf8}.tbl-title.ho{color:#6c3fa0;border-right:4px solid #6c3fa0;background:#faf5ff}table{width:100%;border-collapse:collapse;font-size:8.5pt;margin-bottom:4mm}th{padding:2.5mm 3mm;font-weight:800;font-size:8pt;text-align:center;color:#fff}th:nth-child(2){text-align:right}thead.gov{background:linear-gradient(135deg,#e85d20,#c44b10)}thead.dc{background:linear-gradient(135deg,#1a7a6b,#0d5a4f)}thead.ho{background:linear-gradient(135deg,#6c3fa0,#4f2d7a)}td{padding:2mm 3mm;border-bottom:1px solid #f0ece8;font-size:8pt}td.rank{width:20px;text-align:center;color:#bbb;font-weight:700}td.col-name{font-weight:700;color:#111}td.amt{text-align:center;font-weight:700;font-family:\'IBM Plex Mono\',monospace;letter-spacing:-0.3px}td.green{color:#16a34a}td.amber{color:#d97706}td.total{color:#111;font-weight:900}tr.even{background:#fff}tr.odd{background:#fafafa}tr.sec-header td{background:linear-gradient(135deg,#e85d20ee,#c44b10ee);color:#fff;padding:2mm 3mm}.sec-title{display:flex;justify-content:space-between;align-items:center;font-weight:800;font-size:9pt}.badge{background:rgba(255,255,255,.25);padding:1px 6px;border-radius:10px;font-size:7.5pt;font-weight:700}.badge-sm{background:#7c3aed;color:#fff;padding:1px 4px;border-radius:5px;font-size:7pt;font-weight:700;vertical-align:middle}.prog-wrap{height:4px;background:rgba(255,255,255,.2);border-radius:2px;margin-top:3px}.prog-bar{height:100%;background:rgba(255,255,255,.7);border-radius:2px}tr.subtotal{background:linear-gradient(90deg,#fff7f3,#fff)}tr.subtotal td{font-weight:900;border-top:2px solid #fde8d8;font-size:8.5pt;color:#e85d20;padding:2mm 3mm}tr.subtotal td.green{color:#16a34a}tr.subtotal td.amber{color:#d97706}.footer{background:linear-gradient(135deg,#1a1a2e,#0f3460);padding:4mm 12mm;display:flex;justify-content:space-between;align-items:center}.footer-left{color:rgba(255,255,255,.6);font-size:8pt}.footer-left strong{color:#e85d20;font-size:10pt;display:block;margin-bottom:2px}.footer-right{text-align:left;color:rgba(255,255,255,.5);font-size:7.5pt;line-height:1.8}.footer-mid{text-align:center}.footer-mid .seal{width:40px;height:40px;border:2px solid rgba(232,93,32,.5);border-radius:50%;display:flex;align-items:center;justify-content:center;margin:0 auto 3px;font-size:18px}.footer-mid p{font-size:7pt;color:rgba(255,255,255,.4)}@media print{@page{size:A4 portrait;margin:0}body{background:#fff}.page{box-shadow:none;width:100%}.no-print{display:none!important}}';
+  var html='<!DOCTYPE html><html lang="ar" dir="rtl"><head><meta charset="UTF-8"><title>تقرير ONEIC — '+date+'</title>'
+    +'<link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;600;700;800;900&family=IBM+Plex+Mono:wght@400;600;700&display=swap" rel="stylesheet">'
+    +'<style>'+css+'</style></head><body><div class="page">'
+    +'<div class="hero"><div class="hero-inner">'
+    +'<div class="hero-logo"><img src="'+LOGO_SRC+'" alt="ONEIC"/></div>'
+    +'<div class="hero-title"><h1>تقرير أداء التحصيل</h1><p>Debt Collection Performance Report</p></div>'
+    +'<div class="hero-meta"><strong>'+date+'</strong><div>📋 '+records+' سجل</div><div style="margin-top:3px">🖨️ '+printDate+'</div></div>'
+    +'</div></div>'
+    +'<div class="progress-strip">'
+    +'<div class="prog-label">نسبة الإنجاز الكلي</div>'
+    +'<div class="prog-track"><div class="prog-fill" style="width:'+String(pctDone)+'%"></div></div>'
+    +'<div><div class="prog-pct">'+String(pctDone)+'%</div><div style="color:rgba(255,255,255,.5);font-size:8pt">من إجمالي المحفظة</div></div>'
+    +'</div>'
+    +'<div class="kpi-row">'
+    +'<div class="kpi-card"><div class="kpi-label">💼 إجمالي المحفظة</div><div class="kpi-value orange">'+omrN(portAmt)+'</div></div>'
+    +'<div class="kpi-card"><div class="kpi-label">💰 إجمالي المدفوع</div><div class="kpi-value green">'+omrN(govPaid+dcPaid+hoPaid)+'</div></div>'
+    +'<div class="kpi-card"><div class="kpi-label">📊 إجمالي التسويات</div><div class="kpi-value amber">'+omrN(govAdj+dcAdj+hoAdj)+'</div></div>'
+    +'<div class="kpi-card"><div class="kpi-label">🏆 الإجمالي الكلي</div><div class="kpi-value purple">'+omrN(total)+'</div></div>'
+    +'</div>'
+    +'<div class="sec-overview"><h2>📌 ملخص الأقسام الرئيسية</h2><div class="overview-grid">'
+    +'<div class="ov-card"><div class="ov-card-head" style="background:linear-gradient(135deg,#e85d20,#c44b10)"><span>🗺</span><div>المحافظات الخمس</div></div>'
+    +'<div class="ov-card-body"><div class="ov-item"><label>المدفوع</label><span class="g">'+omrN(govPaid)+'</span></div><div class="ov-item"><label>التسويات</label><span class="a">'+omrN(govAdj)+'</span></div><div class="ov-item"><label>الإجمالي</label><span class="b">'+omrN(govPaid+govAdj)+'</span></div></div></div>'
+    +'<div class="ov-card"><div class="ov-card-head" style="background:linear-gradient(135deg,#1a7a6b,#0d5a4f)"><span>🏢</span><div>شركات التحصيل</div></div>'
+    +'<div class="ov-card-body"><div class="ov-item"><label>المدفوع</label><span class="g">'+omrN(dcPaid)+'</span></div><div class="ov-item"><label>التسويات</label><span class="a">'+omrN(dcAdj)+'</span></div><div class="ov-item"><label>الإجمالي</label><span style="color:#1a7a6b;font-weight:800">'+omrN(dcPaid+dcAdj)+'</span></div></div></div>'
+    +'<div class="ov-card"><div class="ov-card-head" style="background:linear-gradient(135deg,#6c3fa0,#4f2d7a)"><span>🏛</span><div>المكتب الرئيسي</div></div>'
+    +'<div class="ov-card-body"><div class="ov-item"><label>المدفوع</label><span class="g">'+omrN(hoPaid)+'</span></div><div class="ov-item"><label>التسويات</label><span class="a">'+omrN(hoAdj)+'</span></div><div class="ov-item"><label>الإجمالي</label><span style="color:#6c3fa0;font-weight:800">'+omrN(hoPaid+hoAdj)+'</span></div></div></div>'
+    +'</div></div>'
+    +'<div class="tbl-section"><div class="tbl-title gov">🗺 تفصيل المحافظات والمحصّلين</div>'
+    +'<table><thead class="gov"><tr><th>#</th><th>الاسم</th><th>المدفوع (OMR)</th><th>التسويات (OMR)</th><th>الإجمالي (OMR)</th></tr></thead><tbody>'+regsHTML+'</tbody></table></div>'
+    +'<div class="tbl-section"><div class="tbl-title dc">🏢 شركات التحصيل</div>'
+    +'<table><thead class="dc"><tr><th>#</th><th>الشركة</th><th>المدفوع (OMR)</th><th>التسويات (OMR)</th><th>الإجمالي (OMR)</th></tr></thead><tbody>'+dcHTML+'</tbody></table></div>'
+    +'<div class="tbl-section"><div class="tbl-title ho">🏛 المكتب الرئيسي</div>'
+    +'<table><thead class="ho"><tr><th>#</th><th>القسم</th><th>المدفوع (OMR)</th><th>التسويات (OMR)</th><th>الإجمالي (OMR)</th></tr></thead><tbody>'+hoHTML+'</tbody></table></div>'
+    +'<div class="footer">'
+    +'<div class="footer-left"><strong>ONEIC</strong><div>Oman National Engineering &amp; Investment Co. (S.A.O.G)</div><div style="margin-top:3px;color:rgba(255,255,255,.4)">نظام إدارة تحصيل الديون © 2026</div></div>'
+    +'<div class="footer-mid"><div class="seal">🔒</div><p>وثيقة سرية</p></div>'
+    +'<div class="footer-right"><div>تاريخ التقرير: '+date+'</div><div>تاريخ الطباعة: '+printDate+'</div><div>عدد السجلات: '+records+'</div><div>نسبة الإنجاز: '+String(pctDone)+'%</div></div>'
+    +'</div></div>'
+    +'<div class="no-print" style="position:fixed;bottom:20px;left:50%;transform:translateX(-50%);display:flex;gap:10px;z-index:999">'
+    +'<button onclick="window.print()" style="background:#e85d20;color:#fff;border:none;border-radius:12px;padding:12px 28px;font-size:15px;font-weight:800;cursor:pointer;font-family:\'Cairo\',sans-serif;box-shadow:0 4px 20px rgba(232,93,32,.5)">🖨️ طباعة / حفظ PDF</button>'
+    +'<button onclick="window.close()" style="background:#1a1a2e;color:#fff;border:none;border-radius:12px;padding:12px 20px;font-size:15px;font-weight:700;cursor:pointer;font-family:\'Cairo\',sans-serif">✕ إغلاق</button>'
+    +'</div></body></html>';
   w.document.write(html);
   w.document.close();
 }
+
 
 
 // ── MAIN ───────────────────────────────────────────────────────────────────
@@ -9374,214 +8995,131 @@ function useSmartNotifications(gTotal, hoPrincipal, bestDayEver, currentDayTotal
     if (!gTotal || gTotal === prevTotal.current) return;
     const prev = prevTotal.current;
     prevTotal.current = gTotal;
-
-    // ── مراقبة الإجمالي الكلي ─────────────────────────────────────────────
     const milestones = [
-      { val: 500000,   label: "نصف مليون ريال! 🎉",   color: "#16a34a", icon: "💰", celebrate: true  },
-      { val: 1000000,  label: "مليون ريال كاملة! 🏆",  color: "#e85d20", icon: "🏆", celebrate: true  },
-      { val: 1500000,  label: "مليون ونص ريال! 🚀",    color: "#7c3aed", icon: "🚀", celebrate: true  },
-      { val: 2000000,  label: "مليونين ريال! 🎊",       color: "#0891b2", icon: "💎", celebrate: true  },
-      { val: 2500000,  label: "مليونين ونص! ⭐",        color: "#d97706", icon: "⭐", celebrate: true  },
-      { val: 3000000,  label: "3 ملايين ريال! 🔥",      color: "#dc2626", icon: "🔥", celebrate: true  },
-      { val: 4000000,  label: "4 ملايين ريال! 🌟",      color: "#059669", icon: "🌟", celebrate: true  },
-      { val: 5000000,  label: "5 ملايين ريال! 👑",      color: "#7c3aed", icon: "👑", celebrate: true  },
+      { val:500000,  label:"نصف مليون ريال! 🎉",  color:"#16a34a", icon:"💰", celebrate:true },
+      { val:1000000, label:"مليون ريال كاملة! 🏆", color:"#e85d20", icon:"🏆", celebrate:true },
+      { val:1500000, label:"مليون ونص ريال! 🚀",   color:"#7c3aed", icon:"🚀", celebrate:true },
+      { val:2000000, label:"مليونين ريال! 🎊",      color:"#0891b2", icon:"💎", celebrate:true },
+      { val:2500000, label:"مليونين ونص! ⭐",       color:"#d97706", icon:"⭐", celebrate:true },
+      { val:3000000, label:"3 ملايين ريال! 🔥",     color:"#dc2626", icon:"🔥", celebrate:true },
+      { val:4000000, label:"4 ملايين ريال! 🌟",     color:"#059669", icon:"🌟", celebrate:true },
+      { val:5000000, label:"5 ملايين ريال! 👑",     color:"#7c3aed", icon:"👑", celebrate:true },
     ];
-
     milestones.forEach(m => {
       const key = `milestone_${m.val}`;
       if (prev < m.val && gTotal >= m.val && !shownMilestones.current.has(key)) {
         shownMilestones.current.add(key);
         try { localStorage.setItem('oneic_shown_milestones', JSON.stringify([...shownMilestones.current])); } catch(e){}
-        addNotification({
-          type: 'milestone',
-          title: `🎯 تم تحقيق الهدف!`,
-          message: `الإجمالي الكلي وصل ${m.label}`,
-          sub: `الإجمالي الحالي: ${new Intl.NumberFormat('en-US',{minimumFractionDigits:3}).format(gTotal)} OMR`,
-          color: m.color, icon: m.icon,
-          celebrate: m.celebrate,
-          priority: 'high',
-          duration: 10000,
-        });
+        addNotification({ type:'milestone', title:`🎯 تم تحقيق الهدف!`,
+          message:`الإجمالي الكلي وصل ${m.label}`,
+          sub:`${new Intl.NumberFormat('en-US',{minimumFractionDigits:3}).format(gTotal)} OMR`,
+          color:m.color, icon:m.icon, celebrate:m.celebrate, duration:10000 });
       }
     });
-
-    // ── تحذير انخفاض حاد ─────────────────────────────────────────────────
     if (prev > 0 && gTotal < prev * 0.95 && gTotal > 100000) {
-      addNotification({
-        type: 'warning', title: '⚠️ تحذير: انخفاض في التحصيل',
-        message: `انخفاض ملحوظ في الإجمالي`,
-        sub: `المبلغ الحالي: ${new Intl.NumberFormat('en-US',{minimumFractionDigits:3}).format(gTotal)} OMR`,
-        color: '#dc2626', icon: '⚠️', celebrate: false, duration: 8000,
-      });
+      addNotification({ type:'warning', title:'⚠️ تحذير: انخفاض في التحصيل',
+        message:`انخفاض ملحوظ في الإجمالي`,
+        sub:`${new Intl.NumberFormat('en-US',{minimumFractionDigits:3}).format(gTotal)} OMR`,
+        color:'#dc2626', icon:'⚠️', celebrate:false, duration:8000 });
     }
   }, [gTotal, addNotification]);
 
-  // ── مراقبة Principal Amount لـ Legal DR Sarhaan ─────────────────────────
   useEffect(() => {
     if (!hoPrincipal) return;
     const key = 'principal_4m';
     if (hoPrincipal >= 4000000 && !shownMilestones.current.has(key)) {
       shownMilestones.current.add(key);
       try { localStorage.setItem('oneic_shown_milestones', JSON.stringify([...shownMilestones.current])); } catch(e){}
-      addNotification({
-        type: 'special',
-        title: '🎊 إنجاز استثنائي — Legal DR. Sarhaan!',
-        message: 'Principal Amount تجاوز 4 ملايين ريال!',
-        sub: `${new Intl.NumberFormat('en-US',{minimumFractionDigits:3}).format(hoPrincipal)} OMR`,
-        color: '#9333ea', icon: '💜', celebrate: true, priority: 'critical', duration: 15000,
-      });
+      addNotification({ type:'special', title:'🎊 إنجاز استثنائي — Legal DR. Sarhaan!',
+        message:'Principal Amount تجاوز 4 ملايين ريال!',
+        sub:`${new Intl.NumberFormat('en-US',{minimumFractionDigits:3}).format(hoPrincipal)} OMR`,
+        color:'#9333ea', icon:'💜', celebrate:true, duration:15000 });
     }
   }, [hoPrincipal, addNotification]);
 
-  // ── مراقبة أفضل دفعة يومية ──────────────────────────────────────────────
   const prevBest = useRef(0);
   useEffect(() => {
     if (!currentDayTotal || currentDayTotal <= 0) return;
     const storedBest = (() => { try { return parseFloat(localStorage.getItem('oneic_best_day')||'0'); } catch(e){return 0;} })();
     if (currentDayTotal > storedBest && currentDayTotal > prevBest.current) {
       prevBest.current = currentDayTotal;
-      if (currentDayTotal > storedBest) {
-        try { localStorage.setItem('oneic_best_day', String(currentDayTotal)); } catch(e){}
-        addNotification({
-          type: 'record',
-          title: '🏆 رقم قياسي جديد!',
-          message: 'أفضل دفعة يومية في تاريخ المشروع!',
-          sub: `${new Intl.NumberFormat('en-US',{minimumFractionDigits:3}).format(currentDayTotal)} OMR في يوم واحد`,
-          color: '#f59e0b', icon: '🥇', celebrate: true, duration: 10000,
-        });
-      }
+      try { localStorage.setItem('oneic_best_day', String(currentDayTotal)); } catch(e){}
+      addNotification({ type:'record', title:'🏆 رقم قياسي جديد!',
+        message:'أفضل دفعة يومية في تاريخ المشروع!',
+        sub:`${new Intl.NumberFormat('en-US',{minimumFractionDigits:3}).format(currentDayTotal)} OMR في يوم واحد`,
+        color:'#f59e0b', icon:'🥇', celebrate:true, duration:10000 });
     }
   }, [currentDayTotal, addNotification]);
 
   return { notifications, celebration, confettiActive, addNotification, setNotifications };
 }
 
-// ── Confetti Component ─────────────────────────────────────────────────────────
 function ConfettiRain({ active }) {
   if (!active) return null;
-  const colors = ['#e85d20','#ffd700','#16a34a','#7c3aed','#0891b2','#f59e0b','#ec4899','#06b6d4'];
-  const pieces = Array.from({length: 80}, (_,i) => ({
-    id: i,
-    x: Math.random() * 100,
-    delay: Math.random() * 3,
-    duration: 2 + Math.random() * 3,
-    size: 6 + Math.random() * 10,
-    color: colors[Math.floor(Math.random() * colors.length)],
-    shape: Math.random() > 0.5 ? 'circle' : 'rect',
-    rotation: Math.random() * 360,
+  const colors = ['#e85d20','#ffd700','#16a34a','#7c3aed','#0891b2','#f59e0b','#ec4899'];
+  const pieces = Array.from({length:80},(_,i)=>({
+    id:i, x:Math.random()*100, delay:Math.random()*3,
+    duration:2+Math.random()*3, size:6+Math.random()*10,
+    color:colors[Math.floor(Math.random()*colors.length)],
+    shape:Math.random()>0.5?'circle':'rect', rotation:Math.random()*360,
   }));
   return (
     <div style={{position:'fixed',inset:0,pointerEvents:'none',zIndex:99999,overflow:'hidden'}}>
       <style>{`
-        @keyframes confettiFall {
-          0%   { transform: translateY(-20px) rotate(0deg); opacity: 1; }
-          100% { transform: translateY(110vh) rotate(720deg); opacity: 0; }
-        }
-        @keyframes confettiSway {
-          0%,100% { margin-left: 0; }
-          50%      { margin-left: 30px; }
-        }
+        @keyframes cFall{0%{transform:translateY(-20px) rotate(0deg);opacity:1}100%{transform:translateY(110vh) rotate(720deg);opacity:0}}
+        @keyframes cSway{0%,100%{margin-left:0}50%{margin-left:30px}}
       `}</style>
-      {pieces.map(p => (
-        <div key={p.id} style={{
-          position:'absolute', left: p.x+'%', top:'-20px',
-          width: p.size, height: p.size,
-          background: p.color,
-          borderRadius: p.shape==='circle' ? '50%' : '2px',
-          animation: `confettiFall ${p.duration}s ease-in ${p.delay}s forwards, confettiSway ${p.duration/2}s ease-in-out ${p.delay}s infinite`,
-          transform: `rotate(${p.rotation}deg)`,
+      {pieces.map(p=>(
+        <div key={p.id} style={{position:'absolute',left:p.x+'%',top:'-20px',
+          width:p.size,height:p.size,background:p.color,
+          borderRadius:p.shape==='circle'?'50%':'2px',
+          animation:`cFall ${p.duration}s ease-in ${p.delay}s forwards, cSway ${p.duration/2}s ease-in-out ${p.delay}s infinite`,
         }}/>
       ))}
     </div>
   );
 }
 
-// ── Celebration Modal ──────────────────────────────────────────────────────────
 function CelebrationModal({ celebration }) {
   if (!celebration) return null;
   return (
-    <div style={{
-      position:'fixed', inset:0, background:'rgba(0,0,0,0.75)',
-      display:'flex', alignItems:'center', justifyContent:'center',
-      zIndex:99998, padding:20, direction:'rtl',
-      animation:'fadeIn 0.4s ease',
-    }}>
-      <style>{`
-        @keyframes fadeIn { from{opacity:0;transform:scale(0.8)} to{opacity:1;transform:scale(1)} }
-        @keyframes pulse  { 0%,100%{transform:scale(1)} 50%{transform:scale(1.05)} }
-        @keyframes shimmer {
-          0%   { background-position: -200% center; }
-          100% { background-position: 200% center; }
-        }
-      `}</style>
-      <div style={{
-        background: `linear-gradient(135deg, ${celebration.color}22, #fff, ${celebration.color}11)`,
-        border: `3px solid ${celebration.color}`,
-        borderRadius: 24, padding: '40px 32px',
-        maxWidth: 480, width: '100%',
-        textAlign: 'center',
-        boxShadow: `0 0 60px ${celebration.color}66`,
-        animation: 'pulse 2s ease infinite',
-      }}>
-        <div style={{fontSize: 72, marginBottom: 16, lineHeight: 1}}>{celebration.icon}</div>
-        <div style={{
-          fontSize: 26, fontWeight: 900, color: celebration.color,
-          marginBottom: 10, lineHeight: 1.2,
-          background: `linear-gradient(90deg, ${celebration.color}, #fff, ${celebration.color})`,
-          backgroundSize: '200% auto',
-          WebkitBackgroundClip: 'text',
-          WebkitTextFillColor: 'transparent',
-          animation: 'shimmer 2s linear infinite',
-        }}>{celebration.title}</div>
-        <div style={{fontSize: 18, fontWeight: 800, color: '#111', marginBottom: 8}}>{celebration.message}</div>
-        {celebration.sub && <div style={{
-          fontSize: 20, fontWeight: 900, color: celebration.color,
-          background: `${celebration.color}18`, borderRadius: 12,
-          padding: '10px 20px', margin: '12px auto', display: 'inline-block',
-        }}>{celebration.sub}</div>}
-        <div style={{fontSize: 13, color: '#888', marginTop: 16, fontStyle: 'italic'}}>
-          🎊 تهانينا لفريق ONEIC بأكمله! 🎊
-        </div>
+    <div style={{position:'fixed',inset:0,background:'rgba(0,0,0,0.75)',
+      display:'flex',alignItems:'center',justifyContent:'center',
+      zIndex:99998,padding:20,direction:'rtl'}}>
+      <div style={{background:`linear-gradient(135deg,${celebration.color}22,#fff)`,
+        border:`3px solid ${celebration.color}`,borderRadius:24,padding:'36px 28px',
+        maxWidth:460,width:'100%',textAlign:'center',
+        boxShadow:`0 0 60px ${celebration.color}66`}}>
+        <div style={{fontSize:64,marginBottom:12,lineHeight:1}}>{celebration.icon}</div>
+        <div style={{fontSize:22,fontWeight:900,color:celebration.color,marginBottom:8}}>{celebration.title}</div>
+        <div style={{fontSize:16,fontWeight:800,color:'#111',marginBottom:6}}>{celebration.message}</div>
+        {celebration.sub && <div style={{fontSize:18,fontWeight:900,color:celebration.color,
+          background:`${celebration.color}18`,borderRadius:10,padding:'8px 16px',
+          margin:'10px auto',display:'inline-block'}}>{celebration.sub}</div>}
+        <div style={{fontSize:12,color:'#888',marginTop:12}}>🎊 تهانينا لفريق ONEIC بأكمله! 🎊</div>
       </div>
     </div>
   );
 }
 
-// ── Notification Toast Stack ───────────────────────────────────────────────────
 function NotificationStack({ notifications, onDismiss }) {
   if (!notifications.length) return null;
   return (
-    <div style={{
-      position: 'fixed', top: 80, left: 16,
-      zIndex: 9997, display: 'flex', flexDirection: 'column', gap: 8,
-      maxWidth: 360, pointerEvents: 'none',
-    }}>
-      {notifications.map(n => (
-        <div key={n.id} style={{
-          background: '#fff', borderRadius: 14,
-          border: `2px solid ${n.color}`,
-          borderRight: `6px solid ${n.color}`,
-          padding: '12px 14px',
-          boxShadow: `0 4px 20px ${n.color}33`,
-          display: 'flex', gap: 10, alignItems: 'flex-start',
-          pointerEvents: 'auto',
-          animation: 'slideIn 0.3s ease',
-        }}>
-          <style>{`@keyframes slideIn{from{opacity:0;transform:translateX(-20px)}to{opacity:1;transform:translateX(0)}}`}</style>
-          <div style={{fontSize: 24, flexShrink: 0, lineHeight: 1}}>{n.icon}</div>
-          <div style={{flex: 1, minWidth: 0}}>
-            <div style={{fontSize: 13, fontWeight: 900, color: n.color, marginBottom: 2}}>{n.title}</div>
-            <div style={{fontSize: 12, fontWeight: 700, color: '#111', marginBottom: 2}}>{n.message}</div>
-            {n.sub && <div style={{fontSize: 11, color: '#555', fontWeight: 600}}>{n.sub}</div>}
-            <div style={{fontSize: 10, color: '#aaa', marginTop: 4}}>
-              {n.time?.toLocaleTimeString('ar-OM',{hour:'2-digit',minute:'2-digit'})}
-            </div>
+    <div style={{position:'fixed',top:80,left:16,zIndex:9997,
+      display:'flex',flexDirection:'column',gap:8,maxWidth:340,pointerEvents:'none'}}>
+      {notifications.map(n=>(
+        <div key={n.id} style={{background:'#fff',borderRadius:12,
+          border:`2px solid ${n.color}`,borderRight:`6px solid ${n.color}`,
+          padding:'10px 12px',boxShadow:`0 4px 20px ${n.color}33`,
+          display:'flex',gap:8,alignItems:'flex-start',pointerEvents:'auto'}}>
+          <div style={{fontSize:22,flexShrink:0}}>{n.icon}</div>
+          <div style={{flex:1,minWidth:0}}>
+            <div style={{fontSize:12,fontWeight:900,color:n.color,marginBottom:2}}>{n.title}</div>
+            <div style={{fontSize:11,fontWeight:700,color:'#111',marginBottom:2}}>{n.message}</div>
+            {n.sub&&<div style={{fontSize:10,color:'#555',fontWeight:600}}>{n.sub}</div>}
           </div>
-          <button onClick={()=>onDismiss(n.id)} style={{
-            background: 'none', border: 'none', cursor: 'pointer',
-            color: '#aaa', fontSize: 14, padding: 0, flexShrink: 0,
-            lineHeight: 1, pointerEvents: 'auto',
-          }}>✕</button>
+          <button onClick={()=>onDismiss(n.id)} style={{background:'none',border:'none',
+            cursor:'pointer',color:'#aaa',fontSize:13,padding:0,pointerEvents:'auto'}}>✕</button>
         </div>
       ))}
     </div>
@@ -9625,11 +9163,10 @@ export default function Dashboard() {
     try { return JSON.parse(localStorage.getItem('oneic_history')||'[]'); } catch(e){return [];}
   });
 
-  // ── تحميل السجل التاريخي من Firebase عند الفتح ──────────────────────────
+  // ── تحميل السجل التاريخي من Firebase على كل الأجهزة ─────────────────────
   useEffect(() => {
     async function loadHistory() {
       try {
-        // أولاً: جرّب node منفصل أسرع
         const res = await fetch('https://oneic-dashboard-default-rtdb.firebaseio.com/history.json');
         if (res.ok) {
           const d = await res.json();
@@ -9640,7 +9177,6 @@ export default function Dashboard() {
           }
         }
       } catch(e) {}
-      // ثانياً: من oneic_data
       try {
         const row = await sbGet('oneic_data');
         if (row?.history?.length > 0) {
@@ -9673,7 +9209,6 @@ export default function Dashboard() {
           const d = { ...row, headOffice: fullHO };
           setData(d);
           try { localStorage.setItem('oneic_dashboard_data', JSON.stringify(d)); } catch(e) {}
-          // ── تحميل السجل التاريخي من Firebase ──
           if (row.history?.length > 0) {
             setHistory(row.history);
             try { localStorage.setItem('oneic_history', JSON.stringify(row.history)); } catch(e) {}
@@ -9839,11 +9374,9 @@ export default function Dashboard() {
         const fullData = { ...dataToSave, history: newHistory };
         sbUpsert('oneic_data', { payload: fullData });
       } catch(e) {}
-      // ── حفظ history منفصل في Firebase لسرعة التحميل ──
       try {
-        fetch(`https://oneic-dashboard-default-rtdb.firebaseio.com/history.json`, {
-          method: 'PUT',
-          headers: {'Content-Type':'application/json'},
+        fetch('https://oneic-dashboard-default-rtdb.firebaseio.com/history.json', {
+          method: 'PUT', headers: {'Content-Type':'application/json'},
           body: JSON.stringify({entries: newHistory, _updatedAt: new Date().toISOString()})
         });
       } catch(e) {}
@@ -9889,10 +9422,7 @@ export default function Dashboard() {
   // ── Smart Notifications ───────────────────────────────────────────────────
   const hoPrincipalCurrent = (data.headOffice||[]).find(c=>c.name==='Legal - DR. Sarhaan')?.principalAmt||0;
   const currentBestDay = (() => {
-    try {
-      const saved = localStorage.getItem('oneic_bulk_data');
-      if (saved) { const b = JSON.parse(saved); if (b?.daily?.length) return Math.max(...b.daily.map(d=>d.paid+(d.adj||0))); }
-    } catch(e) {} return 0;
+    try { const s=localStorage.getItem('oneic_bulk_data'); if(s){const b=JSON.parse(s); if(b?.daily?.length) return Math.max(...b.daily.map(d=>d.paid+(d.adj||0)));} } catch(e){} return 0;
   })();
   const { notifications, celebration, confettiActive, addNotification, setNotifications } =
     useSmartNotifications(gTotal, hoPrincipalCurrent, 0, currentBestDay);
@@ -9906,7 +9436,6 @@ export default function Dashboard() {
       fontFamily:"'Cairo','Tajawal','Segoe UI',sans-serif",
       direction:"rtl", color:"#111", overflow:"hidden"
     }}>
-      {/* ── Notification System ── */}
       <ConfettiRain active={confettiActive}/>
       <CelebrationModal celebration={celebration}/>
       <NotificationStack notifications={notifications} onDismiss={id=>setNotifications(prev=>prev.filter(n=>n.id!==id))}/>
@@ -10130,7 +9659,10 @@ export default function Dashboard() {
 
       {/* ══ PRINT HEADER — يظهر فقط عند الطباعة ══ */}
       <div style={{display:"none"}} className="print-only">
-        {showHistory && <HistoryModal history={history} onClose={()=>setShowHistory(false)} small={small}/>}
+        <ConfettiRain active={confettiActive}/>
+      <CelebrationModal celebration={celebration}/>
+      <NotificationStack notifications={notifications} onDismiss={id=>setNotifications(prev=>prev.filter(n=>n.id!==id))}/>
+      {showHistory && <HistoryModal history={history} onClose={()=>setShowHistory(false)} small={small}/>}
       </div>
       <VerifyModal pending={pending} onConfirm={confirmData} onReject={rejectData}/>
 
