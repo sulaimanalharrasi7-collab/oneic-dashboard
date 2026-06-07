@@ -6157,8 +6157,10 @@ async function parseXLS(file) {
       else if (colL.includes('doc'))  key = 'Documentation Legal';
       else if (colL.includes('saif')) key = 'Saif Legal';
       else if (col.trim() === '')     key = 'Saif Legal';
+      // Over Paid يُعدّ في العدد فقط — المبالغ السالبة لا تُحتسب في التحصيل
       if (!hoMap[key]) hoMap[key] = { paid:0, adj:0, count:0 };
-      hoMap[key].paid += paid; hoMap[key].adj += adj; hoMap[key].count++;
+      if (key !== 'Over Paid') { hoMap[key].paid += paid; hoMap[key].adj += adj; }
+      hoMap[key].count++;
 
     } else if (REG_AR[region]) {
       if (!regMap[region]) regMap[region] = { paid:0, adj:0, count:0, paidCount:0, adjCount:0, cMap:{} };
@@ -9205,8 +9207,18 @@ export default function Dashboard() {
           const HO_REQ = ["Legal - DR. Sarhaan","Documentation Legal","Over Paid","Saif Legal"];
           const HO_P = {"Legal - DR. Sarhaan":{portAmt:3229651.681,portCnt:3662,principalAmt:3301711.348},"Documentation Legal":{portAmt:489409.003,portCnt:1136},"Over Paid":{portAmt:0,portCnt:340},"Saif Legal":{portAmt:27215.336,portCnt:136}};
           const existingHO = row.headOffice || [];
-          const fullHO = HO_REQ.map(nm => existingHO.find(c=>c.name===nm) || {name:nm,paid:0,adj:0,count:0,...HO_P[nm]});
-          const d = { ...row, headOffice: fullHO };
+          const fullHO = HO_REQ.map(nm => {
+            if (nm === 'Over Paid') return {name:nm,paid:0,adj:0,count:0,portAmt:0,portCnt:340};
+            return existingHO.find(c=>c.name===nm) || {name:nm,paid:0,adj:0,count:0,...HO_P[nm]};
+          });
+          // إعادة حساب الإجماليات بعد تصفير Over Paid
+          const cleanHO = fullHO;
+          const gPaid = [...(row.regions||[]), ...(row.debtCompanies||[]), ...cleanHO.filter(c=>c.name!=='Over Paid')]
+            .reduce((s,c)=>s+(c.paid||0), 0);
+          const gAdj  = [...(row.regions||[]), ...(row.debtCompanies||[]), ...cleanHO.filter(c=>c.name!=='Over Paid')]
+            .reduce((s,c)=>s+(c.adj||0), 0);
+          const d = { ...row, headOffice: cleanHO, grandPaid: gPaid, grandAdj: gAdj,
+            totalCollection: { paid: gPaid, adj: gAdj } };
           setData(d);
           try { localStorage.setItem('oneic_dashboard_data', JSON.stringify(d)); } catch(e) {}
           if (row.history?.length > 0) {
@@ -9222,7 +9234,15 @@ export default function Dashboard() {
         const saved = localStorage.getItem('oneic_dashboard_data');
         if (saved) {
           const parsed = JSON.parse(saved);
-          if (parsed?.regions?.length > 0) setData(parsed);
+          if (parsed?.regions?.length > 0) {
+            // ضمان Over Paid = صفر دائماً حتى في localStorage
+            if (parsed.headOffice) {
+              parsed.headOffice = parsed.headOffice.map(c =>
+                c.name === 'Over Paid' ? { ...c, paid: 0, adj: 0 } : c
+              );
+            }
+            setData(parsed);
+          }
         }
       } catch(e) {}
       setLoadingServer(false);
@@ -9317,9 +9337,11 @@ export default function Dashboard() {
       "Saif Legal":           { portAmt: 27215.336,   portCnt: 136  }
     };
     const mergedHO = HO_REQUIRED.map(nm => {
+      const portInfo = HO_PORT_DATA[nm]||{};
+      // Over Paid دائماً صفر — القيم السالبة (over-payments) لا تُحتسب
+      if (nm === 'Over Paid') return { name:nm, paid:0, adj:0, count:0, portAmt:0, portCnt:portInfo.portCnt||0 };
       const fromNew = (newData.headOffice||[]).find(c=>c.name===nm);
       const fromExisting = data.headOffice?.find(d=>d.name===nm);
-      const portInfo = HO_PORT_DATA[nm]||{};
       if (fromNew) return { ...fromNew, portAmt: fromNew.portAmt||portInfo.portAmt||0, portCnt: fromNew.portCnt||portInfo.portCnt||0 };
       if (fromExisting) return { ...fromExisting, portAmt: fromExisting.portAmt||portInfo.portAmt||0, portCnt: fromExisting.portCnt||portInfo.portCnt||0 };
       return { name:nm, paid:0, adj:0, count:0, portAmt:portInfo.portAmt||0, portCnt:portInfo.portCnt||0 };
