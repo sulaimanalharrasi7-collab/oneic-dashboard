@@ -6155,8 +6155,7 @@ async function parseXLS(file) {
       let key = 'HO';
       if      (colL.includes('dr') || colL.includes('sarhaan') || colL.includes('sarhan')) key = 'Legal - DR. Sarhaan';
       else if (colL.includes('doc'))  key = 'Documentation Legal';
-      else if (colL.includes('saif')) key = 'Blanks';
-      else if (col.trim() === '')     key = 'Blanks';
+      else if (col.trim() === '' || col === 'nan' || col === '0') key = 'Blanks';
       if (!hoMap[key]) hoMap[key] = { paid:0, adj:0, count:0 };
       hoMap[key].paid += paid; hoMap[key].adj += adj; hoMap[key].count++;
 
@@ -8707,6 +8706,7 @@ async function parseComplaints(file) {
         const regionIdx = headers.findIndex(h => h === 'Region');
         const branchIdx = headers.findIndex(h => h === 'Branch');
         const principalIdx = headers.findIndex(h => h === 'Principal Amount');
+        const collectorIdx = headers.findIndex(h => h === 'Collector');
         if (regionIdx < 0) { reject(new Error('عمود Region غير موجود')); return; }
 
         // خريطة التجميع الدقيقة
@@ -8719,12 +8719,12 @@ async function parseComplaints(file) {
         // تجميع حسب Region للمحافظات وحسب Branch لشركات التحصيل
         const regionMap = {}; // للمحافظات الخمس (Region)
         const branchMap = {}; // لشركات التحصيل (Branch داخل DC)
-        // المكتب الرئيسي: Branch='Al-Khuwair' داخل Head Office
         
         for (let i = 1; i < lines.length; i++) {
           const row = lines[i].split('\t');
           const region = (row[regionIdx]||'').replace(/\r/g,'').trim();
           const branch = branchIdx>=0 ? (row[branchIdx]||'').replace(/\r/g,'').trim() : '';
+          const collector = collectorIdx>=0 ? (row[collectorIdx]||'').replace(/\r/g,'').trim() : '';
           if (!region) continue;
           const amt = principalIdx>=0 ? (parseFloat(row[principalIdx])||0) : 0;
           total++;
@@ -8737,11 +8737,25 @@ async function parseComplaints(file) {
               branchMap[branch].count++; branchMap[branch].amt += amt;
             }
           } else if (HO_REGIONS.some(k => region.trim() === k.trim())) {
-            // المكتب الرئيسي → نجمّع الكل تحت مفتاح واحد
+            // المكتب الرئيسي → تصنيف حسب Collector لأربعة أقسام
             hoCount++; hoAmt += amt;
-            const hoKey = 'HEAD_OFFICE_TOTAL';
+            const colL = collector.toLowerCase();
+            let hoKey = 'HO';
+            if (colL.includes('dr') || colL.includes('sarhaan') || colL.includes('sarhan') || colL.includes('legal- dr')) {
+              hoKey = 'Legal - DR. Sarhaan';
+            } else if (colL.includes('doc') || colL.includes('documentation')) {
+              hoKey = 'Documentation Legal';
+            } else if (collector.trim() === '' || collector === 'nan' || collector === '0') {
+              hoKey = 'Blanks';
+            } else {
+              hoKey = 'HO';
+            }
             if (!branchMap[hoKey]) branchMap[hoKey] = {count:0, amt:0};
             branchMap[hoKey].count++; branchMap[hoKey].amt += amt;
+            // أيضاً نحفظ الإجمالي
+            const hoTotal = 'HEAD_OFFICE_TOTAL';
+            if (!branchMap[hoTotal]) branchMap[hoTotal] = {count:0, amt:0};
+            branchMap[hoTotal].count++; branchMap[hoTotal].amt += amt;
           } else {
             // المحافظات الخمس → نجمّع حسب Region
             govCount++; govAmt += amt;
