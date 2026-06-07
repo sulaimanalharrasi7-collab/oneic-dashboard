@@ -6152,15 +6152,20 @@ async function parseXLS(file) {
 
     } else if (region === 'Head Office') {
       const colL = col.toLowerCase();
-      // القاعدة: blank/فارغ = Saif Legal | over paid/HO = Over Paid (صفر دائماً)
+      const branchL = branch.toLowerCase();
+      // نقرأ branch أيضاً — بعض الملفات تضع الاسم في Branch بدل Collector
+      const identifier = col || branch;
+      const identL = identifier.toLowerCase();
       let key;
-      if      (colL.includes('dr') || colL.includes('sarhaan') || colL.includes('sarhan')) key = 'Legal - DR. Sarhaan';
-      else if (colL.includes('doc'))                                                        key = 'Documentation Legal';
-      else if (colL.includes('saif'))                                                       key = 'Saif Legal';
-      else if (col.trim() === '')                                                            key = 'Saif Legal';
-      else if (colL.includes('over') || colL.includes('paid') || colL.includes('ho'))      key = 'Over Paid';
-      else                                                                                   key = 'Saif Legal';
+      if      (identL.includes('dr') || identL.includes('sarhaan') || identL.includes('sarhan')) key = 'Legal - DR. Sarhaan';
+      else if (identL.includes('doc'))                                                             key = 'Documentation Legal';
+      else if (identL.includes('saif'))                                                            key = 'Saif Legal';
+      else if (identL.includes('over') || identL.includes('ho'))                                  key = 'Over Paid';
+      else if (identifier.trim() === '')                                                           key = 'Saif Legal';
+      else                                                                                         key = 'Saif Legal';
       if (!hoMap[key]) hoMap[key] = { paid:0, adj:0, count:0 };
+      // DEBUG — سيُحذف لاحقاً
+      console.log('[HO ROW]', { col, branch, identifier, key, paid, adj });
       // Over Paid دائماً صفر — لا تُضاف قيمه أبداً
       if (key !== 'Over Paid') { hoMap[key].paid += paid; hoMap[key].adj += adj; }
       hoMap[key].count++;
