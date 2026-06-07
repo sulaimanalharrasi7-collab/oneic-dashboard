@@ -6152,7 +6152,7 @@ async function parseXLS(file) {
 
     } else if (region === 'Head Office') {
       const colL = col.toLowerCase();
-      let else if (col.trim() === '')     else if (col.trim() === '' || col === 'nan') key = 'Blanks';
+      let key = 'HO';
       if      (colL.includes('dr') || colL.includes('sarhaan') || colL.includes('sarhan')) key = 'Legal - DR. Sarhaan';
       else if (colL.includes('doc'))  key = 'Documentation Legal';
       else if (colL.includes('saif')) key = 'Blanks';
