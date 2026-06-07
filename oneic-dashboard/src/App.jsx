@@ -8689,143 +8689,119 @@ function HistoryModal({ history, onClose, small }) {
 // ── Bulk Payment Parser (Smart 100%) ─────────────────────────────────────────
 // ── parseComplaints ─────────────────────────────────────────────────────────
 async function parseComplaints(file) {
+  // ── يدعم .xls/.xlsx/.tsv/.txt بذكاء كامل ──────────────────────────────
+  const n = v => { const x=parseFloat(String(v||'').replace(/,/g,'')); return isNaN(x)?0:x; };
+  const DC_REGION  = 'Debt Collection Company';
+  const HO_REGIONS = ['Head Office','Legal','Legal '];
+
+  const classify = rows => {
+    let total=0;
+    const regionMap={}, branchMap={};
+    const hoSections={
+      'Legal - DR. Sarhaan':{count:0,osAmt:0,paidAmt:0,adjAmt:0},
+      'Documentation Legal':{count:0,osAmt:0,paidAmt:0,adjAmt:0},
+      'Blanks'             :{count:0,osAmt:0,paidAmt:0,adjAmt:0},
+      'HO'                 :{count:0,osAmt:0,paidAmt:0,adjAmt:0},
+    };
+    rows.forEach(row => {
+      const region    = String(row['Region']||'').trim();
+      const branch    = String(row['Branch']||'').trim();
+      const collector = String(row['Collector']||'').trim();
+      if (!region) return;
+      // O/S Amount يأتي من عمود "O/S Amount" أو "Outstanding Amount" أو "Principal Amount"
+      const osAmt   = n(row['O/S Amount']  || row['OS Amount'] || row['Outstanding Amount'] || row['Principal Amount'] || 0);
+      const paidAmt = n(row['Paid Amount'] || row['Paid'] || 0);
+      const adjAmt  = n(row['Adjustment Amount'] || row['Adjustment'] || row['Adj'] || 0);
+      total++;
+
+      if (region === DC_REGION) {
+        const key = branch || 'Unknown';
+        if (!branchMap[key]) branchMap[key]={count:0,osAmt:0,paidAmt:0,adjAmt:0,amt:0};
+        branchMap[key].count++; branchMap[key].osAmt+=osAmt; branchMap[key].paidAmt+=paidAmt; branchMap[key].adjAmt+=adjAmt; branchMap[key].amt+=osAmt;
+        if (!branchMap['DC_TOTAL']) branchMap['DC_TOTAL']={count:0,osAmt:0,paidAmt:0,adjAmt:0};
+        branchMap['DC_TOTAL'].count++; branchMap['DC_TOTAL'].osAmt+=osAmt; branchMap['DC_TOTAL'].paidAmt+=paidAmt; branchMap['DC_TOTAL'].adjAmt+=adjAmt;
+
+      } else if (HO_REGIONS.some(k=>region===k.trim())) {
+        const colL = collector.toLowerCase();
+        let hoKey = 'HO';
+        if (colL.includes('dr')||colL.includes('sarhaan')||colL.includes('sarhan')||colL.includes('legal- dr')||colL.includes('legal -dr')) hoKey='Legal - DR. Sarhaan';
+        else if (colL.includes('doc')||colL.includes('documentation')) hoKey='Documentation Legal';
+        else if (collector===''||collector==='nan'||collector==='0'||collector==='-') hoKey='Blanks';
+        else hoKey='HO';
+        hoSections[hoKey].count++; hoSections[hoKey].osAmt+=osAmt; hoSections[hoKey].paidAmt+=paidAmt; hoSections[hoKey].adjAmt+=adjAmt;
+        if (!branchMap['HEAD_OFFICE_TOTAL']) branchMap['HEAD_OFFICE_TOTAL']={count:0,osAmt:0,paidAmt:0,adjAmt:0,amt:0};
+        branchMap['HEAD_OFFICE_TOTAL'].count++; branchMap['HEAD_OFFICE_TOTAL'].osAmt+=osAmt; branchMap['HEAD_OFFICE_TOTAL'].paidAmt+=paidAmt; branchMap['HEAD_OFFICE_TOTAL'].adjAmt+=adjAmt; branchMap['HEAD_OFFICE_TOTAL'].amt+=osAmt;
+
+      } else {
+        if (!regionMap[region]) regionMap[region]={count:0,osAmt:0,paidAmt:0,adjAmt:0};
+        regionMap[region].count++; regionMap[region].osAmt+=osAmt; regionMap[region].paidAmt+=paidAmt; regionMap[region].adjAmt+=adjAmt;
+      }
+    });
+    // إضافة hoSections لـ branchMap
+    Object.entries(hoSections).forEach(([k,v])=>{ branchMap[k]={...v,amt:v.osAmt}; });
+    const dcT  = branchMap['DC_TOTAL']           ||{count:0,osAmt:0,paidAmt:0,adjAmt:0};
+    const hoT  = branchMap['HEAD_OFFICE_TOTAL']  ||{count:0,osAmt:0,paidAmt:0,adjAmt:0};
+    const govT = Object.values(regionMap).reduce((s,r)=>({count:s.count+r.count,osAmt:s.osAmt+r.osAmt,paidAmt:s.paidAmt+r.paidAmt,adjAmt:s.adjAmt+r.adjAmt}),{count:0,osAmt:0,paidAmt:0,adjAmt:0});
+    return { total, dcCount:dcT.count, dcAmt:dcT.osAmt, dcPaid:dcT.paidAmt, dcAdj:dcT.adjAmt,
+             hoCount:hoT.count, hoAmt:hoT.osAmt, hoPaid:hoT.paidAmt, hoAdj:hoT.adjAmt,
+             govCount:govT.count, govAmt:govT.osAmt, govPaid:govT.paidAmt, govAdj:govT.adjAmt,
+             regionMap, branchMap, hoSections };
+  };
+
   return new Promise((resolve, reject) => {
     const reader = new FileReader();
-    reader.onload = e => {
+    reader.onload = async e => {
       try {
-        const bytes = new Uint8Array(e.target.result);
-        // ── قراءة UTF-16-LE مع دعم BOM ──────────────────────────────────
-        let text = '';
-        let startIdx = 0;
-        // ابحث عن BOM FF FE
-        for (let i = 0; i < Math.min(20, bytes.length-1); i++) {
-          if (bytes[i] === 0xFF && bytes[i+1] === 0xFE) { startIdx = i+2; break; }
-        }
-        for (let i = startIdx; i < bytes.length - 1; i += 2) {
-          const cp = bytes[i] | (bytes[i+1] << 8);
-          if (cp === 0xFEFF || cp === 0) continue;
-          text += String.fromCharCode(cp);
-        }
-        // fallback: إذا النص فارغ جرب UTF-8
-        if (text.trim().length < 10) {
-          text = new TextDecoder('utf-8').decode(bytes);
-        }
-        
-        const lines = text.split('\n').filter(l => l.trim());
-        if (lines.length < 2) { reject(new Error('الملف فارغ')); return; }
-        const headers = lines[0].split('\t').map(h => h.replace(/\r/g,'').replace(/"/g,'').trim());
-        
-        // ── فهرسة الأعمدة ────────────────────────────────────────────────
-        const regionIdx    = headers.findIndex(h => h === 'Region');
-        const branchIdx    = headers.findIndex(h => h === 'Branch');
-        const collectorIdx = headers.findIndex(h => h === 'Collector');
-        const osIdx        = headers.findIndex(h => h.includes('O/S') || h === 'Outstanding Amount' || h === 'OS Amount');
-        const paidIdx      = headers.findIndex(h => h === 'Paid Amount' || h === 'Paid');
-        const adjIdx       = headers.findIndex(h => h.includes('Adjust') || h === 'Adjustment');
-        const principalIdx = headers.findIndex(h => h === 'Principal Amount');
-        
-        if (regionIdx < 0) { reject(new Error('عمود Region غير موجود')); return; }
-        
-        const n = v => { const x=parseFloat(String(v||'').replace(/,/g,'')); return isNaN(x)?0:x; };
-        
-        const DC_REGION  = 'Debt Collection Company';
-        const HO_REGIONS = ['Head Office', 'Legal', 'Legal '];
-        
-        // ── خرائط التجميع الذكية ──────────────────────────────────────────
-        // كل قسم: { count, osAmt, paidAmt, adjAmt }
-        let total=0;
-        const regionMap  = {}; // المحافظات
-        const branchMap  = {}; // شركات التحصيل
-        const hoSections = {   // أقسام المكتب الرئيسي الأربعة
-          'Legal - DR. Sarhaan': {count:0, osAmt:0, paidAmt:0, adjAmt:0},
-          'Documentation Legal': {count:0, osAmt:0, paidAmt:0, adjAmt:0},
-          'Blanks':              {count:0, osAmt:0, paidAmt:0, adjAmt:0},
-          'HO':                  {count:0, osAmt:0, paidAmt:0, adjAmt:0},
-        };
-        
-        for (let i = 1; i < lines.length; i++) {
-          const row       = lines[i].split('\t');
-          const region    = (row[regionIdx]||'').replace(/\r/g,'').replace(/"/g,'').trim();
-          const branch    = branchIdx>=0    ? (row[branchIdx]||'').replace(/\r/g,'').trim()    : '';
-          const collector = collectorIdx>=0 ? (row[collectorIdx]||'').replace(/\r/g,'').trim() : '';
-          if (!region) continue;
-          
-          const osAmt   = osIdx>=0        ? n(row[osIdx])        : (principalIdx>=0 ? n(row[principalIdx]) : 0);
-          const paidAmt = paidIdx>=0      ? n(row[paidIdx])      : 0;
-          const adjAmt  = adjIdx>=0       ? n(row[adjIdx])       : 0;
-          total++;
-          
-          if (region === DC_REGION) {
-            // ── شركات التحصيل → تجميع حسب Branch ──
-            const key = branch || 'Unknown';
-            if (!branchMap[key]) branchMap[key] = {count:0, osAmt:0, paidAmt:0, adjAmt:0};
-            branchMap[key].count++;
-            branchMap[key].osAmt   += osAmt;
-            branchMap[key].paidAmt += paidAmt;
-            branchMap[key].adjAmt  += adjAmt;
-            // إجمالي DC
-            if (!branchMap['DC_TOTAL']) branchMap['DC_TOTAL'] = {count:0, osAmt:0, paidAmt:0, adjAmt:0};
-            branchMap['DC_TOTAL'].count++;
-            branchMap['DC_TOTAL'].osAmt   += osAmt;
-            branchMap['DC_TOTAL'].paidAmt += paidAmt;
-            branchMap['DC_TOTAL'].adjAmt  += adjAmt;
-            
-          } else if (HO_REGIONS.some(k => region.trim() === k.trim())) {
-            // ── المكتب الرئيسي → تصنيف الأقسام الأربعة بذكاء ──
-            const colL = collector.toLowerCase();
-            let hoKey = 'HO';
-            if (colL.includes('dr') || colL.includes('sarhaan') || colL.includes('sarhan') ||
-                colL.includes('legal- dr') || colL.includes('legal -dr')) {
-              hoKey = 'Legal - DR. Sarhaan';
-            } else if (colL.includes('doc') || colL.includes('documentation')) {
-              hoKey = 'Documentation Legal';
-            } else if (collector.trim() === '' || collector === 'nan' || collector === '0' || collector === '-') {
-              hoKey = 'Blanks';
-            } else {
-              hoKey = 'HO';
-            }
-            hoSections[hoKey].count++;
-            hoSections[hoKey].osAmt   += osAmt;
-            hoSections[hoKey].paidAmt += paidAmt;
-            hoSections[hoKey].adjAmt  += adjAmt;
-            // إجمالي HO
-            if (!branchMap['HEAD_OFFICE_TOTAL']) branchMap['HEAD_OFFICE_TOTAL'] = {count:0, osAmt:0, paidAmt:0, adjAmt:0, amt:0};
-            branchMap['HEAD_OFFICE_TOTAL'].count++;
-            branchMap['HEAD_OFFICE_TOTAL'].osAmt   += osAmt;
-            branchMap['HEAD_OFFICE_TOTAL'].paidAmt += paidAmt;
-            branchMap['HEAD_OFFICE_TOTAL'].adjAmt  += adjAmt;
-            branchMap['HEAD_OFFICE_TOTAL'].amt     += osAmt;
-            
-          } else {
-            // ── المحافظات الخمس → تجميع حسب Region ──
-            if (!regionMap[region]) regionMap[region] = {count:0, osAmt:0, paidAmt:0, adjAmt:0};
-            regionMap[region].count++;
-            regionMap[region].osAmt   += osAmt;
-            regionMap[region].paidAmt += paidAmt;
-            regionMap[region].adjAmt  += adjAmt;
+        const data = new Uint8Array(e.target.result);
+        // ── محاولة SheetJS أولاً (تدعم .xls و .xlsx) ─────────────────────
+        try {
+          const XLSX = await import('https://cdn.sheetjs.com/xlsx-0.20.3/package/xlsx.mjs');
+          const wb   = XLSX.read(data, { type:'array', raw:false });
+          // ابحث عن الشيت الذي يحتوي Region
+          let rows = [];
+          for (const name of wb.SheetNames) {
+            const ws = wb.Sheets[name];
+            const r  = XLSX.utils.sheet_to_json(ws, { raw:false, defval:'' });
+            if (r.length>0 && 'Region' in (r[0]||{})) { rows=r; break; }
           }
+          if (!rows.length) {
+            // جرب أول شيت
+            rows = XLSX.utils.sheet_to_json(wb.Sheets[wb.SheetNames[0]], { raw:false, defval:'' });
+          }
+          if (rows.length>0) {
+            console.log('[parseComplaints] SheetJS OK:', rows.length, 'rows | headers:', Object.keys(rows[0]||{}).slice(0,8).join(', '));
+            return resolve(classify(rows));
+          }
+        } catch(xlsErr) {
+          console.warn('[parseComplaints] SheetJS failed:', xlsErr.message);
         }
-        
-        // ── حساب الإجماليات ──────────────────────────────────────────────
-        const dcTotal  = branchMap['DC_TOTAL']  || {count:0,osAmt:0,paidAmt:0,adjAmt:0};
-        const hoTotal  = branchMap['HEAD_OFFICE_TOTAL'] || {count:0,osAmt:0,paidAmt:0,adjAmt:0};
-        const govTotal = Object.values(regionMap).reduce((s,r)=>({
-          count: s.count+r.count, osAmt: s.osAmt+r.osAmt,
-          paidAmt: s.paidAmt+r.paidAmt, adjAmt: s.adjAmt+r.adjAmt
-        }), {count:0,osAmt:0,paidAmt:0,adjAmt:0});
-        
-        // إضافة hoSections لـ branchMap حتى يظهر في الداشبورد
-        Object.entries(hoSections).forEach(([k,v]) => {
-          branchMap[k] = { ...v, amt: v.osAmt };
-        });
-        
-        resolve({
-          total,
-          dcCount:  dcTotal.count,  dcAmt:  dcTotal.osAmt,  dcPaid:  dcTotal.paidAmt,  dcAdj:  dcTotal.adjAmt,
-          hoCount:  hoTotal.count,  hoAmt:  hoTotal.osAmt,  hoPaid:  hoTotal.paidAmt,  hoAdj:  hoTotal.adjAmt,
-          govCount: govTotal.count, govAmt: govTotal.osAmt, govPaid: govTotal.paidAmt, govAdj: govTotal.adjAmt,
-          regionMap, branchMap, hoSections
-        });
+        // ── fallback: UTF-16-LE / UTF-8 text ─────────────────────────────
+        let text = '';
+        let start = 0;
+        for (let i=0; i<Math.min(20,data.length-1); i++) {
+          if (data[i]===0xFF && data[i+1]===0xFE) { start=i+2; break; }
+        }
+        if (start>0) {
+          for (let i=start; i<data.length-1; i+=2) {
+            const cp=data[i]|(data[i+1]<<8);
+            if (cp===0xFEFF||cp===0) continue;
+            text+=String.fromCharCode(cp);
+          }
+        } else {
+          text = new TextDecoder('utf-8').decode(data);
+        }
+        const sep   = text.includes('\t') ? '\t' : ',';
+        const lines = text.split('\n').filter(l=>l.trim());
+        if (lines.length<2) return reject(new Error('الملف فارغ'));
+        const headers = lines[0].split(sep).map(h=>h.replace(/\r/g,'').replace(/"/g,'').trim());
+        const rows = lines.slice(1).filter(l=>l.trim()).map(line=>{
+          const vals=line.split(sep);
+          const obj={};
+          headers.forEach((h,i)=>{ obj[h]=(vals[i]||'').replace(/\r/g,'').replace(/"/g,'').trim(); });
+          return obj;
+        }).filter(r=>r['Region']);
+        console.log('[parseComplaints] text fallback:', rows.length, 'rows');
+        resolve(classify(rows));
       } catch(e) { reject(e); }
     };
     reader.onerror = () => reject(new Error('فشل قراءة الملف'));
@@ -9224,9 +9200,6 @@ export default function Dashboard() {
   const [complaintsBranchMap, setComplaintsBranchMap] = useState(() => {
     try { return JSON.parse(localStorage.getItem('oneic_complaints_branch_map')||'{}'); } catch(e){return {};}
   });
-  const [hoSectionsData, setHoSectionsData] = useState(() => {
-    try { return JSON.parse(localStorage.getItem('oneic_ho_sections')||'{}'); } catch(e){return {};}
-  });
   const [uploading, setUploading] = useState(false);
   const [success, setSuccess]   = useState(false);
   const [error, setError]       = useState(null);
@@ -9342,57 +9315,37 @@ export default function Dashboard() {
         '| complaint cols:', hasComplaintCols, '| performance cols:', hasPerformanceCols);
       
       if (isComplaints) {
-        // ملف complaints → يحدّث كل البيانات بذكاء
+        // ملف complaints → تحليل ذكي كامل
         const result = await parseComplaints(file);
         const {total,dcCount,hoCount,govCount,dcAmt,hoAmt,govAmt,
                dcPaid,hoPaid,govPaid,dcAdj,hoAdj,govAdj,
                regionMap,branchMap,hoSections} = result;
-        
         setComplaintsCount(total);
-        setComplaintsCounts({
-          dc:dcCount, ho:hoCount, gov:govCount,
-          dcPaid, hoPaid, govPaid,
-          dcAdj, hoAdj, govAdj
-        });
-        setComplaintsAmts({
-          dc:dcAmt, ho:hoAmt, gov:govAmt,
-          dcPaid: dcPaid||0, hoPaid: hoPaid||0, govPaid: govPaid||0
-        });
+        setComplaintsCounts({dc:dcCount,ho:hoCount,gov:govCount});
+        setComplaintsAmts({dc:dcAmt,ho:hoAmt,gov:govAmt});
         setComplaintsRegionMap(regionMap||{});
         setComplaintsBranchMap(branchMap||{});
-        
-        // ── تحديث بيانات headOffice مباشرة من hoSections ──
+        // ── تحديث عدد الحسابات في headOffice من hoSections ──
         if (hoSections) {
-          setData(prev => {
-            const updatedHO = (prev.headOffice||[]).map(sec => {
+          setData(prev => ({
+            ...prev,
+            headOffice: (prev.headOffice||[]).map(sec => {
               const hs = hoSections[sec.name];
               if (!hs) return sec;
-              return {
-                ...sec,
-                portCnt: hs.count || sec.portCnt || 0,
-                portAmt: hs.osAmt > 0 ? hs.osAmt : (sec.portAmt || 0),
+              return { ...sec,
+                portCnt: hs.count  > 0 ? hs.count  : sec.portCnt,
+                portAmt: hs.osAmt  > 0 ? hs.osAmt  : sec.portAmt,
               };
-            });
-            return { ...prev, headOffice: updatedHO };
-          });
+            })
+          }));
         }
-        
         try {
           localStorage.setItem('oneic_complaints_count', String(total));
-          localStorage.setItem('oneic_complaints_counts', JSON.stringify({
-            dc:dcCount, ho:hoCount, gov:govCount,
-            dcPaid:dcPaid||0, hoPaid:hoPaid||0, govPaid:govPaid||0
-          }));
-          localStorage.setItem('oneic_complaints_amts', JSON.stringify({
-            dc:dcAmt, ho:hoAmt, gov:govAmt,
-            dcPaid:dcPaid||0, hoPaid:hoPaid||0, govPaid:govPaid||0
-          }));
+          localStorage.setItem('oneic_complaints_counts', JSON.stringify({dc:dcCount,ho:hoCount,gov:govCount}));
+          localStorage.setItem('oneic_complaints_amts', JSON.stringify({dc:dcAmt,ho:hoAmt,gov:govAmt}));
           localStorage.setItem('oneic_complaints_region_map', JSON.stringify(regionMap||{}));
           localStorage.setItem('oneic_complaints_branch_map', JSON.stringify(branchMap||{}));
-          if (hoSections) {
-            localStorage.setItem('oneic_ho_sections', JSON.stringify(hoSections));
-            setHoSectionsData(hoSections);
-          }
+          if (hoSections) localStorage.setItem('oneic_ho_sections', JSON.stringify(hoSections));
         } catch(ex){}
         setSuccess(true);
         setTimeout(()=>setSuccess(false), 3000);
@@ -10091,8 +10044,7 @@ export default function Dashboard() {
                 cntAdj={complaintsCounts.hoAdj||hCounts.adj||null}
                 cntTotal={complaintsCounts.hoTotal||hCounts.combined||null}
                 portAmt={complaintsAmts.ho||hPortAmt||0}
-                color="#6c3fa0" icon="🏛" pct={p(hPd+hAd)} small={small} isMobile={isMobile} isTablet={isTablet}
-                osAmt={complaintsAmts.ho||0}/>
+                color="#6c3fa0" icon="🏛" pct={p(hPd+hAd)} small={small} isMobile={isMobile} isTablet={isTablet}/>
             </>);
           })()}
         </div>
@@ -10143,17 +10095,15 @@ export default function Dashboard() {
                   "Blanks":              "#64748b",
                   "HO":                  "#4f2d7a"
                 };
-                // استرجع hoSections من localStorage لعرض الأرقام الحقيقية
-                const hoSec = hoSectionsData || {};
+                const hoSec = (() => { try { return JSON.parse(localStorage.getItem('oneic_ho_sections')||'{}')} catch(e){return {}} })();
                 return data.headOffice.map((c,i) => {
-                  const hs = hoSec[c.name] || {};
-                  const realCount = hs.count || c.portCnt || 0;
-                  const realOs    = hs.osAmt  || c.portAmt || 0;
+                  const hs    = hoSec[c.name] || {};
                   const color = HO_COLORS[c.name] || "#6c3fa0";
                   return (
                     <EntityCard key={c.name} name={c.name} paid={c.paid} adj={c.adj}
                       cBranch={complaintsBranchMap} color={color} rank={i+1} small={small}
-                      portAmt={realOs} portCnt={realCount}
+                      portAmt={hs.osAmt > 0 ? hs.osAmt : (c.portAmt||0)}
+                      portCnt={hs.count > 0 ? hs.count : (c.portCnt||0)}
                       principalAmt={c.principalAmt||0}/>
                   );
                 });
