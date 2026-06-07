@@ -6152,13 +6152,16 @@ async function parseXLS(file) {
 
     } else if (region === 'Head Office') {
       const colL = col.toLowerCase();
-      let key = 'Over Paid';
+      // القاعدة: blank/فارغ = Saif Legal | over paid/HO = Over Paid (صفر دائماً)
+      let key;
       if      (colL.includes('dr') || colL.includes('sarhaan') || colL.includes('sarhan')) key = 'Legal - DR. Sarhaan';
-      else if (colL.includes('doc'))  key = 'Documentation Legal';
-      else if (colL.includes('saif')) key = 'Saif Legal';
-      else if (col.trim() === '')     key = 'Saif Legal';
-      // Over Paid يُعدّ في العدد فقط — المبالغ السالبة لا تُحتسب في التحصيل
+      else if (colL.includes('doc'))                                                        key = 'Documentation Legal';
+      else if (colL.includes('saif'))                                                       key = 'Saif Legal';
+      else if (col.trim() === '')                                                            key = 'Saif Legal';
+      else if (colL.includes('over') || colL.includes('paid') || colL.includes('ho'))      key = 'Over Paid';
+      else                                                                                   key = 'Saif Legal';
       if (!hoMap[key]) hoMap[key] = { paid:0, adj:0, count:0 };
+      // Over Paid دائماً صفر — لا تُضاف قيمه أبداً
       if (key !== 'Over Paid') { hoMap[key].paid += paid; hoMap[key].adj += adj; }
       hoMap[key].count++;
 
