@@ -9022,20 +9022,21 @@ function handlePrint(data) {
   if (!w) return;
   var omrN = function(n) { return new Intl.NumberFormat('en-US',{minimumFractionDigits:3,maximumFractionDigits:3}).format(n||0); };
 
-  // ── حساب الإجماليات ──
+  // ── حساب الإجماليات — نفس منطق الداشبورد تماماً ──
   var govPaid = (data.regions||[]).reduce(function(s,r){return s+r.paid;},0);
   var govAdj  = (data.regions||[]).reduce(function(s,r){return s+r.adj;},0);
   var dcPaid  = (data.debtCompanies||[]).reduce(function(s,r){return s+r.paid;},0);
   var dcAdj   = (data.debtCompanies||[]).reduce(function(s,r){return s+r.adj;},0);
   var hoPaid  = (data.headOffice||[]).reduce(function(s,r){return s+Math.max(0,r.paid||0);},0);
   var hoAdj   = (data.headOffice||[]).reduce(function(s,r){return s+Math.max(0,r.adj||0);},0);
-  var grandPaid = govPaid+dcPaid+hoPaid;
-  var grandAdj  = govAdj+dcAdj+hoAdj;
-  var grandTotal= grandPaid+grandAdj;
-  var portAmt   = data.totalPortfolio?.amt||9414256.834;
-  var portCnt   = data.totalPortfolio?.cnt||47963;
-  var pctDone   = Math.min(100,Math.round(grandTotal/portAmt*100));
-  var remaining = portAmt - grandTotal;
+  // الإجمالي الكلي: نستخدم data.totalCollection إذا متاح (بعد رفع الملف)
+  var grandPaid  = (data.totalCollection&&data.totalCollection.paid>0) ? data.totalCollection.paid : govPaid+dcPaid+hoPaid;
+  var grandAdj   = (data.totalCollection&&data.totalCollection.adj>0)  ? data.totalCollection.adj  : govAdj+dcAdj+hoAdj;
+  var grandTotal = grandPaid + grandAdj;
+  var portAmt    = (data.totalPortfolio&&data.totalPortfolio.amt) ? data.totalPortfolio.amt : 9414256.834;
+  var portCnt    = (data.totalPortfolio&&data.totalPortfolio.cnt) ? data.totalPortfolio.cnt : 47963;
+  var pctDone    = portAmt>0 ? Math.min(100,Math.round(grandTotal/portAmt*100)) : 0;
+  var remaining  = portAmt - grandTotal;
   var date      = data.uploadDate||new Date().toISOString().split('T')[0];
   var printDate = new Date().toLocaleDateString('ar-OM',{year:'numeric',month:'long',day:'numeric'});
   var LOGO_SRC  = typeof LOGO!=='undefined'?LOGO:'';
