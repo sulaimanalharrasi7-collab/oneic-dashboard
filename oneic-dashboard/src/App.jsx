@@ -6156,10 +6156,11 @@ async function parseXLS(file) {
       let key = 'HO';
       if      (colL.includes('dr') || colL.includes('sarhaan') || colL.includes('sarhan')) key = 'Legal - DR. Sarhaan';
       else if (colL.includes('doc'))  key = 'Documentation- Omantel';
-      else if (colL.includes('non-due') || colL.includes('nondue')) key = 'Non-due accounts';
+      else if (colL.includes('non-due') || colL.includes('nondue')) key = 'HO';
+      else if (col.trim().toUpperCase() === 'HO') key = 'HO';
       else if (colL.includes('saif')) key = 'Blanks';
       else if (col.trim() === '')     key = 'Blanks';
-      else                            key = 'Blanks'; // أي collector غير معروف → Blanks
+      else                            key = 'Blanks';
       if (!hoMap[key]) hoMap[key] = { paid:0, adj:0, count:0 };
       hoMap[key].paid += paid; hoMap[key].adj += adj; hoMap[key].count++;
 
