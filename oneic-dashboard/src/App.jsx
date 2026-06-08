@@ -9125,6 +9125,15 @@ function useSmartNotifications(gTotal, hoPrincipal, bestDayEver, currentDayTotal
     if (!gTotal || gTotal === prevTotal.current) return;
     const prev = prevTotal.current;
     prevTotal.current = gTotal;
+    // ── أول دفعة في التاريخ ──
+    if (prev === 0 && gTotal > 0) {
+      addNotification({
+        type:"success", celebrate:true,
+        icon:"🎊", color:"#16a34a",
+        label:"أول دفعة تحصيل! 🎊",
+        msg:`تم تسجيل أول دفعة بقيمة ${omr(gTotal)} OMR — انطلاق رحلة التحصيل! 🚀`
+      });
+    }
     const milestones = [
       { val:500000,  label:"نصف مليون ريال! 🎉",  color:"#16a34a", icon:"💰", celebrate:true },
       { val:1000000, label:"مليون ريال كاملة! 🏆", color:"#e85d20", icon:"🏆", celebrate:true },
@@ -9287,6 +9296,9 @@ export default function Dashboard() {
   const [verified, setVerified] = useState(false);
   const [showSettings, setShowSettings] = useState(false);
   const [showHistory, setShowHistory] = useState(false);
+  const [unlocked, setUnlocked] = useState(false);
+  const [pwInput, setPwInput] = useState('');
+  const [pwError, setPwError] = useState(false);
   const [showBulkReport, setShowBulkReport] = useState(false);
   const [binId, setBinId]       = useState(() => { try { return localStorage.getItem('oneic_bin_id')||''; } catch(e){return '';} });
   const [apiKey, setApiKey]     = useState(() => { try { return localStorage.getItem('oneic_api_key')||''; } catch(e){return '';} });
@@ -9560,6 +9572,85 @@ export default function Dashboard() {
     useSmartNotifications(gTotal, hoPrincipalCurrent, 0, currentBestDay);
 
   const pad = isMobile ? "12px" : isTablet ? "16px" : "20px 24px";
+
+  // ══ شاشة كلمة السر ══
+  if (!unlocked) {
+    return (
+      <div style={{
+        height:"100vh", display:"flex", flexDirection:"column",
+        alignItems:"center", justifyContent:"center",
+        background:"linear-gradient(135deg,#1e3a5f 0%,#2d5a8e 50%,#1e3a5f 100%)",
+        fontFamily:"'Cairo','Tajawal',sans-serif", direction:"rtl"
+      }}>
+        {/* بطاقة الدخول */}
+        <div style={{
+          background:"#fff", borderRadius:24, padding:"40px 36px",
+          boxShadow:"0 20px 60px rgba(0,0,0,0.3)",
+          width:"100%", maxWidth:400, textAlign:"center"
+        }}>
+          {/* شعار */}
+          <img src={LOGO} alt="ONEIC" style={{height:64,objectFit:"contain",marginBottom:16}}/>
+          <div style={{fontSize:22,fontWeight:900,color:"#1e3a5f",marginBottom:4}}>محفظة عُمانتل 1</div>
+          <div style={{fontSize:13,color:"#888",fontWeight:600,marginBottom:28}}>
+            Omantel Debt Collection Dashboard
+          </div>
+
+          {/* حقل كلمة السر */}
+          <div style={{marginBottom:16,textAlign:"right"}}>
+            <div style={{fontSize:13,fontWeight:800,color:"#444",marginBottom:8}}>🔒 كلمة المرور</div>
+            <input
+              type="password"
+              value={pwInput}
+              onChange={e => { setPwInput(e.target.value); setPwError(false); }}
+              onKeyDown={e => {
+                if (e.key === 'Enter') {
+                  if (pwInput === 'Welcome@93360229##') { setUnlocked(true); }
+                  else { setPwError(true); setPwInput(''); }
+                }
+              }}
+              placeholder="أدخل كلمة المرور..."
+              style={{
+                width:"100%", padding:"12px 16px",
+                border: pwError ? "2px solid #ef4444" : "2px solid #e5e7eb",
+                borderRadius:12, fontSize:15, fontFamily:"'Cairo',sans-serif",
+                outline:"none", boxSizing:"border-box",
+                background: pwError ? "#fef2f2" : "#f9fafb",
+                textAlign:"right", direction:"rtl",
+                transition:"border 0.2s"
+              }}
+            />
+            {pwError && (
+              <div style={{color:"#ef4444",fontSize:12,fontWeight:700,marginTop:6,textAlign:"right"}}>
+                ❌ كلمة المرور غير صحيحة، حاول مرة أخرى
+              </div>
+            )}
+          </div>
+
+          {/* زر الدخول */}
+          <button
+            onClick={() => {
+              if (pwInput === 'Welcome@93360229##') { setUnlocked(true); }
+              else { setPwError(true); setPwInput(''); }
+            }}
+            style={{
+              width:"100%", padding:"13px",
+              background:"linear-gradient(120deg,#1e3a5f,#2d5a8e)",
+              color:"#fff", border:"none", borderRadius:12,
+              fontSize:15, fontWeight:900, cursor:"pointer",
+              fontFamily:"'Cairo',sans-serif",
+              boxShadow:"0 4px 15px rgba(30,58,95,0.4)"
+            }}
+          >
+            🔓 دخول
+          </button>
+
+          <div style={{marginTop:20,fontSize:11,color:"#bbb",fontWeight:600}}>
+            ONEIC — نظام إدارة تحصيل الديون © 2026
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div style={{
@@ -9989,7 +10080,8 @@ export default function Dashboard() {
             </div>
             <div style={{display:"flex",justifyContent:"center",paddingTop:4}}>
               {(() => {
-                const pct=Math.round(((data.totalCollection?.paid||890080.070)+(data.totalCollection?.adj||130384.064))/(data.totalPortfolio?.amt||9414256.834)*100);
+                const _s1p=data.totalCollection?.paid||0, _s1a=data.totalCollection?.adj||0, _s1m=data.totalPortfolio?.amt||9414256.834;
+                const pct=_s1m>0?Math.min(100,Math.round((_s1p+_s1a)/_s1m*100)):0;
                 const r=52,cx=60,cy=60,circ=2*Math.PI*r,offset=circ-(pct/100)*circ;
                 return (
                   <div style={{display:"flex",flexDirection:"column",alignItems:"center",gap:4}}>
@@ -10010,13 +10102,20 @@ export default function Dashboard() {
           <div style={{padding:small?"16px":"20px 28px"}}>
             <div style={{marginBottom:12}}><span style={{background:"#16a34a",color:"#fff",borderRadius:8,padding:"3px 14px",fontSize:small?11:13,fontWeight:900}}>💰 التحصيل</span></div>
             <div style={{display:"flex",flexDirection:"column",gap:8}}>
-              {[
-                ["المدفوع",            data.totalCollection?.paid||890080.070,  "#16a34a"],
-                ["تسويات عُمانتل",     data.totalCollection?.adj||130384.064,   "#d97706"],
-                ["خصومات أونك",        1544.191,  "#7c3aed"],
-                ["الإجمالي",           (data.totalCollection?.paid||890080.070)+(data.totalCollection?.adj||130384.064), "#1e3a5f"],
-                ["المتبقي من المحفظة", 8392248.509, "#e85d20"],
-              ].map(([lbl,val,clr])=>(
+              {(() => {
+                const s1Paid = data.totalCollection?.paid||0;
+                const s1Adj  = data.totalCollection?.adj||0;
+                const s1Port = data.totalPortfolio?.amt||9414256.834;
+                const s1Tot  = s1Paid + s1Adj;
+                const s1Rem  = s1Port - s1Tot;
+                return [
+                  ["المدفوع",            s1Paid,   "#16a34a"],
+                  ["تسويات عُمانتل",     s1Adj,    "#d97706"],
+                  ["خصومات أونك",        1544.191, "#7c3aed"],
+                  ["الإجمالي",           s1Tot,    "#1e3a5f"],
+                  ["المتبقي من المحفظة", s1Rem,    "#e85d20"],
+                ];
+              })().map(([lbl,val,clr])=>(
                 <div key={lbl} style={{display:"flex",justifyContent:"space-between",alignItems:"center",padding:"11px 14px",borderRadius:10,background:"#fafafa",border:"1px solid #f0ece8"}}>
                   <div style={{fontSize:small?13:15,color:"#555",fontWeight:700}}>{lbl}</div>
                   <div style={{fontSize:small?20:26,fontWeight:900,color:clr,direction:"ltr",textAlign:"right"}}>{omr(val)} <span style={{fontSize:small?11:13,color:"#aaa",fontWeight:600}}>OMR</span></div>
