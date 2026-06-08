@@ -8689,93 +8689,75 @@ function HistoryModal({ history, onClose, small }) {
 // ── Bulk Payment Parser (Smart 100%) ─────────────────────────────────────────
 // ── parseComplaints ─────────────────────────────────────────────────────────
 async function parseComplaints(file) {
-  const n = v => { const x=parseFloat(String(v||'').replace(/,/g,'')); return isNaN(x)?0:x; };
-  const DC_REGION  = 'Debt Collection Company';
-  const HO_REGIONS = new Set(['Head Office','Legal','Legal ']);
-
-  const classify = rows => {
-    let total=0;
-    const regionMap={}, branchMap={};
-    const hoSec={
-      'Legal - DR. Sarhaan':{count:0,osAmt:0,paidAmt:0,adjAmt:0},
-      'Documentation Legal':{count:0,osAmt:0,paidAmt:0,adjAmt:0},
-      'Blanks'             :{count:0,osAmt:0,paidAmt:0,adjAmt:0},
-      'HO'                 :{count:0,osAmt:0,paidAmt:0,adjAmt:0},
-    };
-    rows.forEach(row => {
-      const region = String(row['Region']||'').trim();
-      const branch = String(row['Branch']||'').trim();
-      const col    = String(row['Collector']||'').trim();
-      if (!region) return;
-      const osAmt   = n(row['O/S Amount']||row['OS Amount']||row['Principal Amount']||0);
-      const paidAmt = n(row['Paid Amount']||0);
-      const adjAmt  = n(row['Adjustment']||row['Adjustment Amount']||0);
-      total++;
-      if (region === DC_REGION) {
-        const k = branch||'Unknown';
-        if (!branchMap[k]) branchMap[k]={count:0,osAmt:0,paidAmt:0,adjAmt:0,amt:0};
-        branchMap[k].count++; branchMap[k].osAmt+=osAmt; branchMap[k].paidAmt+=paidAmt; branchMap[k].adjAmt+=adjAmt; branchMap[k].amt+=osAmt;
-        if (!branchMap['DC_TOTAL']) branchMap['DC_TOTAL']={count:0,osAmt:0,paidAmt:0,adjAmt:0};
-        branchMap['DC_TOTAL'].count++; branchMap['DC_TOTAL'].osAmt+=osAmt; branchMap['DC_TOTAL'].paidAmt+=paidAmt; branchMap['DC_TOTAL'].adjAmt+=adjAmt;
-      } else if (HO_REGIONS.has(region)) {
-        const colL = col.toLowerCase();
-        let hk = 'HO';
-        if (col==='Legal- DR. Sarhaan'||col==='Legal - DR. Sarhaan'||colL.includes('sarhaan')||colL.includes('sarhan')||(colL.includes('legal')&&(colL.includes('dr')||colL.includes('.'))))
-          hk='Legal - DR. Sarhaan';
-        else if (col==='Documentation legal'||col==='Documentation Legal'||colL.includes('documentation'))
-          hk='Documentation Legal';
-        else if (col===''||col==='nan'||col==='0'||col==='-')
-          hk='Blanks';
-        hoSec[hk].count++; hoSec[hk].osAmt+=osAmt; hoSec[hk].paidAmt+=paidAmt; hoSec[hk].adjAmt+=adjAmt;
-        if (!branchMap['HEAD_OFFICE_TOTAL']) branchMap['HEAD_OFFICE_TOTAL']={count:0,osAmt:0,paidAmt:0,adjAmt:0,amt:0};
-        branchMap['HEAD_OFFICE_TOTAL'].count++; branchMap['HEAD_OFFICE_TOTAL'].osAmt+=osAmt; branchMap['HEAD_OFFICE_TOTAL'].paidAmt+=paidAmt; branchMap['HEAD_OFFICE_TOTAL'].adjAmt+=adjAmt; branchMap['HEAD_OFFICE_TOTAL'].amt+=osAmt;
-      } else {
-        if (!regionMap[region]) regionMap[region]={count:0,osAmt:0,paidAmt:0,adjAmt:0};
-        regionMap[region].count++; regionMap[region].osAmt+=osAmt; regionMap[region].paidAmt+=paidAmt; regionMap[region].adjAmt+=adjAmt;
-      }
-    });
-    Object.entries(hoSec).forEach(([k,v])=>{ branchMap[k]={...v,amt:v.osAmt}; });
-    const dcT  = branchMap['DC_TOTAL']          ||{count:0,osAmt:0,paidAmt:0,adjAmt:0};
-    const hoT  = branchMap['HEAD_OFFICE_TOTAL'] ||{count:0,osAmt:0,paidAmt:0,adjAmt:0};
-    const govT = Object.values(regionMap).reduce((s,r)=>({count:s.count+r.count,osAmt:s.osAmt+r.osAmt,paidAmt:s.paidAmt+r.paidAmt,adjAmt:s.adjAmt+r.adjAmt}),{count:0,osAmt:0,paidAmt:0,adjAmt:0});
-    return { total,
-      dcCount:dcT.count,   dcAmt:dcT.osAmt,   dcPaid:dcT.paidAmt,   dcAdj:dcT.adjAmt,
-      hoCount:hoT.count,   hoAmt:hoT.osAmt,   hoPaid:hoT.paidAmt,   hoAdj:hoT.adjAmt,
-      govCount:govT.count, govAmt:govT.osAmt, govPaid:govT.paidAmt, govAdj:govT.adjAmt,
-      regionMap, branchMap, hoSections:hoSec };
-  };
-
   return new Promise((resolve, reject) => {
     const reader = new FileReader();
     reader.onload = e => {
       try {
-        const buf   = e.target.result;
-        const bytes = new Uint8Array(buf);
-        // ── ابحث عن BOM FF FE ───────────────────────────────────────────
-        let bomPos = -1;
-        for (let i=0; i<Math.min(20,bytes.length-1); i++) {
-          if (bytes[i]===0xFF && bytes[i+1]===0xFE) { bomPos=i; break; }
+        const bytes = new Uint8Array(e.target.result);
+        // هيكل الملف: 5 spaces + BOM(FF FE) + UTF-16-LE
+        let text = '';
+        for (let i = 7; i < bytes.length - 1; i += 2) {
+          const cp = bytes[i] | (bytes[i+1] << 8);
+          if (cp === 0xFEFF || cp === 0) continue;
+          text += String.fromCharCode(cp);
         }
-        if (bomPos < 0) return reject(new Error('تنسيق الملف غير مدعوم'));
-        // ── TextDecoder (أسرع بكثير من loop) ────────────────────────────
-        const decoder = new TextDecoder('utf-16le');
-        const text    = decoder.decode(buf.slice(bomPos+2)).replace(/\uFEFF/g,'');
-        const lines   = text.split('\n').map(l=>l.replace(/\r/g,'')).filter(l=>l.trim());
-        if (lines.length < 2) return reject(new Error('الملف فارغ'));
-        const headers = lines[0].split('\t');
-        console.log('[parseComplaints] rows:', lines.length-1, '| cols:', headers.join(', '));
-        const rows = lines.slice(1).map(line => {
-          const v=line.split('\t'), o={};
-          headers.forEach((h,i)=>{ o[h]=(v[i]||'').trim(); });
-          return o;
-        }).filter(r=>r['Region']);
-        resolve(classify(rows));
-      } catch(err) { reject(err); }
+        const lines = text.split('\n').filter(l => l.trim());
+        if (lines.length < 2) { reject(new Error('الملف فارغ')); return; }
+        const headers = lines[0].split('\t').map(h => h.replace(/\r/g,'').trim());
+        const regionIdx = headers.findIndex(h => h === 'Region');
+        const branchIdx = headers.findIndex(h => h === 'Branch');
+        const principalIdx = headers.findIndex(h => h === 'Principal Amount');
+        if (regionIdx < 0) { reject(new Error('عمود Region غير موجود')); return; }
+
+        // خريطة التجميع الدقيقة
+        const DC_REGION = 'Debt Collection Company';
+        const HO_REGIONS = ['Head Office', 'Legal', 'Legal '];
+        
+        let total=0, dcCount=0, hoCount=0, govCount=0;
+        let dcAmt=0, hoAmt=0, govAmt=0;
+        
+        // تجميع حسب Region للمحافظات وحسب Branch لشركات التحصيل
+        const regionMap = {}; // للمحافظات الخمس (Region)
+        const branchMap = {}; // لشركات التحصيل (Branch داخل DC)
+        // المكتب الرئيسي: Branch='Al-Khuwair' داخل Head Office
+        
+        for (let i = 1; i < lines.length; i++) {
+          const row = lines[i].split('\t');
+          const region = (row[regionIdx]||'').replace(/\r/g,'').trim();
+          const branch = branchIdx>=0 ? (row[branchIdx]||'').replace(/\r/g,'').trim() : '';
+          if (!region) continue;
+          const amt = principalIdx>=0 ? (parseFloat(row[principalIdx])||0) : 0;
+          total++;
+          
+          if (region === DC_REGION) {
+            // شركات التحصيل → نجمّع حسب Branch
+            dcCount++; dcAmt += amt;
+            if (branch) {
+              if (!branchMap[branch]) branchMap[branch] = {count:0, amt:0};
+              branchMap[branch].count++; branchMap[branch].amt += amt;
+            }
+          } else if (HO_REGIONS.some(k => region.trim() === k.trim())) {
+            // المكتب الرئيسي → نجمّع الكل تحت مفتاح واحد
+            hoCount++; hoAmt += amt;
+            const hoKey = 'HEAD_OFFICE_TOTAL';
+            if (!branchMap[hoKey]) branchMap[hoKey] = {count:0, amt:0};
+            branchMap[hoKey].count++; branchMap[hoKey].amt += amt;
+          } else {
+            // المحافظات الخمس → نجمّع حسب Region
+            govCount++; govAmt += amt;
+            const rKey = region;
+            if (!regionMap[rKey]) regionMap[rKey] = {count:0, amt:0};
+            regionMap[rKey].count++; regionMap[rKey].amt += amt;
+          }
+        }
+        resolve({ total, dcCount, hoCount, govCount, dcAmt, hoAmt, govAmt, regionMap, branchMap });
+      } catch(e) { reject(e); }
     };
     reader.onerror = () => reject(new Error('فشل قراءة الملف'));
     reader.readAsArrayBuffer(file);
   });
 }
+
 function parseBulkPayment(file) {
   return new Promise((resolve, reject) => {
     const reader = new FileReader();
@@ -9175,6 +9157,7 @@ export default function Dashboard() {
   const [verified, setVerified] = useState(false);
   const [showSettings, setShowSettings] = useState(false);
   const [showHistory, setShowHistory] = useState(false);
+  const [showBulkReport, setShowBulkReport] = useState(false);
   const [binId, setBinId]       = useState(() => { try { return localStorage.getItem('oneic_bin_id')||''; } catch(e){return '';} });
   const [apiKey, setApiKey]     = useState(() => { try { return localStorage.getItem('oneic_api_key')||''; } catch(e){return '';} });
   const [history, setHistory]   = useState(() => {
@@ -9282,35 +9265,19 @@ export default function Dashboard() {
         '| complaint cols:', hasComplaintCols, '| performance cols:', hasPerformanceCols);
       
       if (isComplaints) {
-        const result = await parseComplaints(file);
-        const {total,dcCount,hoCount,govCount,dcAmt,hoAmt,govAmt,
-               dcPaid,hoPaid,govPaid,dcAdj,hoAdj,govAdj,
-               regionMap,branchMap,hoSections} = result;
+        // ملف complaints → يحدّث عدد الحسابات والمبالغ
+        const {total,dcCount,hoCount,govCount,dcAmt,hoAmt,govAmt,regionMap,branchMap} = await parseComplaints(file);
         setComplaintsCount(total);
         setComplaintsCounts({dc:dcCount,ho:hoCount,gov:govCount});
         setComplaintsAmts({dc:dcAmt,ho:hoAmt,gov:govAmt});
         setComplaintsRegionMap(regionMap||{});
         setComplaintsBranchMap(branchMap||{});
-        if (hoSections) {
-          setData(prev => ({
-            ...prev,
-            headOffice: (prev.headOffice||[]).map(sec => {
-              const hs = hoSections[sec.name];
-              if (!hs) return sec;
-              return { ...sec,
-                portCnt: hs.count > 0 ? hs.count : sec.portCnt,
-                portAmt: hs.osAmt  > 0 ? hs.osAmt  : sec.portAmt,
-              };
-            })
-          }));
-        }
         try {
           localStorage.setItem('oneic_complaints_count', String(total));
           localStorage.setItem('oneic_complaints_counts', JSON.stringify({dc:dcCount,ho:hoCount,gov:govCount}));
           localStorage.setItem('oneic_complaints_amts', JSON.stringify({dc:dcAmt,ho:hoAmt,gov:govAmt}));
           localStorage.setItem('oneic_complaints_region_map', JSON.stringify(regionMap||{}));
           localStorage.setItem('oneic_complaints_branch_map', JSON.stringify(branchMap||{}));
-          if (hoSections) localStorage.setItem('oneic_ho_sections', JSON.stringify(hoSections));
         } catch(ex){}
         setSuccess(true);
         setTimeout(()=>setSuccess(false), 3000);
@@ -9803,17 +9770,29 @@ export default function Dashboard() {
         <div style={{ display:"flex", alignItems:"center", gap: isMobile?10:20 }}>
           <UploadBtn onFile={handleFile} uploading={uploading} success={success} error={error} small={isMobile} />
 
-          <button
-            onClick={() => setShowHistory(s=>!s)}
-            title="السجل التاريخي"
-            style={{
-              background:"#1e3a5f", color:"#fff",
-              border:"none", borderRadius:10,
-              padding:"8px 14px", fontSize:13, fontWeight:800,
-              cursor:"pointer", fontFamily:"'Cairo',sans-serif", flexShrink:0,
-              display:"flex", alignItems:"center", gap:5
-            }}
-          >📈 {history.length > 0 ? `التاريخ (${history.length})` : 'التاريخ'}</button>
+          <div style={{display:"flex",flexDirection:"column",gap:5,alignItems:"stretch"}}>
+            <button
+              onClick={() => setShowHistory(s=>!s)}
+              title="السجل التاريخي"
+              style={{
+                background:"#1e3a5f", color:"#fff",
+                border:"none", borderRadius:10,
+                padding:"8px 14px", fontSize:13, fontWeight:800,
+                cursor:"pointer", fontFamily:"'Cairo',sans-serif", flexShrink:0,
+                display:"flex", alignItems:"center", gap:5
+              }}
+            >📈 {history.length > 0 ? `التاريخ (${history.length})` : 'التاريخ'}</button>
+            <button
+              onClick={() => setShowBulkReport(s=>!s)}
+              style={{
+                background:showBulkReport?"#e85d20":"#2d5a8e", color:"#fff",
+                border:"none", borderRadius:10,
+                padding:"5px 14px", fontSize:12, fontWeight:800,
+                cursor:"pointer", fontFamily:"'Cairo',sans-serif",
+                display:"flex", alignItems:"center", justifyContent:"center", gap:4
+              }}
+            >💳 Bulk Payment</button>
+          </div>
           <button
             onClick={() => setShowSettings(s=>!s)}
             title="إعدادات المزامنة"
@@ -9867,55 +9846,75 @@ export default function Dashboard() {
       {/* ══ BODY ══ */}
       <div style={{ padding:pad, flex:1, overflowY:"auto", overflowX:"hidden" }}>
 
-        {/* ══ Bulk Payment Report — التقرير اليومي ══ */}
-        <BulkPaymentSection bulk={bulkData} small={small}/>
+        {showBulkReport && <BulkPaymentSection bulk={bulkData} small={small}/>}
 
-        {/* ══ الفاصل ══ */}
-        <div style={{
-          display:"flex", alignItems:"center", gap:12, margin:"6px 0 8px 0"
-        }}>
-          <div style={{flex:1, height:2, background:"linear-gradient(90deg,#f0ece8,#e85d20,#f0ece8)"}}/>
-          <div style={{
-            background:"#e85d20", color:"#fff", borderRadius:20,
-            padding:"4px 16px", fontSize:13, fontWeight:800, whiteSpace:"nowrap"
-          }}>📊 الإجمالي الكلي للمشروع</div>
-          <div style={{flex:1, height:2, background:"linear-gradient(90deg,#f0ece8,#e85d20,#f0ece8)"}}/>
-        </div>
-
-{/* ══ BANNER ══ */}
-      <div id="print-banner" style={{
-        background:"linear-gradient(120deg,#e85d20,#c44b10,#a83808)",
-        marginBottom:16,
-        padding: isMobile?"14px":"16px 24px",
-        display:"flex", justifyContent:"space-between", alignItems:"center",
-        flexWrap:"wrap", gap:10,
-        boxShadow:"0 4px 20px rgba(200,70,20,0.3)",
-        flexShrink:0
-      }}>
-        <div>
-          <div style={{ fontSize: small?11:13, color:"rgba(255,255,255,0.8)", fontWeight:700, letterSpacing:1.5, marginBottom:4 }}>
-            إجمالي التحصيل الكلي
+        
+      {/* ══ Section 1 — محفظة عُمانتل ══ */}
+      <div style={{background:"#fff",borderRadius:18,marginBottom:16,boxShadow:"0 4px 24px rgba(30,58,95,0.10)",border:"1.5px solid #e8f0fe",overflow:"hidden"}}>
+        {/* هيدر */}
+        <div style={{background:"linear-gradient(120deg,#1e3a5f 0%,#2d5a8e 60%,#1e3a5f 100%)",padding:small?"14px 16px":"18px 28px",display:"flex",justifyContent:"space-between",alignItems:"center",flexWrap:"wrap",gap:12}}>
+          <div style={{display:"flex",alignItems:"center",gap:14}}>
+            <img src={LOGO} alt="ONEIC" style={{height:small?40:54,objectFit:"contain",filter:"brightness(0) invert(1)",opacity:0.95}}/>
+            <div>
+              <div style={{fontSize:small?18:26,fontWeight:900,color:"#fff",lineHeight:1.1}}>محفظة عُمانتل</div>
+              <div style={{fontSize:small?11:13,color:"rgba(255,255,255,0.65)",fontWeight:600,marginTop:3}}>Omantel Debt Collection Portfolio</div>
+            </div>
           </div>
-          <div style={{ display:"flex", alignItems:"baseline", gap:6 }}>
-            <span style={{ fontSize: isMobile?28:isTablet?38:48, fontWeight:900, color:"#fff", letterSpacing:-1, lineHeight:1 }}>{omr(gTotal)}</span>
-            <span style={{ fontSize: small?14:18, color:"rgba(255,255,255,0.8)", fontWeight:700 }}>OMR</span>
-          </div>
-          {complaintsCount>0 && (
-            <div style={{ fontSize:small?11:13, color:"rgba(255,255,255,0.75)", fontWeight:700, marginTop:4 }}>
-              📋 {complaintsCount.toLocaleString()} حساب في المحفظة
+          {/* تاريخ آخر رفع فقط */}
+          {data.uploadDate && (
+            <div style={{fontSize:small?12:14,color:"rgba(255,255,255,0.7)",fontWeight:700}}>
+              📂 آخر تحديث: {data.uploadDate}
+              {data.lastUpdated && <span style={{marginRight:6,color:"rgba(255,255,255,0.45)",fontSize:small?10:12}}>{new Date(data.lastUpdated).toLocaleTimeString('ar-OM',{hour:'2-digit',minute:'2-digit'})}</span>}
             </div>
           )}
         </div>
-        <div style={{ display:"flex", gap: small?10:4, flexWrap:"wrap" }}>
-          {[["إجمالي المدفوع",omr(gPd+dPd+hPd),"#fff"],
-            ["إجمالي التسويات",omr(gAd+dAd+hAd),"#fde68a"],
-            ["إجمالي الحسابات",complaintsCount>0?complaintsCount.toLocaleString():data.totalRecords?.toLocaleString(),"#bfdbfe"]
-          ].map(([l,v,c]) => (
-            <div key={l} style={{ textAlign:"center", padding:`0 ${small?10:16}px`, borderRight: small?"none":"1px solid rgba(255,255,255,0.2)" }}>
-              <div style={{ fontSize: small?11:13, color:"rgba(255,255,255,0.8)", fontWeight:700, marginBottom:4 }}>{l}</div>
-              <div style={{ fontSize: small?16:22, fontWeight:900, color:c }}>{v}</div>
+        {/* الجداول */}
+        <div style={{display:"grid",gridTemplateColumns:small?"1fr":"1fr 1fr",gap:0}}>
+          {/* جدول 1 — المحفظة */}
+          <div style={{padding:small?"16px":"20px 28px",borderLeft:small?"none":"1.5px solid #f0ece8"}}>
+            <div style={{marginBottom:10}}>
+              <span style={{background:"#1e3a5f",color:"#fff",borderRadius:8,padding:"2px 12px",fontSize:small?11:13,fontWeight:900}}>📋 المحفظة</span>
             </div>
-          ))}
+            <div style={{display:"flex",flexDirection:"column",gap:8}}>
+              <div style={{background:"#f8f9fc",borderRadius:12,padding:"12px 16px",display:"flex",justifyContent:"space-between",alignItems:"center",border:"1px solid #e8f0fe"}}>
+                <div style={{fontSize:small?12:14,color:"#555",fontWeight:700}}>عدد الحسابات</div>
+                <div style={{fontSize:small?18:24,fontWeight:900,color:"#1e3a5f"}}>{(data.totalPortfolio?.cnt||47963).toLocaleString()} <span style={{fontSize:small?11:13,color:"#888",fontWeight:600}}>حساب</span></div>
+              </div>
+              <div style={{background:"#fff3ee",borderRadius:12,padding:"12px 16px",display:"flex",justifyContent:"space-between",alignItems:"center",border:"1px solid #ffe4d4"}}>
+                <div style={{fontSize:small?12:14,color:"#555",fontWeight:700}}>قيمة المحفظة</div>
+                <div style={{fontSize:small?16:21,fontWeight:900,color:"#e85d20"}}>{omr(data.totalPortfolio?.amt||9414256.834)} <span style={{fontSize:small?10:12,color:"#888",fontWeight:600}}>OMR</span></div>
+              </div>
+            </div>
+          </div>
+          {/* جدول 2 — التحصيل */}
+          <div style={{padding:small?"16px":"20px 28px"}}>
+            <div style={{marginBottom:10}}>
+              <span style={{background:"#16a34a",color:"#fff",borderRadius:8,padding:"2px 12px",fontSize:small?11:13,fontWeight:900}}>💰 التحصيل</span>
+            </div>
+            <div style={{display:"flex",flexDirection:"column",gap:6}}>
+              {[
+                ["المدفوع",                data.totalCollection?.paid||890080.070,  "#16a34a"],
+                ["تسويات عُمانتل",         data.totalCollection?.adj||130384.064,   "#d97706"],
+                ["الإجمالي الكلي",         (data.totalCollection?.paid||890080.070)+(data.totalCollection?.adj||130384.064), "#1e3a5f"],
+                ["خصومات ONEIC",           1544.191,  "#7c3aed"],
+                ["المتبقي من المحفظة",     8392248.509, "#e85d20"],
+              ].map(([lbl,val,clr])=>(
+                <div key={lbl} style={{display:"flex",justifyContent:"space-between",alignItems:"center",padding:"7px 12px",borderRadius:9,background:"#fafafa",border:"1px solid #f0ece8"}}>
+                  <div style={{fontSize:small?11:13,color:"#555",fontWeight:700}}>{lbl}</div>
+                  <div style={{fontSize:small?13:16,fontWeight:900,color:clr}}>{omr(val)} OMR</div>
+                </div>
+              ))}
+              <div style={{background:"linear-gradient(120deg,#1e3a5f,#2d5a8e)",borderRadius:12,padding:"10px 14px",marginTop:2}}>
+                <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:6}}>
+                  <div style={{fontSize:small?12:14,color:"rgba(255,255,255,0.8)",fontWeight:700}}>نسبة الإنجاز</div>
+                  <div style={{fontSize:small?18:22,fontWeight:900,color:"#4ade80"}}>11%</div>
+                </div>
+                <div style={{background:"rgba(255,255,255,0.15)",borderRadius:6,height:8,overflow:"hidden"}}>
+                  <div style={{height:"100%",borderRadius:6,background:"linear-gradient(90deg,#4ade80,#16a34a)",width:"11%"}}/>
+                </div>
+              </div>
+            </div>
+          </div>
         </div>
       </div>
 
@@ -9948,44 +9947,6 @@ export default function Dashboard() {
             const dCounts = calcCounts(data.debtCompanies);
             const hCounts = calcCounts(data.headOffice);
             return (<>
-              {/* ── الإجمالي الكلي للمشروع ── */}
-              <div style={{gridColumn:"1 / -1",background:"linear-gradient(135deg,#1a1a2e 0%,#16213e 60%,#0f3460 100%)",
-                borderRadius:15,padding:small?"12px 14px":"16px 20px",
-                boxShadow:"0 4px 20px rgba(0,0,0,0.15)",marginBottom:4}}>
-                <div style={{display:"flex",flexWrap:"wrap",gap:8,alignItems:"center",justifyContent:"space-between"}}>
-                  <div style={{display:"flex",alignItems:"center",gap:10}}>
-                    <img src={LOGO} style={{height:small?28:36,width:"auto",filter:"brightness(0) invert(1)",opacity:0.9}} alt="ONEIC"/>
-                    <div>
-                      <div style={{fontSize:small?12:14,fontWeight:900,color:"#fff",lineHeight:1.1}}>إجمالي محفظة عُمانتل</div>
-                      <div style={{fontSize:small?10:11,color:"rgba(255,255,255,0.6)",fontWeight:600}}>{(data.totalPortfolio?.cnt||47963).toLocaleString()} حساب · {data.uploadDate}</div>
-                    </div>
-                  </div>
-                  <div style={{display:"flex",gap:small?10:20,flexWrap:"wrap",alignItems:"center"}}>
-                    <div style={{textAlign:"center"}}>
-                      <div style={{fontSize:small?9:10,color:"rgba(255,255,255,0.6)",fontWeight:700,marginBottom:2}}>إجمالي المحفظة</div>
-                      <div style={{fontSize:small?15:20,fontWeight:900,color:"#fff",lineHeight:1}}>{omr(data.totalPortfolio?.amt||9414256.834)}</div>
-                    </div>
-                    <div style={{width:1,height:small?30:40,background:"rgba(255,255,255,0.2)"}}/>
-                    <div style={{textAlign:"center"}}>
-                      <div style={{fontSize:small?9:10,color:"rgba(255,255,255,0.6)",fontWeight:700,marginBottom:2}}>المدفوعات</div>
-                      <div style={{fontSize:small?14:17,fontWeight:900,color:"#4ade80",lineHeight:1}}>{omr(data.totalCollection?.paid||863165.364)}</div>
-                    </div>
-                    <div style={{textAlign:"center"}}>
-                      <div style={{fontSize:small?9:10,color:"rgba(255,255,255,0.6)",fontWeight:700,marginBottom:2}}>التسويات</div>
-                      <div style={{fontSize:small?14:17,fontWeight:900,color:"#fbbf24",lineHeight:1}}>{omr(data.totalCollection?.adj||128508.848)}</div>
-                    </div>
-                    <div style={{width:1,height:small?30:40,background:"rgba(255,255,255,0.2)"}}/>
-                    <div style={{textAlign:"center"}}>
-                      <div style={{fontSize:small?9:10,color:"rgba(255,255,255,0.6)",fontWeight:700,marginBottom:2}}>الإجمالي الكلي</div>
-                      <div style={{fontSize:small?15:20,fontWeight:900,color:"#60a5fa",lineHeight:1}}>{omr((data.totalCollection?.paid||863165.364)+(data.totalCollection?.adj||128508.848))}</div>
-                    </div>
-                    <div style={{background:"rgba(255,255,255,0.12)",borderRadius:8,padding:small?"4px 8px":"6px 12px",textAlign:"center"}}>
-                      <div style={{fontSize:small?9:10,color:"rgba(255,255,255,0.6)",fontWeight:700}}>نسبة الإنجاز</div>
-                      <div style={{fontSize:small?14:16,fontWeight:900,color:"#60a5fa"}}>{Math.min(100,Math.round(((data.totalCollection?.paid||863165.364)+(data.totalCollection?.adj||128508.848))/(data.totalPortfolio?.amt||9414256.834)*100))}%</div>
-                    </div>
-                  </div>
-                </div>
-              </div>
               <SummaryCard label="المحافظات الخمس"
                 paid={gPd} adj={gAd}
                 cnt={complaintsCounts.gov||gCounts.total||gPortCnt||gCnt||0}
@@ -10053,16 +10014,9 @@ export default function Dashboard() {
           <div style={{ background:"#fff", borderRadius:16, boxShadow:"0 3px 18px rgba(0,0,0,0.07)", border:"1.5px solid #f0ece8", overflow:"hidden" }}>
             <SectionHeader title="🏛 المكتب الرئيسي" paid={hPd} adj={hAd} color="#6c3fa0" small={small}/>
             <div style={{ padding: small?"10px":"14px 16px", display:"flex", flexDirection:"column", gap: small?8:10 }}>
-              {(() => {
-                const HO_COLORS={"Legal - DR. Sarhaan":"#7c3aed","Documentation Legal":"#6c3fa0","Blanks":"#64748b","HO":"#4f2d7a"};
-                return data.headOffice.map((c,i) => (
-                  <EntityCard key={c.name} name={c.name} paid={c.paid} adj={c.adj}
-                    cBranch={complaintsBranchMap}
-                    color={HO_COLORS[c.name]||"#6c3fa0"} rank={i+1} small={small}
-                    portAmt={c.portAmt||0} portCnt={c.portCnt||0}
-                    principalAmt={c.principalAmt||0}/>
-                ));
-              })()}
+              {data.headOffice.map((c,i) => (
+                <EntityCard key={c.name} name={c.name} paid={c.paid} adj={c.adj} cBranch={complaintsBranchMap} color="#6c3fa0" rank={i+1} small={small} portAmt={c.portAmt||0} portCnt={c.portCnt||0} principalAmt={c.principalAmt||0}/>
+              ))}
             </div>
           </div>
         </div>
