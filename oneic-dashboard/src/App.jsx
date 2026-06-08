@@ -9840,13 +9840,18 @@ export default function Dashboard() {
           <div style={{display:"flex",alignItems:"center",gap:14}}>
             <img src={LOGO} alt="ONEIC" style={{height:small?40:54,objectFit:"contain",filter:"brightness(0) invert(1)",opacity:0.95}}/>
             <div>
-              <div style={{fontSize:small?18:26,fontWeight:900,color:"#fff",lineHeight:1.1}}>محفظة عُمانتل</div>
+              <div style={{fontSize:small?18:26,fontWeight:900,color:"#fff",lineHeight:1.1}}>محفظة عُمانتل 1</div>
               <div style={{fontSize:small?11:13,color:"rgba(255,255,255,0.65)",fontWeight:600,marginTop:3}}>Omantel Debt Collection Portfolio</div>
             </div>
           </div>
-          <div style={{fontSize:small?13:15,color:"rgba(255,255,255,0.8)",fontWeight:700,direction:"ltr"}}>
-            {(() => { const d=new Date(); return `${String(d.getDate()).padStart(2,'0')}-${String(d.getMonth()+1).padStart(2,'0')}-${d.getFullYear()}`; })()}
-          </div>
+          {data.uploadDate && (
+            <div style={{textAlign:"left",direction:"ltr"}}>
+              <div style={{fontSize:small?10:11,color:"rgba(255,255,255,0.55)",fontWeight:600,marginBottom:2}}>آخر تحديث للملف</div>
+              <div style={{fontSize:small?14:17,color:"rgba(255,255,255,0.9)",fontWeight:800,letterSpacing:1}}>
+                {(() => { const p=data.uploadDate.split('-'); return p.length===3?`${p[2]}-${p[1]}-${p[0]}`:data.uploadDate; })()}
+              </div>
+            </div>
+          )}
         </div>
         <div style={{display:"grid",gridTemplateColumns:small?"1fr":"1fr 1fr",gap:0}}>
           <div style={{padding:small?"16px":"20px 28px",borderLeft:small?"none":"1.5px solid #f0ece8",display:"flex",flexDirection:"column",gap:10}}>
