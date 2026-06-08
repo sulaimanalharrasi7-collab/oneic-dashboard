@@ -9022,16 +9022,16 @@ function handlePrint(data) {
   if (!w) return;
   var omrN = function(n) { return new Intl.NumberFormat('en-US',{minimumFractionDigits:3,maximumFractionDigits:3}).format(n||0); };
 
-  // ── حساب الإجماليات — نفس منطق الداشبورد تماماً ──
+  // ── حساب الإجماليات — نفس منطق الداشبورد (gPd+dPd+hPd من data.regions/debtCompanies/headOffice) ──
   var govPaid = (data.regions||[]).reduce(function(s,r){return s+r.paid;},0);
   var govAdj  = (data.regions||[]).reduce(function(s,r){return s+r.adj;},0);
   var dcPaid  = (data.debtCompanies||[]).reduce(function(s,r){return s+r.paid;},0);
   var dcAdj   = (data.debtCompanies||[]).reduce(function(s,r){return s+r.adj;},0);
   var hoPaid  = (data.headOffice||[]).reduce(function(s,r){return s+Math.max(0,r.paid||0);},0);
   var hoAdj   = (data.headOffice||[]).reduce(function(s,r){return s+Math.max(0,r.adj||0);},0);
-  // الإجمالي الكلي: نستخدم data.totalCollection إذا متاح (بعد رفع الملف)
-  var grandPaid  = (data.totalCollection&&data.totalCollection.paid>0) ? data.totalCollection.paid : govPaid+dcPaid+hoPaid;
-  var grandAdj   = (data.totalCollection&&data.totalCollection.adj>0)  ? data.totalCollection.adj  : govAdj+dcAdj+hoAdj;
+  // نفس منطق الداشبورد بالضبط: data.totalCollection?.paid || (gPd+dPd+hPd)
+  var grandPaid = (data.totalCollection&&data.totalCollection.paid) ? data.totalCollection.paid : (govPaid+dcPaid+hoPaid);
+  var grandAdj  = (data.totalCollection&&data.totalCollection.adj)  ? data.totalCollection.adj  : (govAdj+dcAdj+hoAdj);
   var grandTotal = grandPaid + grandAdj;
   var portAmt    = (data.totalPortfolio&&data.totalPortfolio.amt) ? data.totalPortfolio.amt : 9414256.834;
   var portCnt    = (data.totalPortfolio&&data.totalPortfolio.cnt) ? data.totalPortfolio.cnt : 47963;
@@ -10328,8 +10328,14 @@ export default function Dashboard() {
             <div style={{marginBottom:12}}><span style={{background:"#16a34a",color:"#fff",borderRadius:8,padding:"3px 14px",fontSize:small?11:13,fontWeight:900}}>💰 التحصيل</span></div>
             <div style={{display:"flex",flexDirection:"column",gap:8}}>
               {(() => {
-                const s1Paid = data.totalCollection?.paid||0;
-                const s1Adj  = data.totalCollection?.adj||0;
+                const _gPd = (data.regions||[]).reduce((s,r)=>s+r.paid,0);
+                const _dPd = (data.debtCompanies||[]).reduce((s,r)=>s+r.paid,0);
+                const _hPd = (data.headOffice||[]).reduce((s,r)=>s+Math.max(0,r.paid||0),0);
+                const _gAd = (data.regions||[]).reduce((s,r)=>s+r.adj,0);
+                const _dAd = (data.debtCompanies||[]).reduce((s,r)=>s+r.adj,0);
+                const _hAd = (data.headOffice||[]).reduce((s,r)=>s+Math.max(0,r.adj||0),0);
+                const s1Paid = data.totalCollection?.paid || (_gPd+_dPd+_hPd);
+                const s1Adj  = data.totalCollection?.adj  || (_gAd+_dAd+_hAd);
                 const s1Port = data.totalPortfolio?.amt||9414256.834;
                 const s1Tot  = s1Paid + s1Adj;
                 const s1Rem  = s1Port - s1Tot;
