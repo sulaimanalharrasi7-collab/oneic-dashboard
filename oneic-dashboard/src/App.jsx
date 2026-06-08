@@ -6130,7 +6130,8 @@ async function parseXLS(file) {
       "Legal - DR. Sarhaan": { portAmt: 3229651.681, portCnt: 3662, principalAmt: 3301711.348 },
       "Documentation- Omantel": { portAmt: 489409.003,  portCnt: 1136 },
       "Blanks":          { portAmt: 50253.668,   portCnt: 173  },
-      "HO":                  { portAmt: 0,           portCnt: 340  }
+      "HO":                  { portAmt: 0,           portCnt: 340  },
+      "Non-due accounts":    { portAmt: 0,           portCnt: 340  }
     }
   };
 
@@ -6155,6 +6156,7 @@ async function parseXLS(file) {
       let key = 'HO';
       if      (colL.includes('dr') || colL.includes('sarhaan') || colL.includes('sarhan')) key = 'Legal - DR. Sarhaan';
       else if (colL.includes('doc'))  key = 'Documentation- Omantel';
+      else if (colL.includes('non-due') || colL.includes('nondue')) key = 'Non-due accounts';
       else if (colL.includes('saif')) key = 'Blanks';
       else if (col.trim() === '')     key = 'Blanks';
       else                            key = 'Blanks'; // أي collector غير معروف → Blanks
@@ -6219,16 +6221,16 @@ async function parseXLS(file) {
   const debtCompanies = dcList.sort((a,b)=>(b.paid+b.adj)-(a.paid+a.adj));
 
   // ── المكتب الرئيسي ────────────────────────────────────────────────────
-  const HO_KEYS = ["Legal - DR. Sarhaan","Documentation- Omantel","HO","Blanks"];
+  const HO_KEYS = ["Legal - DR. Sarhaan","Documentation- Omantel","HO","Non-due accounts","Blanks"];
   const headOffice = HO_KEYS.map(nm => {
     const d = hoMap[nm]||{paid:0,adj:0,count:0};
     const p = PORT.ho[nm]||{portAmt:0,portCnt:0};
-    const HO_DISPLAY = {"HO":"Non-due accounts","Documentation- Omantel":"Documentation- Omantel","Legal - DR. Sarhaan":"Legal - DR. Sarhaan","Blanks":"Blanks"};
+    const HO_DISPLAY = {"HO":"Non-due accounts","Non-due accounts":"Non-due accounts","Documentation- Omantel":"Documentation- Omantel","Legal - DR. Sarhaan":"Legal - DR. Sarhaan","Blanks":"Blanks"};
     return {name:HO_DISPLAY[nm]||nm, paid:d.paid, adj:d.adj, count:d.count||0,
       portAmt: Math.max(0, p.portAmt||0), portCnt: p.portCnt||0,
       principalAmt: p.principalAmt||0};
   });
-  const HO_DN={"HO":"Non-due accounts"};
+  const HO_DN={"HO":"Non-due accounts","Non-due accounts":"Non-due accounts"};
   Object.keys(hoMap).forEach(k => {
     if (!HO_KEYS.includes(k))
       headOffice.push({name:HO_DN[k]||k,paid:hoMap[k].paid,adj:hoMap[k].adj,count:hoMap[k].count||0,portAmt:0,portCnt:0});
@@ -9631,6 +9633,7 @@ export default function Dashboard() {
       "Legal - DR. Sarhaan": { portAmt: 3229651.681, portCnt: 3662, principalAmt: 3301711.348 },
       "Documentation- Omantel":  { portAmt: 489409.003,  portCnt: 1136 },
       "HO":                   { portAmt: 0,           portCnt: 340  },
+      "Non-due accounts":     { portAmt: 0,           portCnt: 340  },
       "Blanks":           { portAmt: 50253.668,   portCnt: 173  }
     };
     const mergedHO = HO_REQUIRED.map(nm => {
