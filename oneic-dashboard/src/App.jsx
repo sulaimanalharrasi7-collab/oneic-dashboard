@@ -9858,11 +9858,11 @@ export default function Dashboard() {
             <div><span style={{background:"#1e3a5f",color:"#fff",borderRadius:8,padding:"3px 14px",fontSize:small?11:13,fontWeight:900}}>📋 المحفظة</span></div>
             <div style={{background:"#f8f9fc",borderRadius:12,padding:"14px 18px",display:"flex",justifyContent:"space-between",alignItems:"center",border:"1px solid #e8f0fe"}}>
               <div style={{fontSize:small?13:15,color:"#555",fontWeight:700}}>عدد الحسابات</div>
-              <div style={{fontSize:small?22:30,fontWeight:900,color:"#1e3a5f",textAlign:"right"}}>{(data.totalPortfolio?.cnt||47963).toLocaleString()} <span style={{fontSize:small?12:14,color:"#888",fontWeight:600}}>حساب</span></div>
+              <div style={{fontSize:small?20:26,fontWeight:900,color:"#1e3a5f",direction:"ltr",textAlign:"right"}}>{(data.totalPortfolio?.cnt||47963).toLocaleString()} <span style={{fontSize:small?11:13,color:"#888",fontWeight:600}}>حساب</span></div>
             </div>
             <div style={{background:"#fff3ee",borderRadius:12,padding:"14px 18px",display:"flex",justifyContent:"space-between",alignItems:"center",border:"1px solid #ffe4d4"}}>
               <div style={{fontSize:small?13:15,color:"#555",fontWeight:700}}>قيمة المحفظة</div>
-              <div style={{fontSize:small?20:27,fontWeight:900,color:"#e85d20",textAlign:"right",direction:"ltr"}}>{omr(data.totalPortfolio?.amt||9414256.834)} <span style={{fontSize:small?11:13,color:"#888",fontWeight:600,direction:"rtl"}}>OMR</span></div>
+              <div style={{fontSize:small?20:26,fontWeight:900,color:"#e85d20",direction:"ltr",textAlign:"right"}}>{omr(data.totalPortfolio?.amt||9414256.834)} <span style={{fontSize:small?11:13,color:"#888",fontWeight:600}}>OMR</span></div>
             </div>
             <div style={{display:"flex",justifyContent:"center",paddingTop:4}}>
               {(() => {
@@ -9890,13 +9890,13 @@ export default function Dashboard() {
               {[
                 ["المدفوع",            data.totalCollection?.paid||890080.070,  "#16a34a"],
                 ["تسويات عُمانتل",     data.totalCollection?.adj||130384.064,   "#d97706"],
-                ["الإجمالي",           (data.totalCollection?.paid||890080.070)+(data.totalCollection?.adj||130384.064), "#1e3a5f"],
                 ["خصومات أونك",        1544.191,  "#7c3aed"],
+                ["الإجمالي",           (data.totalCollection?.paid||890080.070)+(data.totalCollection?.adj||130384.064), "#1e3a5f"],
                 ["المتبقي من المحفظة", 8392248.509, "#e85d20"],
               ].map(([lbl,val,clr])=>(
                 <div key={lbl} style={{display:"flex",justifyContent:"space-between",alignItems:"center",padding:"11px 14px",borderRadius:10,background:"#fafafa",border:"1px solid #f0ece8"}}>
-                  <div style={{fontSize:small?12:14,color:"#555",fontWeight:700}}>{lbl}</div>
-                  <div style={{fontSize:small?16:22,fontWeight:900,color:clr,direction:"ltr",textAlign:"right"}}>{omr(val)} <span style={{fontSize:small?10:12,color:"#aaa",fontWeight:600}}>OMR</span></div>
+                  <div style={{fontSize:small?13:15,color:"#555",fontWeight:700}}>{lbl}</div>
+                  <div style={{fontSize:small?20:26,fontWeight:900,color:clr,direction:"ltr",textAlign:"right"}}>{omr(val)} <span style={{fontSize:small?11:13,color:"#aaa",fontWeight:600}}>OMR</span></div>
                 </div>
               ))}
             </div>
