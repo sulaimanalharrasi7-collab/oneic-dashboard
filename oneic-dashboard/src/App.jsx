@@ -6362,32 +6362,44 @@ function VerifyModal({pending, onConfirm, onReject}) {
             {lbl:"التسويات", val:adj,     clr:"#d97706"},
             {lbl:"الإجمالي", val:paid+adj,clr:color},
           ];
-          return items.map(({lbl,val,clr})=>{
+          return items.map(({lbl,val,clr},ci)=>{
             const pctV = portAmt>0 ? Math.min(100,(val/portAmt)*100) : 0;
-            const r=26,cx=30,cy=30;
+            const r=34,cx=40,cy=40;
             const circ=2*Math.PI*r;
             const offset=circ-(pctV/100)*circ;
             return (
-              <div key={lbl} style={{display:"flex",flexDirection:"column",alignItems:"center",gap:3}}>
-                <svg width={60} height={60} viewBox="0 0 60 60">
+              <div key={lbl} style={{display:"flex",flexDirection:"column",alignItems:"center",gap:5,flex:1}}>
+                {/* عنوان فوق الدائرة */}
+                <div style={{fontSize:small?10:12,fontWeight:900,color:clr,
+                  background:`${clr}12`,borderRadius:8,padding:"2px 10px",
+                  letterSpacing:0.3}}>{lbl}</div>
+                <svg width={80} height={80} viewBox="0 0 80 80">
                   <defs>
-                    <linearGradient id={`cg_${lbl}`} x1="0%" y1="0%" x2="100%" y2="0%">
-                      <stop offset="0%" stopColor={clr} stopOpacity="0.5"/>
+                    <linearGradient id={`cg2_${ci}`} x1="0%" y1="0%" x2="100%" y2="0%">
+                      <stop offset="0%" stopColor={clr} stopOpacity="0.4"/>
                       <stop offset="100%" stopColor={clr}/>
                     </linearGradient>
                   </defs>
-                  <circle cx={cx} cy={cy} r={r} fill="none" stroke={`${clr}18`} strokeWidth="7"/>
+                  <circle cx={cx} cy={cy} r={r} fill={`${clr}08`} stroke={`${clr}15`} strokeWidth="1"/>
+                  <circle cx={cx} cy={cy} r={r} fill="none" stroke={`${clr}20`} strokeWidth="9"/>
                   <circle cx={cx} cy={cy} r={r} fill="none"
-                    stroke={`url(#cg_${lbl})`} strokeWidth="7"
+                    stroke={`url(#cg2_${ci})`} strokeWidth="9"
                     strokeDasharray={circ} strokeDashoffset={offset}
                     strokeLinecap="round"
                     transform={`rotate(-90 ${cx} ${cy})`}/>
-                  <text x={cx} y={cy+4} textAnchor="middle"
-                    fontSize="10" fontWeight="900" fill={clr} fontFamily="Cairo">
-                    {pctV.toFixed(0)}%
+                  <text x={cx} y={cy-4} textAnchor="middle"
+                    fontSize="14" fontWeight="900" fill={clr} fontFamily="Cairo">
+                    {pctV.toFixed(1)}%
+                  </text>
+                  <text x={cx} y={cy+13} textAnchor="middle"
+                    fontSize="9" fontWeight="700" fill="#888" fontFamily="Cairo">
+                    من المحفظة
                   </text>
                 </svg>
-                <div style={{fontSize:small?9:10,fontWeight:800,color:clr}}>{lbl}</div>
+                {/* قيمة أسفل الدائرة */}
+                <div style={{fontSize:small?9:11,fontWeight:800,color:"#555",textAlign:"center"}}>
+                  {omr(val)}
+                </div>
               </div>
             );
           });
@@ -6593,9 +6605,9 @@ function SummaryCard({label,paid,adj,cnt,cntPaid,cntAdj,cntTotal,portAmt,color,i
   const _cntPaid  = (cntPaid  != null && cntPaid  > 0) ? cntPaid  : (cnt||0);
   const _cntAdj   = (cntAdj   != null && cntAdj   > 0) ? cntAdj   : (cnt||0);
   const _cntTotal = (cntTotal != null && cntTotal > 0) ? cntTotal : _cntPaid;
-  const fs = isMobile ? {title:13,sub:10,num:14,cnt:9,cell:7} :
-             isTablet  ? {title:14,sub:11,num:15,cnt:10,cell:8} :
-                         {title:15,sub:11,num:15,cnt:10,cell:9};
+  const fs = isMobile ? {title:14,sub:11,num:17,cnt:10,cell:9} :
+             isTablet  ? {title:16,sub:12,num:19,cnt:11,cell:10} :
+                         {title:17,sub:12,num:22,cnt:12,cell:11};
   return (
     <div style={{background:"#fff",borderRadius:15,overflow:"hidden",
       boxShadow:"0 3px 14px rgba(0,0,0,0.07)",border:"1.5px solid #f0ece8",minWidth:0}}>
@@ -6648,11 +6660,17 @@ function SummaryCard({label,paid,adj,cnt,cntPaid,cntAdj,cntTotal,portAmt,color,i
             ["التسويات","#d97706",adj,_cntAdj],
             ["الإجمالي",color,total,_cntTotal]
           ].map(([lbl,clr,val,c],i)=>(
-            <div key={lbl} style={{textAlign:"center",padding:small?"4px 2px":"7px 4px",
-              borderRight:i<2?"1px solid #f0ece8":"none",minWidth:0,overflow:"hidden",flex:1}}>
-              <div style={{fontSize:fs.cell,color:"#333",fontWeight:800,marginBottom:3,whiteSpace:"nowrap"}}>{lbl}</div>
-              <div style={{fontSize:fs.num,fontWeight:900,color:clr,lineHeight:1,wordBreak:"break-all"}}>{omr(val)}</div>
-              {c!=null && <div style={{fontSize:fs.cnt,color:"#aaa",marginTop:2,fontWeight:600}}>{(c||0).toLocaleString()} حساب</div>}
+            <div key={lbl} style={{textAlign:"center",padding:small?"8px 4px":"12px 6px",
+              borderRight:i<2?"1px solid #f0ece8":"none",minWidth:0,overflow:"hidden",flex:1,
+              background:i===2?`${clr}06`:"transparent"}}>
+              <div style={{fontSize:small?11:13,color:clr,fontWeight:900,marginBottom:5,
+                whiteSpace:"nowrap",background:`${clr}10`,borderRadius:6,
+                padding:"2px 6px",display:"inline-block"}}>{lbl}</div>
+              <div style={{fontSize:fs.num,fontWeight:900,color:clr,lineHeight:1,wordBreak:"break-all",marginBottom:4}}>{omr(val)}</div>
+              {c!=null && <div style={{fontSize:fs.cnt,color:"#888",fontWeight:700,
+                background:"#f0ece8",borderRadius:8,padding:"1px 6px",display:"inline-block"}}>
+                {(c||0).toLocaleString()} حساب
+              </div>}
             </div>
           ))}
         </div>
@@ -6668,32 +6686,44 @@ function SummaryCard({label,paid,adj,cnt,cntPaid,cntAdj,cntTotal,portAmt,color,i
             {lbl:"التسويات", val:adj,     clr:"#d97706"},
             {lbl:"الإجمالي", val:paid+adj,clr:color},
           ];
-          return items.map(({lbl,val,clr})=>{
+          return items.map(({lbl,val,clr},ci)=>{
             const pctV = portAmt>0 ? Math.min(100,(val/portAmt)*100) : 0;
-            const r=26,cx=30,cy=30;
+            const r=34,cx=40,cy=40;
             const circ=2*Math.PI*r;
             const offset=circ-(pctV/100)*circ;
             return (
-              <div key={lbl} style={{display:"flex",flexDirection:"column",alignItems:"center",gap:3}}>
-                <svg width={60} height={60} viewBox="0 0 60 60">
+              <div key={lbl} style={{display:"flex",flexDirection:"column",alignItems:"center",gap:5,flex:1}}>
+                {/* عنوان فوق الدائرة */}
+                <div style={{fontSize:small?10:12,fontWeight:900,color:clr,
+                  background:`${clr}12`,borderRadius:8,padding:"2px 10px",
+                  letterSpacing:0.3}}>{lbl}</div>
+                <svg width={80} height={80} viewBox="0 0 80 80">
                   <defs>
-                    <linearGradient id={`cg_${lbl}`} x1="0%" y1="0%" x2="100%" y2="0%">
-                      <stop offset="0%" stopColor={clr} stopOpacity="0.5"/>
+                    <linearGradient id={`cg2_${ci}`} x1="0%" y1="0%" x2="100%" y2="0%">
+                      <stop offset="0%" stopColor={clr} stopOpacity="0.4"/>
                       <stop offset="100%" stopColor={clr}/>
                     </linearGradient>
                   </defs>
-                  <circle cx={cx} cy={cy} r={r} fill="none" stroke={`${clr}18`} strokeWidth="7"/>
+                  <circle cx={cx} cy={cy} r={r} fill={`${clr}08`} stroke={`${clr}15`} strokeWidth="1"/>
+                  <circle cx={cx} cy={cy} r={r} fill="none" stroke={`${clr}20`} strokeWidth="9"/>
                   <circle cx={cx} cy={cy} r={r} fill="none"
-                    stroke={`url(#cg_${lbl})`} strokeWidth="7"
+                    stroke={`url(#cg2_${ci})`} strokeWidth="9"
                     strokeDasharray={circ} strokeDashoffset={offset}
                     strokeLinecap="round"
                     transform={`rotate(-90 ${cx} ${cy})`}/>
-                  <text x={cx} y={cy+4} textAnchor="middle"
-                    fontSize="10" fontWeight="900" fill={clr} fontFamily="Cairo">
-                    {pctV.toFixed(0)}%
+                  <text x={cx} y={cy-4} textAnchor="middle"
+                    fontSize="14" fontWeight="900" fill={clr} fontFamily="Cairo">
+                    {pctV.toFixed(1)}%
+                  </text>
+                  <text x={cx} y={cy+13} textAnchor="middle"
+                    fontSize="9" fontWeight="700" fill="#888" fontFamily="Cairo">
+                    من المحفظة
                   </text>
                 </svg>
-                <div style={{fontSize:small?9:10,fontWeight:800,color:clr}}>{lbl}</div>
+                {/* قيمة أسفل الدائرة */}
+                <div style={{fontSize:small?9:11,fontWeight:800,color:"#555",textAlign:"center"}}>
+                  {omr(val)}
+                </div>
               </div>
             );
           });
