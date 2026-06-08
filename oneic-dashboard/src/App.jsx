@@ -6150,13 +6150,14 @@ async function parseXLS(file) {
       if (paid>0) dcMap[key].paidCount++;
       if (adj >0) dcMap[key].adjCount++;
 
-    } else if (region === 'Head Office') {
+    } else if (region === 'Head Office' || region === 'Legal' || region === 'Legal ') {
       const colL = col.toLowerCase();
       let key = 'HO';
       if      (colL.includes('dr') || colL.includes('sarhaan') || colL.includes('sarhan')) key = 'Legal - DR. Sarhaan';
       else if (colL.includes('doc'))  key = 'Documentation- Omantel';
       else if (colL.includes('saif')) key = 'Blanks';
       else if (col.trim() === '')     key = 'Blanks';
+      else                            key = 'Blanks'; // أي collector غير معروف → Blanks
       if (!hoMap[key]) hoMap[key] = { paid:0, adj:0, count:0 };
       hoMap[key].paid += paid; hoMap[key].adj += adj; hoMap[key].count++;
 
