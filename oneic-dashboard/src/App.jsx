@@ -6394,15 +6394,15 @@ function Clock({ small }) {
 function UploadBtn({onFile,uploading,success,error,small}) {
   const ref = useRef(null);
   return (
-    <div onClick={()=>!uploading&&ref.current?.click()}
-      onDrop={e=>{e.preventDefault();const f=e.dataTransfer.files?.[0];if(f)onFile(f);}}
+    <div onClick={()=>!uploading&&requireUploadAuth(()=>ref.current?.click())}
+      onDrop={e=>{e.preventDefault();const f=e.dataTransfer.files?.[0];if(f)requireUploadAuth(()=>onFile(f));}}
       onDragOver={e=>e.preventDefault()}
       style={{border:`2px dashed ${success?"#16a34a":uploading?"#e85d20":"#ddd"}`,
         borderRadius:12,padding:small?"8px 14px":"10px 20px",cursor:uploading?"default":"pointer",
         background:success?"#f0fdf4":uploading?"#fff7f3":"#fff",
         textAlign:"center",minWidth:small?140:175,transition:"all 0.3s"}}>
       <input ref={ref} type="file" accept=".xls,.xlsx,.csv" style={{display:"none"}}
-        onChange={e=>{const f=e.target.files?.[0];if(f)onFile(f);e.target.value="";}}/>
+        onChange={e=>{const f=e.target.files?.[0];if(f)requireUploadAuth(()=>{onFile(f);e.target.value="";});}}/>
       {uploading?<div style={{color:"#e85d20",fontSize:13,fontWeight:700}}>⏳ جاري التحليل...</div>
        :success?<div style={{color:"#16a34a",fontSize:13,fontWeight:700}}>✅ تم التحديث</div>
        :<><div style={{fontSize:small?16:20}}>📂</div>
@@ -8105,14 +8105,14 @@ function BulkPaymentSection({ bulk, small }) {
             whiteSpace:"nowrap",flexShrink:0,title:"مسح البيانات"
           }}>🗑 مسح</button>
           <div onClick={()=>!bulkUploading&&fileRef.current?.click()}
-            onDrop={e=>{e.preventDefault();const f=e.dataTransfer.files?.[0];if(f)handleBulkFile(f);}}
+            onDrop={e=>{e.preventDefault();const f=e.dataTransfer.files?.[0];if(f)requireUploadAuth(()=>handleBulkFile(f));}}
             onDragOver={e=>e.preventDefault()}
             style={{border:`1.5px dashed ${bulkSuccess?"#22c55e":bulkUploading?"#60a5fa":"rgba(255,255,255,0.4)"}`,
               borderRadius:10,padding:"8px 14px",cursor:"pointer",
               background:bulkSuccess?"rgba(34,197,94,0.15)":"rgba(255,255,255,0.08)",
               textAlign:"center",minWidth:145}}>
             <input ref={fileRef} type="file" accept=".xlsx,.xls" style={{display:"none"}}
-              onChange={e=>{const f=e.target.files?.[0];if(f)handleBulkFile(f);e.target.value="";}}/>
+              onChange={e=>{const f=e.target.files?.[0];if(f)requireUploadAuth(()=>{handleBulkFile(f);e.target.value="";});}}/>
             {bulkUploading?<div style={{color:"#60a5fa",fontSize:12,fontWeight:700}}>⏳ جاري التحليل...</div>
              :bulkSuccess?<div style={{color:"#22c55e",fontSize:12,fontWeight:700}}>✅ تم التحديث</div>
              :<><div style={{fontSize:16}}>📂</div>
@@ -9301,6 +9301,10 @@ export default function Dashboard() {
   const [pwInput, setPwInput] = useState('');
   const [pwError, setPwError] = useState(false);
   const [showBulkReport, setShowBulkReport] = useState(false);
+  const [showUploadAuth, setShowUploadAuth] = useState(false);
+  const [uploadAuthInput, setUploadAuthInput] = useState('');
+  const [uploadAuthError, setUploadAuthError] = useState(false);
+  const [uploadAuthCallback, setUploadAuthCallback] = useState(null);
   const [binId, setBinId]       = useState(() => { try { return localStorage.getItem('oneic_bin_id')||''; } catch(e){return '';} });
   const [apiKey, setApiKey]     = useState(() => { try { return localStorage.getItem('oneic_api_key')||''; } catch(e){return '';} });
   const [history, setHistory]   = useState(() => {
@@ -9373,6 +9377,25 @@ export default function Dashboard() {
     }
     load();
   }, []);
+
+  const UPLOAD_PW = 'Sulaiman1992';
+
+  const requireUploadAuth = (callback) => {
+    setUploadAuthInput('');
+    setUploadAuthError(false);
+    setUploadAuthCallback(() => callback);
+    setShowUploadAuth(true);
+  };
+
+  const confirmUploadAuth = () => {
+    if (uploadAuthInput === UPLOAD_PW) {
+      setShowUploadAuth(false);
+      if (uploadAuthCallback) uploadAuthCallback();
+    } else {
+      setUploadAuthError(true);
+      setUploadAuthInput('');
+    }
+  };
 
   const handleFile = useCallback(async (file) => {
     setUploading(true); setError(null); setSuccess(false); setPending(null);
@@ -9665,6 +9688,57 @@ export default function Dashboard() {
       <NotificationStack notifications={notifications} onDismiss={id=>setNotifications(prev=>prev.filter(n=>n.id!==id))}/>
       {showHistory && <HistoryModal history={history} onClose={()=>setShowHistory(false)} small={small}/>}
       <VerifyModal pending={pending} onConfirm={confirmData} onReject={rejectData}/>
+
+      {/* ══ نافذة كلمة سر الرفع ══ */}
+      {showUploadAuth && (
+        <div style={{position:"fixed",inset:0,background:"rgba(0,0,0,0.7)",display:"flex",
+          alignItems:"center",justifyContent:"center",zIndex:9999,padding:16,direction:"rtl"}}>
+          <div style={{background:"#fff",borderRadius:20,width:"100%",maxWidth:380,
+            padding:"32px 28px",boxShadow:"0 20px 60px rgba(0,0,0,0.4)",textAlign:"center"}}>
+            <div style={{fontSize:40,marginBottom:12}}>🔐</div>
+            <div style={{fontSize:18,fontWeight:900,color:"#1e3a5f",marginBottom:6}}>تأكيد الصلاحية</div>
+            <div style={{fontSize:13,color:"#888",marginBottom:20}}>
+              أدخل كلمة المرور الخاصة برفع الملفات
+            </div>
+            <input
+              type="password"
+              value={uploadAuthInput}
+              autoFocus
+              onChange={e => { setUploadAuthInput(e.target.value); setUploadAuthError(false); }}
+              onKeyDown={e => e.key === 'Enter' && confirmUploadAuth()}
+              placeholder="كلمة المرور..."
+              style={{
+                width:"100%", padding:"12px 16px",
+                border: uploadAuthError ? "2px solid #ef4444" : "2px solid #e5e7eb",
+                borderRadius:12, fontSize:15, fontFamily:"'Cairo',sans-serif",
+                outline:"none", boxSizing:"border-box",
+                background: uploadAuthError ? "#fef2f2" : "#f9fafb",
+                textAlign:"right", direction:"rtl", marginBottom:8
+              }}
+            />
+            {uploadAuthError && (
+              <div style={{color:"#ef4444",fontSize:12,fontWeight:700,marginBottom:12}}>
+                ❌ كلمة المرور غير صحيحة
+              </div>
+            )}
+            <div style={{display:"flex",gap:10,marginTop:8}}>
+              <button onClick={() => setShowUploadAuth(false)}
+                style={{flex:1,padding:"11px",background:"#f5f5f5",color:"#555",
+                  border:"none",borderRadius:12,fontSize:14,fontWeight:800,cursor:"pointer",
+                  fontFamily:"'Cairo',sans-serif"}}>
+                إلغاء
+              </button>
+              <button onClick={confirmUploadAuth}
+                style={{flex:2,padding:"11px",
+                  background:"linear-gradient(120deg,#1e3a5f,#2d5a8e)",
+                  color:"#fff",border:"none",borderRadius:12,fontSize:14,
+                  fontWeight:900,cursor:"pointer",fontFamily:"'Cairo',sans-serif"}}>
+                🔓 تأكيد
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* ── نافذة إعدادات المزامنة ── */}
       {showSettings && (
@@ -9989,7 +10063,7 @@ export default function Dashboard() {
             <button onClick={() => setShowHistory(s=>!s)} style={{background:"#1e3a5f",color:"#fff",border:"none",borderRadius:10,padding:"8px 14px",fontSize:13,fontWeight:800,cursor:"pointer",fontFamily:"'Cairo',sans-serif",display:"flex",alignItems:"center",gap:5}}>
               📁 {history.length > 0 ? `عدد الملفات (${history.length})` : 'عدد الملفات'}
             </button>
-            <button onClick={() => setShowBulkReport(s=>!s)} style={{background:showBulkReport?"#e85d20":"#2d5a8e",color:"#fff",border:"none",borderRadius:10,padding:"5px 14px",fontSize:12,fontWeight:800,cursor:"pointer",fontFamily:"'Cairo',sans-serif",display:"flex",alignItems:"center",justifyContent:"center",gap:4}}>
+            <button onClick={() => { if(showBulkReport) setShowBulkReport(false); else requireUploadAuth(()=>setShowBulkReport(true)); }} style={{background:showBulkReport?"#e85d20":"#2d5a8e",color:"#fff",border:"none",borderRadius:10,padding:"5px 14px",fontSize:12,fontWeight:800,cursor:"pointer",fontFamily:"'Cairo',sans-serif",display:"flex",alignItems:"center",justifyContent:"center",gap:4}}>
               💳 Bulk Payment
             </button>
           </div>
