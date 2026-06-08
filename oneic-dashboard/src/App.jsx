@@ -10,7 +10,7 @@ const SEED = {
       id: "dhofar",
       nameAr: "ظفار",
       nameEn: "Dhofar",
-      paid: 1258.225, adj: 1200.858,
+      paid: 1258.225, adj: 1200.858, portAmt: 1946.119, portCnt: 25,
       collectors: [
         { name: "Hussein Abdul Muttalib", paid: 1258.225, adj: 1200.858 }
       ]
@@ -19,7 +19,7 @@ const SEED = {
       id: "musandam",
       nameAr: "مسندم، البريمي والظاهرة",
       nameEn: "Musandam, Al Burimai and Al Dahirah",
-      paid: 33513.304, adj: 4048.733,
+      paid: 33513.304, adj: 4048.733, portAmt: 37449.515, portCnt: 491,
       collectors: [
         { name: "Fawzia Ali Al Suhi",       paid: 9588.894, adj: 1314.242 },
         { name: "Fahad Said Al Ghaiti",      paid: 9003.186, adj: 1175.042 },
@@ -37,7 +37,7 @@ const SEED = {
       id: "muscat",
       nameAr: "مسقط والداخلية",
       nameEn: "MUSCAT AND AL DAKHILIYAH",
-      paid: 49597.968, adj: 4581.404,
+      paid: 49597.968, adj: 4581.404, portAmt: 68131.760, portCnt: 1279,
       collectors: [
         { name: "Tharaya Muhanna Al-Rashdi",  paid: 5877.813, adj: 138.846 },
         { name: "Manar Nasser Al-Rawahi",     paid: 5164.179, adj: 769.390 },
@@ -62,7 +62,7 @@ const SEED = {
       id: "sharqiya",
       nameAr: "الشرقية الشمالية والجنوبية والوسطى",
       nameEn: "North and South Al Shaurqiah and Al Wasatah",
-      paid: 55338.005, adj: 13860.218,
+      paid: 55338.005, adj: 13860.218, portAmt: 164461.982, portCnt: 2463,
       collectors: [
         { name: "Sabah Said",                paid: 13318.394, adj: 3644.907 },
         { name: "Marwa Juma Mubarak",        paid: 10015.619, adj: 1477.823 },
@@ -87,7 +87,7 @@ const SEED = {
       id: "batinah",
       nameAr: "الباطنة الشمالية والجنوبية",
       nameEn: "South and North Al Batinah",
-      paid: 58118.002, adj: 14917.782,
+      paid: 58118.002, adj: 14917.782, portAmt: 93541.029, portCnt: 2219,
       collectors: [
         { name: "Aida Kasaf Al Nofli",          paid: 13372.187, adj: 7098.014 },
         { name: "Mrs. Moza Khamis Al Mamari",   paid: 9876.809,  adj: 1631.711 },
@@ -6729,6 +6729,66 @@ function SummaryCard({label,paid,adj,cnt,cntPaid,cntAdj,cntTotal,portAmt,color,i
           });
         })()}
       </div>
+      {/* ── مربع نسبة الإنجاز من المحفظة ── */}
+      {(() => {
+        const totalVal = paid + adj;
+        // إذا portAmt غير متاح نستخدم totalPortfolio بنسبة من الإجمالي الكلي
+        const effectivePort = portAmt > 0 ? portAmt : 0;
+        const pctPort  = effectivePort > 0 ? Math.min(100, (totalVal / effectivePort) * 100) : 0;
+        const remaining = effectivePort > 0 ? effectivePort - totalVal : 0;
+        return (
+          <div style={{
+            margin:"10px 12px 12px",
+            borderRadius:14,
+            border:`2px solid ${color}33`,
+            overflow:"hidden",
+            background:`linear-gradient(135deg,${color}06,${color}12)`
+          }}>
+            {/* عنوان المربع */}
+            <div style={{
+              background:`linear-gradient(120deg,${color},${color}cc)`,
+              padding:"8px 14px",
+              display:"flex",justifyContent:"space-between",alignItems:"center"
+            }}>
+              <div style={{fontSize:small?11:13,fontWeight:900,color:"#fff"}}>
+                🎯 نسبة الإنجاز من المحفظة
+              </div>
+              <div style={{
+                background:"rgba(255,255,255,0.25)",borderRadius:20,
+                padding:"2px 10px",fontSize:small?14:17,fontWeight:900,color:"#fff"
+              }}>
+                {effectivePort>0?`${pctPort.toFixed(1)}%`:"—"}
+              </div>
+            </div>
+            {/* شريط التقدم */}
+            <div style={{padding:"10px 14px 6px"}}>
+              <div style={{background:"rgba(255,255,255,0.6)",borderRadius:8,height:10,overflow:"hidden",marginBottom:8}}>
+                <div style={{
+                  height:"100%",borderRadius:8,
+                  background:`linear-gradient(90deg,${color}88,${color})`,
+                  width:`${pctPort}%`,
+                  transition:"width 0.8s ease"
+                }}/>
+              </div>
+              {/* الأرقام */}
+              <div style={{display:"grid",gridTemplateColumns:"1fr 1fr 1fr",gap:6}}>
+                <div style={{textAlign:"center",background:"rgba(255,255,255,0.7)",borderRadius:10,padding:"6px 4px"}}>
+                  <div style={{fontSize:small?8:10,color:"#555",fontWeight:800,marginBottom:2}}>قيمة المحفظة</div>
+                  <div style={{fontSize:small?10:13,fontWeight:900,color:color}}>{effectivePort>0?omr(effectivePort):"—"}</div>
+                </div>
+                <div style={{textAlign:"center",background:"rgba(255,255,255,0.7)",borderRadius:10,padding:"6px 4px"}}>
+                  <div style={{fontSize:small?8:10,color:"#555",fontWeight:800,marginBottom:2}}>الإجمالي المحصّل</div>
+                  <div style={{fontSize:small?10:13,fontWeight:900,color:"#16a34a"}}>{omr(totalVal)}</div>
+                </div>
+                <div style={{textAlign:"center",background:"rgba(255,255,255,0.7)",borderRadius:10,padding:"6px 4px"}}>
+                  <div style={{fontSize:small?8:10,color:"#555",fontWeight:800,marginBottom:2}}>المتبقي</div>
+                  <div style={{fontSize:small?10:13,fontWeight:900,color:"#e85d20"}}>{remaining>0?omr(remaining):"—"}</div>
+                </div>
+              </div>
+            </div>
+          </div>
+        );
+      })()}
     </div>
   );
 }
@@ -10073,7 +10133,7 @@ export default function Dashboard() {
                 cntPaid={complaintsCounts.govPaid||gCounts.paid||null}
                 cntAdj={complaintsCounts.govAdj||gCounts.adj||null}
                 cntTotal={complaintsCounts.govTotal||gCounts.combined||null}
-                portAmt={complaintsAmts.gov||gPortAmt||0}
+                portAmt={complaintsAmts.gov||gPortAmt||data.regions?.reduce((s,r)=>s+(r.portAmt||0),0)||0}
                 color="#e85d20" icon="🏬" pct={p(gPd+gAd)} small={small} isMobile={isMobile} isTablet={isTablet}/>
               <SummaryCard label="شركات التحصيل"
                 paid={dPd} adj={dAd}
