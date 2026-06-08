@@ -6492,7 +6492,7 @@ function EntityCard({name,paid,adj,color,rank,small,cnt,cBranch,portAmt,portCnt,
   const bKey = Object.keys(cBranch||{}).find(k => k.trim()===name?.trim() || name?.includes(k) || k.includes(name||'__'));
   const bD = bKey ? (cBranch||{})[bKey] : null;
   const total    = (paid||0) + (adj||0);
-  const allZero  = total === 0;
+  const allZero  = total === 0 && name !== "Blanks";
   const hasPort  = (portAmt||0) > 0;
   const hasCnt   = (portCnt||0) > 0;
   const effPort  = hasPort ? portAmt : (bD?.amt||0);
