@@ -6547,7 +6547,12 @@ function EntityCard({name,paid,adj,color,rank,small,cnt,cBranch,portAmt,portCnt,
         background:`${color}06`,borderBottom:`1px solid ${color}18`}}>
         <div style={{width:small?28:34,height:small?28:34,borderRadius:8,background:color,flexShrink:0,
           display:"flex",alignItems:"center",justifyContent:"center",fontSize:small?13:15,fontWeight:900,color:"#fff"}}>{rank}</div>
-        <div style={{fontSize:small?13:16,fontWeight:900,color:"#000",flex:1,lineHeight:1.2}}>{name}</div>
+        <div style={{fontSize:small?13:16,fontWeight:900,color:"#000",flex:1,lineHeight:1.2,display:"flex",alignItems:"center",gap:8}}>
+            {name}
+            {["Ejada","Tahseel United","High Speed Company"].includes(name) && (
+              <span style={{fontSize:small?9:10,fontWeight:800,color:"#ef4444",background:"#fee2e2",border:"1px solid #fca5a5",borderRadius:20,padding:"2px 8px",whiteSpace:"nowrap",flexShrink:0}}>🔴 غير نشطة</span>
+            )}
+          </div>
       </div>
 
       <div style={{padding:small?"10px 12px":"12px 16px",display:"flex",flexDirection:"column",gap:8}}>
