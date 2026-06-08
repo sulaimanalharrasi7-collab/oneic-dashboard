@@ -6499,6 +6499,29 @@ function EntityCard({name,paid,adj,color,rank,small,cnt,cBranch,portAmt,portCnt,
   const remaining = effPort > 0 ? effPort - total : 0;
   const pctVal   = effPort > 0 ? Math.min(100,(total/effPort)*100) : 0;
 
+  // Non-due accounts — يعرض فقط عدد الحسابات
+  if (name === "Non-due accounts") {
+    return (
+      <div style={{background:"#fff",borderRadius:13,border:`1.5px solid ${color}33`,
+        boxShadow:"0 2px 10px rgba(0,0,0,0.05)",overflow:"hidden",borderRight:`5px solid ${color}`}}>
+        <div style={{display:"flex",alignItems:"center",gap:10,padding:small?"10px 12px":"12px 16px",
+          background:`${color}06`,borderBottom:`1px solid ${color}18`}}>
+          <div style={{width:small?28:34,height:small?28:34,borderRadius:8,background:color,flexShrink:0,
+            display:"flex",alignItems:"center",justifyContent:"center",fontSize:small?13:15,fontWeight:900,color:"#fff"}}>{rank}</div>
+          <div style={{fontSize:small?13:16,fontWeight:900,color:"#000",flex:1}}>{name}</div>
+        </div>
+        <div style={{padding:small?"12px":"16px",display:"flex",flexDirection:"column",alignItems:"center",gap:4}}>
+          <div style={{fontSize:small?11:13,color:"#888",fontWeight:700}}>عدد الحسابات</div>
+          <div style={{fontSize:small?22:30,fontWeight:900,color:color}}>{(cnt||effCnt||0).toLocaleString()}</div>
+          <div style={{fontSize:small?10:12,color:"#aaa",fontWeight:600}}>حساب</div>
+          <div style={{marginTop:6,fontSize:small?10:11,color:"#bbb",fontStyle:"italic",textAlign:"center"}}>
+            حسابات غير مستحقة — لا توجد حركات مالية
+          </div>
+        </div>
+      </div>
+    );
+  }
+
   if (allZero) {
     return (
       <div style={{background:"#fafafa",borderRadius:13,border:"1.5px dashed #e0dbd6",
