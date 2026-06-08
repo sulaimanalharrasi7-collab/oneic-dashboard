@@ -9771,27 +9771,12 @@ export default function Dashboard() {
           <UploadBtn onFile={handleFile} uploading={uploading} success={success} error={error} small={isMobile} />
 
           <div style={{display:"flex",flexDirection:"column",gap:5,alignItems:"stretch"}}>
-            <button
-              onClick={() => setShowHistory(s=>!s)}
-              title="السجل التاريخي"
-              style={{
-                background:"#1e3a5f", color:"#fff",
-                border:"none", borderRadius:10,
-                padding:"8px 14px", fontSize:13, fontWeight:800,
-                cursor:"pointer", fontFamily:"'Cairo',sans-serif", flexShrink:0,
-                display:"flex", alignItems:"center", gap:5
-              }}
-            >📈 {history.length > 0 ? `التاريخ (${history.length})` : 'التاريخ'}</button>
-            <button
-              onClick={() => setShowBulkReport(s=>!s)}
-              style={{
-                background:showBulkReport?"#e85d20":"#2d5a8e", color:"#fff",
-                border:"none", borderRadius:10,
-                padding:"5px 14px", fontSize:12, fontWeight:800,
-                cursor:"pointer", fontFamily:"'Cairo',sans-serif",
-                display:"flex", alignItems:"center", justifyContent:"center", gap:4
-              }}
-            >💳 Bulk Payment</button>
+            <button onClick={() => setShowHistory(s=>!s)} style={{background:"#1e3a5f",color:"#fff",border:"none",borderRadius:10,padding:"8px 14px",fontSize:13,fontWeight:800,cursor:"pointer",fontFamily:"'Cairo',sans-serif",display:"flex",alignItems:"center",gap:5}}>
+              📁 {history.length > 0 ? `عدد الملفات (${history.length})` : 'عدد الملفات'}
+            </button>
+            <button onClick={() => setShowBulkReport(s=>!s)} style={{background:showBulkReport?"#e85d20":"#2d5a8e",color:"#fff",border:"none",borderRadius:10,padding:"5px 14px",fontSize:12,fontWeight:800,cursor:"pointer",fontFamily:"'Cairo',sans-serif",display:"flex",alignItems:"center",justifyContent:"center",gap:4}}>
+              💳 Bulk Payment
+            </button>
           </div>
           <button
             onClick={() => setShowSettings(s=>!s)}
@@ -9849,9 +9834,8 @@ export default function Dashboard() {
         {showBulkReport && <BulkPaymentSection bulk={bulkData} small={small}/>}
 
         
-      {/* ══ Section 1 — محفظة عُمانتل ══ */}
+      {/* ══ Section 1 ══ */}
       <div style={{background:"#fff",borderRadius:18,marginBottom:16,boxShadow:"0 4px 24px rgba(30,58,95,0.10)",border:"1.5px solid #e8f0fe",overflow:"hidden"}}>
-        {/* هيدر */}
         <div style={{background:"linear-gradient(120deg,#1e3a5f 0%,#2d5a8e 60%,#1e3a5f 100%)",padding:small?"14px 16px":"18px 28px",display:"flex",justifyContent:"space-between",alignItems:"center",flexWrap:"wrap",gap:12}}>
           <div style={{display:"flex",alignItems:"center",gap:14}}>
             <img src={LOGO} alt="ONEIC" style={{height:small?40:54,objectFit:"contain",filter:"brightness(0) invert(1)",opacity:0.95}}/>
@@ -9860,59 +9844,56 @@ export default function Dashboard() {
               <div style={{fontSize:small?11:13,color:"rgba(255,255,255,0.65)",fontWeight:600,marginTop:3}}>Omantel Debt Collection Portfolio</div>
             </div>
           </div>
-          {/* تاريخ آخر رفع فقط */}
-          {data.uploadDate && (
-            <div style={{fontSize:small?12:14,color:"rgba(255,255,255,0.7)",fontWeight:700}}>
-              📂 آخر تحديث: {data.uploadDate}
-              {data.lastUpdated && <span style={{marginRight:6,color:"rgba(255,255,255,0.45)",fontSize:small?10:12}}>{new Date(data.lastUpdated).toLocaleTimeString('ar-OM',{hour:'2-digit',minute:'2-digit'})}</span>}
-            </div>
-          )}
+          <div style={{fontSize:small?13:15,color:"rgba(255,255,255,0.8)",fontWeight:700,direction:"ltr"}}>
+            {(() => { const d=new Date(); return `${String(d.getDate()).padStart(2,'0')}-${String(d.getMonth()+1).padStart(2,'0')}-${d.getFullYear()}`; })()}
+          </div>
         </div>
-        {/* الجداول */}
         <div style={{display:"grid",gridTemplateColumns:small?"1fr":"1fr 1fr",gap:0}}>
-          {/* جدول 1 — المحفظة */}
-          <div style={{padding:small?"16px":"20px 28px",borderLeft:small?"none":"1.5px solid #f0ece8"}}>
-            <div style={{marginBottom:10}}>
-              <span style={{background:"#1e3a5f",color:"#fff",borderRadius:8,padding:"2px 12px",fontSize:small?11:13,fontWeight:900}}>📋 المحفظة</span>
+          <div style={{padding:small?"16px":"20px 28px",borderLeft:small?"none":"1.5px solid #f0ece8",display:"flex",flexDirection:"column",gap:10}}>
+            <div><span style={{background:"#1e3a5f",color:"#fff",borderRadius:8,padding:"3px 14px",fontSize:small?11:13,fontWeight:900}}>📋 المحفظة</span></div>
+            <div style={{background:"#f8f9fc",borderRadius:12,padding:"14px 18px",display:"flex",justifyContent:"space-between",alignItems:"center",border:"1px solid #e8f0fe"}}>
+              <div style={{fontSize:small?13:15,color:"#555",fontWeight:700}}>عدد الحسابات</div>
+              <div style={{fontSize:small?22:30,fontWeight:900,color:"#1e3a5f",textAlign:"right"}}>{(data.totalPortfolio?.cnt||47963).toLocaleString()} <span style={{fontSize:small?12:14,color:"#888",fontWeight:600}}>حساب</span></div>
             </div>
-            <div style={{display:"flex",flexDirection:"column",gap:8}}>
-              <div style={{background:"#f8f9fc",borderRadius:12,padding:"12px 16px",display:"flex",justifyContent:"space-between",alignItems:"center",border:"1px solid #e8f0fe"}}>
-                <div style={{fontSize:small?12:14,color:"#555",fontWeight:700}}>عدد الحسابات</div>
-                <div style={{fontSize:small?18:24,fontWeight:900,color:"#1e3a5f"}}>{(data.totalPortfolio?.cnt||47963).toLocaleString()} <span style={{fontSize:small?11:13,color:"#888",fontWeight:600}}>حساب</span></div>
-              </div>
-              <div style={{background:"#fff3ee",borderRadius:12,padding:"12px 16px",display:"flex",justifyContent:"space-between",alignItems:"center",border:"1px solid #ffe4d4"}}>
-                <div style={{fontSize:small?12:14,color:"#555",fontWeight:700}}>قيمة المحفظة</div>
-                <div style={{fontSize:small?16:21,fontWeight:900,color:"#e85d20"}}>{omr(data.totalPortfolio?.amt||9414256.834)} <span style={{fontSize:small?10:12,color:"#888",fontWeight:600}}>OMR</span></div>
-              </div>
+            <div style={{background:"#fff3ee",borderRadius:12,padding:"14px 18px",display:"flex",justifyContent:"space-between",alignItems:"center",border:"1px solid #ffe4d4"}}>
+              <div style={{fontSize:small?13:15,color:"#555",fontWeight:700}}>قيمة المحفظة</div>
+              <div style={{fontSize:small?20:27,fontWeight:900,color:"#e85d20",textAlign:"right",direction:"ltr"}}>{omr(data.totalPortfolio?.amt||9414256.834)} <span style={{fontSize:small?11:13,color:"#888",fontWeight:600,direction:"rtl"}}>OMR</span></div>
+            </div>
+            <div style={{display:"flex",justifyContent:"center",paddingTop:4}}>
+              {(() => {
+                const pct=11, r=52, cx=60, cy=60;
+                const circ=2*Math.PI*r, offset=circ-(pct/100)*circ;
+                return (
+                  <div style={{display:"flex",flexDirection:"column",alignItems:"center",gap:4}}>
+                    <svg width={120} height={120} viewBox="0 0 120 120">
+                      <defs><linearGradient id="pgGrad" x1="0%" y1="0%" x2="100%" y2="0%"><stop offset="0%" stopColor="#4ade80"/><stop offset="100%" stopColor="#16a34a"/></linearGradient></defs>
+                      <circle cx={cx} cy={cy} r={r} fill="#f0fdf4" stroke="#dcfce7" strokeWidth="1"/>
+                      <circle cx={cx} cy={cy} r={r} fill="none" stroke="#e8f5e9" strokeWidth="12"/>
+                      <circle cx={cx} cy={cy} r={r} fill="none" stroke="url(#pgGrad)" strokeWidth="12" strokeDasharray={circ} strokeDashoffset={offset} strokeLinecap="round" transform={`rotate(-90 ${cx} ${cy})`}/>
+                      <text x={cx} y={cy-6} textAnchor="middle" fontSize="24" fontWeight="900" fill="#1e3a5f" fontFamily="Cairo">{pct}%</text>
+                      <text x={cx} y={cy+14} textAnchor="middle" fontSize="11" fontWeight="700" fill="#16a34a" fontFamily="Cairo">إنجاز</text>
+                    </svg>
+                    <div style={{fontSize:11,color:"#888",fontWeight:700}}>نسبة الإنجاز الكلي</div>
+                  </div>
+                );
+              })()}
             </div>
           </div>
-          {/* جدول 2 — التحصيل */}
           <div style={{padding:small?"16px":"20px 28px"}}>
-            <div style={{marginBottom:10}}>
-              <span style={{background:"#16a34a",color:"#fff",borderRadius:8,padding:"2px 12px",fontSize:small?11:13,fontWeight:900}}>💰 التحصيل</span>
-            </div>
-            <div style={{display:"flex",flexDirection:"column",gap:6}}>
+            <div style={{marginBottom:12}}><span style={{background:"#16a34a",color:"#fff",borderRadius:8,padding:"3px 14px",fontSize:small?11:13,fontWeight:900}}>💰 التحصيل</span></div>
+            <div style={{display:"flex",flexDirection:"column",gap:8}}>
               {[
-                ["المدفوع",                data.totalCollection?.paid||890080.070,  "#16a34a"],
-                ["تسويات عُمانتل",         data.totalCollection?.adj||130384.064,   "#d97706"],
-                ["الإجمالي الكلي",         (data.totalCollection?.paid||890080.070)+(data.totalCollection?.adj||130384.064), "#1e3a5f"],
-                ["خصومات ONEIC",           1544.191,  "#7c3aed"],
-                ["المتبقي من المحفظة",     8392248.509, "#e85d20"],
+                ["المدفوع",            data.totalCollection?.paid||890080.070,  "#16a34a"],
+                ["تسويات عُمانتل",     data.totalCollection?.adj||130384.064,   "#d97706"],
+                ["الإجمالي",           (data.totalCollection?.paid||890080.070)+(data.totalCollection?.adj||130384.064), "#1e3a5f"],
+                ["خصومات أونك",        1544.191,  "#7c3aed"],
+                ["المتبقي من المحفظة", 8392248.509, "#e85d20"],
               ].map(([lbl,val,clr])=>(
-                <div key={lbl} style={{display:"flex",justifyContent:"space-between",alignItems:"center",padding:"7px 12px",borderRadius:9,background:"#fafafa",border:"1px solid #f0ece8"}}>
-                  <div style={{fontSize:small?11:13,color:"#555",fontWeight:700}}>{lbl}</div>
-                  <div style={{fontSize:small?13:16,fontWeight:900,color:clr}}>{omr(val)} OMR</div>
+                <div key={lbl} style={{display:"flex",justifyContent:"space-between",alignItems:"center",padding:"11px 14px",borderRadius:10,background:"#fafafa",border:"1px solid #f0ece8"}}>
+                  <div style={{fontSize:small?12:14,color:"#555",fontWeight:700}}>{lbl}</div>
+                  <div style={{fontSize:small?16:22,fontWeight:900,color:clr,direction:"ltr",textAlign:"right"}}>{omr(val)} <span style={{fontSize:small?10:12,color:"#aaa",fontWeight:600}}>OMR</span></div>
                 </div>
               ))}
-              <div style={{background:"linear-gradient(120deg,#1e3a5f,#2d5a8e)",borderRadius:12,padding:"10px 14px",marginTop:2}}>
-                <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:6}}>
-                  <div style={{fontSize:small?12:14,color:"rgba(255,255,255,0.8)",fontWeight:700}}>نسبة الإنجاز</div>
-                  <div style={{fontSize:small?18:22,fontWeight:900,color:"#4ade80"}}>11%</div>
-                </div>
-                <div style={{background:"rgba(255,255,255,0.15)",borderRadius:6,height:8,overflow:"hidden"}}>
-                  <div style={{height:"100%",borderRadius:6,background:"linear-gradient(90deg,#4ade80,#16a34a)",width:"11%"}}/>
-                </div>
-              </div>
             </div>
           </div>
         </div>
