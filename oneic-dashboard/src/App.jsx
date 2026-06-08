@@ -6227,9 +6227,10 @@ async function parseXLS(file) {
       portAmt: Math.max(0, p.portAmt||0), portCnt: p.portCnt||0,
       principalAmt: p.principalAmt||0};
   });
+  const HO_DN={"HO":"Non-due accounts"};
   Object.keys(hoMap).forEach(k => {
     if (!HO_KEYS.includes(k))
-      headOffice.push({name:k,paid:hoMap[k].paid,adj:hoMap[k].adj,count:hoMap[k].count||0,portAmt:0,portCnt:0});
+      headOffice.push({name:HO_DN[k]||k,paid:hoMap[k].paid,adj:hoMap[k].adj,count:hoMap[k].count||0,portAmt:0,portCnt:0});
   });
 
   return {
@@ -6500,7 +6501,7 @@ function EntityCard({name,paid,adj,color,rank,small,cnt,cBranch,portAmt,portCnt,
   const pctVal   = effPort > 0 ? Math.min(100,(total/effPort)*100) : 0;
 
   // Non-due accounts — يعرض فقط عدد الحسابات
-  if (name === "Non-due accounts") {
+  if (name === "Non-due accounts" || name === "HO") {
     return (
       <div style={{background:"#fff",borderRadius:13,border:`1.5px solid ${color}33`,
         boxShadow:"0 2px 10px rgba(0,0,0,0.05)",overflow:"hidden",borderRight:`5px solid ${color}`}}>
