@@ -6799,136 +6799,155 @@ const RCOLS = ["#e85d20","#c44b10","#d4601a","#b03808","#f07030"];
 // ── RegionRow ─────────────────────────────────────────────────────────────
 // يعرض كل محافظة مع: المدفوع + عدد الحسابات / التسويات + عدد الحسابات / الإجمالي + عدد الحسابات
 // عند الضغط على "المحصّلون" تنفتح قائمة بنفس التنسيق لكل محصّل
+function RegionInfoBox({label, value, color, bg, small}) {
+  return (
+    <div style={{flex:1,textAlign:"center",padding:small?"6px 4px":"8px 10px",
+      background:bg||"#fafafa",borderRadius:10,border:`1px solid ${color}22`}}>
+      <div style={{fontSize:small?9:10,color:color,fontWeight:800,marginBottom:3}}>{label}</div>
+      <div style={{fontSize:small?12:15,fontWeight:900,color:color,lineHeight:1}}>{value}</div>
+    </div>
+  );
+}
+
 function RegionRow({region, idx, open, onToggle, small}) {
   const col = RCOLS[idx % RCOLS.length];
   const paidCnt  = region.paidCount || 0;
   const adjCnt   = region.adjCount  || 0;
   const totalCnt = region.count     || 0;
   const total    = (region.paid||0) + (region.adj||0);
-
-  // ── مكوّن خلية المبلغ + عدد الحسابات ─────────────────────────────────
-  function AmtCell({label, val, cnt, color, big, noBorder}) {
-    return (
-      <div style={{flex:1, textAlign:"center", padding:small?"6px 6px":"8px 12px",
-        borderRight: noBorder ? "none" : "1.5px solid #f0ece8", minWidth:0}}>
-        <div style={{fontSize:small?10:11, color:"#777", fontWeight:800, marginBottom:3, letterSpacing:0.3}}>{label}</div>
-        <div style={{fontSize:big?(small?16:20):(small?13:17), fontWeight:900, color:color, lineHeight:1}}>{omr(val)}</div>
-        {cnt > 0 && <div style={{fontSize:small?9:10, color:"#aaa", marginTop:3, fontWeight:700,
-          background:"#f5f5f5", borderRadius:10, padding:"1px 6px", display:"inline-block"}}>
-          {cnt.toLocaleString()} حساب
-        </div>}
-      </div>
-    );
-  }
+  const portAmt  = region.portAmt   || 0;
+  const portCnt  = region.portCnt   || 0;
+  const remaining = portAmt > 0 ? portAmt - total : 0;
+  const pctInj   = portAmt > 0 ? Math.min(100,(total/portAmt)*100) : 0;
 
   return (
-    <div style={{borderRadius:14, overflow:"hidden",
-      boxShadow: open ? "0 4px 20px rgba(232,93,32,0.15)" : "0 2px 8px rgba(0,0,0,0.06)",
-      border:`1.5px solid ${open ? col+"55" : "#f0ece8"}`,
-      background:"#fff", transition:"all 0.2s"}}>
+    <div style={{borderRadius:14,overflow:"hidden",
+      boxShadow:open?"0 4px 20px rgba(232,93,32,0.15)":"0 2px 8px rgba(0,0,0,0.06)",
+      border:`1.5px solid ${open?col+"55":"#f0ece8"}`,
+      background:"#fff",transition:"all 0.2s"}}>
 
       {/* ── صف المحافظة الرئيسي ── */}
-      <div onClick={onToggle} style={{cursor:"pointer", background: open ? `${col}08` : "#fff",
-        borderBottom: open ? `2px solid ${col}22` : "none"}}>
-        <div style={{display:"flex", alignItems:"center", gap:small?10:14,
-          padding:small?"12px 14px":"14px 18px", flexWrap:small?"wrap":"nowrap"}}>
+      <div onClick={onToggle} style={{cursor:"pointer",background:open?`${col}08`:"#fff",
+        borderBottom:open?`2px solid ${col}22`:"none"}}>
+        <div style={{display:"flex",alignItems:"center",gap:small?10:14,
+          padding:small?"12px 14px":"14px 18px",flexWrap:small?"wrap":"nowrap"}}>
 
           {/* رقم + اسم */}
-          <div style={{width:small?34:40, height:small?34:40, borderRadius:11, background:col,
-            flexShrink:0, display:"flex", alignItems:"center", justifyContent:"center",
-            fontSize:small?16:18, fontWeight:800, color:"#fff"}}>{idx+1}</div>
-          <div style={{flex:1, minWidth:small?120:160}}>
-            <div style={{fontSize:small?15:19, fontWeight:900, color:"#000", lineHeight:1.2}}>{region.nameAr}</div>
-            <div style={{fontSize:small?11:13, color:"#666", marginTop:3, fontWeight:600}}>{region.nameEn}</div>
+          <div style={{width:small?34:40,height:small?34:40,borderRadius:11,background:col,
+            flexShrink:0,display:"flex",alignItems:"center",justifyContent:"center",
+            fontSize:small?16:18,fontWeight:800,color:"#fff"}}>{idx+1}</div>
+          <div style={{flex:1,minWidth:small?120:160}}>
+            <div style={{fontSize:small?15:19,fontWeight:900,color:"#000",lineHeight:1.2}}>{region.nameAr}</div>
+            <div style={{fontSize:small?11:13,color:"#666",marginTop:3,fontWeight:600}}>{region.nameEn}</div>
           </div>
 
-          {/* المبالغ + عدد الحسابات + المحفظة */}
-          <div style={{display:"flex", flexDirection:"column", gap:6, flex: small?1:0, minWidth:small?0:480}}>
-            {/* التحصيل */}
-            <div style={{display:"flex",
-              border:"1.5px solid #f0ece8", borderRadius:12, overflow:"hidden", background:"#fafafa"}}>
-              <AmtCell label="المدفوع"   val={region.paid}  cnt={paidCnt}  color="#16a34a"/>
-              <AmtCell label="التسويات" val={region.adj}   cnt={adjCnt}   color="#d97706"/>
-              <AmtCell label="الإجمالي" val={total}        cnt={totalCnt} color={col} big noBorder/>
-            </div>
-            {/* المحفظة */}
-            {(region.portAmt||0) > 0 && (
-              <div style={{display:"flex", border:`1.5px solid ${col}33`,
-                borderRadius:10, overflow:"hidden", background:`${col}06`}}>
-                <div style={{flex:1, textAlign:"center", padding:"4px 8px", borderRight:`1px solid ${col}22`}}>
-                  <div style={{fontSize:9, color:col, fontWeight:800, marginBottom:1}}>محفظة OMR</div>
-                  <div style={{fontSize:small?11:13, fontWeight:900, color:col}}>{omr(region.portAmt)}</div>
+          {/* البيانات */}
+          <div style={{display:"flex",flexDirection:"column",gap:6,flex:small?1:0,minWidth:small?0:520}}>
+
+            {/* صف 1: قيمة المحفظة + عدد الحسابات */}
+            {portAmt > 0 && (
+              <div style={{display:"flex",gap:6}}>
+                <RegionInfoBox small={small} label="قيمة المحفظة" value={omr(portAmt)+" OMR"} color={col} bg={`${col}08`}/>
+                <RegionInfoBox small={small} label="عدد الحسابات" value={portCnt.toLocaleString()+" حساب"} color={col} bg={`${col}08`}/>
+              </div>
+            )}
+
+            {/* صف 2: المدفوع + التسويات + الإجمالي */}
+            <div style={{display:"flex",border:"1.5px solid #f0ece8",borderRadius:12,overflow:"hidden",background:"#fafafa"}}>
+              {[["المدفوع",region.paid,paidCnt,"#16a34a"],
+                ["التسويات",region.adj,adjCnt,"#d97706"],
+                ["الإجمالي",total,totalCnt,col]].map(([lbl,val,cnt,clr],i)=>(
+                <div key={lbl} style={{flex:1,textAlign:"center",padding:small?"6px":"9px 12px",
+                  borderRight:i<2?"1.5px solid #f0ece8":"none"}}>
+                  <div style={{fontSize:small?9:11,color:clr,fontWeight:800,marginBottom:2}}>{lbl}</div>
+                  <div style={{fontSize:small?13:17,fontWeight:900,color:clr}}>{omr(val)}</div>
+                  {cnt>0&&<div style={{fontSize:small?8:9,color:"#aaa",marginTop:2,fontWeight:700,
+                    background:"#f0f0f0",borderRadius:8,padding:"1px 5px",display:"inline-block"}}>
+                    {cnt.toLocaleString()} حساب
+                  </div>}
                 </div>
-                <div style={{flex:1, textAlign:"center", padding:"4px 8px"}}>
-                  <div style={{fontSize:9, color:col, fontWeight:800, marginBottom:1}}>عدد الحسابات</div>
-                  <div style={{fontSize:small?11:13, fontWeight:900, color:col}}>{(region.portCnt||0).toLocaleString()}</div>
+              ))}
+            </div>
+
+            {/* صف 3: المتبقي + نسبة الإنجاز */}
+            {portAmt > 0 && (
+              <div style={{display:"flex",gap:6,alignItems:"center"}}>
+                <RegionInfoBox small={small} label="المتبقي من المحفظة" value={omr(remaining)+" OMR"} color="#e85d20" bg="#fff3ee"/>
+                {/* شريط + نسبة */}
+                <div style={{flex:1,background:"#f8f9fc",borderRadius:10,padding:small?"6px 8px":"7px 10px",
+                  border:`1px solid ${col}22`}}>
+                  <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:4}}>
+                    <div style={{fontSize:small?9:11,color:col,fontWeight:800}}>نسبة الإنجاز</div>
+                    <div style={{fontSize:small?12:15,fontWeight:900,color:col}}>{pctInj.toFixed(1)}%</div>
+                  </div>
+                  <div style={{background:"#e8f0fe",borderRadius:6,height:8,overflow:"hidden"}}>
+                    <div style={{height:"100%",borderRadius:6,
+                      background:`linear-gradient(90deg,${col}88,${col})`,
+                      width:`${pctInj}%`}}/>
+                  </div>
                 </div>
               </div>
             )}
           </div>
 
           {/* زر المحصّلون */}
-          <div style={{display:"flex", alignItems:"center", gap:5, flexShrink:0,
-            background: open ? col : "#fff", color: open ? "#fff" : col,
-            border:`1.5px solid ${col}`, borderRadius:9,
-            padding:small?"6px 10px":"8px 14px", fontSize:small?11:13,
-            fontWeight:800, transition:"all 0.2s", whiteSpace:"nowrap"}}>
-            {open ? "▲" : "▼"} {small ? `(${region.collectors?.length||0})` : `المحصّلون (${region.collectors?.length||0})`}
+          <div style={{display:"flex",alignItems:"center",gap:5,flexShrink:0,
+            background:open?col:"#fff",color:open?"#fff":col,
+            border:`1.5px solid ${col}`,borderRadius:9,
+            padding:small?"6px 10px":"8px 14px",fontSize:small?11:13,
+            fontWeight:800,transition:"all 0.2s",whiteSpace:"nowrap"}}>
+            {open?"▲":"▼"} {small?`(${region.collectors?.length||0})`:`المحصّلون (${region.collectors?.length||0})`}
           </div>
         </div>
       </div>
 
-      {/* ── قائمة المحصّلين (عند الفتح) ── */}
+      {/* ── قائمة المحصّلين ── */}
       {open && (
-        <div style={{padding:small?"10px":"14px 18px 18px", background:"#fffaf7"}}>
-
-          {/* عنوان */}
-          <div style={{fontSize:small?12:14, fontWeight:800, color:col, marginBottom:10,
-            display:"flex", alignItems:"center", gap:6}}>
-            <span style={{background:col, color:"#fff", borderRadius:7, padding:"2px 8px",
+        <div style={{padding:small?"10px":"14px 18px 18px",background:"#fffaf7"}}>
+          <div style={{fontSize:small?12:14,fontWeight:800,color:col,marginBottom:10,
+            display:"flex",alignItems:"center",gap:6}}>
+            <span style={{background:col,color:"#fff",borderRadius:7,padding:"2px 8px",
               fontSize:small?10:12}}>👥 المحصّلون</span>
-            <span style={{color:"#888", fontWeight:600}}>{region.collectors?.length||0} محصّل</span>
+            <span style={{color:"#888",fontWeight:600}}>{region.collectors?.length||0} محصّل</span>
           </div>
 
-          {/* صفوف المحصّلين */}
-          {(region.collectors||[]).map((c, i) => {
-            const ct = (c.paid||0) + (c.adj||0);
-            const cPaidCnt  = c.paidCount || 0;
-            const cAdjCnt   = c.adjCount  || 0;
-            const cTotalCnt = c.count     || 0;
+          {(region.collectors||[]).map((c,i) => {
+            const ct = (c.paid||0)+(c.adj||0);
             return (
-              <div key={i} style={{borderRadius:12, marginBottom:8, overflow:"hidden",
-                border:`1.5px solid ${col}22`,
-                boxShadow:"0 1px 6px rgba(0,0,0,0.05)"}}>
-
+              <div key={i} style={{borderRadius:12,marginBottom:8,overflow:"hidden",
+                border:`1.5px solid ${col}22`,background:"#fff"}}>
                 {/* اسم المحصّل */}
-                <div style={{display:"flex", alignItems:"center", gap:10,
+                <div style={{display:"flex",alignItems:"center",gap:10,
                   padding:small?"8px 12px":"10px 14px",
-                  background: i%2===0 ? "#fff" : `${col}05`}}>
-                  <div style={{width:small?26:32, height:small?26:32, borderRadius:8,
-                    background:`${col}18`, border:`1.5px solid ${col}44`,
-                    display:"flex", alignItems:"center", justifyContent:"center",
-                    fontSize:small?12:14, color:col, fontWeight:900}}>{i+1}</div>
-                  <div style={{fontSize:small?13:16, color:"#000", fontWeight:800,
-                    flex:1, overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap"}}>{c.name}</div>
+                  background:i%2===0?"#fff":`${col}05`}}>
+                  <div style={{width:small?26:32,height:small?26:32,borderRadius:8,
+                    background:`${col}18`,border:`1.5px solid ${col}44`,
+                    display:"flex",alignItems:"center",justifyContent:"center",
+                    fontSize:small?12:14,color:col,fontWeight:900}}>{i+1}</div>
+                  <div style={{fontSize:small?13:16,color:"#000",fontWeight:800,
+                    flex:1,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{c.name}</div>
                 </div>
-
-                {/* مبالغ المحصّل */}
-                <div style={{display:"flex", borderTop:`1px solid ${col}15`,
-                  background: i%2===0 ? "#fafafa" : "#fff"}}>
-                  <AmtCell label="المدفوع"   val={c.paid} cnt={cPaidCnt}  color="#16a34a"/>
-                  <AmtCell label="التسويات" val={c.adj}  cnt={cAdjCnt}   color="#d97706"/>
-                  <AmtCell label="الإجمالي" val={ct}     cnt={cTotalCnt} color={col} big noBorder/>
-                </div>
-                {/* نسبة المساهمة */}
-                {total > 0 && (
-                  <div style={{padding:"3px 10px 5px", background: i%2===0 ? "#fafafa" : "#fff"}}>
-                    <div style={{height:4, background:"#f0ece8", borderRadius:4, overflow:"hidden"}}>
-                      <div style={{height:"100%", width:`${Math.min(100,Math.round(ct/total*100))}%`,
-                        background:`linear-gradient(90deg,${col},${col}88)`, borderRadius:4}}/>
+                {/* مبالغ المحصّل: المدفوع + التسويات + الإجمالي */}
+                <div style={{display:"flex",borderTop:`1px solid ${col}15`,background:"#fafafa"}}>
+                  {[["المدفوع",c.paid||0,"#16a34a"],
+                    ["التسويات",c.adj||0,"#d97706"],
+                    ["الإجمالي",ct,col]].map(([lbl,val,clr],j)=>(
+                    <div key={lbl} style={{flex:1,textAlign:"center",padding:small?"6px":"9px",
+                      borderRight:j<2?`1px solid ${col}15`:"none"}}>
+                      <div style={{fontSize:small?9:10,color:clr,fontWeight:800,marginBottom:2}}>{lbl}</div>
+                      <div style={{fontSize:small?12:15,fontWeight:900,color:clr}}>{omr(val)}</div>
                     </div>
-                    <div style={{fontSize:9, color:"#aaa", marginTop:2, textAlign:"left"}}>
-                      {Math.round(ct/total*100)}% من إجمالي المحافظة
+                  ))}
+                </div>
+                {/* شريط نسبة مساهمة المحصّل */}
+                {total>0&&(
+                  <div style={{padding:"4px 10px 6px",background:i%2===0?"#fafafa":"#fff"}}>
+                    <div style={{height:4,background:"#f0ece8",borderRadius:4,overflow:"hidden"}}>
+                      <div style={{height:"100%",width:`${Math.min(100,Math.round(ct/total*100))}%`,
+                        background:`linear-gradient(90deg,${col}88,${col})`,borderRadius:4}}/>
+                    </div>
+                    <div style={{fontSize:9,color:"#aaa",marginTop:2,textAlign:"left",fontWeight:700}}>
+                      {Math.round(ct/total*100)}% من إجمالي المنطقة
                     </div>
                   </div>
                 )}
@@ -6936,28 +6955,52 @@ function RegionRow({region, idx, open, onToggle, small}) {
             );
           })}
 
-          {/* إجمالي المحافظة */}
-          {(region.collectors||[]).length > 0 && (
-            <div style={{borderRadius:12, overflow:"hidden", border:`2px solid ${col}55`,
-              marginTop:10, boxShadow:`0 2px 10px ${col}25`}}>
+          {/* إجمالي المنطقة */}
+          {(region.collectors||[]).length>0&&(
+            <div style={{borderRadius:12,overflow:"hidden",border:`2px solid ${col}55`,
+              marginTop:10,boxShadow:`0 2px 10px ${col}25`}}>
               <div style={{padding:small?"8px 12px":"10px 14px",
                 background:`linear-gradient(120deg,${col},${col}cc)`,
-                display:"flex", alignItems:"center", gap:8}}>
-                <div style={{width:small?26:32, height:small?26:32, borderRadius:8,
-                  background:"rgba(255,255,255,0.25)", display:"flex", alignItems:"center",
-                  justifyContent:"center", fontSize:small?14:17, color:"#fff", fontWeight:900}}>Σ</div>
-                <div style={{fontSize:small?13:16, color:"#fff", fontWeight:900}}>
+                display:"flex",alignItems:"center",gap:8}}>
+                <div style={{width:small?26:32,height:small?26:32,borderRadius:8,
+                  background:"rgba(255,255,255,0.25)",display:"flex",alignItems:"center",
+                  justifyContent:"center",fontSize:small?14:17,color:"#fff",fontWeight:900}}>Σ</div>
+                <div style={{fontSize:small?13:16,color:"#fff",fontWeight:900}}>
                   الإجمالي الكلي
-                  <div style={{fontSize:small?10:11, color:"rgba(255,255,255,0.75)", fontWeight:600, marginTop:1}}>
+                  <div style={{fontSize:small?10:11,color:"rgba(255,255,255,0.75)",fontWeight:600}}>
                     {region.collectors?.length||0} محصّل · {totalCnt.toLocaleString()} حساب
                   </div>
                 </div>
               </div>
-              <div style={{display:"flex", background:"#fff"}}>
-                <AmtCell label="المدفوع"   val={region.paid} cnt={paidCnt}  color="#16a34a"/>
-                <AmtCell label="التسويات" val={region.adj}  cnt={adjCnt}   color="#d97706"/>
-                <AmtCell label="الإجمالي" val={total}       cnt={totalCnt} color={col} big noBorder/>
+              <div style={{display:"flex",background:"#fff"}}>
+                {[["المدفوع",region.paid,"#16a34a"],
+                  ["التسويات",region.adj,"#d97706"],
+                  ["الإجمالي",total,col]].map(([lbl,val,clr],j)=>(
+                  <div key={lbl} style={{flex:1,textAlign:"center",padding:small?"8px":"12px",
+                    borderRight:j<2?"1px solid #f0ece8":"none"}}>
+                    <div style={{fontSize:small?9:11,color:clr,fontWeight:800,marginBottom:3}}>{lbl}</div>
+                    <div style={{fontSize:small?14:18,fontWeight:900,color:clr}}>{omr(val)}</div>
+                  </div>
+                ))}
               </div>
+              {/* نسبة الإنجاز في إجمالي المنطقة */}
+              {portAmt>0&&(
+                <div style={{padding:"8px 14px",background:"#f8f9fc",borderTop:"1px solid #f0ece8"}}>
+                  <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:4}}>
+                    <div style={{fontSize:small?10:12,color:col,fontWeight:800}}>🎯 نسبة الإنجاز من المحفظة</div>
+                    <div style={{fontSize:small?13:16,fontWeight:900,color:col}}>{pctInj.toFixed(1)}%</div>
+                  </div>
+                  <div style={{background:"#e8f0fe",borderRadius:6,height:8,overflow:"hidden"}}>
+                    <div style={{height:"100%",borderRadius:6,
+                      background:`linear-gradient(90deg,${col}88,${col})`,
+                      width:`${pctInj}%`}}/>
+                  </div>
+                  <div style={{display:"flex",justifyContent:"space-between",marginTop:4,fontSize:small?9:10,color:"#888",fontWeight:700}}>
+                    <span>محصّل: {omr(total)}</span>
+                    <span>متبقي: {omr(remaining)}</span>
+                  </div>
+                </div>
+              )}
             </div>
           )}
         </div>
@@ -6967,8 +7010,6 @@ function RegionRow({region, idx, open, onToggle, small}) {
 }
 
 
-
-// ── DayDetail — تفاصيل اليوم المختار ────────────────────────────────────────
 function DayDetail({ date, day, collectors, regions, fmt, small, onClose, REG_COLORS_MAP, REG_AR_MAP }) {
   const [dayTab, setDayTab] = useState('collectors');
   return (
@@ -9852,14 +9893,7 @@ export default function Dashboard() {
         }
       `}</style>
 
-      {/* ══ PRINT HEADER — يظهر فقط عند الطباعة ══ */}
-      <div style={{display:"none"}} className="print-only">
-        <ConfettiRain active={confettiActive}/>
-      <CelebrationModal celebration={celebration}/>
-      <NotificationStack notifications={notifications} onDismiss={id=>setNotifications(prev=>prev.filter(n=>n.id!==id))}/>
-      {showHistory && <HistoryModal history={history} onClose={()=>setShowHistory(false)} small={small}/>}
-      </div>
-      <VerifyModal pending={pending} onConfirm={confirmData} onReject={rejectData}/>
+
 
       {/* ── نافذة إعدادات المزامنة ── */}
       {showSettings && (
@@ -10162,7 +10196,59 @@ export default function Dashboard() {
           border:"1.5px solid #f0ece8", marginBottom: small?14:18,
           overflow:"hidden"
         }}>
-          <SectionHeader title="🗺 مكاتب أونك" paid={gPd} adj={gAd} color="#e85d20" small={small}/>
+          <{/* ══ هيدر مكاتب أونك الموسّع ══ */}
+          <div style={{background:"linear-gradient(120deg,#e85d20,#c44b10)",
+            padding:small?"12px 14px":"16px 22px"}}>
+            {/* صف 1: العنوان + نسبة الإنجاز */}
+            <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",
+              flexWrap:"wrap",gap:8,marginBottom:12}}>
+              <div style={{fontSize:small?16:22,fontWeight:900,color:"#fff"}}>🏬 مكاتب أونك</div>
+              {(() => {
+                const total = gPd + gAd;
+                const port  = gPortAmt || data.regions?.reduce((s,r)=>s+(r.portAmt||0),0) || 0;
+                const pct   = port > 0 ? Math.min(100,(total/port)*100) : 0;
+                return (
+                  <div style={{display:"flex",alignItems:"center",gap:10}}>
+                    <div style={{textAlign:"center"}}>
+                      <div style={{fontSize:small?9:11,color:"rgba(255,255,255,0.7)",fontWeight:700,marginBottom:2}}>نسبة الإنجاز</div>
+                      <div style={{background:"rgba(255,255,255,0.2)",borderRadius:20,
+                        padding:"3px 14px",fontSize:small?15:20,fontWeight:900,color:"#fff"}}>
+                        {pct.toFixed(1)}%
+                      </div>
+                    </div>
+                    <div style={{width:90,height:8,background:"rgba(255,255,255,0.2)",borderRadius:6,overflow:"hidden"}}>
+                      <div style={{height:"100%",borderRadius:6,background:"rgba(255,255,255,0.8)",width:`${pct}%`}}/>
+                    </div>
+                  </div>
+                );
+              })()}
+            </div>
+            {/* صف 2: كل الأرقام */}
+            <div style={{display:"grid",gridTemplateColumns:small?"1fr 1fr":"repeat(6,1fr)",gap:6}}>
+              {(() => {
+                const total   = gPd + gAd;
+                const port    = gPortAmt || data.regions?.reduce((s,r)=>s+(r.portAmt||0),0) || 0;
+                const portCnt = gPortCnt || data.regions?.reduce((s,r)=>s+(r.portCnt||0),0) || 0;
+                const remaining = port > 0 ? port - total : 0;
+                return [
+                  {lbl:"قيمة المحفظة",   val:omr(port),              sub:"OMR",   clr:"#fff"},
+                  {lbl:"عدد الحسابات",   val:portCnt.toLocaleString(),sub:"حساب",  clr:"#fde68a"},
+                  {lbl:"المدفوع",         val:omr(gPd),               sub:"OMR",   clr:"#86efac"},
+                  {lbl:"التسويات",        val:omr(gAd),               sub:"OMR",   clr:"#fde68a"},
+                  {lbl:"الإجمالي",        val:omr(total),             sub:"OMR",   clr:"#fff"},
+                  {lbl:"المتبقي",         val:omr(remaining),         sub:"OMR",   clr:"#fca5a5"},
+                ].map(({lbl,val,sub,clr})=>(
+                  <div key={lbl} style={{background:"rgba(255,255,255,0.12)",borderRadius:10,
+                    padding:small?"6px 8px":"8px 10px",textAlign:"center",
+                    border:"1px solid rgba(255,255,255,0.2)"}}>
+                    <div style={{fontSize:small?9:10,color:"rgba(255,255,255,0.75)",fontWeight:700,marginBottom:3}}>{lbl}</div>
+                    <div style={{fontSize:small?11:14,fontWeight:900,color:clr,lineHeight:1}}>{val}</div>
+                    <div style={{fontSize:small?8:9,color:"rgba(255,255,255,0.5)",marginTop:2}}>{sub}</div>
+                  </div>
+                ));
+              })()}
+            </div>
+          </div>
           <div style={{ padding: small?"10px":"14px 16px", display:"flex", flexDirection:"column", gap: small?8:10 }}>
             {data.regions.map((r,i) => (
               <RegionRow key={r.id} region={r} idx={i}
