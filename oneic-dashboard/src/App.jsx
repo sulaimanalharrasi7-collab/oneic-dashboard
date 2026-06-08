@@ -6351,6 +6351,48 @@ function VerifyModal({pending, onConfirm, onReject}) {
           <button onClick={onReject} style={{flex:1,background:"#f0ece8",color:"#666",border:"none",borderRadius:10,padding:"12px",fontSize:14,fontWeight:700,cursor:"pointer"}}>❌ إلغاء</button>
         </div>
       </div>
+      {/* ── دائرة نسبة الإنجاز ── */}
+      <div style={{padding:small?"8px 12px":"10px 14px",
+        background:"#fafafa",borderTop:"1px solid #f0ece8",
+        display:"flex",alignItems:"center",justifyContent:"center",gap:small?12:20}}>
+        {/* دائرة المدفوع */}
+        {(() => {
+          const items = [
+            {lbl:"المدفوع",   val:paid,    clr:"#16a34a"},
+            {lbl:"التسويات", val:adj,     clr:"#d97706"},
+            {lbl:"الإجمالي", val:paid+adj,clr:color},
+          ];
+          return items.map(({lbl,val,clr})=>{
+            const pctV = portAmt>0 ? Math.min(100,(val/portAmt)*100) : 0;
+            const r=26,cx=30,cy=30;
+            const circ=2*Math.PI*r;
+            const offset=circ-(pctV/100)*circ;
+            return (
+              <div key={lbl} style={{display:"flex",flexDirection:"column",alignItems:"center",gap:3}}>
+                <svg width={60} height={60} viewBox="0 0 60 60">
+                  <defs>
+                    <linearGradient id={`cg_${lbl}`} x1="0%" y1="0%" x2="100%" y2="0%">
+                      <stop offset="0%" stopColor={clr} stopOpacity="0.5"/>
+                      <stop offset="100%" stopColor={clr}/>
+                    </linearGradient>
+                  </defs>
+                  <circle cx={cx} cy={cy} r={r} fill="none" stroke={`${clr}18`} strokeWidth="7"/>
+                  <circle cx={cx} cy={cy} r={r} fill="none"
+                    stroke={`url(#cg_${lbl})`} strokeWidth="7"
+                    strokeDasharray={circ} strokeDashoffset={offset}
+                    strokeLinecap="round"
+                    transform={`rotate(-90 ${cx} ${cy})`}/>
+                  <text x={cx} y={cy+4} textAnchor="middle"
+                    fontSize="10" fontWeight="900" fill={clr} fontFamily="Cairo">
+                    {pctV.toFixed(0)}%
+                  </text>
+                </svg>
+                <div style={{fontSize:small?9:10,fontWeight:800,color:clr}}>{lbl}</div>
+              </div>
+            );
+          });
+        })()}
+      </div>
     </div>
   );
 }
@@ -6564,19 +6606,38 @@ function SummaryCard({label,paid,adj,cnt,cntPaid,cntAdj,cntTotal,portAmt,color,i
           <span style={{fontSize:small?16:20,flexShrink:0}}>{icon}</span>
           <span style={{fontSize:fs.title,fontWeight:900,color:"#fff",lineHeight:1.2,wordBreak:"keep-all"}}>{label}</span>
         </div>
-        <div style={{background:"rgba(255,255,255,0.25)",borderRadius:20,
-          padding:"2px 8px",fontSize:small?12:13,fontWeight:800,color:"#fff",flexShrink:0}}>{pct}%</div>
+        <div style={{textAlign:"center",flexShrink:0}}>
+          <div style={{fontSize:small?9:10,color:"rgba(255,255,255,0.75)",fontWeight:700,marginBottom:2}}>نسبة مساهمة</div>
+          <div style={{background:"rgba(255,255,255,0.25)",borderRadius:20,
+            padding:"2px 12px",fontSize:small?13:15,fontWeight:900,color:"#fff"}}>{pct}%</div>
+        </div>
       </div>
-      {/* إجمالي الحسابات — يعرض قيمة المحفظة الكلية وعدد الحسابات */}
-      <div style={{background:`${color}0f`,padding:small?"8px 12px":"10px 14px",
-        borderBottom:"1px solid #f0ece8",display:"flex",justifyContent:"space-between",alignItems:"center"}}>
-        <div style={{fontSize:fs.sub,color:"#888",fontWeight:700}}>إجمالي الحسابات</div>
-        <div style={{display:"flex",flexDirection:"column",alignItems:"flex-end",gap:2}}>
-          {portAmt>0
-            ? <div style={{fontSize:small?14:17,fontWeight:900,color:color,lineHeight:1}}>{omr(portAmt)}</div>
-            : <div style={{fontSize:small?14:17,fontWeight:900,color:color,lineHeight:1}}>{omr(total)}</div>
-          }
-          <div style={{fontSize:fs.sub,color:"#aaa",fontWeight:600}}>{(cnt||0).toLocaleString()} حساب</div>
+      {/* المحفظة — قيمة الحسابات + عدد الحسابات */}
+      <div style={{background:`${color}0f`,borderBottom:"1px solid #f0ece8",padding:small?"6px 10px":"8px 14px"}}>
+        {/* عنوان */}
+        <div style={{fontSize:small?9:11,color:"#888",fontWeight:800,marginBottom:6,textAlign:"center",letterSpacing:0.5}}>
+          📊 المحفظة
+        </div>
+        {/* الخليتان */}
+        <div style={{display:"flex",gap:6}}>
+          {/* قيمة الحسابات */}
+          <div style={{flex:1,background:"#fff",borderRadius:10,padding:small?"6px 8px":"8px 12px",
+            border:`1.5px solid ${color}33`,textAlign:"center"}}>
+            <div style={{fontSize:small?9:11,color:color,fontWeight:800,marginBottom:4}}>قيمة الحسابات</div>
+            <div style={{fontSize:small?14:18,fontWeight:900,color:color,lineHeight:1,direction:"ltr"}}>
+              {portAmt>0 ? omr(portAmt) : omr(total)}
+            </div>
+            <div style={{fontSize:small?8:10,color:"#aaa",fontWeight:600,marginTop:2}}>OMR</div>
+          </div>
+          {/* عدد الحسابات */}
+          <div style={{flex:1,background:"#fff",borderRadius:10,padding:small?"6px 8px":"8px 12px",
+            border:`1.5px solid ${color}33`,textAlign:"center"}}>
+            <div style={{fontSize:small?9:11,color:color,fontWeight:800,marginBottom:4}}>عدد الحسابات</div>
+            <div style={{fontSize:small?14:18,fontWeight:900,color:color,lineHeight:1}}>
+              {(cnt||0).toLocaleString()}
+            </div>
+            <div style={{fontSize:small?8:10,color:"#aaa",fontWeight:600,marginTop:2}}>حساب</div>
+          </div>
         </div>
       </div>
       {/* المدفوع | التسويات | الإجمالي — كل خانة بعدد حساباتها */}
@@ -6595,6 +6656,48 @@ function SummaryCard({label,paid,adj,cnt,cntPaid,cntAdj,cntTotal,portAmt,color,i
             </div>
           ))}
         </div>
+      </div>
+      {/* ── دائرة نسبة الإنجاز ── */}
+      <div style={{padding:small?"8px 12px":"10px 14px",
+        background:"#fafafa",borderTop:"1px solid #f0ece8",
+        display:"flex",alignItems:"center",justifyContent:"center",gap:small?12:20}}>
+        {/* دائرة المدفوع */}
+        {(() => {
+          const items = [
+            {lbl:"المدفوع",   val:paid,    clr:"#16a34a"},
+            {lbl:"التسويات", val:adj,     clr:"#d97706"},
+            {lbl:"الإجمالي", val:paid+adj,clr:color},
+          ];
+          return items.map(({lbl,val,clr})=>{
+            const pctV = portAmt>0 ? Math.min(100,(val/portAmt)*100) : 0;
+            const r=26,cx=30,cy=30;
+            const circ=2*Math.PI*r;
+            const offset=circ-(pctV/100)*circ;
+            return (
+              <div key={lbl} style={{display:"flex",flexDirection:"column",alignItems:"center",gap:3}}>
+                <svg width={60} height={60} viewBox="0 0 60 60">
+                  <defs>
+                    <linearGradient id={`cg_${lbl}`} x1="0%" y1="0%" x2="100%" y2="0%">
+                      <stop offset="0%" stopColor={clr} stopOpacity="0.5"/>
+                      <stop offset="100%" stopColor={clr}/>
+                    </linearGradient>
+                  </defs>
+                  <circle cx={cx} cy={cy} r={r} fill="none" stroke={`${clr}18`} strokeWidth="7"/>
+                  <circle cx={cx} cy={cy} r={r} fill="none"
+                    stroke={`url(#cg_${lbl})`} strokeWidth="7"
+                    strokeDasharray={circ} strokeDashoffset={offset}
+                    strokeLinecap="round"
+                    transform={`rotate(-90 ${cx} ${cy})`}/>
+                  <text x={cx} y={cy+4} textAnchor="middle"
+                    fontSize="10" fontWeight="900" fill={clr} fontFamily="Cairo">
+                    {pctV.toFixed(0)}%
+                  </text>
+                </svg>
+                <div style={{fontSize:small?9:10,fontWeight:800,color:clr}}>{lbl}</div>
+              </div>
+            );
+          });
+        })()}
       </div>
     </div>
   );
@@ -8743,7 +8846,7 @@ async function parseComplaints(file) {
             if (!branchMap[hoKey]) branchMap[hoKey] = {count:0, amt:0};
             branchMap[hoKey].count++; branchMap[hoKey].amt += amt;
           } else {
-            // المحافظات الخمس → نجمّع حسب Region
+            // مكاتب أونك → نجمّع حسب Region
             govCount++; govAmt += amt;
             const rKey = region;
             if (!regionMap[rKey]) regionMap[rKey] = {count:0, amt:0};
@@ -8935,7 +9038,7 @@ function handlePrint(data) {
     +'<div class="kpi-card"><div class="kpi-label">🏆 الإجمالي الكلي</div><div class="kpi-value purple">'+omrN(total)+'</div></div>'
     +'</div>'
     +'<div class="sec-overview"><h2>📌 ملخص الأقسام الرئيسية</h2><div class="overview-grid">'
-    +'<div class="ov-card"><div class="ov-card-head" style="background:linear-gradient(135deg,#e85d20,#c44b10)"><span>🗺</span><div>المحافظات الخمس</div></div>'
+    +'<div class="ov-card"><div class="ov-card-head" style="background:linear-gradient(135deg,#e85d20,#c44b10)"><span>🗺</span><div>مكاتب أونك</div></div>'
     +'<div class="ov-card-body"><div class="ov-item"><label>المدفوع</label><span class="g">'+omrN(govPaid)+'</span></div><div class="ov-item"><label>التسويات</label><span class="a">'+omrN(govAdj)+'</span></div><div class="ov-item"><label>الإجمالي</label><span class="b">'+omrN(govPaid+govAdj)+'</span></div></div></div>'
     +'<div class="ov-card"><div class="ov-card-head" style="background:linear-gradient(135deg,#1a7a6b,#0d5a4f)"><span>🏢</span><div>شركات التحصيل</div></div>'
     +'<div class="ov-card-body"><div class="ov-item"><label>المدفوع</label><span class="g">'+omrN(dcPaid)+'</span></div><div class="ov-item"><label>التسويات</label><span class="a">'+omrN(dcAdj)+'</span></div><div class="ov-item"><label>الإجمالي</label><span style="color:#1a7a6b;font-weight:800">'+omrN(dcPaid+dcAdj)+'</span></div></div></div>'
@@ -9418,7 +9521,8 @@ export default function Dashboard() {
   const totalAdj  = data.totalCollection?.adj  || (gAd+dAd+hAd);
   const totalPort = data.totalPortfolio?.amt    || 9414256.834;
   const gTotal = totalPaid+totalAdj;
-  const p = v => gTotal>0 ? ((v/gTotal)*100).toFixed(1) : "0";
+  const GRAND_TOTAL_FIXED = 1020464.134; // الإجمالي الكلي الثابت للمشروع
+  const p = v => GRAND_TOTAL_FIXED>0 ? ((v/GRAND_TOTAL_FIXED)*100).toFixed(1) : "0";
 
   // ── Smart Notifications ───────────────────────────────────────────────────
   const hoPrincipalCurrent = (data.headOffice||[]).find(c=>c.name==='Legal - DR. Sarhaan')?.principalAmt||0;
@@ -9933,14 +10037,14 @@ export default function Dashboard() {
             const dCounts = calcCounts(data.debtCompanies);
             const hCounts = calcCounts(data.headOffice);
             return (<>
-              <SummaryCard label="المحافظات الخمس"
+              <SummaryCard label="مكاتب أونك"
                 paid={gPd} adj={gAd}
                 cnt={complaintsCounts.gov||gCounts.total||gPortCnt||gCnt||0}
                 cntPaid={complaintsCounts.govPaid||gCounts.paid||null}
                 cntAdj={complaintsCounts.govAdj||gCounts.adj||null}
                 cntTotal={complaintsCounts.govTotal||gCounts.combined||null}
                 portAmt={complaintsAmts.gov||gPortAmt||0}
-                color="#e85d20" icon="🗺" pct={p(gPd+gAd)} small={small} isMobile={isMobile} isTablet={isTablet}/>
+                color="#e85d20" icon="🏬" pct={p(gPd+gAd)} small={small} isMobile={isMobile} isTablet={isTablet}/>
               <SummaryCard label="شركات التحصيل"
                 paid={dPd} adj={dAd}
                 cnt={complaintsCounts.dc||dCounts.total||dPortCnt||dCnt||0}
@@ -9968,7 +10072,7 @@ export default function Dashboard() {
           border:"1.5px solid #f0ece8", marginBottom: small?14:18,
           overflow:"hidden"
         }}>
-          <SectionHeader title="🗺 المحافظات الخمس" paid={gPd} adj={gAd} color="#e85d20" small={small}/>
+          <SectionHeader title="🗺 مكاتب أونك" paid={gPd} adj={gAd} color="#e85d20" small={small}/>
           <div style={{ padding: small?"10px":"14px 16px", display:"flex", flexDirection:"column", gap: small?8:10 }}>
             {data.regions.map((r,i) => (
               <RegionRow key={r.id} region={r} idx={i}
