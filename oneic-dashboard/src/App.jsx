@@ -6435,41 +6435,69 @@ function AmountRow({paid,adj,color,small}) {
 }
 
 // ── SectionHeader ──────────────────────────────────────────────────────────
-function SectionHeader({title,paid,adj,color,small}) {
+function SectionHeader({title,paid,adj,color,small,portAmt,portCnt}) {
+  const total = paid + adj;
+  const remaining = portAmt > 0 ? portAmt - total : 0;
+  const pct = portAmt > 0 ? Math.min(100,(total/portAmt)*100) : 0;
   return (
-    <div style={{background:`linear-gradient(120deg,${color},${color}cc)`,
-      padding:small?"12px 14px":"14px 20px",
-      display:"flex",justifyContent:"space-between",alignItems:"center",flexWrap:"wrap",gap:8}}>
-      <div style={{fontSize:small?15:19,fontWeight:900,color:"#fff"}}>{title}</div>
-      <div style={{display:"flex",gap:small?14:24}}>
-        {[["المدفوع",omr(paid),"#fff"],["التسويات",omr(adj),"#fde68a"],["الإجمالي",omr(paid+adj),"#fff"]].map(([l,v,c])=>(
-          <div key={l} style={{textAlign:"center"}}>
-            <div style={{fontSize:small?11:13,color:"rgba(255,255,255,0.8)",fontWeight:700,marginBottom:2}}>{l}</div>
-            <div style={{fontSize:small?13:16,fontWeight:900,color:c,fontFamily:"'IBM Plex Mono',monospace"}}>{v}</div>
+    <div style={{background:`linear-gradient(120deg,${color},${color}cc)`}}>
+      {/* صف 1: العنوان */}
+      <div style={{padding:small?"10px 14px":"12px 20px",display:"flex",justifyContent:"space-between",alignItems:"center",flexWrap:"wrap",gap:8,borderBottom:"1px solid rgba(255,255,255,0.15)"}}>
+        <div style={{fontSize:small?15:19,fontWeight:900,color:"#fff"}}>{title}</div>
+        {portAmt > 0 && (
+          <div style={{display:"flex",alignItems:"center",gap:8}}>
+            <div style={{fontSize:small?10:12,color:"rgba(255,255,255,0.75)",fontWeight:700}}>نسبة الإنجاز</div>
+            <div style={{background:"rgba(255,255,255,0.25)",borderRadius:20,padding:"3px 14px",fontSize:small?14:17,fontWeight:900,color:"#fff"}}>{pct.toFixed(1)}%</div>
+          </div>
+        )}
+      </div>
+      {/* صف 2: الأرقام */}
+      <div style={{padding:small?"8px 14px":"10px 20px",display:"flex",gap:small?8:16,flexWrap:"wrap",alignItems:"center"}}>
+        {portAmt > 0 && [
+          ["قيمة المحفظة", omr(portAmt), "rgba(255,255,255,0.6)"],
+          ["عدد الحسابات", (portCnt||0).toLocaleString()+" حساب", "rgba(255,255,255,0.6)"],
+        ].map(([l,v,c])=>(
+          <div key={l} style={{textAlign:"center",background:"rgba(255,255,255,0.12)",borderRadius:8,padding:small?"4px 10px":"5px 14px"}}>
+            <div style={{fontSize:small?9:10,color:"rgba(255,255,255,0.7)",fontWeight:700,marginBottom:1}}>{l}</div>
+            <div style={{fontSize:small?12:14,fontWeight:900,color:"#fff"}}>{v}</div>
           </div>
         ))}
+        <div style={{flex:1,display:"flex",gap:small?8:16,justifyContent:"flex-end",flexWrap:"wrap"}}>
+          {[["المدفوع",omr(paid),"#bbf7d0"],["التسويات",omr(adj),"#fde68a"],["الإجمالي",omr(total),"#fff"],
+            ...(portAmt>0?[["المتبقي",omr(remaining),"#fca5a5"]]:[])
+          ].map(([l,v,c])=>(
+            <div key={l} style={{textAlign:"center"}}>
+              <div style={{fontSize:small?9:11,color:"rgba(255,255,255,0.7)",fontWeight:700,marginBottom:2}}>{l}</div>
+              <div style={{fontSize:small?12:15,fontWeight:900,color:c}}>{v}</div>
+            </div>
+          ))}
+        </div>
       </div>
+      {/* شريط الإنجاز */}
+      {portAmt > 0 && (
+        <div style={{padding:"0 20px 8px"}}>
+          <div style={{background:"rgba(255,255,255,0.15)",borderRadius:6,height:6,overflow:"hidden"}}>
+            <div style={{height:"100%",borderRadius:6,background:"rgba(255,255,255,0.7)",width:`${pct}%`}}/>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
 
 // ── EntityCard ─────────────────────────────────────────────────────────────
 function EntityCard({name,paid,adj,color,rank,small,cnt,cBranch,portAmt,portCnt,principalAmt}) {
-  // البحث عن بيانات إضافية من complaints برانش ماب
   const bKey = Object.keys(cBranch||{}).find(k => k.trim()===name?.trim() || name?.includes(k) || k.includes(name||'__'));
   const bD = bKey ? (cBranch||{})[bKey] : null;
+  const total    = (paid||0) + (adj||0);
+  const allZero  = total === 0;
+  const hasPort  = (portAmt||0) > 0;
+  const hasCnt   = (portCnt||0) > 0;
+  const effPort  = hasPort ? portAmt : (bD?.amt||0);
+  const effCnt   = hasCnt  ? portCnt : (bD?.count||0);
+  const remaining = effPort > 0 ? effPort - total : 0;
+  const pctVal   = effPort > 0 ? Math.min(100,(total/effPort)*100) : 0;
 
-  // إجمالي التحصيل لهذا القسم/الشركة
-  const total = (paid||0) + (adj||0);
-  
-  // إذا كانت جميع الأرقام أصفار — اظهر بطاقة مبسطة
-  const allZero = total === 0;
-  // هل يوجد مبلغ محفظة من البيانات المُحمّلة
-  const hasPort = (portAmt||0) > 0;
-  const hasCnt  = (portCnt||0) > 0;
-  const pctVal  = hasPort ? Math.min(100, Math.round(total/portAmt*100)) : 0;
-
-  // بطاقة بسيطة للأقسام بدون أرقام
   if (allZero) {
     return (
       <div style={{background:"#fafafa",borderRadius:13,border:"1.5px dashed #e0dbd6",
@@ -6487,61 +6515,93 @@ function EntityCard({name,paid,adj,color,rank,small,cnt,cBranch,portAmt,portCnt,
   }
 
   return (
-    <div className="entity-card" style={{background:"#fff",borderRadius:13,
-      border:"1.5px solid #f0ece8",boxShadow:"0 2px 10px rgba(0,0,0,0.05)",
-      padding:small?"12px 14px":"14px 18px",borderRight:`5px solid ${color}`}}>
+    <div style={{background:"#fff",borderRadius:13,border:`1.5px solid ${color}33`,
+      boxShadow:"0 2px 10px rgba(0,0,0,0.05)",overflow:"hidden",borderRight:`5px solid ${color}`}}>
 
-      {/* ── Header: رقم + اسم + معلومات المحفظة ── */}
-      <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",gap:10,marginBottom:8}}>
-        <div style={{display:"flex",alignItems:"center",gap:10}}>
-          <div style={{width:small?30:36,height:small?30:36,borderRadius:9,background:color,flexShrink:0,
-            display:"flex",alignItems:"center",justifyContent:"center",fontSize:small?14:16,fontWeight:800,color:"#fff"}}>{rank}</div>
-          <div className="entity-name" style={{fontSize:small?13:16,fontWeight:900,color:"#000",lineHeight:1.2}}>{name}</div>
-        </div>
-        {/* يعرض معلومات المحفظة إذا وُجدت، وإلا من branchMap */}
-        {(hasPort||hasCnt) ? (
-          <div style={{textAlign:"right",flexShrink:0}}>
-            {hasCnt && <div style={{fontSize:small?9:11,fontWeight:900,color:color}}>{(portCnt).toLocaleString()} حساب</div>}
-            {hasPort && <div style={{fontSize:small?9:10,color:"#888",fontWeight:700}}>{omr(portAmt)}</div>}
-            {pctVal>0 && <div style={{fontSize:small?9:10,color:color,fontWeight:800}}>{pctVal}% إنجاز</div>}
-          </div>
-        ) : bD ? (
-          <div style={{textAlign:"right",flexShrink:0}}>
-            <div style={{fontSize:small?9:11,fontWeight:900,color:color}}>{bD.count.toLocaleString()} حساب</div>
-            <div style={{fontSize:small?9:10,color:"#888",fontWeight:700}}>{omr(bD.amt)}</div>
-          </div>
-        ) : null}
+      {/* ── اسم + رقم ── */}
+      <div style={{display:"flex",alignItems:"center",gap:10,padding:small?"10px 12px":"12px 16px",
+        background:`${color}06`,borderBottom:`1px solid ${color}18`}}>
+        <div style={{width:small?28:34,height:small?28:34,borderRadius:8,background:color,flexShrink:0,
+          display:"flex",alignItems:"center",justifyContent:"center",fontSize:small?13:15,fontWeight:900,color:"#fff"}}>{rank}</div>
+        <div style={{fontSize:small?13:16,fontWeight:900,color:"#000",flex:1,lineHeight:1.2}}>{name}</div>
       </div>
 
-      {/* ── شريط المحفظة (إذا وُجدت) ── */}
-      {hasPort && (
-        <div style={{background:`${color}10`,borderRadius:8,padding:small?"4px 8px":"5px 10px",
-          marginBottom:4,display:"flex",justifyContent:"space-between",alignItems:"center"}}>
-          <span style={{fontSize:small?9:10,color:"#777",fontWeight:700}}>إجمالي المحفظة</span>
-          <span style={{fontSize:small?11:13,fontWeight:900,color:color}}>{omr(portAmt)}</span>
-        </div>
-      )}
-      {/* ── Principal Amount (لـ Legal - DR. Sarhaan فقط) ── */}
-      {(principalAmt||0) > 0 && (
-        <div style={{background:"#f0f9ff",borderRadius:8,padding:small?"4px 8px":"5px 10px",
-          marginBottom:8,display:"flex",justifyContent:"space-between",alignItems:"center",
-          border:"1px solid #bae6fd"}}>
-          <div style={{display:"flex",alignItems:"center",gap:6}}>
-            <span style={{fontSize:small?9:10,color:"#0369a1",fontWeight:700}}>Principal Amount</span>
-            <span style={{fontSize:small?8:9,background:"#0369a1",color:"#fff",
-              borderRadius:10,padding:"1px 6px",fontWeight:800}}>
-              {(portCnt||0).toLocaleString()} حساب
-            </span>
-          </div>
-          <span style={{fontSize:small?11:13,fontWeight:900,color:"#0369a1"}}>{omr(principalAmt)}</span>
-        </div>
-      )}
+      <div style={{padding:small?"10px 12px":"12px 16px",display:"flex",flexDirection:"column",gap:8}}>
 
-      {/* ── صف المبالغ: مدفوع / تسويات / إجمالي ── */}
-      <AmountRow paid={paid} adj={adj} color={color} small={small} cnt={cnt}/>
+        {/* صف 1: قيمة المحفظة + عدد الحسابات */}
+        {(effPort>0||effCnt>0) && (
+          <div style={{display:"flex",gap:6}}>
+            {effPort>0 && (
+              <div style={{flex:1,background:`${color}08`,borderRadius:10,padding:small?"6px 8px":"8px 12px",
+                border:`1px solid ${color}22`,textAlign:"center"}}>
+                <div style={{fontSize:small?9:11,color:color,fontWeight:800,marginBottom:3}}>قيمة المحفظة</div>
+                <div style={{fontSize:small?13:16,fontWeight:900,color:color,direction:"ltr"}}>{omr(effPort)}</div>
+                <div style={{fontSize:small?8:9,color:"#aaa",fontWeight:600}}>OMR</div>
+              </div>
+            )}
+            {effCnt>0 && (
+              <div style={{flex:1,background:`${color}08`,borderRadius:10,padding:small?"6px 8px":"8px 12px",
+                border:`1px solid ${color}22`,textAlign:"center"}}>
+                <div style={{fontSize:small?9:11,color:color,fontWeight:800,marginBottom:3}}>عدد الحسابات</div>
+                <div style={{fontSize:small?13:16,fontWeight:900,color:color}}>{effCnt.toLocaleString()}</div>
+                <div style={{fontSize:small?8:9,color:"#aaa",fontWeight:600}}>حساب</div>
+              </div>
+            )}
+          </div>
+        )}
+
+        {/* صف 2: المدفوع + التسويات + الإجمالي */}
+        <div style={{display:"flex",border:"1.5px solid #f0ece8",borderRadius:10,overflow:"hidden",background:"#fafafa"}}>
+          {[["المدفوع",paid||0,"#16a34a"],["التسويات",adj||0,"#d97706"],["الإجمالي",total,color]].map(([lbl,val,clr],i)=>(
+            <div key={lbl} style={{flex:1,textAlign:"center",padding:small?"7px 4px":"10px 6px",
+              borderRight:i<2?"1px solid #f0ece8":"none",
+              background:i===2?`${clr}06`:"transparent"}}>
+              <div style={{fontSize:small?10:12,color:clr,fontWeight:900,marginBottom:3,
+                background:`${clr}10`,borderRadius:6,padding:"1px 5px",display:"inline-block"}}>{lbl}</div>
+              <div style={{fontSize:small?13:17,fontWeight:900,color:clr}}>{omr(val)}</div>
+            </div>
+          ))}
+        </div>
+
+        {/* صف 3: المتبقي + نسبة الإنجاز */}
+        {effPort > 0 && (
+          <div style={{display:"flex",gap:6,alignItems:"center"}}>
+            <div style={{flex:1,background:"#fff3ee",borderRadius:10,padding:small?"6px 8px":"8px 12px",
+              border:"1px solid #ffe4d4",textAlign:"center"}}>
+              <div style={{fontSize:small?9:11,color:"#e85d20",fontWeight:800,marginBottom:3}}>المتبقي من المحفظة</div>
+              <div style={{fontSize:small?12:15,fontWeight:900,color:"#e85d20",direction:"ltr"}}>{omr(remaining)}</div>
+            </div>
+            <div style={{flex:1,background:"#f8f9fc",borderRadius:10,padding:small?"6px 8px":"8px 10px",
+              border:`1px solid ${color}22`}}>
+              <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:4}}>
+                <div style={{fontSize:small?9:10,color:color,fontWeight:800}}>نسبة الإنجاز</div>
+                <div style={{fontSize:small?12:14,fontWeight:900,color:color}}>{pctVal.toFixed(1)}%</div>
+              </div>
+              <div style={{background:"#e8f0fe",borderRadius:6,height:7,overflow:"hidden"}}>
+                <div style={{height:"100%",borderRadius:6,
+                  background:`linear-gradient(90deg,${color}88,${color})`,
+                  width:`${pctVal}%`}}/>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* Principal Amount */}
+        {(principalAmt||0) > 0 && (
+          <div style={{background:"#f0f9ff",borderRadius:8,padding:small?"4px 8px":"5px 10px",
+            display:"flex",justifyContent:"space-between",alignItems:"center",border:"1px solid #bae6fd"}}>
+            <div style={{display:"flex",alignItems:"center",gap:6}}>
+              <span style={{fontSize:small?9:10,color:"#0369a1",fontWeight:700}}>Principal Amount</span>
+              <span style={{fontSize:small?8:9,background:"#0369a1",color:"#fff",borderRadius:10,padding:"1px 6px",fontWeight:800}}>{(portCnt||0).toLocaleString()} حساب</span>
+            </div>
+            <span style={{fontSize:small?11:13,fontWeight:900,color:"#0369a1"}}>{omr(principalAmt)}</span>
+          </div>
+        )}
+      </div>
     </div>
   );
 }
+
 
 // ── SummaryCard ────────────────────────────────────────────────────────────
 function SummaryCard({label,paid,adj,cnt,cntPaid,cntAdj,cntTotal,portAmt,color,icon,pct,small,isMobile,isTablet}) {
@@ -6606,10 +6666,9 @@ function SummaryCard({label,paid,adj,cnt,cntPaid,cntAdj,cntTotal,portAmt,color,i
 
       {/* ── دوائر نسبة الإنجاز ── */}
       <div style={{padding:small?"8px 12px":"10px 14px",background:"#fafafa",borderTop:"1px solid #f0ece8",display:"flex",alignItems:"center",justifyContent:"center",gap:small?10:18}}>
-        {[["المدفوع",paid,"#16a34a"],["التسويات",adj,"#d97706"],["الإجمالي",paid+adj,color]].map(({lbl,val,clr},ci)=>{
-          const [{lbl:l,val:v,clr:c}] = [[{lbl,val,clr}]];
-          const pV=portAmt>0?Math.min(100,(v/portAmt)*100):0;
-          const r2=34,cx2=40,cy2=40,ci2=2*Math.PI*r2,off=ci2-(pV/100)*ci2;
+        {[["المدفوع",paid,"#16a34a"],["التسويات",adj,"#d97706"],["الإجمالي",paid+adj,color]].map(([lbl,val,clr],ci)=>{
+          const pV = portAmt>0 ? Math.min(100,(val/portAmt)*100) : 0;
+          const r2=34,cx2=40,cy2=40,circ2=2*Math.PI*r2,off=circ2-(pV/100)*circ2;
           return (
             <div key={lbl} style={{display:"flex",flexDirection:"column",alignItems:"center",gap:4,flex:1}}>
               <div style={{fontSize:small?10:12,fontWeight:900,color:clr,background:`${clr}12`,borderRadius:8,padding:"2px 10px"}}>{lbl}</div>
@@ -6617,11 +6676,11 @@ function SummaryCard({label,paid,adj,cnt,cntPaid,cntAdj,cntTotal,portAmt,color,i
                 <defs><linearGradient id={`cg_${ci}`} x1="0%" y1="0%" x2="100%" y2="0%"><stop offset="0%" stopColor={clr} stopOpacity="0.4"/><stop offset="100%" stopColor={clr}/></linearGradient></defs>
                 <circle cx={cx2} cy={cy2} r={r2} fill={`${clr}08`} stroke={`${clr}15`} strokeWidth="1"/>
                 <circle cx={cx2} cy={cy2} r={r2} fill="none" stroke={`${clr}20`} strokeWidth="9"/>
-                <circle cx={cx2} cy={cy2} r={r2} fill="none" stroke={`url(#cg_${ci})`} strokeWidth="9" strokeDasharray={ci2} strokeDashoffset={off} strokeLinecap="round" transform={`rotate(-90 ${cx2} ${cy2})`}/>
+                <circle cx={cx2} cy={cy2} r={r2} fill="none" stroke={`url(#cg_${ci})`} strokeWidth="9" strokeDasharray={circ2} strokeDashoffset={off} strokeLinecap="round" transform={`rotate(-90 ${cx2} ${cy2})`}/>
                 <text x={cx2} y={cy2-4} textAnchor="middle" fontSize="14" fontWeight="900" fill={clr} fontFamily="Cairo">{pV.toFixed(1)}%</text>
                 <text x={cx2} y={cy2+13} textAnchor="middle" fontSize="9" fontWeight="700" fill="#888" fontFamily="Cairo">من المحفظة</text>
               </svg>
-              <div style={{fontSize:small?9:11,fontWeight:800,color:"#555",textAlign:"center"}}>{omr(v)}</div>
+              <div style={{fontSize:small?9:11,fontWeight:800,color:"#555",textAlign:"center"}}>{omr(val)}</div>
             </div>
           );
         })}
@@ -10002,7 +10061,7 @@ export default function Dashboard() {
           border:"1.5px solid #f0ece8", marginBottom: small?14:18,
           overflow:"hidden"
         }}>
-          <SectionHeader title="🗺 مكاتب أونك" paid={gPd} adj={gAd} color="#e85d20" small={small}/>
+          <SectionHeader title="🗺 مكاتب أونك" paid={gPd} adj={gAd} color="#e85d20" small={small} portAmt={complaintsAmts.gov||gPortAmt||data.regions?.reduce((s,r)=>s+(r.portAmt||0),0)||0} portCnt={complaintsCounts.gov||gPortCnt||data.regions?.reduce((s,r)=>s+(r.portCnt||0),0)||0}/>
           <div style={{ padding: small?"10px":"14px 16px", display:"flex", flexDirection:"column", gap: small?8:10 }}>
             {data.regions.map((r,i) => (
               <RegionRow key={r.id} region={r} idx={i}
@@ -10022,7 +10081,7 @@ export default function Dashboard() {
         }}>
           {/* DC */}
           <div style={{ background:"#fff", borderRadius:16, boxShadow:"0 3px 18px rgba(0,0,0,0.07)", border:"1.5px solid #f0ece8", overflow:"hidden" }}>
-            <SectionHeader title="🏢 شركات التحصيل" paid={dPd} adj={dAd} color="#1a7a6b" small={small}/>
+            <SectionHeader title="🏢 شركات التحصيل" paid={dPd} adj={dAd} color="#1a7a6b" small={small} portAmt={dPortAmt||0} portCnt={dPortCnt||0}/>
             <div style={{ padding: small?"10px":"14px 16px", display:"flex", flexDirection:"column", gap: small?8:10 }}>
               {data.debtCompanies.filter(c=>(c.paid||0)+(c.adj||0)>0).map((c,i) => (
                 <EntityCard key={c.name} name={c.name} paid={c.paid} adj={c.adj} cBranch={complaintsBranchMap} color="#1a7a6b" rank={i+1} small={small} portAmt={c.portAmt||0} portCnt={c.portCnt||0}/>
@@ -10032,7 +10091,7 @@ export default function Dashboard() {
 
           {/* HO */}
           <div style={{ background:"#fff", borderRadius:16, boxShadow:"0 3px 18px rgba(0,0,0,0.07)", border:"1.5px solid #f0ece8", overflow:"hidden" }}>
-            <SectionHeader title="🏛 المكتب الرئيسي" paid={hPd} adj={hAd} color="#6c3fa0" small={small}/>
+            <SectionHeader title="🏛 المكتب الرئيسي" paid={hPd} adj={hAd} color="#6c3fa0" small={small} portAmt={hPortAmt||0} portCnt={hPortCnt||0}/>
             <div style={{ padding: small?"10px":"14px 16px", display:"flex", flexDirection:"column", gap: small?8:10 }}>
               {data.headOffice.map((c,i) => (
                 <EntityCard key={c.name} name={c.name} paid={c.paid} adj={c.adj} cBranch={complaintsBranchMap} color="#6c3fa0" rank={i+1} small={small} portAmt={c.portAmt||0} portCnt={c.portCnt||0} principalAmt={c.principalAmt||0}/>
