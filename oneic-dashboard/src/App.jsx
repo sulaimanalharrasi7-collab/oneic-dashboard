@@ -8952,26 +8952,41 @@ async function parseComplaints(file) {
           const region = (row[regionIdx]||'').replace(/\r/g,'').trim();
           const branch = branchIdx>=0 ? (row[branchIdx]||'').replace(/\r/g,'').trim() : '';
           if (!region) continue;
-          const principal = principalIdx>=0 ? (parseFloat(row[principalIdx])||0) : 0;
           const osAmt     = osIdx>=0        ? (parseFloat(row[osIdx])||0)        : 0;
           const paid      = paidIdx>=0      ? (parseFloat(row[paidIdx])||0)      : 0;
           const adj       = adjIdx>=0       ? (parseFloat(row[adjIdx])||0)       : 0;
-          const amt = principal > 0 ? principal : (paid + osAmt);
+          const amt = osAmt; // قيمة المحفظة = O/S Amount
           total++;
           
           if (region === DC_REGION) {
             // شركات التحصيل → نجمّع حسب Branch
             dcCount++; dcAmt += amt; dcPaid += paid; dcAdj += adj;
-            if (branch) {
-              if (!branchMap[branch]) branchMap[branch] = {count:0, amt:0};
-              branchMap[branch].count++; branchMap[branch].amt += amt;
+            const dcKey = branch || collector || 'Unknown';
+            if (dcKey) {
+              if (!branchMap[dcKey]) branchMap[dcKey] = {count:0, amt:0, paid:0, adj:0};
+              branchMap[dcKey].count++; branchMap[dcKey].amt += amt;
+              branchMap[dcKey].paid += paid; branchMap[dcKey].adj += adj;
             }
           } else if (HO_REGIONS.some(k => region.trim() === k.trim())) {
             // المكتب الرئيسي → نجمّع الكل تحت مفتاح واحد
             hoCount++; hoAmt += amt; hoPaid += paid; hoAdj += adj;
+            // إجمالي HO
             const hoKey = 'HEAD_OFFICE_TOTAL';
-            if (!branchMap[hoKey]) branchMap[hoKey] = {count:0, amt:0};
+            if (!branchMap[hoKey]) branchMap[hoKey] = {count:0, amt:0, paid:0, adj:0};
             branchMap[hoKey].count++; branchMap[hoKey].amt += amt;
+            branchMap[hoKey].paid += paid; branchMap[hoKey].adj += adj;
+            // لكل Collector منفصلاً
+            if (collector) {
+              const cL = collector.toLowerCase();
+              let hoColKey = collector;
+              if (cL.includes('sarhaan')||cL.includes('sarhan')||cL.includes('dr')) hoColKey = 'Legal - DR. Sarhaan';
+              else if (cL.includes('doc')) hoColKey = 'Documentation- Omantel';
+              else if (cL.includes('non-due')||collector.toUpperCase()==='HO') hoColKey = 'Non-due accounts';
+              else hoColKey = 'Blanks';
+              if (!branchMap[hoColKey]) branchMap[hoColKey] = {count:0, amt:0, paid:0, adj:0};
+              branchMap[hoColKey].count++; branchMap[hoColKey].amt += amt;
+              branchMap[hoColKey].paid += paid; branchMap[hoColKey].adj += adj;
+            }
           } else {
             // مكاتب أونك → نجمّع حسب Region
             govCount++; govAmt += amt; govPaid += paid; govAdj += adj;
@@ -10686,7 +10701,12 @@ export default function Dashboard() {
                   }
                 });
                 return dc.map((c,i) => (
-                <EntityCard key={c.name} name={c.name} paid={c.paid} adj={c.adj} cBranch={complaintsBranchMap} color="#1a7a6b" rank={i+1} small={small} portAmt={c.portAmt||0} portCnt={c.portCnt||0} osAmt={c.osAmt||c.portAmt||0}/>
+                <EntityCard key={c.name} name={c.name}
+                  paid={(()=>{const b=complaintsBranchMap[c.name];return b?.paid>0?b.paid:c.paid;})()}
+                  adj={(()=>{const b=complaintsBranchMap[c.name];return b?.adj>0?b.adj:c.adj;})()}
+                  cBranch={complaintsBranchMap} color="#1a7a6b" rank={i+1} small={small}
+                  portAmt={(()=>{const b=complaintsBranchMap[c.name];return b?.amt>0?b.amt:c.portAmt||0;})()}
+                  portCnt={c.portCnt||0} osAmt={c.osAmt||c.portAmt||0}/>
                 ));
               })()}
             </div>
@@ -10697,7 +10717,11 @@ export default function Dashboard() {
             <SectionHeader title="🏛 المكتب الرئيسي" paid={hPd} adj={hAd} color="#6c3fa0" small={small} portAmt={hPortAmt||0} portCnt={hPortCnt||0}/>
             <div style={{ padding: small?"10px":"14px 16px", display:"flex", flexDirection:"column", gap: small?8:10 }}>
               {(data.headOffice||[]).filter(c=>c.name!=='HO').map((c,i) => (
-                <EntityCard key={c.name} name={c.name} paid={c.paid} adj={c.adj} cBranch={complaintsBranchMap} color="#6c3fa0" rank={i+1} small={small} portAmt={c.portAmt||0} portCnt={c.portCnt||0} principalAmt={c.principalAmt||0}/>
+                <EntityCard key={c.name} name={c.name}
+                  paid={(()=>{const b=complaintsBranchMap[c.name];return b?.paid>0?b.paid:c.paid;})()}
+                  adj={(()=>{const b=complaintsBranchMap[c.name];return b?.adj>0?b.adj:c.adj;})()}
+                  cBranch={complaintsBranchMap} color="#6c3fa0" rank={i+1} small={small}
+                  portAmt={c.portAmt||0} portCnt={c.portCnt||0} principalAmt={c.principalAmt||0}/>
               ))}
             </div>
           </div>
