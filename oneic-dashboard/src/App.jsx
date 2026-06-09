@@ -6512,7 +6512,7 @@ function EntityCard({name,paid,adj,color,rank,small,cnt,cBranch,portAmt,portCnt,
   const pctVal   = displayPort > 0 ? Math.min(100,(total/displayPort)*100) : 0;
 
   // Non-due accounts — يعرض فقط عدد الحسابات
-  if (name === "Non-due accounts" || name === "HO") {
+  if (name === "Non-due accounts") {
     return (
       <div style={{background:"#fff",borderRadius:13,border:`1.5px solid ${color}33`,
         boxShadow:"0 2px 10px rgba(0,0,0,0.05)",overflow:"hidden",borderRight:`5px solid ${color}`}}>
