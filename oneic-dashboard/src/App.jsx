@@ -6852,29 +6852,100 @@ function RegionRow({region, idx, open, onToggle, small}) {
           </div>
 
           {(region.collectors||[]).map((c,i) => {
-            const ct=(c.paid||0)+(c.adj||0);
+            const ct = (c.paid||0)+(c.adj||0);
+            const cPort = c.portAmt||0;
+            const cCnt  = c.portCnt||c.count||0;
+            const cRem  = cPort>0 ? cPort-ct : 0;
+            const cPct  = cPort>0 ? Math.min(100,(ct/cPort)*100) : 0;
             return (
-              <div key={i} style={{borderRadius:12,marginBottom:8,overflow:"hidden",border:`1.5px solid ${col}22`,background:"#fff"}}>
-                <div style={{display:"flex",alignItems:"center",gap:10,padding:small?"8px 12px":"10px 14px",background:i%2===0?"#fff":`${col}05`}}>
-                  <div style={{width:small?26:32,height:small?26:32,borderRadius:8,background:`${col}18`,border:`1.5px solid ${col}44`,display:"flex",alignItems:"center",justifyContent:"center",fontSize:small?12:14,color:col,fontWeight:900}}>{i+1}</div>
-                  <div style={{fontSize:small?13:16,color:"#000",fontWeight:800,flex:1,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{c.name}</div>
-                </div>
-                <div style={{display:"flex",borderTop:`1px solid ${col}15`,background:"#fafafa"}}>
-                  {[["المدفوع",c.paid||0,"#16a34a"],["التسويات",c.adj||0,"#d97706"],["الإجمالي",ct,col]].map(([lbl,val,clr],j)=>(
-                    <div key={lbl} style={{flex:1,textAlign:"center",padding:small?"6px":"9px",borderRight:j<2?`1px solid ${col}15`:"none"}}>
-                      <div style={{fontSize:small?9:10,color:clr,fontWeight:800,marginBottom:2}}>{lbl}</div>
-                      <div style={{fontSize:small?12:15,fontWeight:900,color:clr}}>{omr(val)}</div>
+              <div key={i} style={{borderRadius:12,marginBottom:8,overflow:"hidden",
+                border:`1.5px solid ${col}22`,background:"#fff"}}>
+                {/* اسم المحصّل + رقم */}
+                <div style={{display:"flex",alignItems:"center",gap:10,
+                  padding:small?"8px 12px":"10px 14px",
+                  background:`linear-gradient(120deg,${col}08,${col}15)`,
+                  borderBottom:`1px solid ${col}18`}}>
+                  <div style={{width:small?28:34,height:small?28:34,borderRadius:8,
+                    background:col,display:"flex",alignItems:"center",
+                    justifyContent:"center",fontSize:small?13:15,fontWeight:900,color:"#fff",
+                    flexShrink:0}}>{i+1}</div>
+                  <div style={{fontSize:small?13:16,color:"#000",fontWeight:800,flex:1,
+                    overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{c.name}</div>
+                  {/* نسبة الإنجاز */}
+                  {cPort>0 && (
+                    <div style={{background:col,color:"#fff",borderRadius:20,
+                      padding:"2px 10px",fontSize:small?10:12,fontWeight:900,flexShrink:0}}>
+                      {cPct.toFixed(1)}%
                     </div>
-                  ))}
+                  )}
                 </div>
-                {total>0&&(
-                  <div style={{padding:"4px 10px 6px",background:i%2===0?"#fafafa":"#fff"}}>
-                    <div style={{height:4,background:"#f0ece8",borderRadius:4,overflow:"hidden"}}>
-                      <div style={{height:"100%",width:`${Math.min(100,Math.round(ct/total*100))}%`,background:`linear-gradient(90deg,${col}88,${col})`,borderRadius:4}}/>
+                {/* صف الأرقام */}
+                <div style={{padding:small?"8px 10px":"10px 14px",display:"flex",
+                  flexDirection:"column",gap:6}}>
+                  {/* قيمة المحفظة + عدد الحسابات */}
+                  {(cPort>0||cCnt>0) && (
+                    <div style={{display:"flex",gap:6}}>
+                      {cPort>0 && (
+                        <div style={{flex:1,background:`${col}08`,borderRadius:8,padding:"6px 10px",
+                          border:`1px solid ${col}20`,textAlign:"center"}}>
+                          <div style={{fontSize:small?8:10,color:col,fontWeight:700,marginBottom:2}}>قيمة المحفظة</div>
+                          <div style={{fontSize:small?12:15,fontWeight:900,color:col,direction:"ltr"}}>{omr(cPort)}</div>
+                        </div>
+                      )}
+                      {cCnt>0 && (
+                        <div style={{flex:1,background:`${col}08`,borderRadius:8,padding:"6px 10px",
+                          border:`1px solid ${col}20`,textAlign:"center"}}>
+                          <div style={{fontSize:small?8:10,color:col,fontWeight:700,marginBottom:2}}>عدد الحسابات</div>
+                          <div style={{fontSize:small?12:15,fontWeight:900,color:col}}>{cCnt.toLocaleString()}</div>
+                        </div>
+                      )}
                     </div>
-                    <div style={{fontSize:9,color:"#aaa",marginTop:2,textAlign:"left",fontWeight:700}}>{Math.round(ct/total*100)}% من إجمالي المنطقة</div>
+                  )}
+                  {/* المدفوع + التسويات + الإجمالي */}
+                  <div style={{display:"flex",border:"1px solid #f0ece8",borderRadius:9,overflow:"hidden",background:"#fafafa"}}>
+                    {[["المدفوع",c.paid||0,"#16a34a"],["التسويات",c.adj||0,"#d97706"],["الإجمالي",ct,col]].map(([lbl,val,clr],j)=>(
+                      <div key={lbl} style={{flex:1,textAlign:"center",padding:small?"6px 4px":"8px 6px",
+                        borderRight:j<2?`1px solid ${col}15`:"none"}}>
+                        <div style={{fontSize:small?9:11,color:clr,fontWeight:800,marginBottom:2}}>{lbl}</div>
+                        <div style={{fontSize:small?12:15,fontWeight:900,color:clr}}>{omr(val)}</div>
+                      </div>
+                    ))}
                   </div>
-                )}
+                  {/* المتبقي + شريط */}
+                  {cPort>0 && (
+                    <div style={{display:"flex",gap:6,alignItems:"center"}}>
+                      <div style={{flex:1,background:"#fff3ee",borderRadius:8,padding:"6px 10px",
+                        border:"1px solid #ffe4d4",textAlign:"center"}}>
+                        <div style={{fontSize:small?8:10,color:"#e85d20",fontWeight:700,marginBottom:2}}>المتبقي</div>
+                        <div style={{fontSize:small?12:14,fontWeight:900,color:"#e85d20",direction:"ltr"}}>{omr(cRem)}</div>
+                      </div>
+                      <div style={{flex:2,background:"#f8f9fc",borderRadius:8,padding:"6px 10px",
+                        border:`1px solid ${col}18`}}>
+                        <div style={{display:"flex",justifyContent:"space-between",marginBottom:4}}>
+                          <div style={{fontSize:small?8:10,color:col,fontWeight:700}}>نسبة الإنجاز</div>
+                          <div style={{fontSize:small?11:13,fontWeight:900,color:col}}>{cPct.toFixed(1)}%</div>
+                        </div>
+                        <div style={{background:"#e8f0fe",borderRadius:4,height:5,overflow:"hidden"}}>
+                          <div style={{height:"100%",borderRadius:4,
+                            background:`linear-gradient(90deg,${col}88,${col})`,
+                            width:`${cPct}%`}}/>
+                        </div>
+                      </div>
+                    </div>
+                  )}
+                  {/* نسبة مساهمة المحصّل */}
+                  {total>0 && (
+                    <div style={{height:3,background:"#f0ece8",borderRadius:3,overflow:"hidden",marginTop:2}}>
+                      <div style={{height:"100%",width:`${Math.min(100,Math.round(ct/total*100))}%`,
+                        background:`linear-gradient(90deg,${col}88,${col})`,borderRadius:3}}/>
+                    </div>
+                  )}
+                  {total>0 && (
+                    <div style={{fontSize:small?8:9,color:"#aaa",fontWeight:700,textAlign:"left"}}>
+                      {Math.round(ct/total*100)}% من إجمالي المنطقة
+                    </div>
+                  )}
+                </div>
               </div>
             );
           })}
