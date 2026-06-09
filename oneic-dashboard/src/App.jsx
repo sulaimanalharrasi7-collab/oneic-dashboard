@@ -6142,7 +6142,7 @@ async function parseXLS(file) {
     const paid    = n(row['Paid Amount']|| row['paid_amount']  || row['Paid'] || 0);
     const adj     = n(row['Adjustment'] || row['adjustment']   || row['Adj']  || 0);
     const osAmt   = n(row['O/S Amount'] || row['os_amount']    || row['Outstanding'] || row['O/S'] || 0);
-    const rowPort  = (paid > 0 || osAmt > 0) ? paid + osAmt : 0; // قيمة الحساب الكلية
+    const rowPort  = osAmt; // قيمة المحفظة = O/S Amount فقط
     const col     = (row['Collector']   || row['collector']    || '').trim();
     const branch  = (row['Branch']      || row['branch']       || '').trim();
 
@@ -6172,10 +6172,11 @@ async function parseXLS(file) {
       if (paid>0) regMap[region].paidCount++;
       if (adj >0) regMap[region].adjCount++;
       if (col) {
-        if (!regMap[region].cMap[col]) regMap[region].cMap[col] = { paid:0, adj:0, count:0, paidCount:0, adjCount:0 };
+        if (!regMap[region].cMap[col]) regMap[region].cMap[col] = { paid:0, adj:0, count:0, paidCount:0, adjCount:0, osAmt:0 };
         regMap[region].cMap[col].paid  += paid;
         regMap[region].cMap[col].adj   += adj;
         regMap[region].cMap[col].count++;
+        regMap[region].cMap[col].osAmt += rowPort;
         if (paid>0) regMap[region].cMap[col].paidCount++;
         if (adj >0) regMap[region].cMap[col].adjCount++;
       }
@@ -6202,7 +6203,8 @@ async function parseXLS(file) {
     collectors: Object.entries(regMap[k].cMap)
       .map(([nm,d]) => ({
         name:nm, paid:d.paid, adj:d.adj,
-        count:d.count||0, paidCount:d.paidCount||0, adjCount:d.adjCount||0
+        count:d.count||0, paidCount:d.paidCount||0, adjCount:d.adjCount||0,
+        portAmt:d.osAmt||0, portCnt:d.count||0
       }))
       .sort((a,b) => (b.paid+b.adj)-(a.paid+a.adj))
   }));
