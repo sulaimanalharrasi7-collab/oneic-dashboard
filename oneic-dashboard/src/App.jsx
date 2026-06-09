@@ -6263,7 +6263,7 @@ async function sbUpsert(table, obj) {
   const res = await fetch(`${FIREBASE_URL}/${key}.json`, {
     method: 'PUT',
     headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({...data, _updatedAt: new Date().toISOString()})
+    body: JSON.stringify(data) // _updatedAt يأتي من البيانات نفسها
   });
   if (!res.ok) throw new Error(await res.text());
   return await res.json();
@@ -9509,7 +9509,7 @@ export default function Dashboard() {
           const HO_P = {"Legal - DR. Sarhaan":{portAmt:3229651.681,portCnt:3662,principalAmt:3301711.348},"Documentation- Omantel":{portAmt:489409.003,portCnt:1136},"HO":{portAmt:0,portCnt:340},"Blanks":{portAmt:50253.668,portCnt:173}};
           const existingHO = row.headOffice || [];
           const fullHO = HO_REQ.map(nm => existingHO.find(c=>c.name===nm) || {name:nm,paid:0,adj:0,count:0,...HO_P[nm]});
-          const d = { ...row, headOffice: fullHO };
+          const d = { ...row, headOffice: fullHO, _updatedAt: row._updatedAt||row.lastUpdated||'' };
           setData(d);
           try { localStorage.setItem('oneic_dashboard_data', JSON.stringify(d)); } catch(e) {}
           if (row.history?.length > 0) {
@@ -9539,10 +9539,10 @@ export default function Dashboard() {
         const row = await sbGet('oneic_data');
         setSyncing(false);
         if (!row?.regions?.length) return;
-        // تحقق: هل البيانات تغيرت؟
+        // تحقق: هل البيانات تغيرت؟ — نستخدم _updatedAt الموحّد
         const newUpdated = row._updatedAt || row.lastUpdated || '';
         const curUpdated = data?._updatedAt || data?.lastUpdated || '';
-        if (newUpdated && newUpdated === curUpdated) return; // لا تحديث
+        if (newUpdated && curUpdated && newUpdated === curUpdated) return; // لا تحديث
         // البيانات تغيرت — حدّث
         const HO_REQ = ["Legal - DR. Sarhaan","Documentation- Omantel","HO","Non-due accounts","Blanks"];
         const HO_P = {
@@ -9563,7 +9563,7 @@ export default function Dashboard() {
         }
         setLastSync(new Date());
       } catch(e) { setSyncing(false); /* Firebase مؤقتاً غير متاح */ }
-    }, 30000); // كل 30 ثانية
+    }, 15000); // كل 15 ثانية للاستجابة السريعة
 
     return () => clearInterval(interval);
   }, []);
@@ -9682,6 +9682,7 @@ export default function Dashboard() {
       if (fromExisting) return { ...fromExisting, portAmt: fromExisting.portAmt||portInfo.portAmt||0, portCnt: fromExisting.portCnt||portInfo.portCnt||0 };
       return { name:nm, paid:0, adj:0, count:0, portAmt:portInfo.portAmt||0, portCnt:portInfo.portCnt||0 };
     });
+    const _ts = new Date().toISOString();
     const dataToSave = {
       ...newData,
       debtCompanies: mergedCompanies,
@@ -9690,8 +9691,9 @@ export default function Dashboard() {
       totalCollection: { paid: gp, adj: ga },
       grandPaid: gp,
       grandAdj: ga,
-      lastUpdated: new Date().toISOString(),
-      lastUpdatedDate: new Date().toISOString().split('T')[0]
+      lastUpdated: _ts,
+      _updatedAt: _ts,
+      lastUpdatedDate: _ts.split('T')[0]
     };
 
     // ── رفع لـ JSONbin + localStorage ───────────────────────────────────
