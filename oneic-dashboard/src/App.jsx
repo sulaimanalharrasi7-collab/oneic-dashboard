@@ -9542,7 +9542,16 @@ export default function Dashboard() {
         };
         const existingHO = row.headOffice || [];
         const fullHO = HO_REQ.map(nm => existingHO.find(c=>c.name===nm) || {name:nm,paid:0,adj:0,count:0,...(HO_P[nm]||{})});
-        const d = { ...row, headOffice: fullHO, _updatedAt: row._updatedAt||row.lastUpdated||'' };
+        let d = { ...row, headOffice: fullHO, _updatedAt: row._updatedAt||row.lastUpdated||'' };
+      // ── تصحيح portAmt للشركات الثابتة ──
+      const DC_PORT_FINAL = {"Ejada":{portAmt:261235.418,portCnt:1938}};
+      if (d.debtCompanies) {
+        d.debtCompanies = d.debtCompanies.map(c => {
+          const fix = DC_PORT_FINAL[c.name];
+          if (fix && !(c.portAmt>0)) return {...c, portAmt:fix.portAmt, portCnt:fix.portCnt||c.portCnt||c.count||0};
+          return c;
+        });
+      }
         setData(d);
         try { localStorage.setItem('oneic_dashboard_data', JSON.stringify(d)); } catch(e) {}
         if (row.history?.length > 0) {
@@ -9711,9 +9720,13 @@ export default function Dashboard() {
              + newData.headOffice.reduce((s,r)=>s+Math.max(0,r.adj||0),0);
     // حفظ portAmt/portCnt من البيانات الحالية إذا لم تكن في newData
     const mergedCompanies = (newData.debtCompanies||[]).map(c => {
-      const existing = data.debtCompanies?.find(d=>d.name===c.name);
-      return { ...c, portAmt: c.portAmt||existing?.portAmt||0, portCnt: c.portCnt||existing?.portCnt||0 };
-    });
+      const existing  = data.debtCompanies?.find(d=>d.name===c.name);
+      const DC_FIX = {"Ejada":{portAmt:261235.418,portCnt:1938}};
+      const fix = DC_FIX[c.name];
+      const finalAmt = c.portAmt>0 ? c.portAmt : existing?.portAmt>0 ? existing.portAmt : fix?.portAmt||0;
+      const finalCnt = c.portCnt>0 ? c.portCnt : existing?.portCnt>0 ? existing.portCnt : fix?.portCnt||c.count||0;
+      return { ...c, portAmt: finalAmt, portCnt: finalCnt };
+    });;
     // ضمان وجود كل أقسام المكتب الرئيسي الأربعة دائماً
     const HO_REQUIRED = ["Legal - DR. Sarhaan","Documentation- Omantel","HO","Blanks"];
     const HO_PORT_DATA = {
