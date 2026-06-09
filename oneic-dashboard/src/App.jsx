@@ -6141,13 +6141,14 @@ async function parseXLS(file) {
     const region  = (row['Region']      || row['region']      || '').trim();
     const paid    = n(row['Paid Amount']|| row['paid_amount']  || row['Paid'] || 0);
     const adj     = n(row['Adjustment'] || row['adjustment']   || row['Adj']  || 0);
+    const osAmt   = n(row['O/S Amount'] || row['os_amount']    || row['Outstanding'] || row['O/S'] || 0);
     const col     = (row['Collector']   || row['collector']    || '').trim();
     const branch  = (row['Branch']      || row['branch']       || '').trim();
 
     if (region === 'Debt Collection Company') {
       const key = branch || col || 'Unknown';
-      if (!dcMap[key]) dcMap[key] = { paid:0, adj:0, count:0, paidCount:0, adjCount:0 };
-      dcMap[key].paid  += paid; dcMap[key].adj += adj; dcMap[key].count++;
+      if (!dcMap[key]) dcMap[key] = { paid:0, adj:0, count:0, paidCount:0, adjCount:0, osAmt:0 };
+      dcMap[key].paid  += paid; dcMap[key].adj += adj; dcMap[key].count++; dcMap[key].osAmt += osAmt;
       if (paid>0) dcMap[key].paidCount++;
       if (adj >0) dcMap[key].adjCount++;
 
@@ -6209,9 +6210,11 @@ async function parseXLS(file) {
   const DC_REQUIRED = ["Matrix Debt Collection","National Center","Compass Risk Support Services","Ejada","Tahseel United","High Speed Company"];
   const dcList = Object.entries(dcMap).map(([nm,d]) => {
     const p = PORT.dc[nm.trim()] || {portAmt:0,portCnt:0};
+    // portAmt: من الملف (osAmt) إذا متاح، وإلا من PORT.dc
+    const computedPortAmt = d.osAmt > 0 ? d.osAmt : p.portAmt;
     return { name:nm.trim(), paid:d.paid, adj:d.adj,
       count:d.count||0, paidCount:d.paidCount||0, adjCount:d.adjCount||0,
-      portAmt:p.portAmt, portCnt:p.portCnt };
+      portAmt:computedPortAmt, portCnt:d.count||p.portCnt };
   });
   DC_REQUIRED.forEach(nm => {
     if (!dcList.find(c=>c.name===nm)) {
