@@ -9504,33 +9504,52 @@ export default function Dashboard() {
   // ── تحميل من Supabase عند فتح الصفحة ──────────────────────────────────────
   useEffect(() => {
     async function load() {
+      // ── أولاً: حاول Firebase ──
+      let firebaseData = null;
       try {
         const row = await sbGet('oneic_data');
-        if (row?.regions?.length > 0) {
-          // ضمان 4 أقسام للمكتب الرئيسي
-          const HO_REQ = ["Legal - DR. Sarhaan","Documentation- Omantel","HO","Blanks"];
-          const HO_P = {"Legal - DR. Sarhaan":{portAmt:3229651.681,portCnt:3662,principalAmt:3301711.348},"Documentation- Omantel":{portAmt:489409.003,portCnt:1136},"HO":{portAmt:0,portCnt:340},"Blanks":{portAmt:50253.668,portCnt:173}};
-          const existingHO = row.headOffice || [];
-          const fullHO = HO_REQ.map(nm => existingHO.find(c=>c.name===nm) || {name:nm,paid:0,adj:0,count:0,...HO_P[nm]});
-          const d = { ...row, headOffice: fullHO, _updatedAt: row._updatedAt||row.lastUpdated||'' };
-          setData(d);
-          try { localStorage.setItem('oneic_dashboard_data', JSON.stringify(d)); } catch(e) {}
-          if (row.history?.length > 0) {
-            setHistory(row.history);
-            try { localStorage.setItem('oneic_history', JSON.stringify(row.history)); } catch(e) {}
-          }
-          setLoadingServer(false);
-          return;
-        }
-      } catch(e) { console.warn('Firebase unavailable, using localStorage:', e.message); }
-      // fallback localStorage
+        if (row?.regions?.length > 0) firebaseData = row;
+      } catch(e) { console.warn('Firebase unavailable:', e.message); }
+
+      // ── ثانياً: localStorage كـ fallback ──
+      let localData = null;
       try {
         const saved = localStorage.getItem('oneic_dashboard_data');
         if (saved) {
           const parsed = JSON.parse(saved);
-          if (parsed?.regions?.length > 0) setData(parsed);
+          if (parsed?.regions?.length > 0) localData = parsed;
         }
       } catch(e) {}
+
+      // ── اختر الأحدث ──
+      let row = null;
+      if (firebaseData && localData) {
+        const fbTime = new Date(firebaseData._updatedAt||firebaseData.lastUpdated||0).getTime();
+        const lcTime = new Date(localData._updatedAt||localData.lastUpdated||0).getTime();
+        row = fbTime >= lcTime ? firebaseData : localData;
+      } else {
+        row = firebaseData || localData;
+      }
+
+      if (row?.regions?.length > 0) {
+        const HO_REQ = ["Legal - DR. Sarhaan","Documentation- Omantel","HO","Non-due accounts","Blanks"];
+        const HO_P = {
+          "Legal - DR. Sarhaan":{portAmt:3229651.681,portCnt:3662,principalAmt:3301711.348},
+          "Documentation- Omantel":{portAmt:489409.003,portCnt:1136},
+          "HO":{portAmt:0,portCnt:340},
+          "Non-due accounts":{portAmt:0,portCnt:340},
+          "Blanks":{portAmt:50253.668,portCnt:173}
+        };
+        const existingHO = row.headOffice || [];
+        const fullHO = HO_REQ.map(nm => existingHO.find(c=>c.name===nm) || {name:nm,paid:0,adj:0,count:0,...(HO_P[nm]||{})});
+        const d = { ...row, headOffice: fullHO, _updatedAt: row._updatedAt||row.lastUpdated||'' };
+        setData(d);
+        try { localStorage.setItem('oneic_dashboard_data', JSON.stringify(d)); } catch(e) {}
+        if (row.history?.length > 0) {
+          setHistory(row.history);
+          try { localStorage.setItem('oneic_history', JSON.stringify(row.history)); } catch(e) {}
+        }
+      }
       setLoadingServer(false);
     }
     load();
@@ -9542,10 +9561,10 @@ export default function Dashboard() {
         const row = await sbGet('oneic_data');
         setSyncing(false);
         if (!row?.regions?.length) return;
-        // تحقق: هل البيانات تغيرت؟ — نستخدم _updatedAt الموحّد
-        const newUpdated = row._updatedAt || row.lastUpdated || '';
-        const curUpdated = data?._updatedAt || data?.lastUpdated || '';
-        if (newUpdated && curUpdated && newUpdated === curUpdated) return; // لا تحديث
+        // تحقق: هل Firebase أحدث من الحالي؟
+        const fbTime  = new Date(row._updatedAt||row.lastUpdated||0).getTime();
+        const curTime = new Date(data?._updatedAt||data?.lastUpdated||0).getTime();
+        if (fbTime <= curTime) return; // Firebase ليس أحدث — لا تحديث
         // البيانات تغيرت — حدّث
         const HO_REQ = ["Legal - DR. Sarhaan","Documentation- Omantel","HO","Non-due accounts","Blanks"];
         const HO_P = {
@@ -9559,12 +9578,14 @@ export default function Dashboard() {
         const fullHO = HO_REQ.map(nm => existingHO.find(c=>c.name===nm) || {name:nm,paid:0,adj:0,count:0,...(HO_P[nm]||{})});
         const d = { ...row, headOffice: fullHO };
         setData(d);
+        // حدّث localStorage على جميع الأجهزة
         try { localStorage.setItem('oneic_dashboard_data', JSON.stringify(d)); } catch(e) {}
         if (row.history?.length > 0) {
           setHistory(row.history);
           try { localStorage.setItem('oneic_history', JSON.stringify(row.history)); } catch(e) {}
         }
         setLastSync(new Date());
+        console.log('✅ Data synced from Firebase:', d._updatedAt);
       } catch(e) { setSyncing(false); /* Firebase مؤقتاً غير متاح */ }
     }, 15000); // كل 15 ثانية للاستجابة السريعة
 
@@ -9572,6 +9593,31 @@ export default function Dashboard() {
   }, []);
 
   const UPLOAD_PW = 'Sulaiman1992';
+
+  // ══ تحديث فوري من Firebase ══
+  const forceRefresh = async () => {
+    setSyncing(true);
+    try {
+      const row = await sbGet('oneic_data');
+      if (!row?.regions?.length) { setSyncing(false); return; }
+      const HO_REQ = ["Legal - DR. Sarhaan","Documentation- Omantel","HO","Non-due accounts","Blanks"];
+      const HO_P = {
+        "Legal - DR. Sarhaan":{portAmt:3229651.681,portCnt:3662,principalAmt:3301711.348},
+        "Documentation- Omantel":{portAmt:489409.003,portCnt:1136},
+        "HO":{portAmt:0,portCnt:340},
+        "Non-due accounts":{portAmt:0,portCnt:340},
+        "Blanks":{portAmt:50253.668,portCnt:173}
+      };
+      const existingHO = row.headOffice || [];
+      const fullHO = HO_REQ.map(nm => existingHO.find(c=>c.name===nm) || {name:nm,paid:0,adj:0,count:0,...(HO_P[nm]||{})});
+      const d = { ...row, headOffice: fullHO, _updatedAt: row._updatedAt||row.lastUpdated||'' };
+      setData(d);
+      try { localStorage.setItem('oneic_dashboard_data', JSON.stringify(d)); } catch(e) {}
+      if (row.history?.length > 0) setHistory(row.history);
+      setLastSync(new Date());
+    } catch(e) { alert('تعذر الاتصال بالسيرفر'); }
+    setSyncing(false);
+  };
 
   const requireUploadAuth = (callback) => {
     setUploadAuthInput('');
@@ -10259,12 +10305,14 @@ export default function Dashboard() {
             {/* مؤشر المزامنة */}
             <div style={{fontSize:10,color:syncing?"#fbbf24":"#4ade80",fontWeight:700,textAlign:"center",
               background:"rgba(255,255,255,0.1)",borderRadius:6,padding:"2px 8px",display:"flex",alignItems:"center",gap:4,justifyContent:"center"}}>
+              <span style={{cursor:'pointer'}} onClick={forceRefresh} title="اضغط للتحديث الفوري">
               {syncing
-                ? <><span style={{animation:"spin 1s linear infinite",display:"inline-block"}}>🔄</span> جاري المزامنة...</>
+                ? <><span>🔄</span> جاري المزامنة...</>
                 : lastSync
-                  ? <>🟢 آخر مزامنة: {lastSync.toLocaleTimeString('ar-OM',{hour:'2-digit',minute:'2-digit'})}</>
-                  : <>⏳ جاري الاتصال...</>
+                  ? <>🟢 {lastSync.toLocaleTimeString('ar-OM',{hour:'2-digit',minute:'2-digit'})} ↻</>
+                  : <>⏳ اضغط للتحديث</>
               }
+            </span>
             </div>
             <button onClick={() => setShowHistory(s=>!s)} style={{background:"#1e3a5f",color:"#fff",border:"none",borderRadius:10,padding:"8px 14px",fontSize:13,fontWeight:800,cursor:"pointer",fontFamily:"'Cairo',sans-serif",display:"flex",alignItems:"center",gap:5}}>
               📁 {history.length > 0 ? `عدد الملفات (${history.length})` : 'عدد الملفات'}
