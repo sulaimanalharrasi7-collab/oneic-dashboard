@@ -6198,7 +6198,7 @@ async function parseXLS(file) {
     count: regMap[k].count||0,
     paidCount: regMap[k].paidCount||0,
     adjCount:  regMap[k].adjCount||0,
-    portAmt: (PORT.regions[k]||{portAmt:0}).portAmt,
+    portAmt: regMap[k].osAmt>0 ? regMap[k].osAmt : (PORT.regions[k]||{portAmt:0}).portAmt,
     portCnt: (PORT.regions[k]||{portCnt:0}).portCnt,
     collectors: Object.entries(regMap[k].cMap)
       .map(([nm,d]) => ({
@@ -6854,9 +6854,13 @@ function RegionRow({region, idx, open, onToggle, small}) {
           </div>
 
           {(region.collectors||[]).map((c,i) => {
-            const ct = (c.paid||0)+(c.adj||0);
-            const cPort = c.portAmt||0;
-            const cCnt  = c.portCnt||c.count||0;
+            // كل البيانات من Complaints إذا متاحة
+            const _cComp = complaintsBranchMap?.[c.name] || null;
+            const cPaid  = _cComp?.paid > 0 ? _cComp.paid : (c.paid||0);
+            const cAdj   = _cComp?.adj  > 0 ? _cComp.adj  : (c.adj||0);
+            const ct     = cPaid + cAdj;
+            const cPort  = _cComp?.amt  > 0 ? _cComp.amt  : (c.portAmt||0);
+            const cCnt   = _cComp?.count > 0 ? _cComp.count : (c.portCnt||c.count||0);
             const cRem  = cPort>0 ? cPort-ct : 0;
             const cPct  = cPort>0 ? Math.min(100,(ct/cPort)*100) : 0;
             return (
@@ -6905,7 +6909,7 @@ function RegionRow({region, idx, open, onToggle, small}) {
                   )}
                   {/* المدفوع + التسويات + الإجمالي */}
                   <div style={{display:"flex",border:"1px solid #f0ece8",borderRadius:9,overflow:"hidden",background:"#fafafa"}}>
-                    {[["المدفوع",c.paid||0,"#16a34a"],["التسويات",c.adj||0,"#d97706"],["الإجمالي",ct,col]].map(([lbl,val,clr],j)=>(
+                    {[["المدفوع",cPaid,"#16a34a"],["التسويات",cAdj,"#d97706"],["الإجمالي",ct,col]].map(([lbl,val,clr],j)=>(
                       <div key={lbl} style={{flex:1,textAlign:"center",padding:small?"6px 4px":"8px 6px",
                         borderRight:j<2?`1px solid ${col}15`:"none"}}>
                         <div style={{fontSize:small?9:11,color:clr,fontWeight:800,marginBottom:2}}>{lbl}</div>
@@ -10665,11 +10669,11 @@ export default function Dashboard() {
           <div style={{ padding: small?"10px":"14px 16px", display:"flex", flexDirection:"column", gap: small?8:10 }}>
             {data.regions.map((r,i) => {
                 // دمج مع Complaints
-                const cReg = Object.entries(complaintsRegionMap||{}).find(([k])=>
-                  k===r.nameEn || k===r.id ||
-                  (r.nameEn||'').toLowerCase().includes(k.toLowerCase()) ||
-                  k.toLowerCase().includes((r.nameEn||'').toLowerCase())
-                )?.[1];
+                // مطابقة دقيقة أولاً ثم fuzzy
+                const _crMap = complaintsRegionMap||{};
+                const _crKeys = Object.keys(_crMap);
+                const cReg = _crMap[r.nameEn] || _crMap[r.id] ||
+                  (()=>{ const k=_crKeys.find(k=>k.toLowerCase()===((r.nameEn||'').toLowerCase())); return k?_crMap[k]:null; })();
                 const rr = cReg ? {...r,
                   portAmt: cReg.amt  > 0 ? cReg.amt  : r.portAmt,
                   paid:    cReg.paid > 0 ? cReg.paid : r.paid,
