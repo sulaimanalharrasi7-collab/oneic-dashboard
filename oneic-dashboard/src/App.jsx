@@ -6504,9 +6504,11 @@ function EntityCard({name,paid,adj,color,rank,small,cnt,cBranch,portAmt,portCnt,
   const hasPort  = (portAmt||0) > 0;
   const hasCnt   = (portCnt||0) > 0;
   const effPort  = hasPort ? portAmt : (bD?.amt||0);
+  // إذا الشركة عندها تحصيل لكن portAmt غير محدد، استخدم التحصيل نفسه
+  const displayPort = effPort > 0 ? effPort : (total > 0 ? total : 0);
   const effCnt   = hasCnt  ? portCnt : (bD?.count||0);
-  const remaining = effPort > 0 ? effPort - total : 0;
-  const pctVal   = effPort > 0 ? Math.min(100,(total/effPort)*100) : 0;
+  const remaining = displayPort > 0 ? displayPort - total : 0;
+  const pctVal   = displayPort > 0 ? Math.min(100,(total/displayPort)*100) : 0;
 
   // Non-due accounts — يعرض فقط عدد الحسابات
   if (name === "Non-due accounts" || name === "HO") {
@@ -6569,11 +6571,11 @@ function EntityCard({name,paid,adj,color,rank,small,cnt,cBranch,portAmt,portCnt,
         {/* صف 1: قيمة المحفظة + عدد الحسابات */}
         {(effPort>0||effCnt>0) && (
           <div style={{display:"flex",gap:6}}>
-            {effPort>0 && (
+            {displayPort>0 && (
               <div style={{flex:1,background:`${color}08`,borderRadius:10,padding:small?"6px 8px":"8px 12px",
                 border:`1px solid ${color}22`,textAlign:"center"}}>
                 <div style={{fontSize:small?9:11,color:color,fontWeight:800,marginBottom:3}}>قيمة المحفظة</div>
-                <div style={{fontSize:small?13:16,fontWeight:900,color:color,direction:"ltr"}}>{omr(effPort)}</div>
+                <div style={{fontSize:small?13:16,fontWeight:900,color:color,direction:"ltr"}}>{omr(displayPort)}</div>
                 <div style={{fontSize:small?8:9,color:"#aaa",fontWeight:600}}>OMR</div>
               </div>
             )}
@@ -10574,9 +10576,9 @@ export default function Dashboard() {
             <div style={{ padding: small?"10px":"14px 16px", display:"flex", flexDirection:"column", gap: small?8:10 }}>
               {(() => {
                 const ALWAYS_SHOW = [
-                  {name:"Ejada",             portAmt:261235.418, portCnt:1938, paid:0, adj:0, count:1938},
-                  {name:"Tahseel United",    portAmt:0,          portCnt:0,    paid:0, adj:0, count:0},
-                  {name:"High Speed Company",portAmt:0,          portCnt:0,    paid:0, adj:0, count:0},
+                  {name:"Ejada",              portAmt:261235.418, portCnt:1938, paid:0, adj:0, count:1938},
+                  {name:"Tahseel United",     portAmt:0,          portCnt:0,    paid:0, adj:0, count:0},
+                  {name:"High Speed Company", portAmt:0,          portCnt:0,    paid:0, adj:0, count:0},
                 ];
                 // توحيد اسم High Speed company → High Speed Company
                 let dc = (data.debtCompanies||[]).map(c =>
@@ -10587,9 +10589,11 @@ export default function Dashboard() {
                 ALWAYS_SHOW.forEach(co => {
                   if (!dc.find(c=>c.name===co.name)) dc.push(co);
                   else {
-                    const idx = dc.findIndex(c=>c.name===co.name);
-                    if (!(dc[idx].portAmt>0) && co.portAmt>0)
-                      dc[idx] = {...dc[idx], portAmt:co.portAmt, portCnt:co.portCnt||dc[idx].portCnt};
+                    const i2 = dc.findIndex(c=>c.name===co.name);
+                    // استخدم portAmt من الملف (osAmt) إذا موجود، وإلا من ALWAYS_SHOW
+                    const bestPort = dc[i2].portAmt>0 ? dc[i2].portAmt : co.portAmt;
+                    const bestCnt  = dc[i2].portCnt>0 ? dc[i2].portCnt : co.portCnt||dc[i2].count||0;
+                    dc[i2] = {...dc[i2], portAmt:bestPort, portCnt:bestCnt};
                   }
                 });
                 return dc.map((c,i) => (
