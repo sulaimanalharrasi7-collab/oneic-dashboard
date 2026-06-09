@@ -10362,7 +10362,7 @@ export default function Dashboard() {
             <div style={{ fontSize: isMobile?16:isTablet?20:26, fontWeight:900, color:"#e85d20", lineHeight:1.1 }}>
               {isMobile ? "إدارة الديون" : "لوحة تحكم إدارة تحصيل الديون"}
             </div>
-            {!isMobile && <div style={{ fontSize:14, color:"#e85d20", fontWeight:700, marginTop:3 }}>
+            {!isMobile && <div style={{ fontSize:16, color:"#e85d20", fontWeight:700, marginTop:3 }}>
                 Debt Collection Management Dashboard
             </div>}
             {!isMobile && <div style={{ fontSize:10, color:"#16a34a", fontWeight:700, marginTop:2, display:"flex", alignItems:"center", gap:4 }}>
