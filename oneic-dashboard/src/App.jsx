@@ -8976,8 +8976,9 @@ async function parseComplaints(file) {
             // مكاتب أونك → نجمّع حسب Region
             govCount++; govAmt += amt; govPaid += paid; govAdj += adj;
             const rKey = region;
-            if (!regionMap[rKey]) regionMap[rKey] = {count:0, amt:0};
+            if (!regionMap[rKey]) regionMap[rKey] = {count:0, amt:0, paid:0, adj:0};
             regionMap[rKey].count++; regionMap[rKey].amt += amt;
+            regionMap[rKey].paid += paid; regionMap[rKey].adj += adj;
           }
         }
         resolve({ total, dcCount, hoCount, govCount, dcAmt, hoAmt, govAmt, dcPaid, hoPaid, govPaid, dcAdj, hoAdj, govAdj, regionMap, branchMap });
@@ -10631,13 +10632,24 @@ export default function Dashboard() {
         }}>
           <SectionHeader title="🗺 مكاتب أونك" paid={gPd} adj={gAd} color="#e85d20" small={small} portAmt={complaintsAmts.gov||gPortAmt||data.regions?.reduce((s,r)=>s+(r.portAmt||0),0)||0} portCnt={complaintsCounts.gov||gPortCnt||data.regions?.reduce((s,r)=>s+(r.portCnt||0),0)||0}/>
           <div style={{ padding: small?"10px":"14px 16px", display:"flex", flexDirection:"column", gap: small?8:10 }}>
-            {data.regions.map((r,i) => (
-              <RegionRow key={r.id} region={r} idx={i}
+            {data.regions.map((r,i) => {
+                // دمج مع Complaints
+                const cReg = Object.entries(complaintsRegionMap||{}).find(([k])=>
+                  k===r.nameEn || k===r.id ||
+                  (r.nameEn||'').toLowerCase().includes(k.toLowerCase()) ||
+                  k.toLowerCase().includes((r.nameEn||'').toLowerCase())
+                )?.[1];
+                const rr = cReg ? {...r,
+                  portAmt: cReg.amt  > 0 ? cReg.amt  : r.portAmt,
+                  paid:    cReg.paid > 0 ? cReg.paid : r.paid,
+                  adj:     cReg.adj  > 0 ? cReg.adj  : r.adj,
+                } : r;
+                return <RegionRow key={r.id} region={rr} idx={i}
                 open={openRegion===r.id}
                 onToggle={() => setOpenRegion(openRegion===r.id?null:r.id)}
                 small={small}
-              />
-            ))}
+              />;
+              })}
           </div>
         </div>
 
