@@ -6142,7 +6142,7 @@ async function parseXLS(file) {
     const paid    = n(row['Paid Amount']|| row['paid_amount']  || row['Paid'] || 0);
     const adj     = n(row['Adjustment'] || row['adjustment']   || row['Adj']  || 0);
     const osAmt   = n(row['O/S Amount'] || row['os_amount']    || row['Outstanding'] || row['O/S'] || 0);
-    const rowPort  = osAmt; // قيمة المحفظة = O/S Amount فقط
+    const rowPort  = (paid > 0 || osAmt > 0) ? paid + osAmt : 0; // قيمة الحساب الكلية
     const col     = (row['Collector']   || row['collector']    || '').trim();
     const branch  = (row['Branch']      || row['branch']       || '').trim();
 
@@ -6198,7 +6198,7 @@ async function parseXLS(file) {
     count: regMap[k].count||0,
     paidCount: regMap[k].paidCount||0,
     adjCount:  regMap[k].adjCount||0,
-    portAmt: regMap[k].osAmt>0 ? regMap[k].osAmt : (PORT.regions[k]||{portAmt:0}).portAmt,
+    portAmt: (PORT.regions[k]||{portAmt:0}).portAmt,
     portCnt: (PORT.regions[k]||{portCnt:0}).portCnt,
     collectors: Object.entries(regMap[k].cMap)
       .map(([nm,d]) => ({
@@ -6494,12 +6494,13 @@ function SectionHeader({title,paid,adj,color,small,portAmt,portCnt}) {
           </div>
         </div>
       )}
+    </div>
   );
 }
 
 // ── EntityCard ─────────────────────────────────────────────────────────────
 function EntityCard({name,paid,adj,color,rank,small,cnt,cBranch,portAmt,portCnt,principalAmt,osAmt}) {
-  const bKey = Object.keys(cBranch||{}).find(k => k.trim()===name?.trim() || (name&&name.includes(k)) || k.includes(name||'__'));
+  const bKey = Object.keys(cBranch||{}).find(k => k.trim()===name?.trim() || name?.includes(k) || k.includes(name||'__'));
   const bD = bKey ? (cBranch||{})[bKey] : null;
   const total    = (paid||0) + (adj||0);
   const allZero = total === 0 && name !== "Blanks" && !["Ejada","Tahseel United","High Speed Company","High Speed company"].includes(name);
@@ -6853,42 +6854,49 @@ function RegionRow({region, idx, open, onToggle, small}) {
           </div>
 
           {(region.collectors||[]).map((c,i) => {
-            // بيانات المحصّل من Complaints (regionMap.collectors)
-            const _regKey = Object.keys(complaintsRegionMap||{}).find(k=>
-              k===region.nameEn || k.toLowerCase()===((region.nameEn||'').toLowerCase())
-            );
-            const _cComp = _regKey
-              ? (complaintsRegionMap[_regKey]?.collectors?.[c.name] || null)
-              : null;
-            const cPaid = _cComp?.paid > 0 ? _cComp.paid : (c.paid||0);
-            const cAdj  = _cComp?.adj  > 0 ? _cComp.adj  : (c.adj||0);
-            const ct    = cPaid + cAdj;
-            const cPort = _cComp?.amt  > 0 ? _cComp.amt  : (c.portAmt||0);
-            const cCnt  = _cComp?.count> 0 ? _cComp.count: (c.portCnt||c.count||0);
-            const cRem  = cPort > 0 ? cPort - ct : 0;
-            const cPct  = cPort > 0 ? Math.min(100,(ct/cPort)*100) : 0;
-            const cShare= total > 0 ? Math.round(ct/total*100) : 0;
+            const ct = (c.paid||0)+(c.adj||0);
+            const cPort = c.portAmt||0;
+            const cCnt  = c.portCnt||c.count||0;
+            const cRem  = cPort>0 ? cPort-ct : 0;
+            const cPct  = cPort>0 ? Math.min(100,(ct/cPort)*100) : 0;
             return (
-              <div key={i} style={{borderRadius:12,marginBottom:8,border:`1.5px solid ${col}22`,background:"#fff",overflow:"hidden"}}>
-                {/* هيدر المحصّل */}
-                <div style={{display:"flex",alignItems:"center",gap:10,padding:small?"8px 12px":"10px 14px",background:`linear-gradient(120deg,${col}08,${col}15)`,borderBottom:`1px solid ${col}18`}}>
-                  <div style={{width:small?28:34,height:small?28:34,borderRadius:8,background:col,display:"flex",alignItems:"center",justifyContent:"center",fontSize:small?13:15,fontWeight:900,color:"#fff",flexShrink:0}}>{i+1}</div>
-                  <div style={{fontSize:small?13:16,color:"#000",fontWeight:800,flex:1,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{c.name}</div>
-                  {cPort>0 && <div style={{background:col,color:"#fff",borderRadius:20,padding:"2px 10px",fontSize:small?10:12,fontWeight:900,flexShrink:0}}>{cPct.toFixed(1)}%</div>}
+              <div key={i} style={{borderRadius:12,marginBottom:8,overflow:"hidden",
+                border:`1.5px solid ${col}22`,background:"#fff"}}>
+                {/* اسم المحصّل + رقم */}
+                <div style={{display:"flex",alignItems:"center",gap:10,
+                  padding:small?"8px 12px":"10px 14px",
+                  background:`linear-gradient(120deg,${col}08,${col}15)`,
+                  borderBottom:`1px solid ${col}18`}}>
+                  <div style={{width:small?28:34,height:small?28:34,borderRadius:8,
+                    background:col,display:"flex",alignItems:"center",
+                    justifyContent:"center",fontSize:small?13:15,fontWeight:900,color:"#fff",
+                    flexShrink:0}}>{i+1}</div>
+                  <div style={{fontSize:small?13:16,color:"#000",fontWeight:800,flex:1,
+                    overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{c.name}</div>
+                  {/* نسبة الإنجاز */}
+                  {cPort>0 && (
+                    <div style={{background:col,color:"#fff",borderRadius:20,
+                      padding:"2px 10px",fontSize:small?10:12,fontWeight:900,flexShrink:0}}>
+                      {cPct.toFixed(1)}%
+                    </div>
+                  )}
                 </div>
-                {/* محتوى المحصّل */}
-                <div style={{padding:small?"8px 10px":"10px 14px",display:"flex",flexDirection:"column",gap:6}}>
+                {/* صف الأرقام */}
+                <div style={{padding:small?"8px 10px":"10px 14px",display:"flex",
+                  flexDirection:"column",gap:6}}>
                   {/* قيمة المحفظة + عدد الحسابات */}
                   {(cPort>0||cCnt>0) && (
                     <div style={{display:"flex",gap:6}}>
                       {cPort>0 && (
-                        <div style={{flex:1,background:`${col}08`,borderRadius:8,padding:"6px 10px",border:`1px solid ${col}20`,textAlign:"center"}}>
+                        <div style={{flex:1,background:`${col}08`,borderRadius:8,padding:"6px 10px",
+                          border:`1px solid ${col}20`,textAlign:"center"}}>
                           <div style={{fontSize:small?8:10,color:col,fontWeight:700,marginBottom:2}}>قيمة المحفظة</div>
                           <div style={{fontSize:small?12:15,fontWeight:900,color:col,direction:"ltr"}}>{omr(cPort)}</div>
                         </div>
                       )}
                       {cCnt>0 && (
-                        <div style={{flex:1,background:`${col}08`,borderRadius:8,padding:"6px 10px",border:`1px solid ${col}20`,textAlign:"center"}}>
+                        <div style={{flex:1,background:`${col}08`,borderRadius:8,padding:"6px 10px",
+                          border:`1px solid ${col}20`,textAlign:"center"}}>
                           <div style={{fontSize:small?8:10,color:col,fontWeight:700,marginBottom:2}}>عدد الحسابات</div>
                           <div style={{fontSize:small?12:15,fontWeight:900,color:col}}>{cCnt.toLocaleString()}</div>
                         </div>
@@ -6897,38 +6905,46 @@ function RegionRow({region, idx, open, onToggle, small}) {
                   )}
                   {/* المدفوع + التسويات + الإجمالي */}
                   <div style={{display:"flex",border:"1px solid #f0ece8",borderRadius:9,overflow:"hidden",background:"#fafafa"}}>
-                    {[["المدفوع",cPaid,"#16a34a"],["التسويات",cAdj,"#d97706"],["الإجمالي",ct,col]].map(([lbl,val,clr],j)=>(
-                      <div key={lbl} style={{flex:1,textAlign:"center",padding:small?"6px 4px":"8px 6px",borderRight:j<2?`1px solid ${col}15`:"none"}}>
+                    {[["المدفوع",c.paid||0,"#16a34a"],["التسويات",c.adj||0,"#d97706"],["الإجمالي",ct,col]].map(([lbl,val,clr],j)=>(
+                      <div key={lbl} style={{flex:1,textAlign:"center",padding:small?"6px 4px":"8px 6px",
+                        borderRight:j<2?`1px solid ${col}15`:"none"}}>
                         <div style={{fontSize:small?9:11,color:clr,fontWeight:800,marginBottom:2}}>{lbl}</div>
                         <div style={{fontSize:small?12:15,fontWeight:900,color:clr}}>{omr(val)}</div>
                       </div>
                     ))}
                   </div>
-                  {/* المتبقي + شريط الإنجاز */}
+                  {/* المتبقي + شريط */}
                   {cPort>0 && (
                     <div style={{display:"flex",gap:6,alignItems:"center"}}>
-                      <div style={{flex:1,background:"#fff3ee",borderRadius:8,padding:"6px 10px",border:"1px solid #ffe4d4",textAlign:"center"}}>
+                      <div style={{flex:1,background:"#fff3ee",borderRadius:8,padding:"6px 10px",
+                        border:"1px solid #ffe4d4",textAlign:"center"}}>
                         <div style={{fontSize:small?8:10,color:"#e85d20",fontWeight:700,marginBottom:2}}>المتبقي</div>
                         <div style={{fontSize:small?12:14,fontWeight:900,color:"#e85d20",direction:"ltr"}}>{omr(cRem)}</div>
                       </div>
-                      <div style={{flex:2,background:"#f8f9fc",borderRadius:8,padding:"6px 10px",border:`1px solid ${col}18`}}>
+                      <div style={{flex:2,background:"#f8f9fc",borderRadius:8,padding:"6px 10px",
+                        border:`1px solid ${col}18`}}>
                         <div style={{display:"flex",justifyContent:"space-between",marginBottom:4}}>
                           <div style={{fontSize:small?8:10,color:col,fontWeight:700}}>نسبة الإنجاز</div>
                           <div style={{fontSize:small?11:13,fontWeight:900,color:col}}>{cPct.toFixed(1)}%</div>
                         </div>
                         <div style={{background:"#e8f0fe",borderRadius:4,height:5,overflow:"hidden"}}>
-                          <div style={{height:"100%",borderRadius:4,background:`linear-gradient(90deg,${col}88,${col})`,width:`${cPct}%`}}/>
+                          <div style={{height:"100%",borderRadius:4,
+                            background:`linear-gradient(90deg,${col}88,${col})`,
+                            width:`${cPct}%`}}/>
                         </div>
                       </div>
                     </div>
                   )}
-                  {/* نسبة المساهمة */}
+                  {/* نسبة مساهمة المحصّل */}
                   {total>0 && (
-                    <div>
-                      <div style={{height:3,background:"#f0ece8",borderRadius:3,overflow:"hidden",marginBottom:2}}>
-                        <div style={{height:"100%",width:`${cShare}%`,background:`linear-gradient(90deg,${col}88,${col})`,borderRadius:3}}/>
-                      </div>
-                      <div style={{fontSize:small?8:9,color:"#aaa",fontWeight:700,textAlign:"left"}}>{cShare}% من إجمالي المنطقة</div>
+                    <div style={{height:3,background:"#f0ece8",borderRadius:3,overflow:"hidden",marginTop:2}}>
+                      <div style={{height:"100%",width:`${Math.min(100,Math.round(ct/total*100))}%`,
+                        background:`linear-gradient(90deg,${col}88,${col})`,borderRadius:3}}/>
+                    </div>
+                  )}
+                  {total>0 && (
+                    <div style={{fontSize:small?8:9,color:"#aaa",fontWeight:700,textAlign:"left"}}>
+                      {Math.round(ct/total*100)}% من إجمالي المنطقة
                     </div>
                   )}
                 </div>
@@ -6975,6 +6991,7 @@ function RegionRow({region, idx, open, onToggle, small}) {
           )}
         </div>
       )}
+    </div>
   );
 }
 
@@ -8935,57 +8952,33 @@ async function parseComplaints(file) {
           const region = (row[regionIdx]||'').replace(/\r/g,'').trim();
           const branch = branchIdx>=0 ? (row[branchIdx]||'').replace(/\r/g,'').trim() : '';
           if (!region) continue;
+          const principal = principalIdx>=0 ? (parseFloat(row[principalIdx])||0) : 0;
           const osAmt     = osIdx>=0        ? (parseFloat(row[osIdx])||0)        : 0;
           const paid      = paidIdx>=0      ? (parseFloat(row[paidIdx])||0)      : 0;
           const adj       = adjIdx>=0       ? (parseFloat(row[adjIdx])||0)       : 0;
-          const amt = osAmt; // قيمة المحفظة = O/S Amount
+          const amt = principal > 0 ? principal : (paid + osAmt);
           total++;
           
           if (region === DC_REGION) {
             // شركات التحصيل → نجمّع حسب Branch
             dcCount++; dcAmt += amt; dcPaid += paid; dcAdj += adj;
-            const dcKey = branch || collector || 'Unknown';
-            if (dcKey) {
-              if (!branchMap[dcKey]) branchMap[dcKey] = {count:0, amt:0, paid:0, adj:0};
-              branchMap[dcKey].count++; branchMap[dcKey].amt += amt;
-              branchMap[dcKey].paid += paid; branchMap[dcKey].adj += adj;
+            if (branch) {
+              if (!branchMap[branch]) branchMap[branch] = {count:0, amt:0};
+              branchMap[branch].count++; branchMap[branch].amt += amt;
             }
           } else if (HO_REGIONS.some(k => region.trim() === k.trim())) {
             // المكتب الرئيسي → نجمّع الكل تحت مفتاح واحد
             hoCount++; hoAmt += amt; hoPaid += paid; hoAdj += adj;
-            // إجمالي HO
             const hoKey = 'HEAD_OFFICE_TOTAL';
-            if (!branchMap[hoKey]) branchMap[hoKey] = {count:0, amt:0, paid:0, adj:0};
+            if (!branchMap[hoKey]) branchMap[hoKey] = {count:0, amt:0};
             branchMap[hoKey].count++; branchMap[hoKey].amt += amt;
-            branchMap[hoKey].paid += paid; branchMap[hoKey].adj += adj;
-            // لكل Collector منفصلاً
-            if (collector) {
-              const cL = collector.toLowerCase();
-              let hoColKey = collector;
-              if (cL.includes('sarhaan')||cL.includes('sarhan')||cL.includes('dr')) hoColKey = 'Legal - DR. Sarhaan';
-              else if (cL.includes('doc')) hoColKey = 'Documentation- Omantel';
-              else if (cL.includes('non-due')||collector.toUpperCase()==='HO') hoColKey = 'Non-due accounts';
-              else hoColKey = 'Blanks';
-              if (!branchMap[hoColKey]) branchMap[hoColKey] = {count:0, amt:0, paid:0, adj:0};
-              branchMap[hoColKey].count++; branchMap[hoColKey].amt += amt;
-              branchMap[hoColKey].paid += paid; branchMap[hoColKey].adj += adj;
-            }
           } else {
             // مكاتب أونك → نجمّع حسب Region
             govCount++; govAmt += amt; govPaid += paid; govAdj += adj;
             const rKey = region;
-            if (!regionMap[rKey]) regionMap[rKey] = {count:0, amt:0, paid:0, adj:0, collectors:{}};
+            if (!regionMap[rKey]) regionMap[rKey] = {count:0, amt:0, paid:0, adj:0};
             regionMap[rKey].count++; regionMap[rKey].amt += amt;
             regionMap[rKey].paid += paid; regionMap[rKey].adj += adj;
-            // تجميع per-collector
-            if (collector) {
-              if (!regionMap[rKey].collectors) regionMap[rKey].collectors = {};
-              if (!regionMap[rKey].collectors[collector]) regionMap[rKey].collectors[collector] = {count:0, amt:0, paid:0, adj:0};
-              regionMap[rKey].collectors[collector].count++;
-              regionMap[rKey].collectors[collector].amt  += amt;
-              regionMap[rKey].collectors[collector].paid += paid;
-              regionMap[rKey].collectors[collector].adj  += adj;
-            }
           }
         }
         resolve({ total, dcCount, hoCount, govCount, dcAmt, hoAmt, govAmt, dcPaid, hoPaid, govPaid, dcAdj, hoAdj, govAdj, regionMap, branchMap });
@@ -9647,17 +9640,6 @@ export default function Dashboard() {
         const existingHO = row.headOffice || [];
         const fullHO = HO_REQ.map(nm => existingHO.find(c=>c.name===nm) || {name:nm,paid:0,adj:0,count:0,...(HO_P[nm]||{})});
         let d = { ...row, headOffice: fullHO, _updatedAt: row._updatedAt||row.lastUpdated||'' };
-        if (row.complaintsRegionMap && Object.keys(row.complaintsRegionMap).length>0) setComplaintsRegionMap(row.complaintsRegionMap);
-        if (row.complaintsBranchMap && Object.keys(row.complaintsBranchMap).length>0) setComplaintsBranchMap(row.complaintsBranchMap);
-        if (row.complaintsAmts) setComplaintsAmts(row.complaintsAmts);
-        if (row.complaintsPaid) setComplaintsPaid(row.complaintsPaid);
-        if (row.complaintsAdj)  setComplaintsAdj(row.complaintsAdj);
-        // استعادة complaints data من Firebase
-        if (row.complaintsRegionMap) setComplaintsRegionMap(row.complaintsRegionMap);
-        if (row.complaintsBranchMap) setComplaintsBranchMap(row.complaintsBranchMap);
-        if (row.complaintsAmts)      setComplaintsAmts(row.complaintsAmts);
-        if (row.complaintsPaid)      setComplaintsPaid(row.complaintsPaid);
-        if (row.complaintsAdj)       setComplaintsAdj(row.complaintsAdj);
         setData(d);
         try { localStorage.setItem('oneic_dashboard_data', JSON.stringify(d)); } catch(e) {}
         if (row.history?.length > 0) {
@@ -9863,12 +9845,7 @@ export default function Dashboard() {
       grandAdj: ga,
       lastUpdated: _ts,
       _updatedAt: _ts,
-      lastUpdatedDate: _ts.split('T')[0],
-      complaintsRegionMap: complaintsRegionMap||{},
-      complaintsBranchMap: complaintsBranchMap||{},
-      complaintsAmts: complaintsAmts||{},
-      complaintsPaid: complaintsPaid||{},
-      complaintsAdj: complaintsAdj||{},
+      lastUpdatedDate: _ts.split('T')[0]
     };
 
     // ── رفع لـ JSONbin + localStorage ───────────────────────────────────
@@ -10657,11 +10634,11 @@ export default function Dashboard() {
           <div style={{ padding: small?"10px":"14px 16px", display:"flex", flexDirection:"column", gap: small?8:10 }}>
             {data.regions.map((r,i) => {
                 // دمج مع Complaints
-                // مطابقة دقيقة أولاً ثم fuzzy
-                const _crMap = complaintsRegionMap||{};
-                const _crKeys = Object.keys(_crMap);
-                const cReg = _crMap[r.nameEn] || _crMap[r.id] ||
-                  (()=>{ const k=_crKeys.find(k=>k.toLowerCase()===((r.nameEn||'').toLowerCase())); return k?_crMap[k]:null; })();
+                const cReg = Object.entries(complaintsRegionMap||{}).find(([k])=>
+                  k===r.nameEn || k===r.id ||
+                  (r.nameEn||'').toLowerCase().includes(k.toLowerCase()) ||
+                  k.toLowerCase().includes((r.nameEn||'').toLowerCase())
+                )?.[1];
                 const rr = cReg ? {...r,
                   portAmt: cReg.amt  > 0 ? cReg.amt  : r.portAmt,
                   paid:    cReg.paid > 0 ? cReg.paid : r.paid,
@@ -10709,12 +10686,7 @@ export default function Dashboard() {
                   }
                 });
                 return dc.map((c,i) => (
-                <EntityCard key={c.name} name={c.name}
-                  paid={(()=>{const b=complaintsBranchMap[c.name];return b?.paid>0?b.paid:c.paid;})()}
-                  adj={(()=>{const b=complaintsBranchMap[c.name];return b?.adj>0?b.adj:c.adj;})()}
-                  cBranch={complaintsBranchMap} color="#1a7a6b" rank={i+1} small={small}
-                  portAmt={(()=>{const b=complaintsBranchMap[c.name];return b?.amt>0?b.amt:c.portAmt||0;})()}
-                  portCnt={c.portCnt||0} osAmt={c.osAmt||c.portAmt||0}/>
+                <EntityCard key={c.name} name={c.name} paid={c.paid} adj={c.adj} cBranch={complaintsBranchMap} color="#1a7a6b" rank={i+1} small={small} portAmt={c.portAmt||0} portCnt={c.portCnt||0} osAmt={c.osAmt||c.portAmt||0}/>
                 ));
               })()}
             </div>
@@ -10725,11 +10697,7 @@ export default function Dashboard() {
             <SectionHeader title="🏛 المكتب الرئيسي" paid={hPd} adj={hAd} color="#6c3fa0" small={small} portAmt={hPortAmt||0} portCnt={hPortCnt||0}/>
             <div style={{ padding: small?"10px":"14px 16px", display:"flex", flexDirection:"column", gap: small?8:10 }}>
               {(data.headOffice||[]).filter(c=>c.name!=='HO').map((c,i) => (
-                <EntityCard key={c.name} name={c.name}
-                  paid={(()=>{const b=complaintsBranchMap[c.name];return b?.paid>0?b.paid:c.paid;})()}
-                  adj={(()=>{const b=complaintsBranchMap[c.name];return b?.adj>0?b.adj:c.adj;})()}
-                  cBranch={complaintsBranchMap} color="#6c3fa0" rank={i+1} small={small}
-                  portAmt={c.portAmt||0} portCnt={c.portCnt||0} principalAmt={c.principalAmt||0}/>
+                <EntityCard key={c.name} name={c.name} paid={c.paid} adj={c.adj} cBranch={complaintsBranchMap} color="#6c3fa0" rank={i+1} small={small} portAmt={c.portAmt||0} portCnt={c.portCnt||0} principalAmt={c.principalAmt||0}/>
               ))}
             </div>
           </div>
