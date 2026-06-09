@@ -10561,7 +10561,7 @@ export default function Dashboard() {
           <div style={{ background:"#fff", borderRadius:16, boxShadow:"0 3px 18px rgba(0,0,0,0.07)", border:"1.5px solid #f0ece8", overflow:"hidden" }}>
             <SectionHeader title="🏢 شركات التحصيل" paid={dPd} adj={dAd} color="#1a7a6b" small={small} portAmt={dPortAmt||0} portCnt={dPortCnt||0}/>
             <div style={{ padding: small?"10px":"14px 16px", display:"flex", flexDirection:"column", gap: small?8:10 }}>
-              {data.debtCompanies.filter(c=>(c.paid||0)+(c.adj||0)>0).map((c,i) => (
+              {data.debtCompanies.map((c,i) => (
                 <EntityCard key={c.name} name={c.name} paid={c.paid} adj={c.adj} cBranch={complaintsBranchMap} color="#1a7a6b" rank={i+1} small={small} portAmt={c.portAmt||0} portCnt={c.portCnt||0}/>
               ))}
             </div>
