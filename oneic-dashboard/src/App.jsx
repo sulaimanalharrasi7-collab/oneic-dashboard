@@ -6976,13 +6976,13 @@ function RegionRow({region, idx, open, onToggle, small}) {
                     <div style={{height:"100%",borderRadius:6,background:`linear-gradient(90deg,${col}88,${col})`,width:`${pctInj}%`}}/>
                   </div>
                   <div style={{display:"flex",justifyContent:"space-between",marginTop:6,flexWrap:"wrap",gap:6}}>
-                    <div style={{textAlign:"center",background:"rgba(255,255,255,0.6)",borderRadius:8,padding:"5px 12px",flex:1}}>
-                      <div style={{fontSize:small?9:11,color:"rgba(255,255,255,0.8)",fontWeight:700,marginBottom:2}}>محصّل</div>
-                      <div style={{fontSize:small?12:16,fontWeight:900,color:"#fff"}}>{omr(total)}</div>
+                    <div style={{textAlign:"center",background:"rgba(255,255,255,0.15)",borderRadius:8,padding:"6px 16px",flex:1,border:"1px solid rgba(255,255,255,0.3)"}}>
+                      <div style={{fontSize:small?9:11,color:"rgba(255,255,255,0.75)",fontWeight:700,marginBottom:3}}>الإجمالي المحصّل</div>
+                      <div style={{fontSize:small?13:17,fontWeight:900,color:"#fff"}}>{omr(total)} <span style={{fontSize:10,opacity:0.7}}>OMR</span></div>
                     </div>
-                    <div style={{textAlign:"center",background:"rgba(255,255,255,0.6)",borderRadius:8,padding:"5px 12px",flex:1}}>
-                      <div style={{fontSize:small?9:11,color:"rgba(255,255,255,0.8)",fontWeight:700,marginBottom:2}}>متبقي</div>
-                      <div style={{fontSize:small?12:16,fontWeight:900,color:"#fca5a5"}}>{omr(remaining)}</div>
+                    <div style={{textAlign:"center",background:"rgba(255,255,255,0.15)",borderRadius:8,padding:"6px 16px",flex:1,border:"1px solid rgba(255,255,255,0.3)"}}>
+                      <div style={{fontSize:small?9:11,color:"rgba(255,255,255,0.75)",fontWeight:700,marginBottom:3}}>المتبقي من المحفظة</div>
+                      <div style={{fontSize:small?13:17,fontWeight:900,color:"#fca5a5"}}>{omr(remaining)} <span style={{fontSize:10,opacity:0.7}}>OMR</span></div>
                     </div>
                   </div>
                 </div>
