@@ -9459,6 +9459,29 @@ export default function Dashboard() {
   const [pwError, setPwError] = useState(false);
   const [showBulkReport, setShowBulkReport] = useState(false);
   const [lastSync, setLastSync] = useState(null);
+
+  // ══ ضمان الشركات غير النشطة دائماً في كل تحديث ══
+  useEffect(() => {
+    if (!data?.debtCompanies) return;
+    const INACTIVE = [
+      {name:"Ejada",             portAmt:261235.418, portCnt:1938},
+      {name:"Tahseel United",    portAmt:0,          portCnt:0},
+      {name:"High Speed Company",portAmt:0,          portCnt:0},
+    ];
+    let changed = false;
+    let dc = [...data.debtCompanies];
+    INACTIVE.forEach(({name,portAmt,portCnt}) => {
+      const idx = dc.findIndex(c=>c.name===name);
+      if (idx < 0) {
+        dc.push({name,paid:0,adj:0,count:portCnt,portAmt,portCnt});
+        changed = true;
+      } else if (!(dc[idx].portAmt>0) && portAmt>0) {
+        dc[idx] = {...dc[idx], portAmt, portCnt:portCnt||dc[idx].portCnt||dc[idx].count||0};
+        changed = true;
+      }
+    });
+    if (changed) setData(prev => ({...prev, debtCompanies: dc}));
+  }, [data?._updatedAt, data?.lastUpdated]);
   const [syncing, setSyncing] = useState(false);
   const [showUploadAuth, setShowUploadAuth] = useState(false);
   const [uploadAuthInput, setUploadAuthInput] = useState('');
@@ -9544,13 +9567,23 @@ export default function Dashboard() {
         const existingHO = row.headOffice || [];
         const fullHO = HO_REQ.map(nm => existingHO.find(c=>c.name===nm) || {name:nm,paid:0,adj:0,count:0,...(HO_P[nm]||{})});
         let d = { ...row, headOffice: fullHO, _updatedAt: row._updatedAt||row.lastUpdated||'' };
-      // ── تصحيح portAmt للشركات الثابتة ──
-      const DC_PORT_FINAL = {"Ejada":{portAmt:261235.418,portCnt:1938}};
+      // ── ضمان الشركات غير النشطة دائماً ──
+      const INACTIVE_LIST = [
+        {name:"Ejada",            portAmt:261235.418, portCnt:1938},
+        {name:"Tahseel United",   portAmt:0,          portCnt:0},
+        {name:"High Speed Company",portAmt:0,         portCnt:0},
+      ];
       if (d.debtCompanies) {
-        d.debtCompanies = d.debtCompanies.map(c => {
-          const fix = DC_PORT_FINAL[c.name];
-          if (fix && !(c.portAmt>0)) return {...c, portAmt:fix.portAmt, portCnt:fix.portCnt||c.portCnt||c.count||0};
-          return c;
+        INACTIVE_LIST.forEach(({name,portAmt,portCnt}) => {
+          if (!d.debtCompanies.find(c=>c.name===name)) {
+            d.debtCompanies.push({name,paid:0,adj:0,count:portCnt,portAmt,portCnt});
+          } else {
+            d.debtCompanies = d.debtCompanies.map(c =>
+              c.name===name && !(c.portAmt>0)
+                ? {...c, portAmt, portCnt:portCnt||c.portCnt||c.count||0}
+                : c
+            );
+          }
         });
       }
         setData(d);
