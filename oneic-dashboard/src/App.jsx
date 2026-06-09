@@ -6142,7 +6142,7 @@ async function parseXLS(file) {
     const paid    = n(row['Paid Amount']|| row['paid_amount']  || row['Paid'] || 0);
     const adj     = n(row['Adjustment'] || row['adjustment']   || row['Adj']  || 0);
     const osAmt   = n(row['O/S Amount'] || row['os_amount']    || row['Outstanding'] || row['O/S'] || 0);
-    const rowPort  = (paid > 0 || osAmt > 0) ? paid + osAmt : 0; // قيمة الحساب الكلية
+    const rowPort  = osAmt; // قيمة المحفظة = O/S Amount فقط
     const col     = (row['Collector']   || row['collector']    || '').trim();
     const branch  = (row['Branch']      || row['branch']       || '').trim();
 
