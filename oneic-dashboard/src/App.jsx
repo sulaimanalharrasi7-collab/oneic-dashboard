@@ -6492,13 +6492,14 @@ function SectionHeader({title,paid,adj,color,small,portAmt,portCnt}) {
           <div style={{background:"rgba(255,255,255,0.15)",borderRadius:6,height:5,overflow:"hidden"}}>
             <div style={{height:"100%",borderRadius:6,background:"rgba(255,255,255,0.7)",width:`${pct}%`}}/>
           </div>
+        </div>
       )}
   );
 }
 
 // ── EntityCard ─────────────────────────────────────────────────────────────
 function EntityCard({name,paid,adj,color,rank,small,cnt,cBranch,portAmt,portCnt,principalAmt,osAmt}) {
-  const bKey = Object.keys(cBranch||{}).find(k => k.trim()===name?.trim() || name?.includes(k) || k.includes(name||'__'));
+  const bKey = Object.keys(cBranch||{}).find(k => k.trim()===name?.trim() || (name&&name.includes(k)) || k.includes(name||'__'));
   const bD = bKey ? (cBranch||{})[bKey] : null;
   const total    = (paid||0) + (adj||0);
   const allZero = total === 0 && name !== "Blanks" && !["Ejada","Tahseel United","High Speed Company","High Speed company"].includes(name);
