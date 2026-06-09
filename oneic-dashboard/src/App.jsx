@@ -9460,28 +9460,7 @@ export default function Dashboard() {
   const [showBulkReport, setShowBulkReport] = useState(false);
   const [lastSync, setLastSync] = useState(null);
 
-  // ══ ضمان الشركات غير النشطة دائماً في كل تحديث ══
-  useEffect(() => {
-    if (!data?.debtCompanies) return;
-    const INACTIVE = [
-      {name:"Ejada",             portAmt:261235.418, portCnt:1938},
-      {name:"Tahseel United",    portAmt:0,          portCnt:0},
-      {name:"High Speed Company",portAmt:0,          portCnt:0},
-    ];
-    let changed = false;
-    let dc = [...data.debtCompanies];
-    INACTIVE.forEach(({name,portAmt,portCnt}) => {
-      const idx = dc.findIndex(c=>c.name===name);
-      if (idx < 0) {
-        dc.push({name,paid:0,adj:0,count:portCnt,portAmt,portCnt});
-        changed = true;
-      } else if (!(dc[idx].portAmt>0) && portAmt>0) {
-        dc[idx] = {...dc[idx], portAmt, portCnt:portCnt||dc[idx].portCnt||dc[idx].count||0};
-        changed = true;
-      }
-    });
-    if (changed) setData(prev => ({...prev, debtCompanies: dc}));
-  }, [data?._updatedAt, data?.lastUpdated]);
+
   const [syncing, setSyncing] = useState(false);
   const [showUploadAuth, setShowUploadAuth] = useState(false);
   const [uploadAuthInput, setUploadAuthInput] = useState('');
@@ -10594,9 +10573,25 @@ export default function Dashboard() {
           <div style={{ background:"#fff", borderRadius:16, boxShadow:"0 3px 18px rgba(0,0,0,0.07)", border:"1.5px solid #f0ece8", overflow:"hidden" }}>
             <SectionHeader title="🏢 شركات التحصيل" paid={dPd} adj={dAd} color="#1a7a6b" small={small} portAmt={dPortAmt||0} portCnt={dPortCnt||0}/>
             <div style={{ padding: small?"10px":"14px 16px", display:"flex", flexDirection:"column", gap: small?8:10 }}>
-              {data.debtCompanies.map((c,i) => (
+              {(() => {
+                const ALWAYS_SHOW = [
+                  {name:"Ejada",             portAmt:261235.418, portCnt:1938, paid:0, adj:0, count:1938},
+                  {name:"Tahseel United",    portAmt:0,          portCnt:0,    paid:0, adj:0, count:0},
+                  {name:"High Speed Company",portAmt:0,          portCnt:0,    paid:0, adj:0, count:0},
+                ];
+                const dc = [...(data.debtCompanies||[])];
+                ALWAYS_SHOW.forEach(co => {
+                  if (!dc.find(c=>c.name===co.name)) dc.push(co);
+                  else {
+                    const idx = dc.findIndex(c=>c.name===co.name);
+                    if (!(dc[idx].portAmt>0) && co.portAmt>0)
+                      dc[idx] = {...dc[idx], portAmt:co.portAmt, portCnt:co.portCnt||dc[idx].portCnt};
+                  }
+                });
+                return dc.map((c,i) => (
                 <EntityCard key={c.name} name={c.name} paid={c.paid} adj={c.adj} cBranch={complaintsBranchMap} color="#1a7a6b" rank={i+1} small={small} portAmt={c.portAmt||0} portCnt={c.portCnt||0}/>
-              ))}
+                ));
+              })()}
             </div>
           </div>
 
