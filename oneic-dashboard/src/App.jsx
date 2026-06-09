@@ -6976,13 +6976,13 @@ function RegionRow({region, idx, open, onToggle, small}) {
                     <div style={{height:"100%",borderRadius:6,background:`linear-gradient(90deg,${col}88,${col})`,width:`${pctInj}%`}}/>
                   </div>
                   <div style={{display:"flex",justifyContent:"space-between",marginTop:6,flexWrap:"wrap",gap:6}}>
-                    <div style={{textAlign:"center",background:"rgba(255,255,255,0.15)",borderRadius:8,padding:"6px 16px",flex:1,border:"1px solid rgba(255,255,255,0.3)"}}>
-                      <div style={{fontSize:small?9:11,color:"rgba(255,255,255,0.75)",fontWeight:700,marginBottom:3}}>الإجمالي المحصّل</div>
-                      <div style={{fontSize:small?13:17,fontWeight:900,color:"#fff"}}>{omr(total)} <span style={{fontSize:10,opacity:0.7}}>OMR</span></div>
+                    <div style={{textAlign:"center",background:"rgba(255,255,255,0.6)",borderRadius:8,padding:"5px 12px",flex:1}}>
+                      <div style={{fontSize:small?9:11,color:"rgba(255,255,255,0.8)",fontWeight:700,marginBottom:2}}>محصّل</div>
+                      <div style={{fontSize:small?12:16,fontWeight:900,color:"#fff"}}>{omr(total)}</div>
                     </div>
-                    <div style={{textAlign:"center",background:"rgba(255,255,255,0.15)",borderRadius:8,padding:"6px 16px",flex:1,border:"1px solid rgba(255,255,255,0.3)"}}>
-                      <div style={{fontSize:small?9:11,color:"rgba(255,255,255,0.75)",fontWeight:700,marginBottom:3}}>المتبقي من المحفظة</div>
-                      <div style={{fontSize:small?13:17,fontWeight:900,color:"#fca5a5"}}>{omr(remaining)} <span style={{fontSize:10,opacity:0.7}}>OMR</span></div>
+                    <div style={{textAlign:"center",background:"rgba(255,255,255,0.6)",borderRadius:8,padding:"5px 12px",flex:1}}>
+                      <div style={{fontSize:small?9:11,color:"rgba(255,255,255,0.8)",fontWeight:700,marginBottom:2}}>متبقي</div>
+                      <div style={{fontSize:small?12:16,fontWeight:900,color:"#fca5a5"}}>{omr(remaining)}</div>
                     </div>
                   </div>
                 </div>
@@ -8924,13 +8924,9 @@ async function parseComplaints(file) {
         const lines = text.split('\n').filter(l => l.trim());
         if (lines.length < 2) { reject(new Error('الملف فارغ')); return; }
         const headers = lines[0].split('\t').map(h => h.replace(/\r/g,'').trim());
-        const regionIdx    = headers.findIndex(h => h === 'Region');
-        const branchIdx    = headers.findIndex(h => h === 'Branch');
-        const collectorIdx = headers.findIndex(h => h === 'Collector');
+        const regionIdx = headers.findIndex(h => h === 'Region');
+        const branchIdx = headers.findIndex(h => h === 'Branch');
         const principalIdx = headers.findIndex(h => h === 'Principal Amount');
-        const osIdx        = headers.findIndex(h => h === 'O/S Amount');
-        const paidIdx      = headers.findIndex(h => h === 'Paid Amount');
-        const adjIdx       = headers.findIndex(h => h === 'Adjustment');
         if (regionIdx < 0) { reject(new Error('عمود Region غير موجود')); return; }
 
         // خريطة التجميع الدقيقة
@@ -8938,9 +8934,7 @@ async function parseComplaints(file) {
         const HO_REGIONS = ['Head Office', 'Legal', 'Legal '];
         
         let total=0, dcCount=0, hoCount=0, govCount=0;
-        let dcAmt=0,  hoAmt=0,  govAmt=0;
-        let dcPaid=0, hoPaid=0, govPaid=0;
-        let dcAdj=0,  hoAdj=0,  govAdj=0;
+        let dcAmt=0, hoAmt=0, govAmt=0;
         
         // تجميع حسب Region للمحافظات وحسب Branch لشركات التحصيل
         const regionMap = {}; // للمحافظات الخمس (Region)
@@ -8952,36 +8946,31 @@ async function parseComplaints(file) {
           const region = (row[regionIdx]||'').replace(/\r/g,'').trim();
           const branch = branchIdx>=0 ? (row[branchIdx]||'').replace(/\r/g,'').trim() : '';
           if (!region) continue;
-          const principal = principalIdx>=0 ? (parseFloat(row[principalIdx])||0) : 0;
-          const osAmt     = osIdx>=0        ? (parseFloat(row[osIdx])||0)        : 0;
-          const paid      = paidIdx>=0      ? (parseFloat(row[paidIdx])||0)      : 0;
-          const adj       = adjIdx>=0       ? (parseFloat(row[adjIdx])||0)       : 0;
-          const amt = principal > 0 ? principal : (paid + osAmt);
+          const amt = principalIdx>=0 ? (parseFloat(row[principalIdx])||0) : 0;
           total++;
           
           if (region === DC_REGION) {
             // شركات التحصيل → نجمّع حسب Branch
-            dcCount++; dcAmt += amt; dcPaid += paid; dcAdj += adj;
+            dcCount++; dcAmt += amt;
             if (branch) {
               if (!branchMap[branch]) branchMap[branch] = {count:0, amt:0};
               branchMap[branch].count++; branchMap[branch].amt += amt;
             }
           } else if (HO_REGIONS.some(k => region.trim() === k.trim())) {
             // المكتب الرئيسي → نجمّع الكل تحت مفتاح واحد
-            hoCount++; hoAmt += amt; hoPaid += paid; hoAdj += adj;
+            hoCount++; hoAmt += amt;
             const hoKey = 'HEAD_OFFICE_TOTAL';
             if (!branchMap[hoKey]) branchMap[hoKey] = {count:0, amt:0};
             branchMap[hoKey].count++; branchMap[hoKey].amt += amt;
           } else {
             // مكاتب أونك → نجمّع حسب Region
-            govCount++; govAmt += amt; govPaid += paid; govAdj += adj;
+            govCount++; govAmt += amt;
             const rKey = region;
-            if (!regionMap[rKey]) regionMap[rKey] = {count:0, amt:0, paid:0, adj:0};
+            if (!regionMap[rKey]) regionMap[rKey] = {count:0, amt:0};
             regionMap[rKey].count++; regionMap[rKey].amt += amt;
-            regionMap[rKey].paid += paid; regionMap[rKey].adj += adj;
           }
         }
-        resolve({ total, dcCount, hoCount, govCount, dcAmt, hoAmt, govAmt, dcPaid, hoPaid, govPaid, dcAdj, hoAdj, govAdj, regionMap, branchMap });
+        resolve({ total, dcCount, hoCount, govCount, dcAmt, hoAmt, govAmt, regionMap, branchMap });
       } catch(e) { reject(e); }
     };
     reader.onerror = () => reject(new Error('فشل قراءة الملف'));
@@ -9529,8 +9518,6 @@ export default function Dashboard() {
   const [complaintsCounts, setComplaintsCounts] = useState(() => {
     try { return JSON.parse(localStorage.getItem('oneic_complaints_counts')||'{}'); } catch(e){return {};}
   });
-  const [complaintsPaid, setComplaintsPaid] = useState({dc:0,ho:0,gov:0});
-  const [complaintsAdj,  setComplaintsAdj]  = useState({dc:0,ho:0,gov:0});
   const [complaintsAmts, setComplaintsAmts] = useState(() => {
     try { return JSON.parse(localStorage.getItem('oneic_complaints_amts')||'{}'); } catch(e){return {};}
   });
@@ -9772,8 +9759,6 @@ export default function Dashboard() {
         setComplaintsCount(total);
         setComplaintsCounts({dc:dcCount,ho:hoCount,gov:govCount});
         setComplaintsAmts({dc:dcAmt,ho:hoAmt,gov:govAmt});
-        setComplaintsPaid({dc:dcPaid,ho:hoPaid,gov:govPaid});
-        setComplaintsAdj({dc:dcAdj,ho:hoAdj,gov:govAdj});
         setComplaintsRegionMap(regionMap||{});
         setComplaintsBranchMap(branchMap||{});
         try {
@@ -9910,25 +9895,23 @@ export default function Dashboard() {
     setTimeout(()=>setError(null), 4000);
   }, []);
 
-  const gPd = complaintsPaid.gov>0 ? complaintsPaid.gov : data.regions.reduce((s,r)=>s+r.paid,0);
-  const gAd = complaintsAdj.gov>0  ? complaintsAdj.gov  : data.regions.reduce((s,r)=>s+r.adj,0);
+  const gPd = data.regions.reduce((s,r)=>s+r.paid,0);
+  const gAd = data.regions.reduce((s,r)=>s+r.adj,0);
   const gCnt = data.regions.reduce((s,r)=>s+(r.count||0),0);
   const gPortAmt = data.regions.reduce((s,r)=>s+(r.portAmt||0),0);
   const gPortCnt = data.regions.reduce((s,r)=>s+(r.portCnt||0),0);
-  const dPd = complaintsPaid.dc>0 ? complaintsPaid.dc : data.debtCompanies.reduce((s,r)=>s+r.paid,0);
-  const dAd = complaintsAdj.dc>0  ? complaintsAdj.dc  : data.debtCompanies.reduce((s,r)=>s+r.adj,0);
+  const dPd = data.debtCompanies.reduce((s,r)=>s+r.paid,0);
+  const dAd = data.debtCompanies.reduce((s,r)=>s+r.adj,0);
   const dCnt = data.debtCompanies.reduce((s,r)=>s+(r.count||0),0);
   const dPortAmt = data.debtCompanies.reduce((s,r)=>s+(r.portAmt||0),0);
   const dPortCnt = data.debtCompanies.reduce((s,r)=>s+(r.portCnt||0),0);
-  const hPd = complaintsPaid.ho>0 ? complaintsPaid.ho : data.headOffice.reduce((s,r)=>s+Math.max(0,r.paid||0),0);
-  const hAd = complaintsAdj.ho>0  ? complaintsAdj.ho  : data.headOffice.reduce((s,r)=>s+Math.max(0,r.adj||0),0);
+  const hPd = data.headOffice.reduce((s,r)=>s+Math.max(0,r.paid||0),0);
+  const hAd = data.headOffice.reduce((s,r)=>s+Math.max(0,r.adj||0),0);
   const hCnt = data.headOffice.reduce((s,r)=>s+(r.count||0),0);
   const hPortAmt = data.headOffice.reduce((s,r)=>s+Math.max(0,r.portAmt||0),0);
   const hPortCnt = data.headOffice.reduce((s,r)=>s+(r.portCnt||0),0);
-  const _cPaid = (complaintsPaid.gov||0)+(complaintsPaid.dc||0)+(complaintsPaid.ho||0);
-  const _cAdj  = (complaintsAdj.gov||0) +(complaintsAdj.dc||0) +(complaintsAdj.ho||0);
-  const totalPaid = _cPaid>0 ? _cPaid : (data.totalCollection?.paid || (gPd+dPd+hPd));
-  const totalAdj  = _cAdj>0  ? _cAdj  : (data.totalCollection?.adj  || (gAd+dAd+hAd));
+  const totalPaid = data.totalCollection?.paid || (gPd+dPd+hPd);
+  const totalAdj  = data.totalCollection?.adj  || (gAd+dAd+hAd);
   const totalPort = data.totalPortfolio?.amt    || 9414256.834;
   const gTotal = totalPaid+totalAdj;
   const GRAND_TOTAL_FIXED = 1020464.134;
@@ -10632,24 +10615,13 @@ export default function Dashboard() {
         }}>
           <SectionHeader title="🗺 مكاتب أونك" paid={gPd} adj={gAd} color="#e85d20" small={small} portAmt={complaintsAmts.gov||gPortAmt||data.regions?.reduce((s,r)=>s+(r.portAmt||0),0)||0} portCnt={complaintsCounts.gov||gPortCnt||data.regions?.reduce((s,r)=>s+(r.portCnt||0),0)||0}/>
           <div style={{ padding: small?"10px":"14px 16px", display:"flex", flexDirection:"column", gap: small?8:10 }}>
-            {data.regions.map((r,i) => {
-                // دمج مع Complaints
-                const cReg = Object.entries(complaintsRegionMap||{}).find(([k])=>
-                  k===r.nameEn || k===r.id ||
-                  (r.nameEn||'').toLowerCase().includes(k.toLowerCase()) ||
-                  k.toLowerCase().includes((r.nameEn||'').toLowerCase())
-                )?.[1];
-                const rr = cReg ? {...r,
-                  portAmt: cReg.amt  > 0 ? cReg.amt  : r.portAmt,
-                  paid:    cReg.paid > 0 ? cReg.paid : r.paid,
-                  adj:     cReg.adj  > 0 ? cReg.adj  : r.adj,
-                } : r;
-                return <RegionRow key={r.id} region={rr} idx={i}
+            {data.regions.map((r,i) => (
+              <RegionRow key={r.id} region={r} idx={i}
                 open={openRegion===r.id}
                 onToggle={() => setOpenRegion(openRegion===r.id?null:r.id)}
                 small={small}
-              />;
-              })}
+              />
+            ))}
           </div>
         </div>
 
