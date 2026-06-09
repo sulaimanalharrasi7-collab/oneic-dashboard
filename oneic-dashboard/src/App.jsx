@@ -6215,7 +6215,7 @@ async function parseXLS(file) {
     const computedPortAmt = d.osAmt > 0 ? d.osAmt : p.portAmt;
     return { name:nm.trim(), paid:d.paid, adj:d.adj,
       count:d.count||0, paidCount:d.paidCount||0, adjCount:d.adjCount||0,
-      portAmt:computedPortAmt, portCnt:d.count||p.portCnt };
+      portAmt:computedPortAmt, portCnt:d.count||p.portCnt, osAmt:d.osAmt||0 };
   });
   DC_REQUIRED.forEach(nm => {
     if (!dcList.find(c=>c.name===nm)) {
@@ -6450,44 +6450,44 @@ function SectionHeader({title,paid,adj,color,small,portAmt,portCnt}) {
   const total = paid + adj;
   const remaining = portAmt > 0 ? portAmt - total : 0;
   const pct = portAmt > 0 ? Math.min(100,(total/portAmt)*100) : 0;
+
+  const items = [
+    {l:"عدد الحسابات",  v:(portCnt||0).toLocaleString()+" حساب", c:"rgba(255,255,255,0.9)", show:true},
+    {l:"قيمة المحفظة",  v:omr(portAmt)+" OMR",                   c:"#fff",                 show:portAmt>0},
+    {l:"المدفوع",       v:omr(paid),                              c:"#bbf7d0",              show:true},
+    {l:"التسويات",      v:omr(adj),                               c:"#fde68a",              show:true},
+    {l:"الإجمالي",      v:omr(total),                             c:"#fff",                 show:true},
+    {l:"المتبقي",       v:omr(remaining),                         c:"#fca5a5",              show:portAmt>0},
+  ];
+
   return (
     <div style={{background:`linear-gradient(120deg,${color},${color}cc)`}}>
-      {/* صف 1: العنوان */}
-      <div style={{padding:small?"10px 14px":"12px 20px",display:"flex",justifyContent:"space-between",alignItems:"center",flexWrap:"wrap",gap:8,borderBottom:"1px solid rgba(255,255,255,0.15)"}}>
-        <div style={{fontSize:small?15:19,fontWeight:900,color:"#fff"}}>{title}</div>
-        {portAmt > 0 && (
-          <div style={{display:"flex",alignItems:"center",gap:8}}>
-            <div style={{fontSize:small?10:12,color:"rgba(255,255,255,0.75)",fontWeight:700}}>نسبة الإنجاز</div>
-            <div style={{background:"rgba(255,255,255,0.25)",borderRadius:20,padding:"3px 14px",fontSize:small?14:17,fontWeight:900,color:"#fff"}}>{pct.toFixed(1)}%</div>
-          </div>
-        )}
-      </div>
-      {/* صف 2: الأرقام */}
-      <div style={{padding:small?"8px 14px":"10px 20px",display:"flex",gap:small?8:16,flexWrap:"wrap",alignItems:"center"}}>
-        {portAmt > 0 && [
-          ["قيمة المحفظة", omr(portAmt), "rgba(255,255,255,0.6)"],
-          ["عدد الحسابات", (portCnt||0).toLocaleString()+" حساب", "rgba(255,255,255,0.6)"],
-        ].map(([l,v,c])=>(
-          <div key={l} style={{textAlign:"center",background:"rgba(255,255,255,0.12)",borderRadius:8,padding:small?"4px 10px":"5px 14px"}}>
-            <div style={{fontSize:small?9:10,color:"rgba(255,255,255,0.7)",fontWeight:700,marginBottom:1}}>{l}</div>
-            <div style={{fontSize:small?12:14,fontWeight:900,color:"#fff"}}>{v}</div>
-          </div>
-        ))}
-        <div style={{flex:1,display:"flex",gap:small?8:16,justifyContent:"flex-end",flexWrap:"wrap"}}>
-          {[["المدفوع",omr(paid),"#bbf7d0"],["التسويات",omr(adj),"#fde68a"],["الإجمالي",omr(total),"#fff"],
-            ...(portAmt>0?[["المتبقي",omr(remaining),"#fca5a5"]]:[])
-          ].map(([l,v,c])=>(
+      {/* صف واحد: العنوان يسار + جميع الأرقام يمين */}
+      <div style={{padding:small?"10px 14px":"12px 20px",display:"flex",justifyContent:"space-between",alignItems:"center",flexWrap:"wrap",gap:10}}>
+        {/* اليسار: النسبة + العنوان */}
+        <div style={{display:"flex",alignItems:"center",gap:10,flexShrink:0}}>
+          {portAmt > 0 && (
+            <div style={{background:"rgba(255,255,255,0.25)",borderRadius:20,padding:"3px 12px",fontSize:small?12:15,fontWeight:900,color:"#fff",whiteSpace:"nowrap"}}>
+              {pct.toFixed(1)}%
+              <span style={{fontSize:small?9:10,color:"rgba(255,255,255,0.75)",fontWeight:700,marginRight:4}}>نسبة الإنجاز</span>
+            </div>
+          )}
+          <div style={{fontSize:small?15:19,fontWeight:900,color:"#fff"}}>{title}</div>
+        </div>
+        {/* اليمين: جميع الأرقام بالترتيب */}
+        <div style={{display:"flex",gap:small?10:18,flexWrap:"wrap",alignItems:"center",justifyContent:"flex-end"}}>
+          {items.filter(x=>x.show).map(({l,v,c})=>(
             <div key={l} style={{textAlign:"center"}}>
-              <div style={{fontSize:small?9:11,color:"rgba(255,255,255,0.7)",fontWeight:700,marginBottom:2}}>{l}</div>
-              <div style={{fontSize:small?12:15,fontWeight:900,color:c}}>{v}</div>
+              <div style={{fontSize:small?9:10,color:"rgba(255,255,255,0.7)",fontWeight:700,marginBottom:2,whiteSpace:"nowrap"}}>{l}</div>
+              <div style={{fontSize:small?12:15,fontWeight:900,color:c,whiteSpace:"nowrap"}}>{v}</div>
             </div>
           ))}
         </div>
       </div>
       {/* شريط الإنجاز */}
       {portAmt > 0 && (
-        <div style={{padding:"0 20px 8px"}}>
-          <div style={{background:"rgba(255,255,255,0.15)",borderRadius:6,height:6,overflow:"hidden"}}>
+        <div style={{padding:"0 20px 6px"}}>
+          <div style={{background:"rgba(255,255,255,0.15)",borderRadius:6,height:5,overflow:"hidden"}}>
             <div style={{height:"100%",borderRadius:6,background:"rgba(255,255,255,0.7)",width:`${pct}%`}}/>
           </div>
         </div>
@@ -6497,7 +6497,7 @@ function SectionHeader({title,paid,adj,color,small,portAmt,portCnt}) {
 }
 
 // ── EntityCard ─────────────────────────────────────────────────────────────
-function EntityCard({name,paid,adj,color,rank,small,cnt,cBranch,portAmt,portCnt,principalAmt}) {
+function EntityCard({name,paid,adj,color,rank,small,cnt,cBranch,portAmt,portCnt,principalAmt,osAmt}) {
   const bKey = Object.keys(cBranch||{}).find(k => k.trim()===name?.trim() || name?.includes(k) || k.includes(name||'__'));
   const bD = bKey ? (cBranch||{})[bKey] : null;
   const total    = (paid||0) + (adj||0);
@@ -6506,7 +6506,7 @@ function EntityCard({name,paid,adj,color,rank,small,cnt,cBranch,portAmt,portCnt,
   const hasCnt   = (portCnt||0) > 0;
   const effPort  = hasPort ? portAmt : (bD?.amt||0);
   // إذا الشركة عندها تحصيل لكن portAmt غير محدد، استخدم التحصيل نفسه
-  const displayPort = effPort > 0 ? effPort : (total > 0 ? total : 0);
+  const displayPort = effPort > 0 ? effPort : ((osAmt||0) > 0 ? (osAmt||0) : 0);
   const effCnt   = hasCnt  ? portCnt : (bD?.count||0);
   const remaining = displayPort > 0 ? displayPort - total : 0;
   const pctVal   = displayPort > 0 ? Math.min(100,(total/displayPort)*100) : 0;
@@ -9548,25 +9548,6 @@ export default function Dashboard() {
         const existingHO = row.headOffice || [];
         const fullHO = HO_REQ.map(nm => existingHO.find(c=>c.name===nm) || {name:nm,paid:0,adj:0,count:0,...(HO_P[nm]||{})});
         let d = { ...row, headOffice: fullHO, _updatedAt: row._updatedAt||row.lastUpdated||'' };
-      // ── ضمان الشركات غير النشطة دائماً ──
-      const INACTIVE_LIST = [
-        {name:"Ejada",            portAmt:261235.418, portCnt:1938},
-        {name:"Tahseel United",   portAmt:0,          portCnt:0},
-        {name:"High Speed Company",portAmt:0,         portCnt:0},
-      ];
-      if (d.debtCompanies) {
-        INACTIVE_LIST.forEach(({name,portAmt,portCnt}) => {
-          if (!d.debtCompanies.find(c=>c.name===name)) {
-            d.debtCompanies.push({name,paid:0,adj:0,count:portCnt,portAmt,portCnt});
-          } else {
-            d.debtCompanies = d.debtCompanies.map(c =>
-              c.name===name && !(c.portAmt>0)
-                ? {...c, portAmt, portCnt:portCnt||c.portCnt||c.count||0}
-                : c
-            );
-          }
-        });
-      }
         setData(d);
         try { localStorage.setItem('oneic_dashboard_data', JSON.stringify(d)); } catch(e) {}
         if (row.history?.length > 0) {
@@ -10598,7 +10579,7 @@ export default function Dashboard() {
                   }
                 });
                 return dc.map((c,i) => (
-                <EntityCard key={c.name} name={c.name} paid={c.paid} adj={c.adj} cBranch={complaintsBranchMap} color="#1a7a6b" rank={i+1} small={small} portAmt={c.portAmt||0} portCnt={c.portCnt||0} osAmt={c.osAmt||0}/>
+                <EntityCard key={c.name} name={c.name} paid={c.paid} adj={c.adj} cBranch={complaintsBranchMap} color="#1a7a6b" rank={i+1} small={small} portAmt={c.portAmt||0} portCnt={c.portCnt||0} osAmt={c.osAmt||c.portAmt||0}/>
                 ));
               })()}
             </div>
