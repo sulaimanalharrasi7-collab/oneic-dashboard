@@ -9454,6 +9454,8 @@ export default function Dashboard() {
   const [pwInput, setPwInput] = useState('');
   const [pwError, setPwError] = useState(false);
   const [showBulkReport, setShowBulkReport] = useState(false);
+  const [lastSync, setLastSync] = useState(null);
+  const [syncing, setSyncing] = useState(false);
   const [showUploadAuth, setShowUploadAuth] = useState(false);
   const [uploadAuthInput, setUploadAuthInput] = useState('');
   const [uploadAuthError, setUploadAuthError] = useState(false);
@@ -9529,6 +9531,41 @@ export default function Dashboard() {
       setLoadingServer(false);
     }
     load();
+
+    // ══ تحديث تلقائي كل 30 ثانية لمزامنة جميع الأجهزة ══
+    const interval = setInterval(async () => {
+      setSyncing(true);
+      try {
+        const row = await sbGet('oneic_data');
+        setSyncing(false);
+        if (!row?.regions?.length) return;
+        // تحقق: هل البيانات تغيرت؟
+        const newUpdated = row._updatedAt || row.lastUpdated || '';
+        const curUpdated = data?._updatedAt || data?.lastUpdated || '';
+        if (newUpdated && newUpdated === curUpdated) return; // لا تحديث
+        // البيانات تغيرت — حدّث
+        const HO_REQ = ["Legal - DR. Sarhaan","Documentation- Omantel","HO","Non-due accounts","Blanks"];
+        const HO_P = {
+          "Legal - DR. Sarhaan":{portAmt:3229651.681,portCnt:3662,principalAmt:3301711.348},
+          "Documentation- Omantel":{portAmt:489409.003,portCnt:1136},
+          "HO":{portAmt:0,portCnt:340},
+          "Non-due accounts":{portAmt:0,portCnt:340},
+          "Blanks":{portAmt:50253.668,portCnt:173}
+        };
+        const existingHO = row.headOffice || [];
+        const fullHO = HO_REQ.map(nm => existingHO.find(c=>c.name===nm) || {name:nm,paid:0,adj:0,count:0,...(HO_P[nm]||{})});
+        const d = { ...row, headOffice: fullHO };
+        setData(d);
+        try { localStorage.setItem('oneic_dashboard_data', JSON.stringify(d)); } catch(e) {}
+        if (row.history?.length > 0) {
+          setHistory(row.history);
+          try { localStorage.setItem('oneic_history', JSON.stringify(row.history)); } catch(e) {}
+        }
+        setLastSync(new Date());
+      } catch(e) { setSyncing(false); /* Firebase مؤقتاً غير متاح */ }
+    }, 30000); // كل 30 ثانية
+
+    return () => clearInterval(interval);
   }, []);
 
   const UPLOAD_PW = 'Sulaiman1992';
@@ -10214,6 +10251,16 @@ export default function Dashboard() {
           <UploadBtn onFile={handleFile} onAuth={requireUploadAuth} uploading={uploading} success={success} error={error} small={isMobile} />
 
           <div style={{display:"flex",flexDirection:"column",gap:5,alignItems:"stretch"}}>
+            {/* مؤشر المزامنة */}
+            <div style={{fontSize:10,color:syncing?"#fbbf24":"#4ade80",fontWeight:700,textAlign:"center",
+              background:"rgba(255,255,255,0.1)",borderRadius:6,padding:"2px 8px",display:"flex",alignItems:"center",gap:4,justifyContent:"center"}}>
+              {syncing
+                ? <><span style={{animation:"spin 1s linear infinite",display:"inline-block"}}>🔄</span> جاري المزامنة...</>
+                : lastSync
+                  ? <>🟢 آخر مزامنة: {lastSync.toLocaleTimeString('ar-OM',{hour:'2-digit',minute:'2-digit'})}</>
+                  : <>⏳ جاري الاتصال...</>
+              }
+            </div>
             <button onClick={() => setShowHistory(s=>!s)} style={{background:"#1e3a5f",color:"#fff",border:"none",borderRadius:10,padding:"8px 14px",fontSize:13,fontWeight:800,cursor:"pointer",fontFamily:"'Cairo',sans-serif",display:"flex",alignItems:"center",gap:5}}>
               📁 {history.length > 0 ? `عدد الملفات (${history.length})` : 'عدد الملفات'}
             </button>
