@@ -6142,7 +6142,7 @@ async function parseXLS(file) {
     const paid    = n(row['Paid Amount']|| row['paid_amount']  || row['Paid'] || 0);
     const adj     = n(row['Adjustment'] || row['adjustment']   || row['Adj']  || 0);
     const osAmt   = n(row['O/S Amount'] || row['os_amount']    || row['Outstanding'] || row['O/S'] || 0);
-    const rowPort  = osAmt; // قيمة المحفظة = O/S Amount فقط
+    const rowPort  = osAmt; // قيمة المحفظة = O/S Amount
     const col     = (row['Collector']   || row['collector']    || '').trim();
     const branch  = (row['Branch']      || row['branch']       || '').trim();
 
@@ -10403,35 +10403,8 @@ export default function Dashboard() {
               💳 Bulk Payment
             </button>
           </div>
-          <button
-            onClick={() => setShowSettings(s=>!s)}
-            title="إعدادات المزامنة"
-            style={{
-              background: binId ? "#16a34a" : "#f97316",
-              color:"#fff", border:"none", borderRadius:10,
-              padding:"8px 14px", fontSize:13, fontWeight:800,
-              cursor:"pointer", fontFamily:"'Cairo',sans-serif", flexShrink:0
-            }}
-          >{binId ? "🔗 متصل" : "⚙️ مزامنة"}</button>
-          {!isMobile && (
-            <button
-              title="مسح البيانات المحفوظة والعودة للبيانات الافتراضية"
-              onClick={() => {
-                if (window.confirm('هل تريد مسح البيانات المحفوظة والعودة للبيانات الأصلية؟')) {
-                  try { localStorage.removeItem('oneic_dashboard_data'); localStorage.removeItem('oneic_last_update'); } catch(e){}
-                  setData(SEED);
-                }
-              }}
-              style={{
-                background:"transparent", color:"#aaa",
-                border:"1px solid #ddd", borderRadius:8,
-                padding:"6px 10px", fontSize:11, fontWeight:700,
-                cursor:"pointer", fontFamily:"'Cairo',sans-serif",
-                whiteSpace:"nowrap", flexShrink:0, title:"مسح"
-              }}
-            >🗑</button>
-          )}
-          <button
+          
+                    <button
             onClick={() => handlePrint(data)}
             style={{
               display:"flex", alignItems:"center", gap:6,
