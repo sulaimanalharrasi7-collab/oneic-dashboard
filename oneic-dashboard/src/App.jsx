@@ -6492,9 +6492,7 @@ function SectionHeader({title,paid,adj,color,small,portAmt,portCnt}) {
           <div style={{background:"rgba(255,255,255,0.15)",borderRadius:6,height:5,overflow:"hidden"}}>
             <div style={{height:"100%",borderRadius:6,background:"rgba(255,255,255,0.7)",width:`${pct}%`}}/>
           </div>
-        </div>
       )}
-    </div>
   );
 }
 
@@ -6976,7 +6974,6 @@ function RegionRow({region, idx, open, onToggle, small}) {
           )}
         </div>
       )}
-    </div>
   );
 }
 
