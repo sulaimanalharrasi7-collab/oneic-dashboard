@@ -6500,8 +6500,7 @@ function EntityCard({name,paid,adj,color,rank,small,cnt,cBranch,portAmt,portCnt,
   const bKey = Object.keys(cBranch||{}).find(k => k.trim()===name?.trim() || name?.includes(k) || k.includes(name||'__'));
   const bD = bKey ? (cBranch||{})[bKey] : null;
   const total    = (paid||0) + (adj||0);
-  const INACTIVE_COS = ["Ejada","Tahseel United","High Speed Company","High Speed company"];
-  const allZero  = total === 0 && name !== "Blanks" && !INACTIVE_COS.includes(name);
+  const allZero = total === 0 && name !== "Blanks" && !["Ejada","Tahseel United","High Speed Company","High Speed company"].includes(name);
   const hasPort  = (portAmt||0) > 0;
   const hasCnt   = (portCnt||0) > 0;
   const effPort  = hasPort ? portAmt : (bD?.amt||0);
@@ -10579,7 +10578,12 @@ export default function Dashboard() {
                   {name:"Tahseel United",    portAmt:0,          portCnt:0,    paid:0, adj:0, count:0},
                   {name:"High Speed Company",portAmt:0,          portCnt:0,    paid:0, adj:0, count:0},
                 ];
-                const dc = [...(data.debtCompanies||[])];
+                // توحيد اسم High Speed company → High Speed Company
+                let dc = (data.debtCompanies||[]).map(c =>
+                  c.name==="High Speed company" ? {...c, name:"High Speed Company"} : c
+                );
+                // إزالة التكرار
+                dc = dc.filter((c,i,arr) => arr.findIndex(x=>x.name===c.name)===i);
                 ALWAYS_SHOW.forEach(co => {
                   if (!dc.find(c=>c.name===co.name)) dc.push(co);
                   else {
