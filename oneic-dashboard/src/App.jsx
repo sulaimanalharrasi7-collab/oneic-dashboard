@@ -6854,8 +6854,12 @@ function RegionRow({region, idx, open, onToggle, small}) {
           </div>
 
           {(region.collectors||[]).map((c,i) => {
-            const ct = (c.paid||0)+(c.adj||0);
-            const cPort = c.portAmt||0;
+            const _regKey = Object.keys(complaintsRegionMap||{}).find(function(k){ return k===region.nameEn || k.toLowerCase()===(region.nameEn||'').toLowerCase(); });
+            const _cComp = _regKey ? ((complaintsRegionMap[_regKey]||{}).collectors||{})[c.name]||null : null;
+            const cPaid = _cComp && _cComp.paid>0 ? _cComp.paid : (c.paid||0);
+            const cAdj  = _cComp && _cComp.adj>0  ? _cComp.adj  : (c.adj||0);
+            const ct    = cPaid + cAdj;
+            const cPort = _cComp && _cComp.amt>0 ? _cComp.amt : (c.portAmt||0);
             const cCnt  = c.portCnt||c.count||0;
             const cRem  = cPort>0 ? cPort-ct : 0;
             const cPct  = cPort>0 ? Math.min(100,(ct/cPort)*100) : 0;
@@ -6905,7 +6909,7 @@ function RegionRow({region, idx, open, onToggle, small}) {
                   )}
                   {/* المدفوع + التسويات + الإجمالي */}
                   <div style={{display:"flex",border:"1px solid #f0ece8",borderRadius:9,overflow:"hidden",background:"#fafafa"}}>
-                    {[["المدفوع",c.paid||0,"#16a34a"],["التسويات",c.adj||0,"#d97706"],["الإجمالي",ct,col]].map(([lbl,val,clr],j)=>(
+                    {[["المدفوع",cPaid,"#16a34a"],["التسويات",cAdj,"#d97706"],["الإجمالي",ct,col]].map(([lbl,val,clr],j)=>(
                       <div key={lbl} style={{flex:1,textAlign:"center",padding:small?"6px 4px":"8px 6px",
                         borderRight:j<2?`1px solid ${col}15`:"none"}}>
                         <div style={{fontSize:small?9:11,color:clr,fontWeight:800,marginBottom:2}}>{lbl}</div>
@@ -9512,6 +9516,8 @@ export default function Dashboard() {
   const [complaintsCounts, setComplaintsCounts] = useState(() => {
     try { return JSON.parse(localStorage.getItem('oneic_complaints_counts')||'{}'); } catch(e){return {};}
   });
+  const [complaintsPaid, setComplaintsPaid] = useState({dc:0,ho:0,gov:0});
+  const [complaintsAdj,  setComplaintsAdj]  = useState({dc:0,ho:0,gov:0});
   const [complaintsAmts, setComplaintsAmts] = useState(() => {
     try { return JSON.parse(localStorage.getItem('oneic_complaints_amts')||'{}'); } catch(e){return {};}
   });
@@ -9621,6 +9627,11 @@ export default function Dashboard() {
         const existingHO = row.headOffice || [];
         const fullHO = HO_REQ.map(nm => existingHO.find(c=>c.name===nm) || {name:nm,paid:0,adj:0,count:0,...(HO_P[nm]||{})});
         let d = { ...row, headOffice: fullHO, _updatedAt: row._updatedAt||row.lastUpdated||'' };
+        if (row.complaintsRegionMap && Object.keys(row.complaintsRegionMap).length>0) setComplaintsRegionMap(row.complaintsRegionMap);
+        if (row.complaintsBranchMap && Object.keys(row.complaintsBranchMap).length>0) setComplaintsBranchMap(row.complaintsBranchMap);
+        if (row.complaintsAmts) setComplaintsAmts(row.complaintsAmts);
+        if (row.complaintsPaid) setComplaintsPaid(row.complaintsPaid);
+        if (row.complaintsAdj)  setComplaintsAdj(row.complaintsAdj);
         setData(d);
         try { localStorage.setItem('oneic_dashboard_data', JSON.stringify(d)); } catch(e) {}
         if (row.history?.length > 0) {
@@ -9655,6 +9666,11 @@ export default function Dashboard() {
         const existingHO = row.headOffice || [];
         const fullHO = HO_REQ.map(nm => existingHO.find(c=>c.name===nm) || {name:nm,paid:0,adj:0,count:0,...(HO_P[nm]||{})});
         const d = { ...row, headOffice: fullHO };
+        if (row.complaintsRegionMap && Object.keys(row.complaintsRegionMap).length>0) setComplaintsRegionMap(row.complaintsRegionMap);
+        if (row.complaintsBranchMap && Object.keys(row.complaintsBranchMap).length>0) setComplaintsBranchMap(row.complaintsBranchMap);
+        if (row.complaintsAmts) setComplaintsAmts(row.complaintsAmts);
+        if (row.complaintsPaid) setComplaintsPaid(row.complaintsPaid);
+        if (row.complaintsAdj)  setComplaintsAdj(row.complaintsAdj);
         setData(d);
         // حدّث localStorage على جميع الأجهزة
         try { localStorage.setItem('oneic_dashboard_data', JSON.stringify(d)); } catch(e) {}
@@ -9753,6 +9769,8 @@ export default function Dashboard() {
         setComplaintsCount(total);
         setComplaintsCounts({dc:dcCount,ho:hoCount,gov:govCount});
         setComplaintsAmts({dc:dcAmt,ho:hoAmt,gov:govAmt});
+        setComplaintsPaid({dc:dcPaid,ho:hoPaid,gov:govPaid});
+        setComplaintsAdj({dc:dcAdj,ho:hoAdj,gov:govAdj});
         setComplaintsRegionMap(regionMap||{});
         setComplaintsBranchMap(branchMap||{});
         try {
@@ -9889,18 +9907,18 @@ export default function Dashboard() {
     setTimeout(()=>setError(null), 4000);
   }, []);
 
-  const gPd = data.regions.reduce((s,r)=>s+r.paid,0);
-  const gAd = data.regions.reduce((s,r)=>s+r.adj,0);
+  const gPd = complaintsPaid.gov>0 ? complaintsPaid.gov : data.regions.reduce((s,r)=>s+r.paid,0);
+  const gAd = complaintsAdj.gov>0  ? complaintsAdj.gov  : data.regions.reduce((s,r)=>s+r.adj,0);
   const gCnt = data.regions.reduce((s,r)=>s+(r.count||0),0);
   const gPortAmt = data.regions.reduce((s,r)=>s+(r.portAmt||0),0);
   const gPortCnt = data.regions.reduce((s,r)=>s+(r.portCnt||0),0);
-  const dPd = data.debtCompanies.reduce((s,r)=>s+r.paid,0);
-  const dAd = data.debtCompanies.reduce((s,r)=>s+r.adj,0);
+  const dPd = complaintsPaid.dc>0 ? complaintsPaid.dc : data.debtCompanies.reduce((s,r)=>s+r.paid,0);
+  const dAd = complaintsAdj.dc>0  ? complaintsAdj.dc  : data.debtCompanies.reduce((s,r)=>s+r.adj,0);
   const dCnt = data.debtCompanies.reduce((s,r)=>s+(r.count||0),0);
   const dPortAmt = data.debtCompanies.reduce((s,r)=>s+(r.portAmt||0),0);
   const dPortCnt = data.debtCompanies.reduce((s,r)=>s+(r.portCnt||0),0);
-  const hPd = data.headOffice.reduce((s,r)=>s+Math.max(0,r.paid||0),0);
-  const hAd = data.headOffice.reduce((s,r)=>s+Math.max(0,r.adj||0),0);
+  const hPd = complaintsPaid.ho>0 ? complaintsPaid.ho : data.headOffice.reduce((s,r)=>s+Math.max(0,r.paid||0),0);
+  const hAd = complaintsAdj.ho>0  ? complaintsAdj.ho  : data.headOffice.reduce((s,r)=>s+Math.max(0,r.adj||0),0);
   const hCnt = data.headOffice.reduce((s,r)=>s+(r.count||0),0);
   const hPortAmt = data.headOffice.reduce((s,r)=>s+Math.max(0,r.portAmt||0),0);
   const hPortCnt = data.headOffice.reduce((s,r)=>s+(r.portCnt||0),0);
