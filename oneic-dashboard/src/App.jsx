@@ -10338,7 +10338,7 @@ export default function Dashboard() {
           <img src={LOGO} alt="ONEIC" style={{height:40,objectFit:"contain"}}/>
           <div>
             <div style={{fontSize:14,fontWeight:900,color:"#e85d20"}}>لوحة تحكم إدارة تحصيل الديون</div>
-            <div style={{fontSize:9,color:"#555"}}>Debt Collection Management Dashboard · تاريخ التقرير: {data.uploadDate} · {data.totalRecords?.toLocaleString()} سجل</div>
+            <div style={{fontSize:12,color:"#e85d20",fontWeight:700}}>Omantel Debt Collection Management Dashboard</div>
           </div>
         </div>
         <div style={{textAlign:"right",fontSize:9,color:"#555"}}>
@@ -10362,8 +10362,8 @@ export default function Dashboard() {
             <div style={{ fontSize: isMobile?16:isTablet?20:26, fontWeight:900, color:"#e85d20", lineHeight:1.1 }}>
               {isMobile ? "إدارة الديون" : "لوحة تحكم إدارة تحصيل الديون"}
             </div>
-            {!isMobile && <div style={{ fontSize:12, color:"#444", fontWeight:700, marginTop:3 }}>
-              Debt Collection Management Dashboard · {data.totalRecords?.toLocaleString()} سجل · {data.uploadDate}
+            {!isMobile && <div style={{ fontSize:12, color:"#e85d20", fontWeight:700, marginTop:3 }}>
+              Omantel Debt Collection Management Dashboard
             </div>}
             {!isMobile && <div style={{ fontSize:10, color:"#16a34a", fontWeight:700, marginTop:2, display:"flex", alignItems:"center", gap:4 }}>
               <span>{"💾"}</span>
@@ -10384,18 +10384,6 @@ export default function Dashboard() {
           <UploadBtn onFile={handleFile} onAuth={requireUploadAuth} uploading={uploading} success={success} error={error} small={isMobile} />
 
           <div style={{display:"flex",flexDirection:"column",gap:5,alignItems:"stretch"}}>
-            {/* مؤشر المزامنة */}
-            <div style={{fontSize:10,color:syncing?"#fbbf24":"#4ade80",fontWeight:700,textAlign:"center",
-              background:"rgba(255,255,255,0.1)",borderRadius:6,padding:"2px 8px",display:"flex",alignItems:"center",gap:4,justifyContent:"center"}}>
-              <span style={{cursor:'pointer'}} onClick={forceRefresh} title="اضغط للتحديث الفوري">
-              {syncing
-                ? <><span>🔄</span> جاري المزامنة...</>
-                : lastSync
-                  ? <>🟢 {lastSync.toLocaleTimeString('ar-OM',{hour:'2-digit',minute:'2-digit'})} ↻</>
-                  : <>⏳ اضغط للتحديث</>
-              }
-            </span>
-            </div>
             <button onClick={() => setShowHistory(s=>!s)} style={{background:"#1e3a5f",color:"#fff",border:"none",borderRadius:10,padding:"8px 14px",fontSize:13,fontWeight:800,cursor:"pointer",fontFamily:"'Cairo',sans-serif",display:"flex",alignItems:"center",gap:5}}>
               📁 {history.length > 0 ? `عدد الملفات (${history.length})` : 'عدد الملفات'}
             </button>
@@ -10403,34 +10391,6 @@ export default function Dashboard() {
               💳 Bulk Payment
             </button>
           </div>
-          <button
-            onClick={() => setShowSettings(s=>!s)}
-            title="إعدادات المزامنة"
-            style={{
-              background: binId ? "#16a34a" : "#f97316",
-              color:"#fff", border:"none", borderRadius:10,
-              padding:"8px 14px", fontSize:13, fontWeight:800,
-              cursor:"pointer", fontFamily:"'Cairo',sans-serif", flexShrink:0
-            }}
-          >{binId ? "🔗 متصل" : "⚙️ مزامنة"}</button>
-          {!isMobile && (
-            <button
-              title="مسح البيانات المحفوظة والعودة للبيانات الافتراضية"
-              onClick={() => {
-                if (window.confirm('هل تريد مسح البيانات المحفوظة والعودة للبيانات الأصلية؟')) {
-                  try { localStorage.removeItem('oneic_dashboard_data'); localStorage.removeItem('oneic_last_update'); } catch(e){}
-                  setData(SEED);
-                }
-              }}
-              style={{
-                background:"transparent", color:"#aaa",
-                border:"1px solid #ddd", borderRadius:8,
-                padding:"6px 10px", fontSize:11, fontWeight:700,
-                cursor:"pointer", fontFamily:"'Cairo',sans-serif",
-                whiteSpace:"nowrap", flexShrink:0, title:"مسح"
-              }}
-            >🗑</button>
-          )}
           <button
             onClick={() => handlePrint(data)}
             style={{
