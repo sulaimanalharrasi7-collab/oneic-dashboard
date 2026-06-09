@@ -9655,6 +9655,17 @@ export default function Dashboard() {
         const existingHO = row.headOffice || [];
         const fullHO = HO_REQ.map(nm => existingHO.find(c=>c.name===nm) || {name:nm,paid:0,adj:0,count:0,...(HO_P[nm]||{})});
         let d = { ...row, headOffice: fullHO, _updatedAt: row._updatedAt||row.lastUpdated||'' };
+        if (row.complaintsRegionMap && Object.keys(row.complaintsRegionMap).length>0) setComplaintsRegionMap(row.complaintsRegionMap);
+        if (row.complaintsBranchMap && Object.keys(row.complaintsBranchMap).length>0) setComplaintsBranchMap(row.complaintsBranchMap);
+        if (row.complaintsAmts) setComplaintsAmts(row.complaintsAmts);
+        if (row.complaintsPaid) setComplaintsPaid(row.complaintsPaid);
+        if (row.complaintsAdj)  setComplaintsAdj(row.complaintsAdj);
+        // استعادة complaints data من Firebase
+        if (row.complaintsRegionMap) setComplaintsRegionMap(row.complaintsRegionMap);
+        if (row.complaintsBranchMap) setComplaintsBranchMap(row.complaintsBranchMap);
+        if (row.complaintsAmts)      setComplaintsAmts(row.complaintsAmts);
+        if (row.complaintsPaid)      setComplaintsPaid(row.complaintsPaid);
+        if (row.complaintsAdj)       setComplaintsAdj(row.complaintsAdj);
         setData(d);
         try { localStorage.setItem('oneic_dashboard_data', JSON.stringify(d)); } catch(e) {}
         if (row.history?.length > 0) {
@@ -9860,7 +9871,12 @@ export default function Dashboard() {
       grandAdj: ga,
       lastUpdated: _ts,
       _updatedAt: _ts,
-      lastUpdatedDate: _ts.split('T')[0]
+      lastUpdatedDate: _ts.split('T')[0],
+      complaintsRegionMap: complaintsRegionMap||{},
+      complaintsBranchMap: complaintsBranchMap||{},
+      complaintsAmts: complaintsAmts||{},
+      complaintsPaid: complaintsPaid||{},
+      complaintsAdj: complaintsAdj||{},
     };
 
     // ── رفع لـ JSONbin + localStorage ───────────────────────────────────
