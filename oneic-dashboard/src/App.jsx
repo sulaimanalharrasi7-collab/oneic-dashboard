@@ -6142,13 +6142,14 @@ async function parseXLS(file) {
     const paid    = n(row['Paid Amount']|| row['paid_amount']  || row['Paid'] || 0);
     const adj     = n(row['Adjustment'] || row['adjustment']   || row['Adj']  || 0);
     const osAmt   = n(row['O/S Amount'] || row['os_amount']    || row['Outstanding'] || row['O/S'] || 0);
+    const rowPort  = (paid > 0 || osAmt > 0) ? paid + osAmt : 0; // قيمة الحساب الكلية
     const col     = (row['Collector']   || row['collector']    || '').trim();
     const branch  = (row['Branch']      || row['branch']       || '').trim();
 
     if (region === 'Debt Collection Company') {
       const key = branch || col || 'Unknown';
       if (!dcMap[key]) dcMap[key] = { paid:0, adj:0, count:0, paidCount:0, adjCount:0, osAmt:0 };
-      dcMap[key].paid  += paid; dcMap[key].adj += adj; dcMap[key].count++; dcMap[key].osAmt += osAmt;
+      dcMap[key].paid  += paid; dcMap[key].adj += adj; dcMap[key].count++; dcMap[key].osAmt += rowPort;
       if (paid>0) dcMap[key].paidCount++;
       if (adj >0) dcMap[key].adjCount++;
 
@@ -9739,7 +9740,7 @@ export default function Dashboard() {
       const fix = DC_FIX[c.name];
       const finalAmt = c.portAmt>0 ? c.portAmt : existing?.portAmt>0 ? existing.portAmt : fix?.portAmt||0;
       const finalCnt = c.portCnt>0 ? c.portCnt : existing?.portCnt>0 ? existing.portCnt : fix?.portCnt||c.count||0;
-      return { ...c, portAmt: finalAmt, portCnt: finalCnt };
+      return { ...c, portAmt: finalAmt, portCnt: finalCnt, osAmt: c.osAmt||existing?.osAmt||0 };
     });;
     // ضمان وجود كل أقسام المكتب الرئيسي الأربعة دائماً
     const HO_REQUIRED = ["Legal - DR. Sarhaan","Documentation- Omantel","HO","Blanks"];
@@ -10597,7 +10598,7 @@ export default function Dashboard() {
                   }
                 });
                 return dc.map((c,i) => (
-                <EntityCard key={c.name} name={c.name} paid={c.paid} adj={c.adj} cBranch={complaintsBranchMap} color="#1a7a6b" rank={i+1} small={small} portAmt={c.portAmt||0} portCnt={c.portCnt||0}/>
+                <EntityCard key={c.name} name={c.name} paid={c.paid} adj={c.adj} cBranch={complaintsBranchMap} color="#1a7a6b" rank={i+1} small={small} portAmt={c.portAmt||0} portCnt={c.portCnt||0} osAmt={c.osAmt||0}/>
                 ));
               })()}
             </div>
