@@ -8924,9 +8924,13 @@ async function parseComplaints(file) {
         const lines = text.split('\n').filter(l => l.trim());
         if (lines.length < 2) { reject(new Error('الملف فارغ')); return; }
         const headers = lines[0].split('\t').map(h => h.replace(/\r/g,'').trim());
-        const regionIdx = headers.findIndex(h => h === 'Region');
-        const branchIdx = headers.findIndex(h => h === 'Branch');
+        const regionIdx    = headers.findIndex(h => h === 'Region');
+        const branchIdx    = headers.findIndex(h => h === 'Branch');
+        const collectorIdx = headers.findIndex(h => h === 'Collector');
         const principalIdx = headers.findIndex(h => h === 'Principal Amount');
+        const osIdx        = headers.findIndex(h => h === 'O/S Amount');
+        const paidIdx      = headers.findIndex(h => h === 'Paid Amount');
+        const adjIdx       = headers.findIndex(h => h === 'Adjustment');
         if (regionIdx < 0) { reject(new Error('عمود Region غير موجود')); return; }
 
         // خريطة التجميع الدقيقة
@@ -8934,7 +8938,9 @@ async function parseComplaints(file) {
         const HO_REGIONS = ['Head Office', 'Legal', 'Legal '];
         
         let total=0, dcCount=0, hoCount=0, govCount=0;
-        let dcAmt=0, hoAmt=0, govAmt=0;
+        let dcAmt=0,  hoAmt=0,  govAmt=0;
+        let dcPaid=0, hoPaid=0, govPaid=0;
+        let dcAdj=0,  hoAdj=0,  govAdj=0;
         
         // تجميع حسب Region للمحافظات وحسب Branch لشركات التحصيل
         const regionMap = {}; // للمحافظات الخمس (Region)
@@ -8946,31 +8952,35 @@ async function parseComplaints(file) {
           const region = (row[regionIdx]||'').replace(/\r/g,'').trim();
           const branch = branchIdx>=0 ? (row[branchIdx]||'').replace(/\r/g,'').trim() : '';
           if (!region) continue;
-          const amt = principalIdx>=0 ? (parseFloat(row[principalIdx])||0) : 0;
+          const principal = principalIdx>=0 ? (parseFloat(row[principalIdx])||0) : 0;
+          const osAmt     = osIdx>=0        ? (parseFloat(row[osIdx])||0)        : 0;
+          const paid      = paidIdx>=0      ? (parseFloat(row[paidIdx])||0)      : 0;
+          const adj       = adjIdx>=0       ? (parseFloat(row[adjIdx])||0)       : 0;
+          const amt = principal > 0 ? principal : (paid + osAmt);
           total++;
           
           if (region === DC_REGION) {
             // شركات التحصيل → نجمّع حسب Branch
-            dcCount++; dcAmt += amt;
+            dcCount++; dcAmt += amt; dcPaid += paid; dcAdj += adj;
             if (branch) {
               if (!branchMap[branch]) branchMap[branch] = {count:0, amt:0};
               branchMap[branch].count++; branchMap[branch].amt += amt;
             }
           } else if (HO_REGIONS.some(k => region.trim() === k.trim())) {
             // المكتب الرئيسي → نجمّع الكل تحت مفتاح واحد
-            hoCount++; hoAmt += amt;
+            hoCount++; hoAmt += amt; hoPaid += paid; hoAdj += adj;
             const hoKey = 'HEAD_OFFICE_TOTAL';
             if (!branchMap[hoKey]) branchMap[hoKey] = {count:0, amt:0};
             branchMap[hoKey].count++; branchMap[hoKey].amt += amt;
           } else {
             // مكاتب أونك → نجمّع حسب Region
-            govCount++; govAmt += amt;
+            govCount++; govAmt += amt; govPaid += paid; govAdj += adj;
             const rKey = region;
             if (!regionMap[rKey]) regionMap[rKey] = {count:0, amt:0};
             regionMap[rKey].count++; regionMap[rKey].amt += amt;
           }
         }
-        resolve({ total, dcCount, hoCount, govCount, dcAmt, hoAmt, govAmt, regionMap, branchMap });
+        resolve({ total, dcCount, hoCount, govCount, dcAmt, hoAmt, govAmt, dcPaid, hoPaid, govPaid, dcAdj, hoAdj, govAdj, regionMap, branchMap });
       } catch(e) { reject(e); }
     };
     reader.onerror = () => reject(new Error('فشل قراءة الملف'));
@@ -9518,6 +9528,8 @@ export default function Dashboard() {
   const [complaintsCounts, setComplaintsCounts] = useState(() => {
     try { return JSON.parse(localStorage.getItem('oneic_complaints_counts')||'{}'); } catch(e){return {};}
   });
+  const [complaintsPaid, setComplaintsPaid] = useState({dc:0,ho:0,gov:0});
+  const [complaintsAdj,  setComplaintsAdj]  = useState({dc:0,ho:0,gov:0});
   const [complaintsAmts, setComplaintsAmts] = useState(() => {
     try { return JSON.parse(localStorage.getItem('oneic_complaints_amts')||'{}'); } catch(e){return {};}
   });
@@ -9759,6 +9771,8 @@ export default function Dashboard() {
         setComplaintsCount(total);
         setComplaintsCounts({dc:dcCount,ho:hoCount,gov:govCount});
         setComplaintsAmts({dc:dcAmt,ho:hoAmt,gov:govAmt});
+        setComplaintsPaid({dc:dcPaid,ho:hoPaid,gov:govPaid});
+        setComplaintsAdj({dc:dcAdj,ho:hoAdj,gov:govAdj});
         setComplaintsRegionMap(regionMap||{});
         setComplaintsBranchMap(branchMap||{});
         try {
@@ -9895,23 +9909,25 @@ export default function Dashboard() {
     setTimeout(()=>setError(null), 4000);
   }, []);
 
-  const gPd = data.regions.reduce((s,r)=>s+r.paid,0);
-  const gAd = data.regions.reduce((s,r)=>s+r.adj,0);
+  const gPd = complaintsPaid.gov>0 ? complaintsPaid.gov : data.regions.reduce((s,r)=>s+r.paid,0);
+  const gAd = complaintsAdj.gov>0  ? complaintsAdj.gov  : data.regions.reduce((s,r)=>s+r.adj,0);
   const gCnt = data.regions.reduce((s,r)=>s+(r.count||0),0);
   const gPortAmt = data.regions.reduce((s,r)=>s+(r.portAmt||0),0);
   const gPortCnt = data.regions.reduce((s,r)=>s+(r.portCnt||0),0);
-  const dPd = data.debtCompanies.reduce((s,r)=>s+r.paid,0);
-  const dAd = data.debtCompanies.reduce((s,r)=>s+r.adj,0);
+  const dPd = complaintsPaid.dc>0 ? complaintsPaid.dc : data.debtCompanies.reduce((s,r)=>s+r.paid,0);
+  const dAd = complaintsAdj.dc>0  ? complaintsAdj.dc  : data.debtCompanies.reduce((s,r)=>s+r.adj,0);
   const dCnt = data.debtCompanies.reduce((s,r)=>s+(r.count||0),0);
   const dPortAmt = data.debtCompanies.reduce((s,r)=>s+(r.portAmt||0),0);
   const dPortCnt = data.debtCompanies.reduce((s,r)=>s+(r.portCnt||0),0);
-  const hPd = data.headOffice.reduce((s,r)=>s+Math.max(0,r.paid||0),0);
-  const hAd = data.headOffice.reduce((s,r)=>s+Math.max(0,r.adj||0),0);
+  const hPd = complaintsPaid.ho>0 ? complaintsPaid.ho : data.headOffice.reduce((s,r)=>s+Math.max(0,r.paid||0),0);
+  const hAd = complaintsAdj.ho>0  ? complaintsAdj.ho  : data.headOffice.reduce((s,r)=>s+Math.max(0,r.adj||0),0);
   const hCnt = data.headOffice.reduce((s,r)=>s+(r.count||0),0);
   const hPortAmt = data.headOffice.reduce((s,r)=>s+Math.max(0,r.portAmt||0),0);
   const hPortCnt = data.headOffice.reduce((s,r)=>s+(r.portCnt||0),0);
-  const totalPaid = data.totalCollection?.paid || (gPd+dPd+hPd);
-  const totalAdj  = data.totalCollection?.adj  || (gAd+dAd+hAd);
+  const _cPaid = (complaintsPaid.gov||0)+(complaintsPaid.dc||0)+(complaintsPaid.ho||0);
+  const _cAdj  = (complaintsAdj.gov||0) +(complaintsAdj.dc||0) +(complaintsAdj.ho||0);
+  const totalPaid = _cPaid>0 ? _cPaid : (data.totalCollection?.paid || (gPd+dPd+hPd));
+  const totalAdj  = _cAdj>0  ? _cAdj  : (data.totalCollection?.adj  || (gAd+dAd+hAd));
   const totalPort = data.totalPortfolio?.amt    || 9414256.834;
   const gTotal = totalPaid+totalAdj;
   const GRAND_TOTAL_FIXED = 1020464.134;
