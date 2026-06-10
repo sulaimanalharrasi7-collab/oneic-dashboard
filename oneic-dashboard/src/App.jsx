@@ -6142,7 +6142,7 @@ async function parseXLS(file) {
     const paid    = n(row['Paid Amount']|| row['paid_amount']  || row['Paid'] || 0);
     const adj     = n(row['Adjustment'] || row['adjustment']   || row['Adj']  || 0);
     const osAmt   = n(row['O/S Amount'] || row['os_amount']    || row['Outstanding'] || row['O/S'] || 0);
-    const rowPort  = osAmt; // قيمة المحفظة = O/S Amount
+    const rowPort  = osAmt; // O/S Amount
     const col     = (row['Collector']   || row['collector']    || '').trim();
     const branch  = (row['Branch']      || row['branch']       || '').trim();
 
@@ -6177,7 +6177,7 @@ async function parseXLS(file) {
         regMap[region].cMap[col].adj   += adj;
         regMap[region].cMap[col].count++;
         regMap[region].cMap[col].osAmt += rowPort;
-        regMap[region].cMap[col].principalAmt += (n(row['Principal Amount']||0));
+        regMap[region].cMap[col].principalAmt += n(row['Principal Amount']||row['principal_amount']||0);
         if (paid>0) regMap[region].cMap[col].paidCount++;
         if (adj >0) regMap[region].cMap[col].adjCount++;
       }
@@ -6855,20 +6855,13 @@ function RegionRow({region, idx, open, onToggle, small}) {
           </div>
 
           {(region.collectors||[]).map((c,i) => {
-            // بيانات من Complaints: Principal و O/S
-            const _ck = Object.keys(complaintsRegionMap||{}).find(function(k){
-              return k===region.nameEn||k.toLowerCase()===(region.nameEn||'').toLowerCase();
-            });
-            const _cd = _ck ? ((complaintsRegionMap[_ck].collectors||{})[c.name]||null) : null;
-            const cPrincipal = _cd&&_cd.principal>0 ? _cd.principal : (c.principalAmt||c.portAmt||0);
-            const cOS        = _cd&&_cd.os>0 ? _cd.os : (c.portAmt||0);
-            const cPaid      = _cd&&_cd.paid>0 ? _cd.paid : (c.paid||0);
-            const cAdj       = _cd&&_cd.adj>0  ? _cd.adj  : (c.adj||0);
-            const ct         = cOS;
-            const cPort      = cPrincipal;
-            const cCnt       = _cd&&_cd.count>0 ? _cd.count : (c.portCnt||c.count||0);
-            const cRem       = cPrincipal>0 ? cPrincipal-cOS : 0;
-            const cPct       = cPrincipal>0 ? Math.min(100,(cOS/cPrincipal)*100) : 0;
+            const cPrincipal = c.principalAmt>0 ? c.principalAmt : (c.portAmt||0);
+            const cOS   = c.portAmt||0;
+            const ct    = cOS;
+            const cPort = cPrincipal;
+            const cCnt  = c.portCnt||c.count||0;
+            const cRem  = cPrincipal>0 ? cPrincipal-cOS : 0;
+            const cPct  = cPrincipal>0 ? Math.min(100,(cOS/cPrincipal)*100) : 0;
             return (
               <div key={i} style={{borderRadius:12,marginBottom:8,overflow:"hidden",
                 border:`1.5px solid ${col}22`,background:"#fff"}}>
@@ -6900,7 +6893,7 @@ function RegionRow({region, idx, open, onToggle, small}) {
                       {cPort>0 && (
                         <div style={{flex:1,background:`${col}08`,borderRadius:8,padding:"6px 10px",
                           border:`1px solid ${col}20`,textAlign:"center"}}>
-                          <div style={{fontSize:small?8:10,color:col,fontWeight:700,marginBottom:2}}>قيمة المحفظة (Principal)</div>
+                          <div style={{fontSize:small?8:10,color:col,fontWeight:700,marginBottom:2}}>قيمة المحفظة</div>
                           <div style={{fontSize:small?12:15,fontWeight:900,color:col,direction:"ltr"}}>{omr(cPort)}</div>
                         </div>
                       )}
@@ -6915,7 +6908,7 @@ function RegionRow({region, idx, open, onToggle, small}) {
                   )}
                   {/* المدفوع + التسويات + الإجمالي */}
                   <div style={{display:"flex",border:"1px solid #f0ece8",borderRadius:9,overflow:"hidden",background:"#fafafa"}}>
-                    {[["المدفوع",cPaid,"#16a34a"],["التسويات",cAdj,"#d97706"],["O/S Amount",ct,col]].map(([lbl,val,clr],j)=>(
+                    {[["المدفوع",c.paid||0,"#16a34a"],["التسويات",c.adj||0,"#d97706"],["الإجمالي",ct,col]].map(([lbl,val,clr],j)=>(
                       <div key={lbl} style={{flex:1,textAlign:"center",padding:small?"6px 4px":"8px 6px",
                         borderRight:j<2?`1px solid ${col}15`:"none"}}>
                         <div style={{fontSize:small?9:11,color:clr,fontWeight:800,marginBottom:2}}>{lbl}</div>
@@ -6928,7 +6921,7 @@ function RegionRow({region, idx, open, onToggle, small}) {
                     <div style={{display:"flex",gap:6,alignItems:"center"}}>
                       <div style={{flex:1,background:"#fff3ee",borderRadius:8,padding:"6px 10px",
                         border:"1px solid #ffe4d4",textAlign:"center"}}>
-                        <div style={{fontSize:small?8:10,color:"#e85d20",fontWeight:700,marginBottom:2}}>المتبقي (Principal - O/S)</div>
+                        <div style={{fontSize:small?8:10,color:"#e85d20",fontWeight:700,marginBottom:2}}>المتبقي</div>
                         <div style={{fontSize:small?12:14,fontWeight:900,color:"#e85d20",direction:"ltr"}}>{omr(cRem)}</div>
                       </div>
                       <div style={{flex:2,background:"#f8f9fc",borderRadius:8,padding:"6px 10px",
@@ -8970,18 +8963,8 @@ async function parseComplaints(file) {
             // مكاتب أونك → نجمّع حسب Region
             govCount++; govAmt += amt;
             const rKey = region;
-            if (!regionMap[rKey]) regionMap[rKey] = {count:0, amt:0, collectors:{}};
+            if (!regionMap[rKey]) regionMap[rKey] = {count:0, amt:0};
             regionMap[rKey].count++; regionMap[rKey].amt += amt;
-            // تجميع per-collector مع Principal و O/S
-            if (collector) {
-              if (!regionMap[rKey].collectors[collector])
-                regionMap[rKey].collectors[collector] = {count:0, principal:0, os:0, paid:0, adj:0};
-              regionMap[rKey].collectors[collector].count++;
-              regionMap[rKey].collectors[collector].principal += principal;
-              regionMap[rKey].collectors[collector].os        += osAmt;
-              regionMap[rKey].collectors[collector].paid      += paid;
-              regionMap[rKey].collectors[collector].adj       += adj;
-            }
           }
         }
         resolve({ total, dcCount, hoCount, govCount, dcAmt, hoAmt, govAmt, regionMap, branchMap });
@@ -10424,7 +10407,25 @@ export default function Dashboard() {
             </button>
           </div>
           
-                    <button
+          {!isMobile && (
+            <button
+              title="مسح البيانات المحفوظة والعودة للبيانات الافتراضية"
+              onClick={() => {
+                if (window.confirm('هل تريد مسح البيانات المحفوظة والعودة للبيانات الأصلية؟')) {
+                  try { localStorage.removeItem('oneic_dashboard_data'); localStorage.removeItem('oneic_last_update'); } catch(e){}
+                  setData(SEED);
+                }
+              }}
+              style={{
+                background:"transparent", color:"#aaa",
+                border:"1px solid #ddd", borderRadius:8,
+                padding:"6px 10px", fontSize:11, fontWeight:700,
+                cursor:"pointer", fontFamily:"'Cairo',sans-serif",
+                whiteSpace:"nowrap", flexShrink:0, title:"مسح"
+              }}
+            >🗑</button>
+          )}
+          <button
             onClick={() => handlePrint(data)}
             style={{
               display:"flex", alignItems:"center", gap:6,
