@@ -6653,9 +6653,10 @@ function EntityCard({name,paid,adj,color,rank,small,cnt,cBranch,portAmt,portCnt,
 
 
 // ── SummaryCard ────────────────────────────────────────────────────────────
-function SummaryCard({label,paid,adj,cnt,cntPaid,cntAdj,cntTotal,portAmt,color,icon,pct,small,isMobile,isTablet}) {
-  // المعادلة الصحيحة: الإجمالي = المدفوع + التسويات
-  const total = paid + adj;
+function SummaryCard({label,paid,adj,cnt,cntPaid,cntAdj,cntTotal,portAmt,color,icon,pct,small,isMobile,isTablet,osAmt}) {
+  // الإجمالي = O/S Amount إذا متاح، وإلا paid+adj
+  const total = (osAmt||0) > 0 ? (osAmt||0) : paid + adj;
+  const remaining = portAmt > 0 ? portAmt - total : 0;
   // عدد الحسابات المنفصل لكل خانة
   const _cntPaid  = (cntPaid  != null && cntPaid  > 0) ? cntPaid  : (cnt||0);
   const _cntAdj   = (cntAdj   != null && cntAdj   > 0) ? cntAdj   : (cnt||0);
@@ -6737,7 +6738,7 @@ function SummaryCard({label,paid,adj,cnt,cntPaid,cntAdj,cntTotal,portAmt,color,i
 
       {/* ── مربع نسبة الإنجاز ── */}
       {portAmt > 0 && (() => {
-        const tv=paid+adj,pp=Math.min(100,(tv/portAmt)*100),rem=portAmt-tv;
+        const tv=total,pp=portAmt>0?Math.min(100,(total/portAmt)*100):0,rem=portAmt>0?portAmt-total:0;
         return (
           <div style={{margin:"10px 12px 12px",borderRadius:14,border:`2px solid ${color}33`,overflow:"hidden",background:`linear-gradient(135deg,${color}06,${color}12)`}}>
             <div style={{background:`linear-gradient(120deg,${color},${color}cc)`,padding:"8px 14px",display:"flex",justifyContent:"space-between",alignItems:"center"}}>
@@ -8941,6 +8942,7 @@ async function parseComplaints(file) {
         let total=0, dcCount=0, hoCount=0, govCount=0;
         let dcAmt=0, hoAmt=0, govAmt=0;
         let dcPrincipal=0, hoPrincipal=0, govPrincipal=0;
+        let dcOS=0, hoOS=0, govOS=0;
         
         // تجميع حسب Region للمحافظات وحسب Branch لشركات التحصيل
         const regionMap = {}; // للمحافظات الخمس (Region)
@@ -8959,20 +8961,20 @@ async function parseComplaints(file) {
           
           if (region === DC_REGION) {
             // شركات التحصيل → نجمّع حسب Branch
-            dcCount++; dcAmt += amt; dcPrincipal += principal;
+            dcCount++; dcAmt += amt; dcPrincipal += principal; dcOS += osAmtC;
             if (branch) {
               if (!branchMap[branch]) branchMap[branch] = {count:0, amt:0};
               branchMap[branch].count++; branchMap[branch].amt += amt;
             }
           } else if (HO_REGIONS.some(k => region.trim() === k.trim())) {
             // المكتب الرئيسي → نجمّع الكل تحت مفتاح واحد
-            hoCount++; hoAmt += amt; hoPrincipal += principal;
+            hoCount++; hoAmt += amt; hoPrincipal += principal; hoOS += osAmtC;
             const hoKey = 'HEAD_OFFICE_TOTAL';
             if (!branchMap[hoKey]) branchMap[hoKey] = {count:0, amt:0};
             branchMap[hoKey].count++; branchMap[hoKey].amt += amt;
           } else {
             // مكاتب أونك → نجمّع حسب Region
-            govCount++; govAmt += amt; govPrincipal += principal;
+            govCount++; govAmt += amt; govPrincipal += principal; govOS += osAmtC;
             const rKey = region;
             if (!regionMap[rKey]) regionMap[rKey] = {count:0, amt:0, osAmt:0, collectors:{}};
             regionMap[rKey].count++; regionMap[rKey].amt += amt;
@@ -8986,7 +8988,7 @@ async function parseComplaints(file) {
             }
           }
         }
-        resolve({ total, dcCount, hoCount, govCount, dcAmt, hoAmt, govAmt, dcPrincipal, hoPrincipal, govPrincipal, regionMap, branchMap });
+        resolve({ total, dcCount, hoCount, govCount, dcAmt, hoAmt, govAmt, dcPrincipal, hoPrincipal, govPrincipal, dcOS, hoOS, govOS, regionMap, branchMap });
       } catch(e) { reject(e); }
     };
     reader.onerror = () => reject(new Error('فشل قراءة الملف'));
@@ -9778,7 +9780,7 @@ export default function Dashboard() {
         setComplaintsCounts({dc:dcCount,ho:hoCount,gov:govCount});
         setComplaintsAmts({dc:dcAmt,ho:hoAmt,gov:govAmt});
         setComplaintsPrincipal({dc:dcPrincipal,ho:hoPrincipal,gov:govPrincipal});
-        setComplaintsOS({dc:dcAmt,ho:hoAmt,gov:govAmt}); // amt = osAmt (principal used as portAmt)
+        setComplaintsOS({dc:dcOS,ho:hoOS,gov:govOS});
         setComplaintsRegionMap(regionMap||{});
         setComplaintsBranchMap(branchMap||{});
         try {
@@ -10590,7 +10592,7 @@ export default function Dashboard() {
             const hCounts = calcCounts(data.headOffice);
             return (<>
               <SummaryCard label="مكاتب أونك"
-                paid={gPd} adj={gAd}
+                paid={gPd} adj={gAd} osAmt={complaintsOS.gov||0}
                 cnt={complaintsCounts.gov||gCounts.total||gPortCnt||gCnt||0}
                 cntPaid={complaintsCounts.govPaid||gCounts.paid||null}
                 cntAdj={complaintsCounts.govAdj||gCounts.adj||null}
@@ -10598,7 +10600,7 @@ export default function Dashboard() {
                 portAmt={complaintsPrincipal.gov>0?complaintsPrincipal.gov:(complaintsAmts.gov||gPortAmt||0)}
                 color="#e85d20" icon="🗺" pct={p(gPd+gAd)} small={small} isMobile={isMobile} isTablet={isTablet}/>
               <SummaryCard label="شركات التحصيل"
-                paid={dPd} adj={dAd}
+                paid={dPd} adj={dAd} osAmt={complaintsOS.dc||0}
                 cnt={complaintsCounts.dc||dCounts.total||dPortCnt||dCnt||0}
                 cntPaid={complaintsCounts.dcPaid||dCounts.paid||null}
                 cntAdj={complaintsCounts.dcAdj||dCounts.adj||null}
@@ -10606,7 +10608,7 @@ export default function Dashboard() {
                 portAmt={complaintsPrincipal.dc>0?complaintsPrincipal.dc:(complaintsAmts.dc||dPortAmt||0)}
                 color="#1a7a6b" icon="🏢" pct={p(dPd+dAd)} small={small} isMobile={isMobile} isTablet={isTablet}/>
               <SummaryCard label="المكتب الرئيسي"
-                paid={hPd} adj={hAd}
+                paid={hPd} adj={hAd} osAmt={complaintsOS.ho||0}
                 cnt={complaintsCounts.ho||hCounts.total||hPortCnt||hCnt||0}
                 cntPaid={complaintsCounts.hoPaid||hCounts.paid||null}
                 cntAdj={complaintsCounts.hoAdj||hCounts.adj||null}
