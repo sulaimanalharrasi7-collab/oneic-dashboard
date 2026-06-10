@@ -6507,7 +6507,9 @@ function EntityCard({name,paid,adj,color,rank,small,cnt,cBranch,portAmt,portCnt,
   // قيمة المحفظة = Principal من complaintsBranchMap
   const bComp   = cBranch ? (cBranch[name]||null) : null;
   const principal4card = bComp&&bComp.amt>0 ? bComp.amt : (principalAmt||portAmt||0);
-  const total   = (paid||0) + (adj||0); // الإجمالي = Paid + Adj
+  const cPaid   = bComp&&bComp.paid>0 ? bComp.paid : (paid||0);
+  const cAdj    = bComp&&bComp.adj>0  ? bComp.adj  : (adj||0);
+  const total   = cPaid + cAdj; // الإجمالي = Paid + Adj من Complaints
   const allZero = total === 0 && name !== "Blanks" && !["Ejada","Tahseel United","High Speed Company","High Speed company"].includes(name);
   const hasPort  = principal4card > 0;
   const hasCnt   = (portCnt||0) > 0;
@@ -6600,7 +6602,7 @@ function EntityCard({name,paid,adj,color,rank,small,cnt,cBranch,portAmt,portCnt,
 
         {/* صف 2: المدفوع + التسويات + الإجمالي */}
         <div style={{display:"flex",border:"1.5px solid #f0ece8",borderRadius:10,overflow:"hidden",background:"#fafafa"}}>
-          {[["المدفوع",paid||0,"#16a34a"],["التسويات",adj||0,"#d97706"],["الإجمالي",total,color]].map(([lbl,val,clr],i)=>(
+          {[["المدفوع",cPaid,"#16a34a"],["التسويات",cAdj,"#d97706"],["الإجمالي",total,color]].map(([lbl,val,clr],i)=>(
             <div key={lbl} style={{flex:1,textAlign:"center",padding:small?"7px 4px":"10px 6px",
               borderRight:i<2?"1px solid #f0ece8":"none",
               background:i===2?`${clr}06`:"transparent"}}>
@@ -8971,6 +8973,20 @@ async function parseComplaints(file) {
           } else if (HO_REGIONS.some(k => region.trim() === k.trim())) {
             // المكتب الرئيسي → نجمّع الكل تحت مفتاح واحد
             hoCount++; hoAmt += amt; hoPaid += paidAmt; hoAdj += adjAmt;
+            // per-collector للـ HO
+            if (collector2) {
+              var hoColKey = collector2;
+              var cLow = collector2.toLowerCase();
+              if (cLow.indexOf('sarhaan')>=0||cLow.indexOf('sarhan')>=0||cLow.indexOf('dr.')>=0||cLow.indexOf(' dr')>=0) hoColKey='Legal - DR. Sarhaan';
+              else if (cLow.indexOf('doc')>=0) hoColKey='Documentation- Omantel';
+              else if (cLow.indexOf('non-due')>=0||collector2.toUpperCase()==='HO') hoColKey='Non-due accounts';
+              else hoColKey='Blanks';
+              if (!branchMap[hoColKey]) branchMap[hoColKey]={count:0,amt:0,paid:0,adj:0};
+              branchMap[hoColKey].count++;
+              branchMap[hoColKey].amt  += amt;
+              branchMap[hoColKey].paid += paidAmt;
+              branchMap[hoColKey].adj  += adjAmt;
+            }
             const hoKey = 'HEAD_OFFICE_TOTAL';
             if (!branchMap[hoKey]) branchMap[hoKey] = {count:0, amt:0};
             branchMap[hoKey].count++; branchMap[hoKey].amt += amt;
