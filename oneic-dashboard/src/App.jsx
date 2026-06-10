@@ -10468,24 +10468,6 @@ export default function Dashboard() {
             </button>
           </div>
           
-          {!isMobile && (
-            <button
-              title="مسح البيانات المحفوظة والعودة للبيانات الافتراضية"
-              onClick={() => {
-                if (window.confirm('هل تريد مسح البيانات المحفوظة والعودة للبيانات الأصلية؟')) {
-                  try { localStorage.removeItem('oneic_dashboard_data'); localStorage.removeItem('oneic_last_update'); } catch(e){}
-                  setData(SEED);
-                }
-              }}
-              style={{
-                background:"transparent", color:"#aaa",
-                border:"1px solid #ddd", borderRadius:8,
-                padding:"6px 10px", fontSize:11, fontWeight:700,
-                cursor:"pointer", fontFamily:"'Cairo',sans-serif",
-                whiteSpace:"nowrap", flexShrink:0, title:"مسح"
-              }}
-            >🗑</button>
-          )}
           <button
             onClick={() => handlePrint(data)}
             style={{
