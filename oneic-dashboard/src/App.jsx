@@ -6172,11 +6172,12 @@ async function parseXLS(file) {
       if (paid>0) regMap[region].paidCount++;
       if (adj >0) regMap[region].adjCount++;
       if (col) {
-        if (!regMap[region].cMap[col]) regMap[region].cMap[col] = { paid:0, adj:0, count:0, paidCount:0, adjCount:0, osAmt:0 };
+        if (!regMap[region].cMap[col]) regMap[region].cMap[col] = { paid:0, adj:0, count:0, paidCount:0, adjCount:0, osAmt:0, principalAmt:0 };
         regMap[region].cMap[col].paid  += paid;
         regMap[region].cMap[col].adj   += adj;
         regMap[region].cMap[col].count++;
         regMap[region].cMap[col].osAmt += rowPort;
+        regMap[region].cMap[col].principalAmt += (n(row['Principal Amount']||0));
         if (paid>0) regMap[region].cMap[col].paidCount++;
         if (adj >0) regMap[region].cMap[col].adjCount++;
       }
@@ -6204,7 +6205,7 @@ async function parseXLS(file) {
       .map(([nm,d]) => ({
         name:nm, paid:d.paid, adj:d.adj,
         count:d.count||0, paidCount:d.paidCount||0, adjCount:d.adjCount||0,
-        portAmt:d.osAmt||0, portCnt:d.count||0
+        portAmt:d.osAmt||0, portCnt:d.count||0, principalAmt:d.principalAmt||0
       }))
       .sort((a,b) => (b.paid+b.adj)-(a.paid+a.adj))
   }));
@@ -6854,11 +6855,16 @@ function RegionRow({region, idx, open, onToggle, small}) {
           </div>
 
           {(region.collectors||[]).map((c,i) => {
-            const ct = (c.paid||0)+(c.adj||0);
-            const cPort = c.portAmt||0;
+            // قيمة المحفظة = Principal Amount
+            // الإجمالي = O/S Amount (المبلغ المستحق المتبقي)
+            // المتبقي = Principal - O/S
+            const cPrincipal = c.principalAmt||c.portAmt||0;
+            const cOS  = (c.paid||0)+(c.adj||0); // O/S Amount = paid+adj من XLS
+            const ct   = cOS; // الإجمالي = O/S
+            const cPort = cPrincipal; // قيمة المحفظة = Principal
             const cCnt  = c.portCnt||c.count||0;
-            const cRem  = cPort>0 ? cPort-ct : 0;
-            const cPct  = cPort>0 ? Math.min(100,(ct/cPort)*100) : 0;
+            const cRem  = cPrincipal>0 ? cPrincipal-cOS : 0;
+            const cPct  = cPrincipal>0 ? Math.min(100,(cOS/cPrincipal)*100) : 0;
             return (
               <div key={i} style={{borderRadius:12,marginBottom:8,overflow:"hidden",
                 border:`1.5px solid ${col}22`,background:"#fff"}}>
@@ -6890,7 +6896,7 @@ function RegionRow({region, idx, open, onToggle, small}) {
                       {cPort>0 && (
                         <div style={{flex:1,background:`${col}08`,borderRadius:8,padding:"6px 10px",
                           border:`1px solid ${col}20`,textAlign:"center"}}>
-                          <div style={{fontSize:small?8:10,color:col,fontWeight:700,marginBottom:2}}>قيمة المحفظة</div>
+                          <div style={{fontSize:small?8:10,color:col,fontWeight:700,marginBottom:2}}>قيمة المحفظة (Principal)</div>
                           <div style={{fontSize:small?12:15,fontWeight:900,color:col,direction:"ltr"}}>{omr(cPort)}</div>
                         </div>
                       )}
@@ -6905,7 +6911,7 @@ function RegionRow({region, idx, open, onToggle, small}) {
                   )}
                   {/* المدفوع + التسويات + الإجمالي */}
                   <div style={{display:"flex",border:"1px solid #f0ece8",borderRadius:9,overflow:"hidden",background:"#fafafa"}}>
-                    {[["المدفوع",c.paid||0,"#16a34a"],["التسويات",c.adj||0,"#d97706"],["الإجمالي",ct,col]].map(([lbl,val,clr],j)=>(
+                    {[["المدفوع",c.paid||0,"#16a34a"],["التسويات",c.adj||0,"#d97706"],["الإجمالي (O/S)",ct,col]].map(([lbl,val,clr],j)=>(
                       <div key={lbl} style={{flex:1,textAlign:"center",padding:small?"6px 4px":"8px 6px",
                         borderRight:j<2?`1px solid ${col}15`:"none"}}>
                         <div style={{fontSize:small?9:11,color:clr,fontWeight:800,marginBottom:2}}>{lbl}</div>
@@ -6918,7 +6924,7 @@ function RegionRow({region, idx, open, onToggle, small}) {
                     <div style={{display:"flex",gap:6,alignItems:"center"}}>
                       <div style={{flex:1,background:"#fff3ee",borderRadius:8,padding:"6px 10px",
                         border:"1px solid #ffe4d4",textAlign:"center"}}>
-                        <div style={{fontSize:small?8:10,color:"#e85d20",fontWeight:700,marginBottom:2}}>المتبقي</div>
+                        <div style={{fontSize:small?8:10,color:"#e85d20",fontWeight:700,marginBottom:2}}>المتبقي (Principal - O/S)</div>
                         <div style={{fontSize:small?12:14,fontWeight:900,color:"#e85d20",direction:"ltr"}}>{omr(cRem)}</div>
                       </div>
                       <div style={{flex:2,background:"#f8f9fc",borderRadius:8,padding:"6px 10px",
@@ -10338,7 +10344,7 @@ export default function Dashboard() {
           <img src={LOGO} alt="ONEIC" style={{height:40,objectFit:"contain"}}/>
           <div>
             <div style={{fontSize:14,fontWeight:900,color:"#e85d20"}}>لوحة تحكم إدارة تحصيل الديون</div>
-            <div style={{fontSize:12,color:"#555"}}> Debt Collection Management Dashboard · تاريخ التقرير: {data.uploadDate} · {data.totalRecords?.toLocaleString()} سجل</div>
+            <div style={{fontSize:9,color:"#555"}}>Debt Collection Management Dashboard · تاريخ التقرير: {data.uploadDate} · {data.totalRecords?.toLocaleString()} سجل</div>
           </div>
         </div>
         <div style={{textAlign:"right",fontSize:9,color:"#555"}}>
@@ -10362,8 +10368,8 @@ export default function Dashboard() {
             <div style={{ fontSize: isMobile?16:isTablet?20:26, fontWeight:900, color:"#e85d20", lineHeight:1.1 }}>
               {isMobile ? "إدارة الديون" : "لوحة تحكم إدارة تحصيل الديون"}
             </div>
-            {!isMobile && <div style={{ fontSize:16, color:"#e85d20", fontWeight:700, marginTop:3 }}>
-                Debt Collection Management Dashboard
+            {!isMobile && <div style={{ fontSize:12, color:"#e85d20", fontWeight:700, marginTop:3 }}>
+              Omantel Debt Collection Management Dashboard
             </div>}
             {!isMobile && <div style={{ fontSize:10, color:"#16a34a", fontWeight:700, marginTop:2, display:"flex", alignItems:"center", gap:4 }}>
               <span>{"💾"}</span>
