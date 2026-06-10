@@ -6452,10 +6452,12 @@ function AmountRow({paid,adj,color,small}) {
 }
 
 // ── SectionHeader ──────────────────────────────────────────────────────────
-function SectionHeader({title,paid,adj,color,small,portAmt,portCnt}) {
-  const total = paid + adj;
-  const remaining = portAmt > 0 ? portAmt - total : 0;
-  const pct = portAmt > 0 ? Math.min(100,(total/portAmt)*100) : 0;
+function SectionHeader({title,paid,adj,color,small,portAmt,portCnt,osAmt}) {
+  // قيمة المحفظة = Principal Amount (portAmt)
+  // الإجمالي = O/S Amount (osAmt إذا متاح وإلا paid+adj)
+  const total     = (osAmt||0)>0 ? (osAmt||0) : paid+adj;
+  const remaining = portAmt>0 ? portAmt-total : 0;
+  const pct       = portAmt>0 ? Math.min(100,(total/portAmt)*100) : 0;
 
   const items = [
     {l:"عدد الحسابات",  v:(portCnt||0).toLocaleString()+" حساب", c:"rgba(255,255,255,0.9)", show:true},
@@ -6510,14 +6512,15 @@ function EntityCard({name,paid,adj,color,rank,small,cnt,cBranch,portAmt,portCnt,
   const allZero = total === 0 && name !== "Blanks" && !["Ejada","Tahseel United","High Speed Company","High Speed company"].includes(name);
   const hasPort  = (portAmt||0) > 0;
   const hasCnt   = (portCnt||0) > 0;
-  const principalForCard = (principalAmt||0)>0 ? principalAmt : portAmt;
-  const osForCard        = portAmt||0;
-  const effPort  = principalForCard > 0 ? principalForCard : osForCard;
-  // إذا الشركة عندها تحصيل لكن portAmt غير محدد، استخدم التحصيل نفسه
-  const displayPort = effPort > 0 ? effPort : ((osAmt||0) > 0 ? (osAmt||0) : 0);
-  const effCnt   = hasCnt  ? portCnt : (bD?.count||0);
-  const remaining = principalForCard > 0 ? principalForCard - osForCard : 0;
-  const pctVal   = principalForCard > 0 ? Math.min(100,(osForCard/principalForCard)*100) : 0;
+  // بيانات من Complaints: principal و os
+  const bComp   = cBranch ? (cBranch[name]||null) : null;
+  const finalPrincipal = bComp&&bComp.principal>0 ? bComp.principal : ((principalAmt||0)>0?principalAmt:portAmt);
+  const finalOS        = bComp&&bComp.os>0 ? bComp.os : (portAmt||0);
+  const effPort     = finalPrincipal > 0 ? finalPrincipal : finalOS;
+  const displayPort = effPort;
+  const effCnt      = hasCnt ? portCnt : (bComp?bComp.count:0)||0;
+  const remaining   = finalPrincipal>0 ? finalPrincipal-finalOS : 0;
+  const pctVal      = finalPrincipal>0 ? Math.min(100,(finalOS/finalPrincipal)*100) : 0;
 
   // Non-due accounts — يعرض فقط عدد الحسابات
   if (name === "Non-due accounts") {
@@ -8963,15 +8966,29 @@ async function parseComplaints(file) {
             // شركات التحصيل → نجمّع حسب Branch
             dcCount++; dcAmt += amt; dcPrincipal += principal; dcOS += osAmtC;
             if (branch) {
-              if (!branchMap[branch]) branchMap[branch] = {count:0, amt:0};
+              if (!branchMap[branch]) branchMap[branch] = {count:0, amt:0, principal:0, os:0};
               branchMap[branch].count++; branchMap[branch].amt += amt;
+              branchMap[branch].principal += principal; branchMap[branch].os += osAmtC;
             }
           } else if (HO_REGIONS.some(k => region.trim() === k.trim())) {
             // المكتب الرئيسي → نجمّع الكل تحت مفتاح واحد
             hoCount++; hoAmt += amt; hoPrincipal += principal; hoOS += osAmtC;
             const hoKey = 'HEAD_OFFICE_TOTAL';
-            if (!branchMap[hoKey]) branchMap[hoKey] = {count:0, amt:0};
+            if (!branchMap[hoKey]) branchMap[hoKey] = {count:0, amt:0, principal:0, os:0};
             branchMap[hoKey].count++; branchMap[hoKey].amt += amt;
+            branchMap[hoKey].principal += principal; branchMap[hoKey].os += osAmtC;
+            // أيضاً per-collector للمكتب الرئيسي
+            if (collector) {
+              var hoColKey = collector;
+              var cL = collector.toLowerCase();
+              if (cL.indexOf('sarhaan')>=0||cL.indexOf('sarhan')>=0||cL.indexOf(' dr')>=0||cL.indexOf('dr.')>=0) hoColKey = 'Legal - DR. Sarhaan';
+              else if (cL.indexOf('doc')>=0) hoColKey = 'Documentation- Omantel';
+              else if (cL.indexOf('non-due')>=0||collector.toUpperCase()==='HO') hoColKey = 'Non-due accounts';
+              else hoColKey = 'Blanks';
+              if (!branchMap[hoColKey]) branchMap[hoColKey] = {count:0, amt:0, principal:0, os:0};
+              branchMap[hoColKey].count++; branchMap[hoColKey].amt += amt;
+              branchMap[hoColKey].principal += principal; branchMap[hoColKey].os += osAmtC;
+            }
           } else {
             // مكاتب أونك → نجمّع حسب Region
             govCount++; govAmt += amt; govPrincipal += principal; govOS += osAmtC;
@@ -10626,7 +10643,7 @@ export default function Dashboard() {
           border:"1.5px solid #f0ece8", marginBottom: small?14:18,
           overflow:"hidden"
         }}>
-          <SectionHeader title="🗺 مكاتب أونك" paid={gPd} adj={gAd} color="#e85d20" small={small} portAmt={complaintsPrincipal.gov>0?complaintsPrincipal.gov:(complaintsAmts.gov||gPortAmt||0)} portCnt={complaintsCounts.gov||gPortCnt||data.regions?.reduce((s,r)=>s+(r.portCnt||0),0)||0}/>
+          <SectionHeader title="🗺 مكاتب أونك" paid={gPd} adj={gAd} osAmt={complaintsOS.gov||0} color="#e85d20" small={small} portAmt={complaintsPrincipal.gov>0?complaintsPrincipal.gov:(complaintsAmts.gov||gPortAmt||0)} portCnt={complaintsCounts.gov||gPortCnt||data.regions?.reduce((s,r)=>s+(r.portCnt||0),0)||0}/>
           <div style={{ padding: small?"10px":"14px 16px", display:"flex", flexDirection:"column", gap: small?8:10 }}>
             {data.regions.map((r,i) => (
               <RegionRow key={r.id} region={r} idx={i}
@@ -10646,7 +10663,7 @@ export default function Dashboard() {
         }}>
           {/* DC */}
           <div style={{ background:"#fff", borderRadius:16, boxShadow:"0 3px 18px rgba(0,0,0,0.07)", border:"1.5px solid #f0ece8", overflow:"hidden" }}>
-            <SectionHeader title="🏢 شركات التحصيل" paid={dPd} adj={dAd} color="#1a7a6b" small={small} portAmt={dPortAmt||0} portCnt={dPortCnt||0}/>
+            <SectionHeader title="🏢 شركات التحصيل" paid={dPd} adj={dAd} osAmt={complaintsOS.dc||0} color="#1a7a6b" small={small} portAmt={complaintsPrincipal.dc>0?complaintsPrincipal.dc:(dPortAmt||0)} portCnt={dPortCnt||0}/>
             <div style={{ padding: small?"10px":"14px 16px", display:"flex", flexDirection:"column", gap: small?8:10 }}>
               {(() => {
                 const ALWAYS_SHOW = [
@@ -10671,7 +10688,7 @@ export default function Dashboard() {
                   }
                 });
                 return dc.map((c,i) => (
-                <EntityCard key={c.name} name={c.name} paid={c.paid} adj={c.adj} cBranch={complaintsBranchMap} color="#1a7a6b" rank={i+1} small={small} portAmt={c.portAmt||0} portCnt={c.portCnt||0} osAmt={c.osAmt||c.portAmt||0}/>
+                <EntityCard key={c.name} name={c.name} paid={c.paid} adj={c.adj} cBranch={complaintsBranchMap} color="#1a7a6b" rank={i+1} small={small} portAmt={c.portAmt||0} portCnt={c.portCnt||0} osAmt={c.osAmt||c.portAmt||0} principalAmt={c.principalAmt||0}/>
                 ));
               })()}
             </div>
@@ -10679,10 +10696,10 @@ export default function Dashboard() {
 
           {/* HO */}
           <div style={{ background:"#fff", borderRadius:16, boxShadow:"0 3px 18px rgba(0,0,0,0.07)", border:"1.5px solid #f0ece8", overflow:"hidden" }}>
-            <SectionHeader title="🏛 المكتب الرئيسي" paid={hPd} adj={hAd} color="#6c3fa0" small={small} portAmt={hPortAmt||0} portCnt={hPortCnt||0}/>
+            <SectionHeader title="🏛 المكتب الرئيسي" paid={hPd} adj={hAd} osAmt={complaintsOS.ho||0} color="#6c3fa0" small={small} portAmt={complaintsPrincipal.ho>0?complaintsPrincipal.ho:(hPortAmt||0)} portCnt={hPortCnt||0}/>
             <div style={{ padding: small?"10px":"14px 16px", display:"flex", flexDirection:"column", gap: small?8:10 }}>
               {(data.headOffice||[]).filter(c=>c.name!=='HO').map((c,i) => (
-                <EntityCard key={c.name} name={c.name} paid={c.paid} adj={c.adj} cBranch={complaintsBranchMap} color="#6c3fa0" rank={i+1} small={small} portAmt={c.portAmt||0} portCnt={c.portCnt||0} principalAmt={c.principalAmt||0}/>
+                <EntityCard key={c.name} name={c.name} paid={c.paid} adj={c.adj} cBranch={complaintsBranchMap} color="#6c3fa0" rank={i+1} small={small} portAmt={c.portAmt||0} portCnt={c.portCnt||0} principalAmt={c.principalAmt||0} osAmt={c.osAmt||c.portAmt||0}/>
               ))}
             </div>
           </div>
