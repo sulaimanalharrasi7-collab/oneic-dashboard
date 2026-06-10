@@ -6208,7 +6208,7 @@ async function parseXLS(file) {
         count:d.count||0, paidCount:d.paidCount||0, adjCount:d.adjCount||0,
         portAmt:d.osAmt||0, portCnt:d.count||0, principalAmt:d.principalAmt||0
       }))
-      .sort((a,b) => (b.paid+b.adj)-(a.paid+a.adj))
+      .sort((a,b) => (b.portAmt||0)-(a.portAmt||0))
   }));
 
   // ── شركات التحصيل ─────────────────────────────────────────────────────
@@ -6227,7 +6227,7 @@ async function parseXLS(file) {
       dcList.push({name:nm,paid:0,adj:0,count:0,paidCount:0,adjCount:0,portAmt:p.portAmt,portCnt:p.portCnt});
     }
   });
-  const debtCompanies = dcList.sort((a,b)=>(b.paid+b.adj)-(a.paid+a.adj));
+  const debtCompanies = dcList.sort((a,b)=>(b.portAmt||0)-(a.portAmt||0));
 
   // ── المكتب الرئيسي ────────────────────────────────────────────────────
   const HO_KEYS = ["Legal - DR. Sarhaan","Documentation- Omantel","HO","Non-due accounts","Blanks"];
@@ -10664,7 +10664,7 @@ export default function Dashboard() {
         }}>
           <SectionHeader title="🗺 مكاتب أونك" paid={complaintsPaidState.gov>0?complaintsPaidState.gov:gPd} adj={complaintsAdjState.gov>0?complaintsAdjState.gov:gAd} color="#e85d20" small={small} portAmt={complaintsPrincipal.gov>0?complaintsPrincipal.gov:(complaintsAmts.gov||gPortAmt||0)} portCnt={complaintsCounts.gov||gPortCnt||data.regions?.reduce((s,r)=>s+(r.portCnt||0),0)||0}/>
           <div style={{ padding: small?"10px":"14px 16px", display:"flex", flexDirection:"column", gap: small?8:10 }}>
-            {data.regions.map((r,i) => (
+            {[...data.regions].sort((a,b)=>(b.principalAmt||b.portAmt||0)-(a.principalAmt||a.portAmt||0)).map((r,i) => (
               <RegionRow key={r.id} region={r} idx={i} complaintsRegionMap={complaintsRegionMap}
                 open={openRegion===r.id}
                 onToggle={() => setOpenRegion(openRegion===r.id?null:r.id)}
@@ -10706,7 +10706,7 @@ export default function Dashboard() {
                     dc[i2] = {...dc[i2], portAmt:bestPort, portCnt:bestCnt};
                   }
                 });
-                return dc.map((c,i) => (
+                return [...dc].sort((a,b)=>(b.principalAmt||b.portAmt||0)-(a.principalAmt||a.portAmt||0)).map((c,i) => (
                 <EntityCard key={c.name} name={c.name} paid={c.paid} adj={c.adj} cBranch={complaintsBranchMap} color="#1a7a6b" rank={i+1} small={small} portAmt={c.portAmt||0} portCnt={c.portCnt||0} osAmt={c.osAmt||c.portAmt||0}/>
                 ));
               })()}
@@ -10717,7 +10717,7 @@ export default function Dashboard() {
           <div style={{ background:"#fff", borderRadius:16, boxShadow:"0 3px 18px rgba(0,0,0,0.07)", border:"1.5px solid #f0ece8", overflow:"hidden" }}>
             <SectionHeader title="🏛 المكتب الرئيسي" paid={complaintsPaidState.ho>0?complaintsPaidState.ho:hPd} adj={complaintsAdjState.ho>0?complaintsAdjState.ho:hAd} color="#6c3fa0" small={small} portAmt={hPortAmt||0} portCnt={hPortCnt||0}/>
             <div style={{ padding: small?"10px":"14px 16px", display:"flex", flexDirection:"column", gap: small?8:10 }}>
-              {(data.headOffice||[]).filter(c=>c.name!=='HO').map((c,i) => (
+              {[...(data.headOffice||[])].filter(c=>c.name!=='HO').sort((a,b)=>(b.principalAmt||b.portAmt||0)-(a.principalAmt||a.portAmt||0)).map((c,i) => (
                 <EntityCard key={c.name} name={c.name} paid={c.paid} adj={c.adj} cBranch={complaintsBranchMap} color="#6c3fa0" rank={i+1} small={small} portAmt={c.portAmt||0} portCnt={c.portCnt||0} principalAmt={c.principalAmt||0}/>
               ))}
             </div>
