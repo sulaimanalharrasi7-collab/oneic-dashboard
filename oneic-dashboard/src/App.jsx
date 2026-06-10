@@ -6450,14 +6450,15 @@ function AmountRow({paid,adj,color,small}) {
 }
 
 // ── SectionHeader ──────────────────────────────────────────────────────────
-function SectionHeader({title,paid,adj,color,small,portAmt,portCnt}) {
+function SectionHeader({title,paid,adj,color,small,portAmt,portCnt,principalAmt}) {
+  const effSHPort = principalAmt>0 ? principalAmt : portAmt;
   const total = paid + adj;
-  const remaining = portAmt > 0 ? portAmt - total : 0;
-  const pct = portAmt > 0 ? Math.min(100,(total/portAmt)*100) : 0;
+  const remaining = effSHPort > 0 ? effSHPort - total : 0;
+  const pct = effSHPort > 0 ? Math.min(100,(total/effSHPort)*100) : 0;
 
   const items = [
     {l:"عدد الحسابات",  v:(portCnt||0).toLocaleString()+" حساب", c:"rgba(255,255,255,0.9)", show:true},
-    {l:"قيمة المحفظة",  v:omr(portAmt)+" OMR",                   c:"#fff",                 show:portAmt>0},
+    {l:"قيمة المحفظة",  v:omr(effSHPort)+" OMR",                   c:"#fff",                 show:portAmt>0},
     {l:"المدفوع",       v:omr(paid),                              c:"#bbf7d0",              show:true},
     {l:"التسويات",      v:omr(adj),                               c:"#fde68a",              show:true},
     {l:"الإجمالي",      v:omr(total),                             c:"#fff",                 show:true},
@@ -9148,15 +9149,12 @@ function handlePrint(data) {
   var omrN = function(n) { return new Intl.NumberFormat('en-US',{minimumFractionDigits:3,maximumFractionDigits:3}).format(n||0); };
 
   // ── حساب الإجماليات — نفس منطق الداشبورد (gPd+dPd+hPd من data.regions/debtCompanies/headOffice) ──
-  var govPaid = (data.regions||[]).reduce(function(s,r){return s+(r.paid||0);},0);
-  var govAdj  = (data.regions||[]).reduce(function(s,r){return s+(r.adj||0);},0);
-  var govPort = (data.regions||[]).reduce(function(s,r){return s+(r.portAmt||0);},0);
-  var dcPaid  = (data.debtCompanies||[]).reduce(function(s,r){return s+(r.paid||0);},0);
-  var dcAdj   = (data.debtCompanies||[]).reduce(function(s,r){return s+(r.adj||0);},0);
-  var dcPort  = (data.debtCompanies||[]).reduce(function(s,r){return s+(r.portAmt||0);},0);
-  var hoPaid  = (data.headOffice||[]).filter(function(c){return c.name!=='HO';}).reduce(function(s,r){return s+Math.max(0,r.paid||0);},0);
-  var hoAdj   = (data.headOffice||[]).filter(function(c){return c.name!=='HO';}).reduce(function(s,r){return s+Math.max(0,r.adj||0);},0);
-  var hoPort  = (data.headOffice||[]).filter(function(c){return c.name!=='HO';}).reduce(function(s,r){return s+(r.portAmt||0);},0);
+  var govPaid = (data.regions||[]).reduce(function(s,r){return s+r.paid;},0);
+  var govAdj  = (data.regions||[]).reduce(function(s,r){return s+r.adj;},0);
+  var dcPaid  = (data.debtCompanies||[]).reduce(function(s,r){return s+r.paid;},0);
+  var dcAdj   = (data.debtCompanies||[]).reduce(function(s,r){return s+r.adj;},0);
+  var hoPaid  = (data.headOffice||[]).reduce(function(s,r){return s+Math.max(0,r.paid||0);},0);
+  var hoAdj   = (data.headOffice||[]).reduce(function(s,r){return s+Math.max(0,r.adj||0);},0);
   // نفس منطق الداشبورد بالضبط: data.totalCollection?.paid || (gPd+dPd+hPd)
   var grandPaid = (data.totalCollection&&data.totalCollection.paid) ? data.totalCollection.paid : (govPaid+dcPaid+hoPaid);
   var grandAdj  = (data.totalCollection&&data.totalCollection.adj)  ? data.totalCollection.adj  : (govAdj+dcAdj+hoAdj);
@@ -9184,35 +9182,29 @@ function handlePrint(data) {
 
   // ── Summary Cards ──
   var summaries = [
-    {label:'المكتب الرئيسي', paid:hoPaid, adj:hoAdj, port:hoPort,  color:'#6c3fa0', icon:'🏛'},
-    {label:'شركات التحصيل',  paid:dcPaid, adj:dcAdj, port:dcPort,  color:'#1a7a6b', icon:'🏢'},
-    {label:'مكاتب أونك',     paid:govPaid,adj:govAdj,port:govPort, color:'#e85d20', icon:'🗺'},
+    {label:'المكتب الرئيسي', paid:hoPaid, adj:hoAdj, color:'#6c3fa0', icon:'🏛'},
+    {label:'شركات التحصيل',  paid:dcPaid, adj:dcAdj, color:'#1a7a6b', icon:'🏢'},
+    {label:'مكاتب أونك',     paid:govPaid,adj:govAdj,color:'#e85d20', icon:'🗺'},
   ];
   var sumHTML = summaries.map(function(s){
     var tot = s.paid+s.adj;
     var pct = GRAND_TOTAL_FIXED>0?((tot/GRAND_TOTAL_FIXED)*100).toFixed(1):'0';
-    var portPct = s.port>0?((tot/s.port)*100).toFixed(1):'0';
-    var portRem = s.port>0?s.port-tot:0;
     return '<div class="sum-card" style="border-top:4px solid '+s.color+'">'
       +'<div class="sum-header" style="background:'+s.color+'"><span class="sum-icon">'+s.icon+'</span><span class="sum-title">'+s.label+'</span><span class="sum-pct">'+pct+'%</span></div>'
       +'<div class="sum-body">'
       +'<div class="sum-row"><span class="sum-lbl">المدفوع</span><span class="sum-val green">'+omrN(s.paid)+'</span></div>'
       +'<div class="sum-row"><span class="sum-lbl">التسويات</span><span class="sum-val amber">'+omrN(s.adj)+'</span></div>'
-      +(s.port>0?'<div class="sum-row"><span class="sum-lbl">قيمة المحفظة</span><span class="sum-val" style="color:'+s.color+'">'+omrN(s.port)+' OMR</span></div>':'')
       +'<div class="sum-row sum-total"><span class="sum-lbl">الإجمالي</span><span class="sum-val" style="color:'+s.color+'">'+omrN(tot)+'</span></div>'
-      +'<div class="sum-row"><span class="sum-lbl">المتبقي</span><span class="sum-val" style="color:#e85d20">'+omrN(portRem)+'</span></div>'
-      +'<div class="sum-row"><span class="sum-lbl">نسبة الإنجاز</span><span class="sum-val" style="color:'+s.color+'">'+portPct+'%</span></div>'
       +'</div></div>';
   }).join('');
 
   // ── مكاتب أونك ──
   var regsHTML = '';
-  var sortedRegs=[...(data.regions||[])].sort(function(a,b){return (b.portAmt||0)-(a.portAmt||0);});
-  sortedRegs.forEach(function(r,ri){
+  (data.regions||[]).forEach(function(r,ri){
     var rTotal=r.paid+r.adj;
+    var rPct = grandTotal>0?Math.min(100,Math.round(rTotal/grandTotal*100)):0;
     var portA = r.portAmt||0;
-    var portPct = portA>0?(rTotal/portA*100).toFixed(1):'—';
-    var portRem2 = portA>0?portA-rTotal:0;
+    var portPct = portA>0?Math.min(100,(rTotal/portA*100)).toFixed(1):'—';
     regsHTML += '<tr class="sec-header"><td colspan="5">'
       +'<div class="sec-title"><span>'+String(ri+1)+'. '+r.nameAr+'</span>'
       +'<span class="badge">نسبة إنجاز: '+portPct+'%</span></div>'
@@ -9223,15 +9215,11 @@ function handlePrint(data) {
         +'<td class="amt green">'+omrN(c.paid)+'</td><td class="amt amber">'+omrN(c.adj)+'</td><td class="amt total">'+omrN((c.paid||0)+(c.adj||0))+'</td></tr>';
     });
     regsHTML += '<tr class="subtotal"><td colspan="2">إجمالي '+r.nameAr+'</td>'
-      +(portA>0?'<td style="color:#1e3a5f">'+omrN(portA)+'</td>':'<td>—</td>')
-      +'<td class="green">'+omrN(r.paid)+'</td><td class="amber">'+omrN(r.adj)+'</td><td class="total">'+omrN(rTotal)+'</td>'
-      +(portA>0?'<td style="color:#e85d20">'+omrN(portRem2)+'</td>':'<td>—</td>')
-      +'<td style="color:#e85d20">'+portPct+'%</td></tr>';
+      +'<td class="green">'+omrN(r.paid)+'</td><td class="amber">'+omrN(r.adj)+'</td><td class="total">'+omrN(rTotal)+'</td></tr>';
   });
 
   // ── شركات التحصيل ──
-  var sortedDC=[...(data.debtCompanies||[])].sort(function(a,b){return (b.portAmt||0)-(a.portAmt||0);});
-  var dcHTML = sortedDC.map(function(c,i){
+  var dcHTML = (data.debtCompanies||[]).map(function(c,i){
     var tot=(c.paid||0)+(c.adj||0);
     var inactive=['Ejada','Tahseel United','High Speed Company','High Speed company'].includes(c.name)?'<span class="badge-inactive">غير نشطة</span>':'';
     return '<tr class="'+(i%2===0?'even':'odd')+'"><td class="rank">'+String(i+1)+'</td><td class="col-name">'+c.name+inactive+'</td>'
@@ -10657,7 +10645,7 @@ export default function Dashboard() {
           border:"1.5px solid #f0ece8", marginBottom: small?14:18,
           overflow:"hidden"
         }}>
-          <SectionHeader title="🗺 مكاتب أونك" paid={complaintsPaidState.gov>0?complaintsPaidState.gov:gPd} adj={complaintsAdjState.gov>0?complaintsAdjState.gov:gAd} color="#e85d20" small={small} portAmt={complaintsPrincipal.gov>0?complaintsPrincipal.gov:(complaintsAmts.gov||gPortAmt||0)} portCnt={complaintsCounts.gov||gPortCnt||data.regions?.reduce((s,r)=>s+(r.portCnt||0),0)||0}/>
+          <SectionHeader title="🗺 مكاتب أونك" paid={complaintsPaidState.gov>0?complaintsPaidState.gov:gPd} adj={complaintsAdjState.gov>0?complaintsAdjState.gov:gAd} color="#e85d20" small={small} portAmt={complaintsPrincipal.gov>0?complaintsPrincipal.gov:(complaintsAmts.gov||gPortAmt||0)} portCnt={complaintsCounts.gov||gPortCnt||data.regions?.reduce((s,r)=>s+(r.portCnt||0),0)||0} principalAmt={complaintsPrincipal.gov||0}/>
           <div style={{ padding: small?"10px":"14px 16px", display:"flex", flexDirection:"column", gap: small?8:10 }}>
             {[...data.regions].sort((a,b)=>(b.principalAmt||b.portAmt||0)-(a.principalAmt||a.portAmt||0)).map((r,i) => (
               <RegionRow key={r.id} region={r} idx={i} complaintsRegionMap={complaintsRegionMap}
@@ -10677,7 +10665,7 @@ export default function Dashboard() {
         }}>
           {/* DC */}
           <div style={{ background:"#fff", borderRadius:16, boxShadow:"0 3px 18px rgba(0,0,0,0.07)", border:"1.5px solid #f0ece8", overflow:"hidden" }}>
-            <SectionHeader title="🏢 شركات التحصيل" paid={complaintsPaidState.dc>0?complaintsPaidState.dc:dPd} adj={complaintsAdjState.dc>0?complaintsAdjState.dc:dAd} color="#1a7a6b" small={small} portAmt={dPortAmt||0} portCnt={dPortCnt||0}/>
+            <SectionHeader title="🏢 شركات التحصيل" paid={complaintsPaidState.dc>0?complaintsPaidState.dc:dPd} adj={complaintsAdjState.dc>0?complaintsAdjState.dc:dAd} color="#1a7a6b" small={small} portAmt={dPortAmt||0} portCnt={dPortCnt||0} principalAmt={complaintsPrincipal.dc||0}/>
             <div style={{ padding: small?"10px":"14px 16px", display:"flex", flexDirection:"column", gap: small?8:10 }}>
               {(() => {
                 const ALWAYS_SHOW = [
@@ -10710,7 +10698,7 @@ export default function Dashboard() {
 
           {/* HO */}
           <div style={{ background:"#fff", borderRadius:16, boxShadow:"0 3px 18px rgba(0,0,0,0.07)", border:"1.5px solid #f0ece8", overflow:"hidden" }}>
-            <SectionHeader title="🏛 المكتب الرئيسي" paid={complaintsPaidState.ho>0?complaintsPaidState.ho:hPd} adj={complaintsAdjState.ho>0?complaintsAdjState.ho:hAd} color="#6c3fa0" small={small} portAmt={hPortAmt||0} portCnt={hPortCnt||0}/>
+            <SectionHeader title="🏛 المكتب الرئيسي" paid={complaintsPaidState.ho>0?complaintsPaidState.ho:hPd} adj={complaintsAdjState.ho>0?complaintsAdjState.ho:hAd} color="#6c3fa0" small={small} portAmt={hPortAmt||0} portCnt={hPortCnt||0} principalAmt={complaintsPrincipal.ho||0}/>
             <div style={{ padding: small?"10px":"14px 16px", display:"flex", flexDirection:"column", gap: small?8:10 }}>
               {[...(data.headOffice||[])].filter(c=>c.name!=='HO').sort((a,b)=>(b.principalAmt||b.portAmt||0)-(a.principalAmt||a.portAmt||0)).map((c,i) => (
                 <EntityCard key={c.name} name={c.name} paid={c.paid} adj={c.adj} cBranch={complaintsBranchMap} color="#6c3fa0" rank={i+1} small={small} portAmt={c.portAmt||0} portCnt={c.portCnt||0} principalAmt={c.principalAmt||0}/>
