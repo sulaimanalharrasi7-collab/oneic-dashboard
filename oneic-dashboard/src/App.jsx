@@ -6654,8 +6654,9 @@ function EntityCard({name,paid,adj,color,rank,small,cnt,cBranch,portAmt,portCnt,
 
 
 // ── SummaryCard ────────────────────────────────────────────────────────────
-function SummaryCard({label,paid,adj,cnt,cntPaid,cntAdj,cntTotal,portAmt,color,icon,pct,small,isMobile,isTablet}) {
-  // المعادلة الصحيحة: الإجمالي = المدفوع + التسويات
+function SummaryCard({label,paid,adj,cnt,cntPaid,cntAdj,cntTotal,portAmt,color,icon,pct,small,isMobile,isTablet,principalAmt}) {
+  // الإجمالي = Paid + Adj | قيمة المحفظة = Principal
+  const effPortAmt = principalAmt>0 ? principalAmt : portAmt;
   const total = paid + adj;
   // عدد الحسابات المنفصل لكل خانة
   const _cntPaid  = (cntPaid  != null && cntPaid  > 0) ? cntPaid  : (cnt||0);
@@ -6685,7 +6686,7 @@ function SummaryCard({label,paid,adj,cnt,cntPaid,cntAdj,cntTotal,portAmt,color,i
         <div style={{display:"flex",gap:6}}>
           <div style={{flex:1,background:"#fff",borderRadius:10,padding:small?"6px 8px":"8px 12px",border:`1.5px solid ${color}33`,textAlign:"center"}}>
             <div style={{fontSize:small?9:11,color:color,fontWeight:800,marginBottom:4}}>قيمة الحسابات</div>
-            <div style={{fontSize:small?14:18,fontWeight:900,color:color,lineHeight:1,direction:"ltr"}}>{portAmt>0?omr(portAmt):omr(total)}</div>
+            <div style={{fontSize:small?14:18,fontWeight:900,color:color,lineHeight:1,direction:"ltr"}}>{effPortAmt>0?omr(effPortAmt):omr(total)}</div>
             <div style={{fontSize:small?8:10,color:"#aaa",fontWeight:600,marginTop:2}}>OMR</div>
           </div>
           <div style={{flex:1,background:"#fff",borderRadius:10,padding:small?"6px 8px":"8px 12px",border:`1.5px solid ${color}33`,textAlign:"center"}}>
@@ -6717,7 +6718,7 @@ function SummaryCard({label,paid,adj,cnt,cntPaid,cntAdj,cntTotal,portAmt,color,i
       {/* ── دوائر نسبة الإنجاز ── */}
       <div style={{padding:small?"8px 12px":"10px 14px",background:"#fafafa",borderTop:"1px solid #f0ece8",display:"flex",alignItems:"center",justifyContent:"center",gap:small?10:18}}>
         {[["المدفوع",paid,"#16a34a"],["التسويات",adj,"#d97706"],["الإجمالي",paid+adj,color]].map(([lbl,val,clr],ci)=>{
-          const pV = portAmt>0 ? Math.min(100,(val/portAmt)*100) : 0;
+          const pV = portAmt>0 ? Math.min(100,(val/effPortAmt)*100) : 0;
           const r2=34,cx2=40,cy2=40,circ2=2*Math.PI*r2,off=circ2-(pV/100)*circ2;
           return (
             <div key={lbl} style={{display:"flex",flexDirection:"column",alignItems:"center",gap:4,flex:1}}>
@@ -6737,8 +6738,8 @@ function SummaryCard({label,paid,adj,cnt,cntPaid,cntAdj,cntTotal,portAmt,color,i
       </div>
 
       {/* ── مربع نسبة الإنجاز ── */}
-      {portAmt > 0 && (() => {
-        const tv=paid+adj,pp=Math.min(100,(tv/portAmt)*100),rem=portAmt-tv;
+      {effPortAmt > 0 && (() => {
+        const tv=paid+adj,pp=Math.min(100,(tv/effPortAmt)*100),rem=effPortAmt>0?effPortAmt-tv:0;
         return (
           <div style={{margin:"10px 12px 12px",borderRadius:14,border:`2px solid ${color}33`,overflow:"hidden",background:`linear-gradient(135deg,${color}06,${color}12)`}}>
             <div style={{background:`linear-gradient(120deg,${color},${color}cc)`,padding:"8px 14px",display:"flex",justifyContent:"space-between",alignItems:"center"}}>
@@ -6750,7 +6751,7 @@ function SummaryCard({label,paid,adj,cnt,cntPaid,cntAdj,cntTotal,portAmt,color,i
                 <div style={{height:"100%",borderRadius:8,background:`linear-gradient(90deg,${color}88,${color})`,width:`${pp}%`}}/>
               </div>
               <div style={{display:"grid",gridTemplateColumns:"1fr 1fr 1fr",gap:6}}>
-                {[["قيمة المحفظة",portAmt,color],["الإجمالي المحصّل",tv,"#16a34a"],["المتبقي",rem,"#e85d20"]].map(([l,v,c])=>(
+                {[["قيمة المحفظة",effPortAmt,color],["الإجمالي المحصّل",tv,"#16a34a"],["المتبقي",rem,"#e85d20"]].map(([l,v,c])=>(
                   <div key={l} style={{textAlign:"center",background:"rgba(255,255,255,0.7)",borderRadius:10,padding:"6px 4px"}}>
                     <div style={{fontSize:small?8:10,color:"#555",fontWeight:800,marginBottom:2}}>{l}</div>
                     <div style={{fontSize:small?10:13,fontWeight:900,color:c}}>{omr(v)}</div>
@@ -10633,7 +10634,7 @@ export default function Dashboard() {
                 cntAdj={complaintsCounts.govAdj||gCounts.adj||null}
                 cntTotal={complaintsCounts.govTotal||gCounts.combined||null}
                 portAmt={complaintsPrincipal.gov>0?complaintsPrincipal.gov:(complaintsAmts.gov||gPortAmt||0)}
-                color="#e85d20" icon="🗺" pct={p(gPd+gAd)} small={small} isMobile={isMobile} isTablet={isTablet}/>
+                color="#e85d20" icon="🗺" pct={p(gPd+gAd)} small={small} isMobile={isMobile} isTablet={isTablet} principalAmt={complaintsPrincipal.gov||0}/>
               <SummaryCard label="شركات التحصيل"
                 paid={complaintsPaidState.dc>0?complaintsPaidState.dc:dPd} adj={complaintsAdjState.dc>0?complaintsAdjState.dc:dAd}
                 cnt={complaintsCounts.dc||dCounts.total||dPortCnt||dCnt||0}
@@ -10641,7 +10642,7 @@ export default function Dashboard() {
                 cntAdj={complaintsCounts.dcAdj||dCounts.adj||null}
                 cntTotal={complaintsCounts.dcTotal||dCounts.combined||null}
                 portAmt={complaintsPrincipal.dc>0?complaintsPrincipal.dc:(complaintsAmts.dc||dPortAmt||0)}
-                color="#1a7a6b" icon="🏢" pct={p(dPd+dAd)} small={small} isMobile={isMobile} isTablet={isTablet}/>
+                color="#1a7a6b" icon="🏢" pct={p(dPd+dAd)} small={small} isMobile={isMobile} isTablet={isTablet} principalAmt={complaintsPrincipal.dc||0}/>
               <SummaryCard label="المكتب الرئيسي"
                 paid={complaintsPaidState.ho>0?complaintsPaidState.ho:hPd} adj={complaintsAdjState.ho>0?complaintsAdjState.ho:hAd}
                 cnt={complaintsCounts.ho||hCounts.total||hPortCnt||hCnt||0}
@@ -10649,7 +10650,7 @@ export default function Dashboard() {
                 cntAdj={complaintsCounts.hoAdj||hCounts.adj||null}
                 cntTotal={complaintsCounts.hoTotal||hCounts.combined||null}
                 portAmt={complaintsPrincipal.ho>0?complaintsPrincipal.ho:(complaintsAmts.ho||hPortAmt||0)}
-                color="#6c3fa0" icon="🏛" pct={p(hPd+hAd)} small={small} isMobile={isMobile} isTablet={isTablet}/>
+                color="#6c3fa0" icon="🏛" pct={p(hPd+hAd)} small={small} isMobile={isMobile} isTablet={isTablet} principalAmt={complaintsPrincipal.ho||0}/>
             </>);
           })()}
         </div>
