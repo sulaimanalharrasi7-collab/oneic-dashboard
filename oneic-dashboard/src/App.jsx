@@ -6167,7 +6167,9 @@ async function parseXLS(file) {
       hoMap[key].paid += paid; hoMap[key].adj += adj; hoMap[key].count++;
 
     } else if (REG_AR[region]) {
-      if (!regMap[region]) regMap[region] = { paid:0, adj:0, count:0, paidCount:0, adjCount:0, cMap:{} };
+      if (!regMap[region]) regMap[region] = { paid:0, adj:0, count:0, paidCount:0, adjCount:0, cMap:{}, principalAmt:0, osAmt2:0 };
+      regMap[region].principalAmt += n(row['Principal Amount']||0);
+      regMap[region].osAmt2 += osAmt;
       regMap[region].paid  += paid; regMap[region].adj += adj; regMap[region].count++;
       if (paid>0) regMap[region].paidCount++;
       if (adj >0) regMap[region].adjCount++;
@@ -6199,7 +6201,8 @@ async function parseXLS(file) {
     count: regMap[k].count||0,
     paidCount: regMap[k].paidCount||0,
     adjCount:  regMap[k].adjCount||0,
-    portAmt: (PORT.regions[k]||{portAmt:0}).portAmt,
+    portAmt:    regMap[k].osAmt2>0   ? regMap[k].osAmt2   : (PORT.regions[k]||{portAmt:0}).portAmt,
+    principalAmt: regMap[k].principalAmt||0,
     portCnt: (PORT.regions[k]||{portCnt:0}).portCnt,
     collectors: Object.entries(regMap[k].cMap)
       .map(([nm,d]) => ({
@@ -6507,12 +6510,14 @@ function EntityCard({name,paid,adj,color,rank,small,cnt,cBranch,portAmt,portCnt,
   const allZero = total === 0 && name !== "Blanks" && !["Ejada","Tahseel United","High Speed Company","High Speed company"].includes(name);
   const hasPort  = (portAmt||0) > 0;
   const hasCnt   = (portCnt||0) > 0;
-  const effPort  = hasPort ? portAmt : (bD?.amt||0);
+  const principalForCard = (principalAmt||0)>0 ? principalAmt : portAmt;
+  const osForCard        = portAmt||0;
+  const effPort  = principalForCard > 0 ? principalForCard : osForCard;
   // إذا الشركة عندها تحصيل لكن portAmt غير محدد، استخدم التحصيل نفسه
   const displayPort = effPort > 0 ? effPort : ((osAmt||0) > 0 ? (osAmt||0) : 0);
   const effCnt   = hasCnt  ? portCnt : (bD?.count||0);
-  const remaining = displayPort > 0 ? displayPort - total : 0;
-  const pctVal   = displayPort > 0 ? Math.min(100,(total/displayPort)*100) : 0;
+  const remaining = principalForCard > 0 ? principalForCard - osForCard : 0;
+  const pctVal   = principalForCard > 0 ? Math.min(100,(osForCard/principalForCard)*100) : 0;
 
   // Non-due accounts — يعرض فقط عدد الحسابات
   if (name === "Non-due accounts") {
@@ -6780,11 +6785,13 @@ function RegionRow({region, idx, open, onToggle, small}) {
   const paidCnt  = region.paidCount || 0;
   const adjCnt   = region.adjCount  || 0;
   const totalCnt = region.count     || 0;
-  const total    = (region.paid||0) + (region.adj||0);
-  const portAmt  = region.portAmt   || 0;
-  const portCnt  = region.portCnt   || 0;
-  const remaining = portAmt > 0 ? portAmt - total : 0;
-  const pctInj   = portAmt > 0 ? Math.min(100,(total/portAmt)*100) : 0;
+  const portPrincipal = region.principalAmt||0;
+  const portOS   = region.portAmt||0; // O/S Amount
+  const portAmt  = portPrincipal>0 ? portPrincipal : portOS;
+  const portCnt  = region.portCnt||0;
+  const total    = portOS; // الإجمالي = O/S Amount
+  const remaining = portPrincipal > 0 ? portPrincipal - portOS : 0;
+  const pctInj   = portPrincipal > 0 ? Math.min(100,(portOS/portPrincipal)*100) : (portOS>0?100:0);
 
   return (
     <div style={{borderRadius:14,overflow:"hidden",
@@ -8924,6 +8931,7 @@ async function parseComplaints(file) {
         const regionIdx = headers.findIndex(h => h === 'Region');
         const branchIdx = headers.findIndex(h => h === 'Branch');
         const principalIdx = headers.findIndex(h => h === 'Principal Amount');
+        const osIdx = headers.findIndex(h => h === 'O/S Amount');
         if (regionIdx < 0) { reject(new Error('عمود Region غير موجود')); return; }
 
         // خريطة التجميع الدقيقة
@@ -8932,6 +8940,7 @@ async function parseComplaints(file) {
         
         let total=0, dcCount=0, hoCount=0, govCount=0;
         let dcAmt=0, hoAmt=0, govAmt=0;
+        let dcPrincipal=0, hoPrincipal=0, govPrincipal=0;
         
         // تجميع حسب Region للمحافظات وحسب Branch لشركات التحصيل
         const regionMap = {}; // للمحافظات الخمس (Region)
@@ -8943,31 +8952,41 @@ async function parseComplaints(file) {
           const region = (row[regionIdx]||'').replace(/\r/g,'').trim();
           const branch = branchIdx>=0 ? (row[branchIdx]||'').replace(/\r/g,'').trim() : '';
           if (!region) continue;
-          const amt = principalIdx>=0 ? (parseFloat(row[principalIdx])||0) : 0;
+          const principal = principalIdx>=0 ? (parseFloat(row[principalIdx])||0) : 0;
+          const osAmtC    = osIdx>=0     ? (parseFloat(row[osIdx])||0) : 0;
+          const amt = principal; // قيمة المحفظة = Principal Amount
           total++;
           
           if (region === DC_REGION) {
             // شركات التحصيل → نجمّع حسب Branch
-            dcCount++; dcAmt += amt;
+            dcCount++; dcAmt += amt; dcPrincipal += principal;
             if (branch) {
               if (!branchMap[branch]) branchMap[branch] = {count:0, amt:0};
               branchMap[branch].count++; branchMap[branch].amt += amt;
             }
           } else if (HO_REGIONS.some(k => region.trim() === k.trim())) {
             // المكتب الرئيسي → نجمّع الكل تحت مفتاح واحد
-            hoCount++; hoAmt += amt;
+            hoCount++; hoAmt += amt; hoPrincipal += principal;
             const hoKey = 'HEAD_OFFICE_TOTAL';
             if (!branchMap[hoKey]) branchMap[hoKey] = {count:0, amt:0};
             branchMap[hoKey].count++; branchMap[hoKey].amt += amt;
           } else {
             // مكاتب أونك → نجمّع حسب Region
-            govCount++; govAmt += amt;
+            govCount++; govAmt += amt; govPrincipal += principal;
             const rKey = region;
-            if (!regionMap[rKey]) regionMap[rKey] = {count:0, amt:0};
+            if (!regionMap[rKey]) regionMap[rKey] = {count:0, amt:0, osAmt:0, collectors:{}};
             regionMap[rKey].count++; regionMap[rKey].amt += amt;
+            regionMap[rKey].osAmt += osAmtC;
+            if (collector) {
+              if (!regionMap[rKey].collectors[collector])
+                regionMap[rKey].collectors[collector] = {count:0, principal:0, os:0};
+              regionMap[rKey].collectors[collector].count++;
+              regionMap[rKey].collectors[collector].principal += principal;
+              regionMap[rKey].collectors[collector].os += osAmtC;
+            }
           }
         }
-        resolve({ total, dcCount, hoCount, govCount, dcAmt, hoAmt, govAmt, regionMap, branchMap });
+        resolve({ total, dcCount, hoCount, govCount, dcAmt, hoAmt, govAmt, dcPrincipal, hoPrincipal, govPrincipal, regionMap, branchMap });
       } catch(e) { reject(e); }
     };
     reader.onerror = () => reject(new Error('فشل قراءة الملف'));
@@ -9515,6 +9534,8 @@ export default function Dashboard() {
   const [complaintsCounts, setComplaintsCounts] = useState(() => {
     try { return JSON.parse(localStorage.getItem('oneic_complaints_counts')||'{}'); } catch(e){return {};}
   });
+  const [complaintsPrincipal, setComplaintsPrincipal] = useState({dc:0,ho:0,gov:0});
+  const [complaintsOS,        setComplaintsOS]        = useState({dc:0,ho:0,gov:0});
   const [complaintsAmts, setComplaintsAmts] = useState(() => {
     try { return JSON.parse(localStorage.getItem('oneic_complaints_amts')||'{}'); } catch(e){return {};}
   });
@@ -9756,6 +9777,8 @@ export default function Dashboard() {
         setComplaintsCount(total);
         setComplaintsCounts({dc:dcCount,ho:hoCount,gov:govCount});
         setComplaintsAmts({dc:dcAmt,ho:hoAmt,gov:govAmt});
+        setComplaintsPrincipal({dc:dcPrincipal,ho:hoPrincipal,gov:govPrincipal});
+        setComplaintsOS({dc:dcAmt,ho:hoAmt,gov:govAmt}); // amt = osAmt (principal used as portAmt)
         setComplaintsRegionMap(regionMap||{});
         setComplaintsBranchMap(branchMap||{});
         try {
@@ -10572,7 +10595,7 @@ export default function Dashboard() {
                 cntPaid={complaintsCounts.govPaid||gCounts.paid||null}
                 cntAdj={complaintsCounts.govAdj||gCounts.adj||null}
                 cntTotal={complaintsCounts.govTotal||gCounts.combined||null}
-                portAmt={complaintsAmts.gov||gPortAmt||data.regions?.reduce((s,r)=>s+(r.portAmt||0),0)||0}
+                portAmt={complaintsPrincipal.gov>0?complaintsPrincipal.gov:(complaintsAmts.gov||gPortAmt||0)}
                 color="#e85d20" icon="🗺" pct={p(gPd+gAd)} small={small} isMobile={isMobile} isTablet={isTablet}/>
               <SummaryCard label="شركات التحصيل"
                 paid={dPd} adj={dAd}
@@ -10580,7 +10603,7 @@ export default function Dashboard() {
                 cntPaid={complaintsCounts.dcPaid||dCounts.paid||null}
                 cntAdj={complaintsCounts.dcAdj||dCounts.adj||null}
                 cntTotal={complaintsCounts.dcTotal||dCounts.combined||null}
-                portAmt={complaintsAmts.dc||dPortAmt||0}
+                portAmt={complaintsPrincipal.dc>0?complaintsPrincipal.dc:(complaintsAmts.dc||dPortAmt||0)}
                 color="#1a7a6b" icon="🏢" pct={p(dPd+dAd)} small={small} isMobile={isMobile} isTablet={isTablet}/>
               <SummaryCard label="المكتب الرئيسي"
                 paid={hPd} adj={hAd}
@@ -10588,7 +10611,7 @@ export default function Dashboard() {
                 cntPaid={complaintsCounts.hoPaid||hCounts.paid||null}
                 cntAdj={complaintsCounts.hoAdj||hCounts.adj||null}
                 cntTotal={complaintsCounts.hoTotal||hCounts.combined||null}
-                portAmt={complaintsAmts.ho||hPortAmt||0}
+                portAmt={complaintsPrincipal.ho>0?complaintsPrincipal.ho:(complaintsAmts.ho||hPortAmt||0)}
                 color="#6c3fa0" icon="🏛" pct={p(hPd+hAd)} small={small} isMobile={isMobile} isTablet={isTablet}/>
             </>);
           })()}
@@ -10601,7 +10624,7 @@ export default function Dashboard() {
           border:"1.5px solid #f0ece8", marginBottom: small?14:18,
           overflow:"hidden"
         }}>
-          <SectionHeader title="🗺 مكاتب أونك" paid={gPd} adj={gAd} color="#e85d20" small={small} portAmt={complaintsAmts.gov||gPortAmt||data.regions?.reduce((s,r)=>s+(r.portAmt||0),0)||0} portCnt={complaintsCounts.gov||gPortCnt||data.regions?.reduce((s,r)=>s+(r.portCnt||0),0)||0}/>
+          <SectionHeader title="🗺 مكاتب أونك" paid={gPd} adj={gAd} color="#e85d20" small={small} portAmt={complaintsPrincipal.gov>0?complaintsPrincipal.gov:(complaintsAmts.gov||gPortAmt||0)} portCnt={complaintsCounts.gov||gPortCnt||data.regions?.reduce((s,r)=>s+(r.portCnt||0),0)||0}/>
           <div style={{ padding: small?"10px":"14px 16px", display:"flex", flexDirection:"column", gap: small?8:10 }}>
             {data.regions.map((r,i) => (
               <RegionRow key={r.id} region={r} idx={i}
