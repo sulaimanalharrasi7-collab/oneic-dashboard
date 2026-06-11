@@ -6128,7 +6128,7 @@ async function parseXLS(file) {
     },
     ho: {
       "Legal - DR. Sarhaan": { portAmt: 3229651.681, portCnt: 3662, principalAmt: 3301711.348 },
-      "Documentation- Omantel": { portAmt: 489409.003,  portCnt: 1136 },
+      "Documentation- Omantel": { portAmt: 489409.003,  portCnt: 1136 , principalAmt: 489409.003, closed: 0, active: 0 },
       "Legal -Oneic":          { portAmt: 50253.668,   portCnt: 173  },
       "HO":                  { portAmt: 0,           portCnt: 340  },
       "Non-due accounts":    { portAmt: 0,           portCnt: 340  }
@@ -6237,7 +6237,7 @@ async function parseXLS(file) {
   const headOffice = HO_KEYS.map(nm => {
     const d = hoMap[nm]||{paid:0,adj:0,count:0};
     const p = PORT.ho[nm]||{portAmt:0,portCnt:0};
-    const HO_DISPLAY = {"HO":"Non-due accounts","Non-due accounts":"Non-due accounts","Documentation- Omantel":"Documentation- Omantel","Legal - DR. Sarhaan":"Legal - DR. Sarhaan","Legal -Oneic":"Legal -Oneic"};
+    const HO_DISPLAY = {"HO":"Non-due accounts","Non-due accounts":"Non-due accounts","Documentation- Omantel":"Documentation- Omantel","Legal - DR. Sarhaan":"Legal - DR. Sarhaan","Legal -Oneic":"Legal -Oneic", principalAmt: 489409.003, closed: 0, active: 0 };
     return {name:HO_DISPLAY[nm]||nm, paid:d.paid, adj:d.adj, count:d.count||0, closed:d.closed||0, active:d.active||0, principalAmt:d.principalAmt||0,
       portAmt: Math.max(0, p.portAmt||0), portCnt: p.portCnt||0,
       principalAmt: p.principalAmt||0};
@@ -6508,7 +6508,7 @@ function EntityCard({name,paid,adj,color,rank,small,cnt,cBranch,portAmt,portCnt,
   const bKey = Object.keys(cBranch||{}).find(k => k.trim()===name?.trim() || name?.includes(k) || k.includes(name||'__'));
   const bD = bKey ? (cBranch||{})[bKey] : null;
   const total    = (paid||0) + (adj||0);
-  const allZero = total === 0 && name !== "Legal -Oneic" && !["Ejada","Tahseel United","High Speed Company","High Speed company"].includes(name);
+  const allZero = total === 0 && name !== "Legal -Oneic" && name !== "Non-due accounts" && !["Ejada","Tahseel United","High Speed Company","High Speed company"].includes(name);
   const hasPort  = (portAmt||0) > 0;
   const hasCnt   = (portCnt||0) > 0;
   const effPort  = hasPort ? portAmt : (bD?.amt||0);
@@ -9119,12 +9119,16 @@ function handlePrint(data) {
   var omrN = function(n) { return new Intl.NumberFormat('en-US',{minimumFractionDigits:3,maximumFractionDigits:3}).format(n||0); };
 
   // ── حساب الإجماليات — نفس منطق الداشبورد (gPd+dPd+hPd من data.regions/debtCompanies/headOffice) ──
-  var govPaid = (data.regions||[]).reduce(function(s,r){return s+r.paid;},0);
-  var govAdj  = (data.regions||[]).reduce(function(s,r){return s+r.adj;},0);
-  var dcPaid  = (data.debtCompanies||[]).reduce(function(s,r){return s+r.paid;},0);
-  var dcAdj   = (data.debtCompanies||[]).reduce(function(s,r){return s+r.adj;},0);
-  var hoPaid  = (data.headOffice||[]).reduce(function(s,r){return s+Math.max(0,r.paid||0);},0);
-  var hoAdj   = (data.headOffice||[]).reduce(function(s,r){return s+Math.max(0,r.adj||0);},0);
+  // ترتيب بالإجمالي تنازلياً
+  var sortedRegions = [...(data.regions||[])].sort(function(a,b){return ((b.paid||0)+(b.adj||0))-((a.paid||0)+(a.adj||0));});
+  var sortedDC = [...(data.debtCompanies||[])].sort(function(a,b){return ((b.paid||0)+(b.adj||0))-((a.paid||0)+(a.adj||0));});
+  var sortedHO = [...(data.headOffice||[])].filter(function(c){return c.name!=='HO';}).sort(function(a,b){return ((b.paid||0)+(b.adj||0))-((a.paid||0)+(a.adj||0));});
+  var govPaid = sortedRegions.reduce(function(s,r){return s+(r.paid||0);},0);
+  var govAdj  = sortedRegions.reduce(function(s,r){return s+(r.adj||0);},0);
+  var dcPaid  = sortedDC.reduce(function(s,r){return s+(r.paid||0);},0);
+  var dcAdj   = sortedDC.reduce(function(s,r){return s+(r.adj||0);},0);
+  var hoPaid  = sortedHO.reduce(function(s,r){return s+Math.max(0,r.paid||0);},0);
+  var hoAdj   = sortedHO.reduce(function(s,r){return s+Math.max(0,r.adj||0);},0);
   // نفس منطق الداشبورد بالضبط: data.totalCollection?.paid || (gPd+dPd+hPd)
   var grandPaid = (data.totalCollection&&data.totalCollection.paid) ? data.totalCollection.paid : (govPaid+dcPaid+hoPaid);
   var grandAdj  = (data.totalCollection&&data.totalCollection.adj)  ? data.totalCollection.adj  : (govAdj+dcAdj+hoAdj);
@@ -9170,7 +9174,7 @@ function handlePrint(data) {
 
   // ── مكاتب أونك ──
   var regsHTML = '';
-  (data.regions||[]).forEach(function(r,ri){
+  sortedRegions.forEach(function(r,ri){
     var rTotal=r.paid+r.adj;
     var rPct = grandTotal>0?Math.min(100,Math.round(rTotal/grandTotal*100)):0;
     var portA = r.portAmt||0;
@@ -9189,7 +9193,7 @@ function handlePrint(data) {
   });
 
   // ── شركات التحصيل ──
-  var dcHTML = (data.debtCompanies||[]).map(function(c,i){
+  var dcHTML = sortedDC.map(function(c,i){
     var tot=(c.paid||0)+(c.adj||0);
     var inactive=['Ejada','Tahseel United','High Speed Company','High Speed company'].includes(c.name)?'<span class="badge-inactive">غير نشطة</span>':'';
     return '<tr class="'+(i%2===0?'even':'odd')+'"><td class="rank">'+String(i+1)+'</td><td class="col-name">'+c.name+inactive+'</td>'
@@ -9628,10 +9632,10 @@ export default function Dashboard() {
         const HO_REQ = ["Legal - DR. Sarhaan","Documentation- Omantel","HO","Non-due accounts","Legal -Oneic"];
         const HO_P = {
           "Legal - DR. Sarhaan":{portAmt:3229651.681,portCnt:3662,principalAmt:3301711.348},
-          "Documentation- Omantel":{portAmt:489409.003,portCnt:1136},
+          "Documentation- Omantel":{portAmt:489409.003,portCnt:1136, principalAmt: 489409.003, closed: 0, active: 0 },
           "HO":{portAmt:0,portCnt:340},
           "Non-due accounts":{portAmt:0,portCnt:340},
-          "Legal -Oneic":{portAmt:50253.668,portCnt:173}
+          "Legal -Oneic":{portAmt:357170.484,portCnt:217,principalAmt:357170.484,closed:0,active:217}
         };
         const existingHO = row.headOffice || [];
         const fullHO = HO_REQ.map(nm => existingHO.find(c=>c.name===nm) || {name:nm,paid:0,adj:0,count:0,...(HO_P[nm]||{})});
@@ -9645,6 +9649,22 @@ export default function Dashboard() {
         }
       }
       setLoadingServer(false);
+      // ── استعادة Bulk Payment ──
+      try {
+        const bulkRow = await sbGet('oneic_bulk');
+        if (bulkRow && bulkRow.daily && bulkRow.daily.length > 0) {
+          setBulkData(bulkRow);
+          try { localStorage.setItem('oneic_bulk_data', JSON.stringify(bulkRow)); } catch(e) {}
+        } else {
+          const savedBulk = localStorage.getItem('oneic_bulk_data');
+          if (savedBulk) { const pb = JSON.parse(savedBulk); if (pb && pb.daily && pb.daily.length > 0) setBulkData(pb); }
+        }
+      } catch(e) {
+        try {
+          const savedBulk = localStorage.getItem('oneic_bulk_data');
+          if (savedBulk) { const pb = JSON.parse(savedBulk); if (pb && pb.daily && pb.daily.length > 0) setBulkData(pb); }
+        } catch(e2) {}
+      }
     }
     load();
 
@@ -9664,10 +9684,10 @@ export default function Dashboard() {
         const HO_REQ = ["Legal - DR. Sarhaan","Documentation- Omantel","HO","Non-due accounts","Legal -Oneic"];
         const HO_P = {
           "Legal - DR. Sarhaan":{portAmt:3229651.681,portCnt:3662,principalAmt:3301711.348},
-          "Documentation- Omantel":{portAmt:489409.003,portCnt:1136},
+          "Documentation- Omantel":{portAmt:489409.003,portCnt:1136, principalAmt: 489409.003, closed: 0, active: 0 },
           "HO":{portAmt:0,portCnt:340},
           "Non-due accounts":{portAmt:0,portCnt:340},
-          "Legal -Oneic":{portAmt:50253.668,portCnt:173}
+          "Legal -Oneic":{portAmt:357170.484,portCnt:217,principalAmt:357170.484,closed:0,active:217}
         };
         const existingHO = row.headOffice || [];
         const fullHO = HO_REQ.map(nm => existingHO.find(c=>c.name===nm) || {name:nm,paid:0,adj:0,count:0,...(HO_P[nm]||{})});
@@ -9682,6 +9702,14 @@ export default function Dashboard() {
         }
         setLastSync(new Date());
         console.log('✅ Data synced from Firebase:', d._updatedAt);
+        // تحديث Bulk إذا تغيّر
+        try {
+          const bRow = await sbGet('oneic_bulk');
+          if (bRow && bRow.daily && bRow.daily.length > 0) {
+            setBulkData(bRow);
+            try { localStorage.setItem('oneic_bulk_data', JSON.stringify(bRow)); } catch(e) {}
+          }
+        } catch(e) {}
       } catch(e) { setSyncing(false); /* Firebase مؤقتاً غير متاح */ }
     }, 15000); // كل 15 ثانية للاستجابة السريعة
 
@@ -9699,10 +9727,10 @@ export default function Dashboard() {
       const HO_REQ = ["Legal - DR. Sarhaan","Documentation- Omantel","HO","Non-due accounts","Legal -Oneic"];
       const HO_P = {
         "Legal - DR. Sarhaan":{portAmt:3229651.681,portCnt:3662,principalAmt:3301711.348},
-        "Documentation- Omantel":{portAmt:489409.003,portCnt:1136},
+        "Documentation- Omantel":{portAmt:489409.003,portCnt:1136, principalAmt: 489409.003, closed: 0, active: 0 },
         "HO":{portAmt:0,portCnt:340},
         "Non-due accounts":{portAmt:0,portCnt:340},
-        "Legal -Oneic":{portAmt:50253.668,portCnt:173}
+        "Legal -Oneic":{portAmt:357170.484,portCnt:217,principalAmt:357170.484,closed:0,active:217}
       };
       const existingHO = row.headOffice || [];
       const fullHO = HO_REQ.map(nm => existingHO.find(c=>c.name===nm) || {name:nm,paid:0,adj:0,count:0,...(HO_P[nm]||{})});
@@ -9818,7 +9846,7 @@ export default function Dashboard() {
     const HO_REQUIRED = ["Legal - DR. Sarhaan","Documentation- Omantel","HO","Legal -Oneic"];
     const HO_PORT_DATA = {
       "Legal - DR. Sarhaan": { portAmt: 3229651.681, portCnt: 3662, principalAmt: 3301711.348 },
-      "Documentation- Omantel":  { portAmt: 489409.003,  portCnt: 1136 },
+      "Documentation- Omantel":  { portAmt: 489409.003,  portCnt: 1136 , principalAmt: 489409.003, closed: 0, active: 0 },
       "HO":                   { portAmt: 0,           portCnt: 340  },
       "Non-due accounts":     { portAmt: 0,           portCnt: 340  },
       "Legal -Oneic":           { portAmt: 50253.668,   portCnt: 173  }
@@ -9827,9 +9855,9 @@ export default function Dashboard() {
       const fromNew = (newData.headOffice||[]).find(c=>c.name===nm);
       const fromExisting = data.headOffice?.find(d=>d.name===nm);
       const portInfo = HO_PORT_DATA[nm]||{};
-      if (fromNew) return { ...fromNew, portAmt: fromNew.portAmt||portInfo.portAmt||0, portCnt: fromNew.portCnt||portInfo.portCnt||0 };
-      if (fromExisting) return { ...fromExisting, portAmt: fromExisting.portAmt||portInfo.portAmt||0, portCnt: fromExisting.portCnt||portInfo.portCnt||0 };
-      return { name:nm, paid:0, adj:0, count:0, portAmt:portInfo.portAmt||0, portCnt:portInfo.portCnt||0 };
+      if (fromNew) return { ...fromNew, portAmt: fromNew.portAmt||portInfo.portAmt||0, portCnt: fromNew.portCnt||portInfo.portCnt||0, principalAmt: fromNew.principalAmt||portInfo.principalAmt||0, closed: fromNew.closed||0, active: fromNew.active||0 };
+      if (fromExisting) return { ...fromExisting, portAmt: fromExisting.portAmt||portInfo.portAmt||0, portCnt: fromExisting.portCnt||portInfo.portCnt||0, principalAmt: fromExisting.principalAmt||portInfo.principalAmt||0, closed: fromExisting.closed||0, active: fromExisting.active||0 };
+      return { name:nm, paid:0, adj:0, count:0, portAmt:portInfo.portAmt||0, portCnt:portInfo.portCnt||0, principalAmt:portInfo.principalAmt||0, closed:0, active:0 };
     });
     const _ts = new Date().toISOString();
     const dataToSave = {
@@ -9842,15 +9870,23 @@ export default function Dashboard() {
       grandAdj: ga,
       lastUpdated: _ts,
       _updatedAt: _ts,
-      lastUpdatedDate: _ts.split('T')[0]
+      lastUpdatedDate: _ts.split('T')[0],
+      history: (history||[]).slice(-60)
     };
 
     // ── رفع لـ JSONbin + localStorage ───────────────────────────────────
     setUploading(true);
     try {
-      await sbUpsert('oneic_data', { payload: dataToSave });
-      lastSyncRef.current = _ts;
-      console.log('✅ Saved to Firebase');
+      // حفظ في localStorage فوراً (يعمل دائماً)
+      try { localStorage.setItem('oneic_dashboard_data', JSON.stringify(dataToSave)); } catch(e) {}
+      // حفظ في Firebase
+      try {
+        await sbUpsert('oneic_data', { payload: dataToSave });
+        lastSyncRef.current = _ts;
+        console.log('✅ Saved to Firebase');
+      } catch(fbErr) {
+        console.warn('Firebase save failed, using localStorage only:', fbErr.message);
+      }
     } catch(e) {
       console.warn('JSONbin save failed:', e);
     }
@@ -9868,11 +9904,19 @@ export default function Dashboard() {
       grandPaid: dataToSave.grandPaid || 0,
       grandAdj: dataToSave.grandAdj || 0,
       grandTotal: (dataToSave.grandPaid||0) + (dataToSave.grandAdj||0),
+      grandPortfolio: (dataToSave.totalPortfolio&&dataToSave.totalPortfolio.amt)||9414256.834,
       regions: dataToSave.regions?.map(r=>({
-        nameAr: r.nameAr||r.label||'', paid: r.paid, adj: r.adj
+        nameAr: r.nameAr||r.label||'', paid: r.paid, adj: r.adj,
+        portAmt: r.portAmt||0, principalAmt: r.principalAmt||r.portAmt||0
       })) || [],
-      debtCompanies: dataToSave.debtCompanies?.map(c=>({name:c.name,paid:c.paid,adj:c.adj})) || [],
-      headOffice: dataToSave.headOffice?.map(c=>({name:c.name,paid:c.paid,adj:c.adj})) || []
+      debtCompanies: dataToSave.debtCompanies?.map(c=>({
+        name:c.name, paid:c.paid, adj:c.adj,
+        portAmt:c.portAmt||0, principalAmt:c.principalAmt||c.portAmt||0
+      })) || [],
+      headOffice: dataToSave.headOffice?.map(c=>({
+        name:c.name, paid:c.paid, adj:c.adj,
+        portAmt:c.portAmt||0, principalAmt:c.principalAmt||c.portAmt||0
+      })) || []
     };
     setHistory(prev => {
       // استبدال نفس التاريخ إذا موجود، أو إضافة جديد
