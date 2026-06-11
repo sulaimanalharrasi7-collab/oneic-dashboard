@@ -140,7 +140,7 @@ const SEED = {
     { name: "Legal - DR. Sarhaan", paid: 46866.090, adj: 14781.368, portAmt: 3229651.681, portCnt: 3662, principalAmt: 3301711.348 },
     { name: "Documentation- Omantel",  paid: 1915.939,  adj: 3468.859,  portAmt: 489409.003,  portCnt: 1136 },
     { name: "Non-due accounts",                   paid: 0.000,     adj: 0.000,     portAmt: 0,           portCnt: 340  },
-    { name: "Legal -Oneic",           paid: 6880.296,  adj: 0.000,     portAmt: 50253.668,   portCnt: 173  }
+    { name: "Legal -Oneic",           paid: 19558.836,  adj: 8110.250,     portAmt: 357170.484,   portCnt: 217  }
   ],
   totalPortfolio: { amt: 9414256.834, cnt: 47963, outstanding: 8394362.802 },
   totalCollection: { paid: 863165.364, adj: 128508.848 }
@@ -6129,7 +6129,7 @@ async function parseXLS(file) {
     ho: {
       "Legal - DR. Sarhaan": { portAmt: 3229651.681, portCnt: 3662, principalAmt: 3301711.348 },
       "Documentation- Omantel": { portAmt: 489409.003,  portCnt: 1136 },
-      "Legal -Oneic":          { portAmt: 50253.668,   portCnt: 173  },
+      "Legal -Oneic":{portAmt:357170.484,portCnt:217,closed:0,active:217,principalAmt:357170.484},
       "HO":                  { portAmt: 0,           portCnt: 340  },
       "Non-due accounts":    { portAmt: 0,           portCnt: 340  }
     }
@@ -6163,8 +6163,9 @@ async function parseXLS(file) {
       else if (colL.includes('saif')) key = 'Legal -Oneic';
       else if (col.trim() === '')     key = 'Legal -Oneic';
       else                            key = 'Legal -Oneic';
-      if (!hoMap[key]) hoMap[key] = { paid:0, adj:0, count:0 };
+      if (!hoMap[key]) hoMap[key] = { paid:0, adj:0, count:0, closed:0, active:0 };
       hoMap[key].paid += paid; hoMap[key].adj += adj; hoMap[key].count++;
+      if (key === 'Legal -Oneic') { if (osAmt <= 0) hoMap[key].closed++; else hoMap[key].active++; }
 
     } else if (REG_AR[region]) {
       if (!regMap[region]) regMap[region] = { paid:0, adj:0, count:0, paidCount:0, adjCount:0, cMap:{} };
@@ -6233,7 +6234,7 @@ async function parseXLS(file) {
     const d = hoMap[nm]||{paid:0,adj:0,count:0};
     const p = PORT.ho[nm]||{portAmt:0,portCnt:0};
     const HO_DISPLAY = {"HO":"Non-due accounts","Non-due accounts":"Non-due accounts","Documentation- Omantel":"Documentation- Omantel","Legal - DR. Sarhaan":"Legal - DR. Sarhaan","Legal -Oneic":"Legal -Oneic"};
-    return {name:HO_DISPLAY[nm]||nm, paid:d.paid, adj:d.adj, count:d.count||0,
+    return {name:HO_DISPLAY[nm]||nm, paid:d.paid, adj:d.adj, count:d.count||0, closed:d.closed||0, active:d.active||0,
       portAmt: Math.max(0, p.portAmt||0), portCnt: p.portCnt||0,
       principalAmt: p.principalAmt||0};
   });
@@ -6499,19 +6500,98 @@ function SectionHeader({title,paid,adj,color,small,portAmt,portCnt}) {
 }
 
 // ── EntityCard ─────────────────────────────────────────────────────────────
-function EntityCard({name,paid,adj,color,rank,small,cnt,cBranch,portAmt,portCnt,principalAmt,osAmt}) {
+function EntityCard({name,paid,adj,color,rank,small,cnt,cBranch,portAmt,portCnt,principalAmt,osAmt,closed,active}) {
   const bKey = Object.keys(cBranch||{}).find(k => k.trim()===name?.trim() || name?.includes(k) || k.includes(name||'__'));
   const bD = bKey ? (cBranch||{})[bKey] : null;
   const total    = (paid||0) + (adj||0);
   const allZero = total === 0 && name !== "Legal -Oneic" && !["Ejada","Tahseel United","High Speed Company","High Speed company"].includes(name);
   const hasPort  = (portAmt||0) > 0;
   const hasCnt   = (portCnt||0) > 0;
-  const effPort  = hasPort ? portAmt : (bD?.amt||0);
-  // إذا الشركة عندها تحصيل لكن portAmt غير محدد، استخدم التحصيل نفسه
-  const displayPort = effPort > 0 ? effPort : ((osAmt||0) > 0 ? (osAmt||0) : 0);
+  const effPort  = hasPort ? portAmt : (bD&&bD.amt||0);
+  // Legal -Oneic: قيمة المحفظة = principalAmt
+  const displayPort = name==="Legal -Oneic"
+    ? (principalAmt||portAmt||0)
+    : (effPort > 0 ? effPort : ((osAmt||0) > 0 ? (osAmt||0) : 0));
   const effCnt   = hasCnt  ? portCnt : (bD?.count||0);
   const remaining = displayPort > 0 ? displayPort - total : 0;
   const pctVal   = displayPort > 0 ? Math.min(100,(total/displayPort)*100) : 0;
+
+  // Legal -Oneic — يعرض عدد الحسابات مع مغلقة/نشطة
+  if (name === "Legal -Oneic") {
+    var closedCount = 0; var activeCount = 0;
+    // من complaintsBranchMap أو من data.headOffice
+    if (cBranch && cBranch["Legal -Oneic"]) {
+      var bd = cBranch["Legal -Oneic"];
+      closedCount = bd.closed||0;
+      activeCount = bd.active||0;
+    }
+    // fallback: من props مباشرة
+    if (!closedCount && !activeCount) {
+      closedCount = closed||0;
+      activeCount = active||0;
+    }
+    var loTotal = total;
+    var loRem   = displayPort>0 ? displayPort-loTotal : 0;
+    var loPct   = displayPort>0 ? Math.min(100,(loTotal/displayPort)*100) : 0;
+    return (
+      <div style={{background:"#fff",borderRadius:13,border:"1.5px solid "+color+"33",
+        boxShadow:"0 2px 10px rgba(0,0,0,0.05)",overflow:"hidden",position:"relative"}}>
+        <div style={{background:"linear-gradient(120deg,"+color+"15,"+color+"08)",
+          padding:small?"10px 14px":"14px 18px",borderBottom:"1.5px solid "+color+"22",
+          display:"flex",justifyContent:"space-between",alignItems:"center"}}>
+          <div style={{display:"flex",alignItems:"center",gap:8}}>
+            <div style={{width:small?28:34,height:small?28:34,borderRadius:9,background:color,
+              display:"flex",alignItems:"center",justifyContent:"center",
+              color:"#fff",fontWeight:900,fontSize:small?13:15}}>{rank}</div>
+            <div>
+              <div style={{fontSize:small?13:16,fontWeight:900,color:"#111"}}>{name}</div>
+              <div style={{fontSize:small?9:11,color:color,fontWeight:700}}>المكتب الرئيسي</div>
+            </div>
+          </div>
+          {loPct>0 && <div style={{background:color,color:"#fff",borderRadius:20,
+            padding:"3px 12px",fontSize:small?10:12,fontWeight:900}}>{loPct.toFixed(1)}%</div>}
+        </div>
+        <div style={{padding:small?"10px 12px":"14px 16px"}}>
+          <div style={{display:"grid",gridTemplateColumns:"1fr 1fr 1fr",gap:8,marginBottom:10}}>
+            <div style={{background:color+"08",borderRadius:9,padding:"8px 10px",textAlign:"center",border:"1px solid "+color+"20"}}>
+              <div style={{fontSize:small?8:10,color:color,fontWeight:700,marginBottom:3}}>عدد الحسابات</div>
+              <div style={{fontSize:small?14:18,fontWeight:900,color:color}}>{(effCnt||0).toLocaleString()}</div>
+            </div>
+            <div style={{background:"#fee2e2",borderRadius:9,padding:"8px 10px",textAlign:"center",border:"1px solid #fca5a5"}}>
+              <div style={{fontSize:small?8:10,color:"#dc2626",fontWeight:700,marginBottom:3}}>مغلقة (O/S≤0)</div>
+              <div style={{fontSize:small?14:18,fontWeight:900,color:"#dc2626"}}>{closedCount>0?closedCount.toLocaleString():"—"}</div>
+            </div>
+            <div style={{background:"#dcfce7",borderRadius:9,padding:"8px 10px",textAlign:"center",border:"1px solid #86efac"}}>
+              <div style={{fontSize:small?8:10,color:"#16a34a",fontWeight:700,marginBottom:3}}>نشطة (O/S>0)</div>
+              <div style={{fontSize:small?14:18,fontWeight:900,color:"#16a34a"}}>{activeCount>0?activeCount.toLocaleString():"—"}</div>
+            </div>
+          </div>
+          {displayPort>0 && <div style={{background:color+"08",borderRadius:9,padding:"8px 10px",
+            textAlign:"center",border:"1px solid "+color+"20",marginBottom:8}}>
+            <div style={{fontSize:small?8:10,color:color,fontWeight:700,marginBottom:2}}>قيمة المحفظة (Principal)</div>
+            <div style={{fontSize:small?13:16,fontWeight:900,color:color}}>{omr(displayPort)} OMR</div>
+          </div>}
+          <div style={{display:"grid",gridTemplateColumns:"1fr 1fr 1fr",gap:6,marginBottom:8}}>
+            {[["المدفوع",paid||0,"#16a34a"],["التسويات",adj||0,"#d97706"],["الإجمالي",loTotal,color]].map(function(r){
+              return <div key={r[0]} style={{textAlign:"center",background:"#fafafa",borderRadius:8,padding:"6px 4px",border:"1px solid #f0ece8"}}>
+                <div style={{fontSize:small?8:10,color:r[2],fontWeight:700}}>{r[0]}</div>
+                <div style={{fontSize:small?11:14,fontWeight:900,color:r[2]}}>{omr(r[1])}</div>
+              </div>;
+            })}
+          </div>
+          {displayPort>0 && <div>
+            <div style={{display:"flex",justifyContent:"space-between",marginBottom:3}}>
+              <span style={{fontSize:small?8:10,color:"#e85d20",fontWeight:700}}>المتبقي: {omr(loRem)}</span>
+              <span style={{fontSize:small?8:10,color:color,fontWeight:700}}>{loPct.toFixed(1)}%</span>
+            </div>
+            <div style={{background:"#f0ece8",borderRadius:4,height:6,overflow:"hidden"}}>
+              <div style={{height:"100%",background:color,borderRadius:4,width:loPct+"%"}}/>
+            </div>
+          </div>}
+        </div>
+      </div>
+    );
+  }
 
   // Non-due accounts — يعرض فقط عدد الحسابات
   if (name === "Non-due accounts") {
@@ -6588,6 +6668,20 @@ function EntityCard({name,paid,adj,color,rank,small,cnt,cBranch,portAmt,portCnt,
                 <div style={{fontSize:small?9:11,color:color,fontWeight:800,marginBottom:3}}>عدد الحسابات</div>
                 <div style={{fontSize:small?13:16,fontWeight:900,color:color}}>{effCnt.toLocaleString()}</div>
                 <div style={{fontSize:small?8:9,color:"#aaa",fontWeight:600}}>حساب</div>
+              </div>
+            )}
+            {name==="Legal -Oneic" && (
+              <div style={{display:"flex",gap:6,flex:1}}>
+                <div style={{flex:1,background:"#fee2e2",borderRadius:10,padding:small?"6px 8px":"8px 12px",border:"1px solid #fca5a5",textAlign:"center"}}>
+                  <div style={{fontSize:small?9:11,color:"#dc2626",fontWeight:800,marginBottom:3}}>مغلقة (O/S≤0)</div>
+                  <div style={{fontSize:small?13:16,fontWeight:900,color:"#dc2626"}}>{(closed||0).toLocaleString()}</div>
+                  <div style={{fontSize:small?8:9,color:"#aaa",fontWeight:600}}>حساب</div>
+                </div>
+                <div style={{flex:1,background:"#dcfce7",borderRadius:10,padding:small?"6px 8px":"8px 12px",border:"1px solid #86efac",textAlign:"center"}}>
+                  <div style={{fontSize:small?9:11,color:"#16a34a",fontWeight:800,marginBottom:3}}>نشطة (O/S>0)</div>
+                  <div style={{fontSize:small?13:16,fontWeight:900,color:"#16a34a"}}>{(active||0).toLocaleString()}</div>
+                  <div style={{fontSize:small?8:9,color:"#aaa",fontWeight:600}}>حساب</div>
+                </div>
               </div>
             )}
           </div>
@@ -9335,7 +9429,6 @@ function useSmartNotifications(gTotal, hoPrincipal, bestDayEver, currentDayTotal
   const [celebration, setCelebration] = useState(null);
   const [confettiActive, setConfettiActive] = useState(false);
   const prevTotal = useRef(0);
-  const lastSyncRef = useRef('');
   const shownMilestones = useRef(null);
   if (!shownMilestones.current) {
     try { shownMilestones.current = new Set(JSON.parse(localStorage.getItem('oneic_shown_milestones')||'[]')); }
@@ -9617,12 +9710,11 @@ export default function Dashboard() {
           "Documentation- Omantel":{portAmt:489409.003,portCnt:1136},
           "HO":{portAmt:0,portCnt:340},
           "Non-due accounts":{portAmt:0,portCnt:340},
-          "Legal -Oneic":{portAmt:50253.668,portCnt:173}
+          "Legal -Oneic":{portAmt:357170.484,portCnt:217,closed:0,active:217,principalAmt:357170.484}
         };
         const existingHO = row.headOffice || [];
         const fullHO = HO_REQ.map(nm => existingHO.find(c=>c.name===nm) || {name:nm,paid:0,adj:0,count:0,...(HO_P[nm]||{})});
         let d = { ...row, headOffice: fullHO, _updatedAt: row._updatedAt||row.lastUpdated||'' };
-        lastSyncRef.current = d._updatedAt||'';
         setData(d);
         try { localStorage.setItem('oneic_dashboard_data', JSON.stringify(d)); } catch(e) {}
         if (row.history?.length > 0) {
@@ -9641,10 +9733,12 @@ export default function Dashboard() {
         const row = await sbGet('oneic_data');
         setSyncing(false);
         if (!row?.regions?.length) return;
-        // تحقق: هل Firebase أحدث من الحالي؟
+        // تحقق: هل Firebase أحدث من localStorage؟
         const fbTime  = new Date(row._updatedAt||row.lastUpdated||0).getTime();
-        const curTime = new Date(lastSyncRef.current||0).getTime();
-        if (fbTime > 0 && fbTime <= curTime) return;
+        var _cached = null;
+        try { var _s=localStorage.getItem('oneic_dashboard_data'); if(_s) _cached=JSON.parse(_s); } catch(e){}
+        const curTime = new Date(_cached?._updatedAt||_cached?.lastUpdated||0).getTime();
+        if (fbTime > 0 && fbTime <= curTime) return; // Firebase ليس أحدث
         // البيانات تغيرت — حدّث
         const HO_REQ = ["Legal - DR. Sarhaan","Documentation- Omantel","HO","Non-due accounts","Legal -Oneic"];
         const HO_P = {
@@ -9652,12 +9746,11 @@ export default function Dashboard() {
           "Documentation- Omantel":{portAmt:489409.003,portCnt:1136},
           "HO":{portAmt:0,portCnt:340},
           "Non-due accounts":{portAmt:0,portCnt:340},
-          "Legal -Oneic":{portAmt:50253.668,portCnt:173}
+          "Legal -Oneic":{portAmt:357170.484,portCnt:217,closed:0,active:217,principalAmt:357170.484}
         };
         const existingHO = row.headOffice || [];
         const fullHO = HO_REQ.map(nm => existingHO.find(c=>c.name===nm) || {name:nm,paid:0,adj:0,count:0,...(HO_P[nm]||{})});
         const d = { ...row, headOffice: fullHO };
-        lastSyncRef.current = d._updatedAt||'';
         setData(d);
         // حدّث localStorage على جميع الأجهزة
         try { localStorage.setItem('oneic_dashboard_data', JSON.stringify(d)); } catch(e) {}
@@ -9687,7 +9780,7 @@ export default function Dashboard() {
         "Documentation- Omantel":{portAmt:489409.003,portCnt:1136},
         "HO":{portAmt:0,portCnt:340},
         "Non-due accounts":{portAmt:0,portCnt:340},
-        "Legal -Oneic":{portAmt:50253.668,portCnt:173}
+        "Legal -Oneic":{portAmt:357170.484,portCnt:217,closed:0,active:217,principalAmt:357170.484}
       };
       const existingHO = row.headOffice || [];
       const fullHO = HO_REQ.map(nm => existingHO.find(c=>c.name===nm) || {name:nm,paid:0,adj:0,count:0,...(HO_P[nm]||{})});
@@ -9806,7 +9899,7 @@ export default function Dashboard() {
       "Documentation- Omantel":  { portAmt: 489409.003,  portCnt: 1136 },
       "HO":                   { portAmt: 0,           portCnt: 340  },
       "Non-due accounts":     { portAmt: 0,           portCnt: 340  },
-      "Legal -Oneic":           { portAmt: 50253.668,   portCnt: 173  }
+      "Legal -Oneic":{portAmt:357170.484,portCnt:217,closed:0,active:217,principalAmt:357170.484}
     };
     const mergedHO = HO_REQUIRED.map(nm => {
       const fromNew = (newData.headOffice||[]).find(c=>c.name===nm);
@@ -9834,7 +9927,6 @@ export default function Dashboard() {
     setUploading(true);
     try {
       await sbUpsert('oneic_data', { payload: dataToSave });
-      lastSyncRef.current = _ts;
       console.log('✅ Saved to Firebase');
     } catch(e) {
       console.warn('JSONbin save failed:', e);
@@ -9916,7 +10008,7 @@ export default function Dashboard() {
   const p = v => GRAND_TOTAL_FIXED>0 ? ((v/GRAND_TOTAL_FIXED)*100).toFixed(1) : "0";
 
   // ── Smart Notifications ───────────────────────────────────────────────────
-  const hoPrincipalCurrent = (function(){var _f=(data.headOffice||[]).find(function(c){return c.name==='Legal - DR. Sarhaan';});return _f?(_f.principalAmt||0):0;})();
+  const hoPrincipalCurrent = (function(){var _f=(data.headOffice||[]).find(function(x){return x.name==='Legal - DR. Sarhaan';});return _f?(_f.principalAmt||0):0;})();
   const currentBestDay = (() => {
     try { const s=localStorage.getItem('oneic_bulk_data'); if(s){const b=JSON.parse(s); if(b?.daily?.length) return Math.max(...b.daily.map(d=>d.paid+(d.adj||0)));} } catch(e){} return 0;
   })();
@@ -10640,7 +10732,7 @@ export default function Dashboard() {
             <SectionHeader title="🏛 المكتب الرئيسي" paid={hPd} adj={hAd} color="#6c3fa0" small={small} portAmt={hPortAmt||0} portCnt={hPortCnt||0}/>
             <div style={{ padding: small?"10px":"14px 16px", display:"flex", flexDirection:"column", gap: small?8:10 }}>
               {[...(data.headOffice||[])].filter(c=>c.name!=='HO').sort((a,b)=>(b.portAmt||0)-(a.portAmt||0)).map((c,i) => (
-                <EntityCard key={c.name} name={c.name} paid={c.paid} adj={c.adj} cBranch={complaintsBranchMap} color="#6c3fa0" rank={i+1} small={small} portAmt={c.portAmt||0} portCnt={c.portCnt||0} principalAmt={c.principalAmt||0}/>
+                <EntityCard key={c.name} name={c.name} paid={c.paid} adj={c.adj} cBranch={complaintsBranchMap} color="#6c3fa0" rank={i+1} closed={c.closed||0} active={c.active||0} small={small} portAmt={c.portAmt||0} portCnt={c.portCnt||0} principalAmt={c.principalAmt||0}/>
               ))}
             </div>
           </div>
