@@ -9685,6 +9685,41 @@ export default function Dashboard() {
     load();
 
     // ══ تحديث تلقائي كل 30 ثانية لمزامنة جميع الأجهزة ══
+    // تحديث عند العودة للنافذة (عندما يفتح المستخدم التبويب مجدداً)
+    const handleFocus = async () => {
+      setSyncing(true);
+      try {
+        const row = await sbGet('oneic_data');
+        if (!row?.regions?.length) { setSyncing(false); return; }
+        const fbTime  = new Date(row._updatedAt||row.lastUpdated||0).getTime();
+        const curTime = new Date(data?._updatedAt||data?.lastUpdated||0).getTime();
+        if (fbTime > curTime) {
+          const HO_REQ = ["Legal - DR. Sarhaan","Documentation- Omantel","HO","Non-due accounts","Blanks"];
+          const HO_P = {
+            "Legal - DR. Sarhaan":{portAmt:3229651.681,portCnt:3662,principalAmt:3301711.348},
+            "Documentation- Omantel":{portAmt:489409.003,portCnt:1136},
+            "HO":{portAmt:0,portCnt:340},
+            "Non-due accounts":{portAmt:0,portCnt:340},
+            "Blanks":{portAmt:50253.668,portCnt:173}
+          };
+          const existingHO = row.headOffice || [];
+          const fullHO = HO_REQ.map(nm => existingHO.find(c=>c.name===nm) || {name:nm,paid:0,adj:0,count:0,...(HO_P[nm]||{})});
+          const d = { ...row, headOffice: fullHO, _updatedAt: row._updatedAt||row.lastUpdated||'' };
+          if (row.complaintsBranchMap) setComplaintsBranchMap(row.complaintsBranchMap);
+          if (row.complaintsRegionMap) setComplaintsRegionMap(row.complaintsRegionMap);
+          if (row.complaintsPrincipal) setComplaintsPrincipal(row.complaintsPrincipal);
+          if (row.complaintsPaidState) setComplaintsPaidState(row.complaintsPaidState);
+          if (row.complaintsAdjState)  setComplaintsAdjState(row.complaintsAdjState);
+          setData(d);
+          try { localStorage.setItem('oneic_dashboard_data', JSON.stringify(d)); } catch(e) {}
+          if (row.history?.length > 0) setHistory(row.history);
+        }
+      } catch(e) { console.warn('Focus sync failed:', e); }
+      setSyncing(false);
+    };
+    window.addEventListener('focus', handleFocus);
+    window.addEventListener('visibilitychange', () => { if (!document.hidden) handleFocus(); });
+
     const interval = setInterval(async () => {
       setSyncing(true);
       try {
@@ -9694,7 +9729,7 @@ export default function Dashboard() {
         // تحقق: هل Firebase أحدث من الحالي؟
         const fbTime  = new Date(row._updatedAt||row.lastUpdated||0).getTime();
         const curTime = new Date(data?._updatedAt||data?.lastUpdated||0).getTime();
-        if (fbTime <= curTime) return; // Firebase ليس أحدث — لا تحديث
+        if (fbTime > 0 && fbTime <= curTime) return; // Firebase ليس أحدث — لا تحديث
         // البيانات تغيرت — حدّث
         const HO_REQ = ["Legal - DR. Sarhaan","Documentation- Omantel","HO","Non-due accounts","Blanks"];
         const HO_P = {
@@ -9724,7 +9759,11 @@ export default function Dashboard() {
       } catch(e) { setSyncing(false); /* Firebase مؤقتاً غير متاح */ }
     }, 15000); // كل 15 ثانية للاستجابة السريعة
 
-    return () => clearInterval(interval);
+    return () => {
+      clearInterval(interval);
+      window.removeEventListener('focus', handleFocus);
+      window.removeEventListener('visibilitychange', handleFocus);
+    };
   }, []);
 
   const UPLOAD_PW = 'Sulaiman1992';
