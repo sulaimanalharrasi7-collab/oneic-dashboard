@@ -140,7 +140,7 @@ const SEED = {
     { name: "Legal - DR. Sarhaan", paid: 46866.090, adj: 14781.368, portAmt: 3229651.681, portCnt: 3662, principalAmt: 3301711.348 },
     { name: "Documentation- Omantel",  paid: 1915.939,  adj: 3468.859,  portAmt: 489409.003,  portCnt: 1136 },
     { name: "Non-due accounts",                   paid: 0.000,     adj: 0.000,     portAmt: 0,           portCnt: 340  },
-    { name: "Blanks",           paid: 6880.296,  adj: 0.000,     portAmt: 50253.668,   portCnt: 173  }
+    { name: "Legal -Oneic",           paid: 6880.296,  adj: 0.000,     portAmt: 50253.668,   portCnt: 173  }
   ],
   totalPortfolio: { amt: 9414256.834, cnt: 47963, outstanding: 8394362.802 },
   totalCollection: { paid: 863165.364, adj: 128508.848 }
@@ -6129,7 +6129,7 @@ async function parseXLS(file) {
     ho: {
       "Legal - DR. Sarhaan": { portAmt: 3229651.681, portCnt: 3662, principalAmt: 3301711.348 },
       "Documentation- Omantel": { portAmt: 489409.003,  portCnt: 1136 },
-      "Blanks":          { portAmt: 50253.668,   portCnt: 173  },
+      "Legal -Oneic":          { portAmt: 50253.668,   portCnt: 173  },
       "HO":                  { portAmt: 0,           portCnt: 340  },
       "Non-due accounts":    { portAmt: 0,           portCnt: 340  }
     }
@@ -6160,9 +6160,9 @@ async function parseXLS(file) {
       else if (colL.includes('doc'))  key = 'Documentation- Omantel';
       else if (colL.includes('non-due') || colL.includes('nondue')) key = 'HO';
       else if (col.trim().toUpperCase() === 'HO') key = 'HO';
-      else if (colL.includes('saif')) key = 'Blanks';
-      else if (col.trim() === '')     key = 'Blanks';
-      else                            key = 'Blanks';
+      else if (colL.includes('saif')) key = 'Legal -Oneic';
+      else if (col.trim() === '')     key = 'Legal -Oneic';
+      else                            key = 'Legal -Oneic';
       if (!hoMap[key]) hoMap[key] = { paid:0, adj:0, count:0 };
       hoMap[key].paid += paid; hoMap[key].adj += adj; hoMap[key].count++;
 
@@ -6228,11 +6228,11 @@ async function parseXLS(file) {
   const debtCompanies = dcList.sort((a,b)=>(b.portAmt||0)-(a.portAmt||0));
 
   // ── المكتب الرئيسي ────────────────────────────────────────────────────
-  const HO_KEYS = ["Legal - DR. Sarhaan","Documentation- Omantel","HO","Non-due accounts","Blanks"];
+  const HO_KEYS = ["Legal - DR. Sarhaan","Documentation- Omantel","HO","Non-due accounts","Legal -Oneic"];
   const headOffice = HO_KEYS.map(nm => {
     const d = hoMap[nm]||{paid:0,adj:0,count:0};
     const p = PORT.ho[nm]||{portAmt:0,portCnt:0};
-    const HO_DISPLAY = {"HO":"Non-due accounts","Non-due accounts":"Non-due accounts","Documentation- Omantel":"Documentation- Omantel","Legal - DR. Sarhaan":"Legal - DR. Sarhaan","Blanks":"Blanks"};
+    const HO_DISPLAY = {"HO":"Non-due accounts","Non-due accounts":"Non-due accounts","Documentation- Omantel":"Documentation- Omantel","Legal - DR. Sarhaan":"Legal - DR. Sarhaan","Legal -Oneic":"Legal -Oneic"};
     return {name:HO_DISPLAY[nm]||nm, paid:d.paid, adj:d.adj, count:d.count||0,
       portAmt: Math.max(0, p.portAmt||0), portCnt: p.portCnt||0,
       principalAmt: p.principalAmt||0};
@@ -6308,7 +6308,7 @@ function handleBulkPrint(d, filterFrom, filterTo) {
     '<div><div style="font-size:20px;font-weight:900;color:#1e3a5f">ONEIC</div>'+
     '<div style="font-size:13px;color:#555">Bulk Payment Report</div></div>'+
     '<div style="text-align:left;font-size:12px;color:#888">'+
-    '<div>'+(filterFrom||(d.dateRange&&d.dateRange.from)||'')+' → '+(filterTo||(d.dateRange&&d.dateRange.to)||'')+'</div>'+
+    '<div>'+(filterFrom||d.dateRange?.from||'')+' → '+(filterTo||d.dateRange?.to||'')+'</div>'+
     '<div>'+new Date().toLocaleDateString('ar-OM')+'</div></div></div>'+
     '<div style="display:flex;gap:16px;margin-bottom:16px">'+
     ['المدفوع|'+omr(totalPaid)+'|#16a34a','التسويات|'+omr(totalAdj)+'|#d97706','الإجمالي|'+omr(totalPaid+totalAdj)+'|#1e3a5f'].map(s=>{
@@ -6356,7 +6356,7 @@ function VerifyModal({pending, onConfirm, onReject}) {
           ))}
         </div>
         <div style={{fontSize:12,color:"#888",marginBottom:20}}>
-          {(data.totalRecords||0).toLocaleString()} سجل · {(data.regions&&data.regions.length)} منطقة · {(data.debtCompanies&&data.debtCompanies.length)} شركة
+          {data.totalRecords?.toLocaleString()} سجل · {data.regions?.length} منطقة · {data.debtCompanies?.length} شركة
         </div>
         <div style={{display:"flex",gap:10}}>
           <button onClick={onConfirm} style={{flex:1,background:"#e85d20",color:"#fff",border:"none",borderRadius:10,padding:"12px",fontSize:14,fontWeight:800,cursor:"pointer"}}>✅ تأكيد الحفظ</button>
@@ -6404,15 +6404,15 @@ function UploadBtn({onFile,uploading,success,error,small,onAuth}) {
   const _auth = onAuth || ((cb)=>cb());
   const ref = useRef(null);
   return (
-    <div onClick={()=>!uploading&&_auth(()=>(ref.current&&ref.current.click)())}
-      onDrop={e=>{e.preventDefault();const f=e.dataTransfer.files&&files[0];if(f)_auth(()=>onFile(f));}}
+    <div onClick={()=>!uploading&&_auth(()=>ref.current?.click())}
+      onDrop={e=>{e.preventDefault();const f=e.dataTransfer.files?.[0];if(f)_auth(()=>onFile(f));}}
       onDragOver={e=>e.preventDefault()}
       style={{border:`2px dashed ${success?"#16a34a":uploading?"#e85d20":"#ddd"}`,
         borderRadius:12,padding:small?"8px 14px":"10px 20px",cursor:uploading?"default":"pointer",
         background:success?"#f0fdf4":uploading?"#fff7f3":"#fff",
         textAlign:"center",minWidth:small?140:175,transition:"all 0.3s"}}>
       <input ref={ref} type="file" accept=".xls,.xlsx,.csv" style={{display:"none"}}
-        onChange={e=>{const f=e.target.files&&files[0];if(f)_auth(()=>{onFile(f);e.target.value="";}); }}/>
+        onChange={e=>{const f=e.target.files?.[0];if(f)_auth(()=>{onFile(f);e.target.value="";}); }}/>
       {uploading?<div style={{color:"#e85d20",fontSize:13,fontWeight:700}}>⏳ جاري التحليل...</div>
        :success?<div style={{color:"#16a34a",fontSize:13,fontWeight:700}}>✅ تم التحديث</div>
        :<><div style={{fontSize:small?16:20}}>📂</div>
@@ -6500,16 +6500,16 @@ function SectionHeader({title,paid,adj,color,small,portAmt,portCnt}) {
 
 // ── EntityCard ─────────────────────────────────────────────────────────────
 function EntityCard({name,paid,adj,color,rank,small,cnt,cBranch,portAmt,portCnt,principalAmt,osAmt}) {
-  const bKey = Object.keys(cBranch||{}).find(k => k.trim()===(name&&name.trim)() || (name&&name.includes)(k) || k.includes(name||'__'));
+  const bKey = Object.keys(cBranch||{}).find(k => k.trim()===name?.trim() || name?.includes(k) || k.includes(name||'__'));
   const bD = bKey ? (cBranch||{})[bKey] : null;
   const total    = (paid||0) + (adj||0);
-  const allZero = total === 0 && name !== "Blanks" && !["Ejada","Tahseel United","High Speed Company","High Speed company"].includes(name);
+  const allZero = total === 0 && name !== "Legal -Oneic" && !["Ejada","Tahseel United","High Speed Company","High Speed company"].includes(name);
   const hasPort  = (portAmt||0) > 0;
   const hasCnt   = (portCnt||0) > 0;
-  const effPort  = hasPort ? portAmt : ((bD&&bD.amt)||0);
+  const effPort  = hasPort ? portAmt : (bD?.amt||0);
   // إذا الشركة عندها تحصيل لكن portAmt غير محدد، استخدم التحصيل نفسه
   const displayPort = effPort > 0 ? effPort : ((osAmt||0) > 0 ? (osAmt||0) : 0);
-  const effCnt   = hasCnt  ? portCnt : ((bD&&bD.count)||0);
+  const effCnt   = hasCnt  ? portCnt : (bD?.count||0);
   const remaining = displayPort > 0 ? displayPort - total : 0;
   const pctVal   = displayPort > 0 ? Math.min(100,(total/displayPort)*100) : 0;
 
@@ -6841,7 +6841,7 @@ function RegionRow({region, idx, open, onToggle, small}) {
             border:`1.5px solid ${col}`,borderRadius:9,
             padding:small?"6px 10px":"8px 14px",fontSize:small?11:13,
             fontWeight:800,transition:"all 0.2s",whiteSpace:"nowrap"}}>
-            {open?"▲":"▼"} {small?`(${(region.collectors&&region.collectors.length)||0})`:`المحصّلون (${(region.collectors&&region.collectors.length)||0})`}
+            {open?"▲":"▼"} {small?`(${region.collectors?.length||0})`:`المحصّلون (${region.collectors?.length||0})`}
           </div>
         </div>
       </div>
@@ -6850,7 +6850,7 @@ function RegionRow({region, idx, open, onToggle, small}) {
         <div style={{padding:small?"10px":"14px 18px 18px",background:"#fffaf7"}}>
           <div style={{fontSize:small?12:14,fontWeight:800,color:col,marginBottom:10,display:"flex",alignItems:"center",gap:6}}>
             <span style={{background:col,color:"#fff",borderRadius:7,padding:"2px 8px",fontSize:small?10:12}}>👥 المحصّلون</span>
-            <span style={{color:"#888",fontWeight:600}}>{(region.collectors&&region.collectors.length)||0} محصّل</span>
+            <span style={{color:"#888",fontWeight:600}}>{region.collectors?.length||0} محصّل</span>
           </div>
 
           {(region.collectors||[]).map((c,i) => {
@@ -6956,7 +6956,7 @@ function RegionRow({region, idx, open, onToggle, small}) {
             <div style={{borderRadius:12,overflow:"hidden",border:`2px solid ${col}55`,marginTop:10,boxShadow:`0 2px 10px ${col}25`}}>
               <div style={{padding:small?"8px 12px":"10px 14px",background:`linear-gradient(120deg,${col},${col}cc)`,display:"flex",alignItems:"center",gap:8}}>
                 <div style={{width:small?26:32,height:small?26:32,borderRadius:8,background:"rgba(255,255,255,0.25)",display:"flex",alignItems:"center",justifyContent:"center",fontSize:small?14:17,color:"#fff",fontWeight:900}}>Σ</div>
-                <div style={{fontSize:small?13:16,color:"#fff",fontWeight:900}}>الإجمالي الكلي<div style={{fontSize:small?10:11,color:"rgba(255,255,255,0.75)",fontWeight:600}}>{(region.collectors&&region.collectors.length)||0} محصّل · {totalCnt.toLocaleString()} حساب</div></div>
+                <div style={{fontSize:small?13:16,color:"#fff",fontWeight:900}}>الإجمالي الكلي<div style={{fontSize:small?10:11,color:"rgba(255,255,255,0.75)",fontWeight:600}}>{region.collectors?.length||0} محصّل · {totalCnt.toLocaleString()} حساب</div></div>
               </div>
               <div style={{display:"flex",background:"#fff"}}>
                 {[["المدفوع",region.paid,"#16a34a"],["التسويات",region.adj,"#d97706"],["الإجمالي",total,col]].map(([lbl,val,clr],j)=>(
@@ -7264,10 +7264,10 @@ function AnalyticsModal({ bulk, onClose, small }) {
     const omrP = n => new Intl.NumberFormat("en-US",{minimumFractionDigits:3,maximumFractionDigits:3}).format(n||0);
     const fmtKP = n => n>=1000?(n/1000).toFixed(1)+'K':n.toFixed(1);
     const periodLabel = filterFrom||filterTo
-      ? `${filterFrom||(daily[0]&&daily[0].date)||''} → ${filterTo||(daily[daily.length-1]&&daily[daily.length-1].date)||''}`
+      ? `${filterFrom||daily[0]?.date||''} → ${filterTo||daily[daily.length-1]?.date||''}`
       : filterMonth!=='all'
       ? `${MONTH_AR[filterMonth.slice(5)]} ${filterMonth.slice(0,4)}`
-      : filterYear!=='all' ? `سنة ${filterYear}` : `${(d.dateRange&&d.dateRange.from)} → ${(d.dateRange&&d.dateRange.to)}`;
+      : filterYear!=='all' ? `سنة ${filterYear}` : `${d.dateRange?.from} → ${d.dateRange?.to}`;
 
     const regBarsHTML = regions.map((r,i)=>{
       const pct=Math.round(((r.paid+r.adj)/Math.max(...regions.map(x=>x.paid+x.adj),1))*100);
@@ -7317,7 +7317,7 @@ function AnalyticsModal({ bulk, onClose, small }) {
       border-bottom:3px solid #1e3a5f;padding-bottom:6mm;margin-bottom:6mm;direction:rtl"\x3e
       \x3cdiv\x3e
         \x3cdiv style="font-size:18pt;font-weight:900;color:#1e3a5f"\x3e📊 تقرير التحليل البياني\x3c/div\x3e
-        \x3cdiv style="font-size:9pt;color:#888;margin-top:3px"\x3e${periodLabel} · ${daily.length} يوم نشط · ${(d.totalRecords&&d.totalRecords.toLocaleString)()} دفعة\x3c/div\x3e
+        \x3cdiv style="font-size:9pt;color:#888;margin-top:3px"\x3e${periodLabel} · ${daily.length} يوم نشط · ${d.totalRecords?.toLocaleString()} دفعة\x3c/div\x3e
       \x3c/div\x3e
       \x3cdiv style="text-align:left;font-size:9pt;color:#888"\x3e
         \x3cdiv\x3eتاريخ الطباعة: ${new Date().toLocaleDateString('ar-OM')}\x3c/div\x3e
@@ -7432,7 +7432,7 @@ function AnalyticsModal({ bulk, onClose, small }) {
               <div>
                 <div style={{fontSize:20,fontWeight:900,color:"#fff"}}>لوحة التحليل البياني</div>
                 <div style={{fontSize:11,color:"rgba(255,255,255,0.6)",marginTop:3}}>
-                  {(d.dateRange&&d.dateRange.from)} → {(d.dateRange&&d.dateRange.to)} &nbsp;·&nbsp; {(d.totalRecords&&d.totalRecords.toLocaleString)()} دفعة
+                  {d.dateRange?.from} → {d.dateRange?.to} &nbsp;·&nbsp; {d.totalRecords?.toLocaleString()} دفعة
                   {growthRate !== 0 && <span style={{
                     marginRight:8,color:growthRate>0?"#86efac":"#fca5a5",fontWeight:800
                   }}>{growthRate>0?"▲":"▼"} {Math.abs(growthRate).toFixed(1)}% نمو</span>}
@@ -7560,7 +7560,7 @@ function AnalyticsModal({ bulk, onClose, small }) {
           {activeChart==='trend' && (
             <div>
               <div style={{fontSize:13,color:"#555",fontWeight:700,marginBottom:12}}>
-                الدفعات اليومية — من {(d.dateRange&&d.dateRange.from)} إلى {(d.dateRange&&d.dateRange.to)}
+                الدفعات اليومية — من {d.dateRange?.from} إلى {d.dateRange?.to}
               </div>
 
               {/* ── Bulk SVG Chart ── */}
@@ -7586,7 +7586,7 @@ function AnalyticsModal({ bulk, onClose, small }) {
                   padding:"14px 0 0",marginBottom:20,overflowX:"auto",boxShadow:"0 8px 32px rgba(0,0,0,0.3)"}}>
                   <div style={{padding:"0 16px 10px",display:"flex",justifyContent:"space-between",alignItems:"center"}}>
                     <div style={{fontSize:13,color:"rgba(255,255,255,0.9)",fontWeight:800}}>
-                      📈 الدفعات اليومية — {(d.dateRange&&d.dateRange.from)} إلى {(d.dateRange&&d.dateRange.to)}
+                      📈 الدفعات اليومية — {d.dateRange?.from} إلى {d.dateRange?.to}
                     </div>
                     <div style={{fontSize:11,color:"rgba(255,255,255,0.4)"}}>{daily.length} يوم · أعلى: {fmtK(maxVal)}</div>
                   </div>
@@ -7980,7 +7980,7 @@ function BulkPaymentSection({ bulk, small }) {
       // 1) Firebase (المصدر الحقيقي - يحتوي كل التاريخ)
       try {
         const fbData = await sbGet('oneic_bulk');
-        if (fbData && fbData.daily && fbData.daily.length > 0) {
+        if (fbData?.daily?.length > 0) {
           existing = fbData;
           // حدّث localStorage بأحدث نسخة من Firebase
           try { localStorage.setItem('oneic_bulk_data', JSON.stringify(fbData)); } catch(e) {}
@@ -7992,12 +7992,12 @@ function BulkPaymentSection({ bulk, small }) {
           const saved = localStorage.getItem('oneic_bulk_data');
           if (saved) {
             const p = JSON.parse(saved);
-            if ((p&&p.daily&&p.daily.length) > 0) existing = p;
+            if (p?.daily?.length > 0) existing = p;
           }
         } catch(e) {}
       }
       // 3) state الحالية (آخر خيار)
-      if (!existing && (bulkData&&bulkData.daily&&bulkData.daily.length) > 0 && bulkData !== BULK_SEED) {
+      if (!existing && bulkData?.daily?.length > 0 && bulkData !== BULK_SEED) {
         existing = bulkData;
       }
 
@@ -8074,7 +8074,7 @@ function BulkPaymentSection({ bulk, small }) {
       // أولاً: جرّب Supabase
       try {
         const row = await sbGet('oneic_bulk');
-        if ((row&&row.daily&&row.daily.length) > 0) {
+        if (row?.daily?.length > 0) {
           setBulkData(row);
           try { localStorage.setItem('oneic_bulk_data', JSON.stringify(row)); } catch(e) {}
           return;
@@ -8083,7 +8083,7 @@ function BulkPaymentSection({ bulk, small }) {
       // ثانياً: localStorage
       try {
         const saved = localStorage.getItem('oneic_bulk_data');
-        if (saved) { const p=JSON.parse(saved); if((p&&p.daily&&p.daily.length)>0) setBulkData(p); }
+        if (saved) { const p=JSON.parse(saved); if(p?.daily?.length>0) setBulkData(p); }
       } catch(e) {}
     }
     loadBulk();
@@ -8093,12 +8093,12 @@ function BulkPaymentSection({ bulk, small }) {
   if (!d) return null;
 
   const fmt = n => new Intl.NumberFormat("en-US",{minimumFractionDigits:3,maximumFractionDigits:3}).format(n||0);
-  const maxDaily  = (d.daily&&d.daily.length) ? Math.max(...d.daily.map(x=>x.paid+x.adj),1) : 1;
-  const maxCol    = (d.topCollectors&&d.topCollectors.length) ? Math.max(...d.topCollectors.map(x=>x.paid+x.adj),1) : 1;
-  const maxReg    = (d.byRegion&&d.byRegion.length) ? Math.max(...d.byRegion.map(x=>x.paid+x.adj),1) : 1;
+  const maxDaily  = d.daily?.length ? Math.max(...d.daily.map(x=>x.paid+x.adj),1) : 1;
+  const maxCol    = d.topCollectors?.length ? Math.max(...d.topCollectors.map(x=>x.paid+x.adj),1) : 1;
+  const maxReg    = d.byRegion?.length ? Math.max(...d.byRegion.map(x=>x.paid+x.adj),1) : 1;
 
   // بيانات اليوم المختار
-  const selDay         = selectedDate ? (d.daily&&d.daily.find)(x=>x.date===selectedDate) : null;
+  const selDay         = selectedDate ? d.daily?.find(x=>x.date===selectedDate) : null;
   const selCollectors  = selectedDate && d.dailyDetail ? (d.dailyDetail[selectedDate]||[]) : [];
 
   // تجميع المناطق لليوم المختار
@@ -8147,9 +8147,9 @@ function BulkPaymentSection({ bulk, small }) {
                 Bulk Payment Report
               </div>
               <div style={{fontSize:11,color:"rgba(255,255,255,0.55)",marginTop:3,display:"flex",gap:8,flexWrap:"wrap"}}>
-                <span>📅 {(d.dateRange&&d.dateRange.from)} → {(d.dateRange&&d.dateRange.to)}</span>
+                <span>📅 {d.dateRange?.from} → {d.dateRange?.to}</span>
                 <span>·</span>
-                <span>📋 {(d.totalRecords&&d.totalRecords.toLocaleString)()} دفعة</span>
+                <span>📋 {d.totalRecords?.toLocaleString()} دفعة</span>
                 {/* fileName hidden */}
               </div>
             </div>
@@ -8187,15 +8187,15 @@ function BulkPaymentSection({ bulk, small }) {
             fontFamily:"'Cairo',sans-serif",
             whiteSpace:"nowrap",flexShrink:0,title:"مسح البيانات"
           }}>🗑 مسح</button>
-          <div onClick={()=>!bulkUploading&&(fileRef.current&&fileRef.current.click)()}
-            onDrop={e=>{e.preventDefault();const f=e.dataTransfer.files&&files[0];if(f)requireUploadAuth(()=>handleBulkFile(f));}}
+          <div onClick={()=>!bulkUploading&&fileRef.current?.click()}
+            onDrop={e=>{e.preventDefault();const f=e.dataTransfer.files?.[0];if(f)requireUploadAuth(()=>handleBulkFile(f));}}
             onDragOver={e=>e.preventDefault()}
             style={{border:`1.5px dashed ${bulkSuccess?"#22c55e":bulkUploading?"#60a5fa":"rgba(255,255,255,0.4)"}`,
               borderRadius:10,padding:"8px 14px",cursor:"pointer",
               background:bulkSuccess?"rgba(34,197,94,0.15)":"rgba(255,255,255,0.08)",
               textAlign:"center",minWidth:145}}>
             <input ref={fileRef} type="file" accept=".xlsx,.xls" style={{display:"none"}}
-              onChange={e=>{const f=e.target.files&&files[0];if(f)requireUploadAuth(()=>{handleBulkFile(f);e.target.value="";});}}/>
+              onChange={e=>{const f=e.target.files?.[0];if(f)requireUploadAuth(()=>{handleBulkFile(f);e.target.value="";});}}/>
             {bulkUploading?<div style={{color:"#60a5fa",fontSize:12,fontWeight:700}}>⏳ جاري التحليل...</div>
              :bulkSuccess?<div style={{color:"#22c55e",fontSize:12,fontWeight:700}}>✅ تم التحديث</div>
              :<><div style={{fontSize:16}}>📂</div>
@@ -8229,7 +8229,7 @@ function BulkPaymentSection({ bulk, small }) {
             {[
               ["📅 أيام نشطة", d.stats.activeDays, "يوم", "#bfdbfe"],
               ["👤 المحصّلون",  d.stats.totalCollectors, "محصّل", "#d9f99d"],
-              ["🏆 أفضل يوم",  (d.stats&&d.stats.bestDay&&d.stats.bestDay.date&&d.stats.bestDay.date.slice(5))||"—", fmt(d.stats&&d.stats.bestDay&&d.stats.bestDay.paid||0)+" OMR", "#fde68a"],
+              ["🏆 أفضل يوم",  d.stats.bestDay?.date?.slice(5)||"—", fmt(d.stats.bestDay?.paid||0)+" OMR", "#fde68a"],
               ["📈 متوسط يومي", fmt(d.stats.avgDaily||0), "OMR", "#e9d5ff"],
             ].map(([l,v,s,c])=>(
               <div key={l} style={{
@@ -8628,7 +8628,7 @@ function HistoryModal({ history, onClose, small }) {
               {sorted.map((entry,i) => {
                 const prev = sorted[i+1];
                 const d  = entry.grandTotal||0;
-                const d2 = (prev&&prev.grandTotal)||0;
+                const d2 = prev?.grandTotal||0;
                 const diff = d2>0 ? ((d-d2)/d2*100) : null;
                 return (
                   <div key={i} style={{
@@ -8649,7 +8649,7 @@ function HistoryModal({ history, onClose, small }) {
                     <div>
                       <div style={{fontSize:16,fontWeight:900,color:"#111"}}>{entry.date}</div>
                       <div style={{fontSize:11,color:"#888",marginTop:2,display:"flex",gap:8,alignItems:"center"}}>
-                        <span>{(entry.totalRecords&&entry.totalRecords.toLocaleString)()} سجل</span>
+                        <span>{entry.totalRecords?.toLocaleString()} سجل</span>
                         {diff!==null && (
                           <span style={{
                             color:diff>=0?"#16a34a":"#dc2626",
@@ -8778,8 +8778,8 @@ function HistoryModal({ history, onClose, small }) {
                     display:"inline-block",textAlign:"right"
                   }}>
                     <div style={{fontSize:12,color:"#888",marginBottom:4}}>اليوم المحفوظ الأول</div>
-                    <div style={{fontSize:18,fontWeight:900,color:"#e85d20"}}>{(sorted[0]&&sorted[0].date)||''}</div>
-                    <div style={{fontSize:14,fontWeight:700,color:"#16a34a",marginTop:4}}>{omr((sorted[0]&&sorted[0].grandTotal)||0)} OMR</div>
+                    <div style={{fontSize:18,fontWeight:900,color:"#e85d20"}}>{sorted[0]?.date}</div>
+                    <div style={{fontSize:14,fontWeight:700,color:"#16a34a",marginTop:4}}>{omr(sorted[0]?.grandTotal||0)} OMR</div>
                   </div>
                 </div>
               ) : (
@@ -8844,8 +8844,8 @@ function HistoryModal({ history, onClose, small }) {
                         {areaPath&&<path d={areaPath} fill="url(#hArea)"/>}
                         {linePath&&<path d={linePath} fill="none" stroke="#e85d20" strokeWidth="2" strokeLinejoin="round" strokeLinecap="round"/>}
                         {pts.map(([x,y],i)=>{
-                          const isMax=((items[i]&&items[i].grandTotal)||0)===maxV, isLast=i===pts.length-1;
-                          const val=(items[i]&&items[i].grandTotal)||0;
+                          const isMax=(items[i]?.grandTotal||0)===maxV, isLast=i===pts.length-1;
+                          const val=items[i]?.grandTotal||0;
                           const lbl=val>=1000000?(val/1000000).toFixed(2)+'M':val>=1000?(val/1000).toFixed(1)+'K':val.toFixed(0);
                           const lblW=Math.max(lbl.length*6+12,34);
                           const lblY=y>PT+cH*0.85?y-28:y-14;
@@ -9111,7 +9111,7 @@ function handlePrint(data) {
   var dcAdj   = (data.debtCompanies||[]).reduce(function(s,r){return s+r.adj;},0);
   var hoPaid  = (data.headOffice||[]).reduce(function(s,r){return s+Math.max(0,r.paid||0);},0);
   var hoAdj   = (data.headOffice||[]).reduce(function(s,r){return s+Math.max(0,r.adj||0);},0);
-  // نفس منطق الداشبورد بالضبط: (data.totalCollection&&data.totalCollection.paid) || (gPd+dPd+hPd)
+  // نفس منطق الداشبورد بالضبط: data.totalCollection?.paid || (gPd+dPd+hPd)
   var grandPaid = (data.totalCollection&&data.totalCollection.paid) ? data.totalCollection.paid : (govPaid+dcPaid+hoPaid);
   var grandAdj  = (data.totalCollection&&data.totalCollection.adj)  ? data.totalCollection.adj  : (govAdj+dcAdj+hoAdj);
   var grandTotal = grandPaid + grandAdj;
@@ -9335,7 +9335,7 @@ function useSmartNotifications(gTotal, hoPrincipal, bestDayEver, currentDayTotal
   const [celebration, setCelebration] = useState(null);
   const [confettiActive, setConfettiActive] = useState(false);
   const prevTotal = useRef(0);
-  const lastSyncRef = useRef(''); // آخر timestamp تم مزامنته
+  const lastSyncRef = useRef('');
   const shownMilestones = useRef(null);
   if (!shownMilestones.current) {
     try { shownMilestones.current = new Set(JSON.parse(localStorage.getItem('oneic_shown_milestones')||'[]')); }
@@ -9555,7 +9555,7 @@ export default function Dashboard() {
         const res = await fetch('https://oneic-dashboard-default-rtdb.firebaseio.com/history.json');
         if (res.ok) {
           const d = await res.json();
-          if ((d&&d.entries&&d.entries.length) > 0) {
+          if (d?.entries?.length > 0) {
             setHistory(d.entries);
             try { localStorage.setItem('oneic_history', JSON.stringify(d.entries)); } catch(e) {}
             return;
@@ -9564,7 +9564,7 @@ export default function Dashboard() {
       } catch(e) {}
       try {
         const row = await sbGet('oneic_data');
-        if ((row&&row.history&&row.history.length) > 0) {
+        if (row?.history?.length > 0) {
           setHistory(row.history);
           try { localStorage.setItem('oneic_history', JSON.stringify(row.history)); } catch(e) {}
         }
@@ -9575,7 +9575,7 @@ export default function Dashboard() {
   const [bulkData, setBulkDataMain] = useState(() => {
     try {
       const saved = localStorage.getItem('oneic_bulk_data');
-      if (saved) { const p = JSON.parse(saved); if ((p&&p.daily&&p.daily.length)>0) return p; }
+      if (saved) { const p = JSON.parse(saved); if (p?.daily?.length>0) return p; }
     } catch(e){}
     return BULK_SEED;
   });
@@ -9587,7 +9587,7 @@ export default function Dashboard() {
       let firebaseData = null;
       try {
         const row = await sbGet('oneic_data');
-        if ((row&&row.regions&&row.regions.length) > 0) firebaseData = row;
+        if (row?.regions?.length > 0) firebaseData = row;
       } catch(e) { console.warn('Firebase unavailable:', e.message); }
 
       // ── ثانياً: localStorage كـ fallback ──
@@ -9596,7 +9596,7 @@ export default function Dashboard() {
         const saved = localStorage.getItem('oneic_dashboard_data');
         if (saved) {
           const parsed = JSON.parse(saved);
-          if ((parsed&&parsed.regions&&parsed.regions.length) > 0) localData = parsed;
+          if (parsed?.regions?.length > 0) localData = parsed;
         }
       } catch(e) {}
 
@@ -9610,22 +9610,22 @@ export default function Dashboard() {
         row = firebaseData || localData;
       }
 
-      if ((row&&row.regions&&row.regions.length) > 0) {
-        const HO_REQ = ["Legal - DR. Sarhaan","Documentation- Omantel","HO","Non-due accounts","Blanks"];
+      if (row?.regions?.length > 0) {
+        const HO_REQ = ["Legal - DR. Sarhaan","Documentation- Omantel","HO","Non-due accounts","Legal -Oneic"];
         const HO_P = {
           "Legal - DR. Sarhaan":{portAmt:3229651.681,portCnt:3662,principalAmt:3301711.348},
           "Documentation- Omantel":{portAmt:489409.003,portCnt:1136},
           "HO":{portAmt:0,portCnt:340},
           "Non-due accounts":{portAmt:0,portCnt:340},
-          "Blanks":{portAmt:50253.668,portCnt:173}
+          "Legal -Oneic":{portAmt:50253.668,portCnt:173}
         };
         const existingHO = row.headOffice || [];
         const fullHO = HO_REQ.map(nm => existingHO.find(c=>c.name===nm) || {name:nm,paid:0,adj:0,count:0,...(HO_P[nm]||{})});
         let d = { ...row, headOffice: fullHO, _updatedAt: row._updatedAt||row.lastUpdated||'' };
-        lastSyncRef.current = d._updatedAt || '';
+        lastSyncRef.current = d._updatedAt||'';
         setData(d);
         try { localStorage.setItem('oneic_dashboard_data', JSON.stringify(d)); } catch(e) {}
-        if ((row.history&&row.history.length) > 0) {
+        if (row.history?.length > 0) {
           setHistory(row.history);
           try { localStorage.setItem('oneic_history', JSON.stringify(row.history)); } catch(e) {}
         }
@@ -9640,68 +9640,37 @@ export default function Dashboard() {
       try {
         const row = await sbGet('oneic_data');
         setSyncing(false);
-        if (!(row&&row.regions&&row.regions.length)) return;
-        // تحقق: هل Firebase أحدث من الحالي؟ (نستخدم ref لتجنب closure stale)
+        if (!row?.regions?.length) return;
+        // تحقق: هل Firebase أحدث من الحالي؟
         const fbTime  = new Date(row._updatedAt||row.lastUpdated||0).getTime();
         const curTime = new Date(lastSyncRef.current||0).getTime();
-        if (fbTime > 0 && fbTime <= curTime) return; // Firebase ليس أحدث
+        if (fbTime > 0 && fbTime <= curTime) return;
         // البيانات تغيرت — حدّث
-        const HO_REQ = ["Legal - DR. Sarhaan","Documentation- Omantel","HO","Non-due accounts","Blanks"];
+        const HO_REQ = ["Legal - DR. Sarhaan","Documentation- Omantel","HO","Non-due accounts","Legal -Oneic"];
         const HO_P = {
           "Legal - DR. Sarhaan":{portAmt:3229651.681,portCnt:3662,principalAmt:3301711.348},
           "Documentation- Omantel":{portAmt:489409.003,portCnt:1136},
           "HO":{portAmt:0,portCnt:340},
           "Non-due accounts":{portAmt:0,portCnt:340},
-          "Blanks":{portAmt:50253.668,portCnt:173}
+          "Legal -Oneic":{portAmt:50253.668,portCnt:173}
         };
         const existingHO = row.headOffice || [];
         const fullHO = HO_REQ.map(nm => existingHO.find(c=>c.name===nm) || {name:nm,paid:0,adj:0,count:0,...(HO_P[nm]||{})});
         const d = { ...row, headOffice: fullHO };
-        lastSyncRef.current = d._updatedAt || '';
+        lastSyncRef.current = d._updatedAt||'';
         setData(d);
         // حدّث localStorage على جميع الأجهزة
         try { localStorage.setItem('oneic_dashboard_data', JSON.stringify(d)); } catch(e) {}
-        if ((row.history&&row.history.length) > 0) {
+        if (row.history?.length > 0) {
           setHistory(row.history);
           try { localStorage.setItem('oneic_history', JSON.stringify(row.history)); } catch(e) {}
         }
         setLastSync(new Date());
         console.log('✅ Data synced from Firebase:', d._updatedAt);
       } catch(e) { setSyncing(false); /* Firebase مؤقتاً غير متاح */ }
-    }, 10000); // كل 15 ثانية للاستجابة السريعة
+    }, 15000); // كل 15 ثانية للاستجابة السريعة
 
-    // تحديث فوري عند فتح التبويب
-    const onVisible = () => {
-      if (document.visibilityState === 'visible') {
-        sbGet('oneic_data').then(row => {
-          if (!row || !row.regions || !row.regions.length) return;
-          const fbTime = new Date(row._updatedAt||row.lastUpdated||0).getTime();
-          const myTime = new Date(lastSyncRef.current||0).getTime();
-          if (fbTime > myTime) {
-            const HO_REQ = ["Legal - DR. Sarhaan","Documentation- Omantel","HO","Non-due accounts","Blanks"];
-            const HO_P = {
-              "Legal - DR. Sarhaan":{portAmt:3229651.681,portCnt:3662,principalAmt:3301711.348},
-              "Documentation- Omantel":{portAmt:489409.003,portCnt:1136},
-              "HO":{portAmt:0,portCnt:340},
-              "Non-due accounts":{portAmt:0,portCnt:340},
-              "Blanks":{portAmt:50253.668,portCnt:173}
-            };
-            const existHO = row.headOffice||[];
-            const fHO = HO_REQ.map(nm=>existHO.find(c=>c.name===nm)||{name:nm,paid:0,adj:0,count:0,...(HO_P[nm]||{})});
-            const d = {...row, headOffice:fHO, _updatedAt:row._updatedAt||row.lastUpdated||''};
-            lastSyncRef.current = d._updatedAt||'';
-            setData(d);
-            try { localStorage.setItem('oneic_dashboard_data', JSON.stringify(d)); } catch(e) {}
-            if (row.history && row.history.length) {
-              setHistory(row.history);
-              try { localStorage.setItem('oneic_history', JSON.stringify(row.history)); } catch(e) {}
-            }
-          }
-        }).catch(()=>{});
-      }
-    };
-    document.addEventListener('visibilitychange', onVisible);
-    return () => { clearInterval(interval); document.removeEventListener('visibilitychange', onVisible); };
+    return () => clearInterval(interval);
   }, []);
 
   const UPLOAD_PW = 'Sulaiman1992';
@@ -9711,21 +9680,21 @@ export default function Dashboard() {
     setSyncing(true);
     try {
       const row = await sbGet('oneic_data');
-      if (!(row&&row.regions&&row.regions.length)) { setSyncing(false); return; }
-      const HO_REQ = ["Legal - DR. Sarhaan","Documentation- Omantel","HO","Non-due accounts","Blanks"];
+      if (!row?.regions?.length) { setSyncing(false); return; }
+      const HO_REQ = ["Legal - DR. Sarhaan","Documentation- Omantel","HO","Non-due accounts","Legal -Oneic"];
       const HO_P = {
         "Legal - DR. Sarhaan":{portAmt:3229651.681,portCnt:3662,principalAmt:3301711.348},
         "Documentation- Omantel":{portAmt:489409.003,portCnt:1136},
         "HO":{portAmt:0,portCnt:340},
         "Non-due accounts":{portAmt:0,portCnt:340},
-        "Blanks":{portAmt:50253.668,portCnt:173}
+        "Legal -Oneic":{portAmt:50253.668,portCnt:173}
       };
       const existingHO = row.headOffice || [];
       const fullHO = HO_REQ.map(nm => existingHO.find(c=>c.name===nm) || {name:nm,paid:0,adj:0,count:0,...(HO_P[nm]||{})});
       const d = { ...row, headOffice: fullHO, _updatedAt: row._updatedAt||row.lastUpdated||'' };
       setData(d);
       try { localStorage.setItem('oneic_dashboard_data', JSON.stringify(d)); } catch(e) {}
-      if ((row.history&&row.history.length) > 0) setHistory(row.history);
+      if (row.history?.length > 0) setHistory(row.history);
       setLastSync(new Date());
     } catch(e) { alert('تعذر الاتصال بالسيرفر'); }
     setSyncing(false);
@@ -9823,25 +9792,25 @@ export default function Dashboard() {
              + newData.headOffice.reduce((s,r)=>s+Math.max(0,r.adj||0),0);
     // حفظ portAmt/portCnt من البيانات الحالية إذا لم تكن في newData
     const mergedCompanies = (newData.debtCompanies||[]).map(c => {
-      const existing  = (data.debtCompanies&&data.debtCompanies.find)(d=>d.name===c.name);
+      const existing  = data.debtCompanies?.find(d=>d.name===c.name);
       const DC_FIX = {"Ejada":{portAmt:261235.418,portCnt:1938}};
       const fix = DC_FIX[c.name];
-      const finalAmt = c.portAmt>0 ? c.portAmt : (existing&&existing.portAmt)>0 ? existing.portAmt : (fix&&fix.portAmt)||0;
-      const finalCnt = c.portCnt>0 ? c.portCnt : (existing&&existing.portCnt)>0 ? existing.portCnt : (fix&&fix.portCnt)||c.count||0;
-      return { ...c, portAmt: finalAmt, portCnt: finalCnt, osAmt: c.osAmt||(existing&&existing.osAmt)||0 };
+      const finalAmt = c.portAmt>0 ? c.portAmt : existing?.portAmt>0 ? existing.portAmt : fix?.portAmt||0;
+      const finalCnt = c.portCnt>0 ? c.portCnt : existing?.portCnt>0 ? existing.portCnt : fix?.portCnt||c.count||0;
+      return { ...c, portAmt: finalAmt, portCnt: finalCnt, osAmt: c.osAmt||existing?.osAmt||0 };
     });;
     // ضمان وجود كل أقسام المكتب الرئيسي الأربعة دائماً
-    const HO_REQUIRED = ["Legal - DR. Sarhaan","Documentation- Omantel","HO","Blanks"];
+    const HO_REQUIRED = ["Legal - DR. Sarhaan","Documentation- Omantel","HO","Legal -Oneic"];
     const HO_PORT_DATA = {
       "Legal - DR. Sarhaan": { portAmt: 3229651.681, portCnt: 3662, principalAmt: 3301711.348 },
       "Documentation- Omantel":  { portAmt: 489409.003,  portCnt: 1136 },
       "HO":                   { portAmt: 0,           portCnt: 340  },
       "Non-due accounts":     { portAmt: 0,           portCnt: 340  },
-      "Blanks":           { portAmt: 50253.668,   portCnt: 173  }
+      "Legal -Oneic":           { portAmt: 50253.668,   portCnt: 173  }
     };
     const mergedHO = HO_REQUIRED.map(nm => {
       const fromNew = (newData.headOffice||[]).find(c=>c.name===nm);
-      const fromExisting = (data.headOffice&&data.headOffice.find)(d=>d.name===nm);
+      const fromExisting = data.headOffice?.find(d=>d.name===nm);
       const portInfo = HO_PORT_DATA[nm]||{};
       if (fromNew) return { ...fromNew, portAmt: fromNew.portAmt||portInfo.portAmt||0, portCnt: fromNew.portCnt||portInfo.portCnt||0 };
       if (fromExisting) return { ...fromExisting, portAmt: fromExisting.portAmt||portInfo.portAmt||0, portCnt: fromExisting.portCnt||portInfo.portCnt||0 };
@@ -9865,7 +9834,7 @@ export default function Dashboard() {
     setUploading(true);
     try {
       await sbUpsert('oneic_data', { payload: dataToSave });
-      lastSyncRef.current = _ts; // حدّث ref بعد الحفظ
+      lastSyncRef.current = _ts;
       console.log('✅ Saved to Firebase');
     } catch(e) {
       console.warn('JSONbin save failed:', e);
@@ -9884,11 +9853,11 @@ export default function Dashboard() {
       grandPaid: dataToSave.grandPaid || 0,
       grandAdj: dataToSave.grandAdj || 0,
       grandTotal: (dataToSave.grandPaid||0) + (dataToSave.grandAdj||0),
-      regions: (dataToSave.regions&&dataToSave.regions.map)(r=>({
+      regions: dataToSave.regions?.map(r=>({
         nameAr: r.nameAr||r.label||'', paid: r.paid, adj: r.adj
       })) || [],
-      debtCompanies: (dataToSave.debtCompanies&&dataToSave.debtCompanies.map)(c=>({name:c.name,paid:c.paid,adj:c.adj})) || [],
-      headOffice: (dataToSave.headOffice&&dataToSave.headOffice.map)(c=>({name:c.name,paid:c.paid,adj:c.adj})) || []
+      debtCompanies: dataToSave.debtCompanies?.map(c=>({name:c.name,paid:c.paid,adj:c.adj})) || [],
+      headOffice: dataToSave.headOffice?.map(c=>({name:c.name,paid:c.paid,adj:c.adj})) || []
     };
     setHistory(prev => {
       // استبدال نفس التاريخ إذا موجود، أو إضافة جديد
@@ -9939,17 +9908,17 @@ export default function Dashboard() {
   const hCnt = data.headOffice.reduce((s,r)=>s+(r.count||0),0);
   const hPortAmt = data.headOffice.reduce((s,r)=>s+Math.max(0,r.portAmt||0),0);
   const hPortCnt = data.headOffice.reduce((s,r)=>s+(r.portCnt||0),0);
-  const totalPaid = (data.totalCollection&&data.totalCollection.paid) || (gPd+dPd+hPd);
-  const totalAdj  = (data.totalCollection&&data.totalCollection.adj)  || (gAd+dAd+hAd);
-  const totalPort = (data.totalPortfolio&&data.totalPortfolio.amt)    || 9414256.834;
+  const totalPaid = data.totalCollection?.paid || (gPd+dPd+hPd);
+  const totalAdj  = data.totalCollection?.adj  || (gAd+dAd+hAd);
+  const totalPort = data.totalPortfolio?.amt    || 9414256.834;
   const gTotal = totalPaid+totalAdj;
   const GRAND_TOTAL_FIXED = 1020464.134;
   const p = v => GRAND_TOTAL_FIXED>0 ? ((v/GRAND_TOTAL_FIXED)*100).toFixed(1) : "0";
 
   // ── Smart Notifications ───────────────────────────────────────────────────
-  const hoPrincipalCurrent = (()=>{var _ho=(data.headOffice||[]).find(function(c){return c.name==='Legal - DR. Sarhaan';}); return _ho?(_ho.principalAmt||0):0;})();
+  const hoPrincipalCurrent = (function(){var _f=(data.headOffice||[]).find(function(c){return c.name==='Legal - DR. Sarhaan';});return _f?(_f.principalAmt||0):0;})();
   const currentBestDay = (() => {
-    try { const s=localStorage.getItem('oneic_bulk_data'); if(s){const b=JSON.parse(s); if((b&&b.daily&&b.daily.length)) return Math.max(...b.daily.map(d=>d.paid+(d.adj||0)));} } catch(e){} return 0;
+    try { const s=localStorage.getItem('oneic_bulk_data'); if(s){const b=JSON.parse(s); if(b?.daily?.length) return Math.max(...b.daily.map(d=>d.paid+(d.adj||0)));} } catch(e){} return 0;
   })();
   const { notifications, celebration, confettiActive, addNotification, setNotifications } =
     useSmartNotifications(gTotal, hoPrincipalCurrent, 0, currentBestDay);
@@ -10373,7 +10342,7 @@ export default function Dashboard() {
           <img src={LOGO} alt="ONEIC" style={{height:40,objectFit:"contain"}}/>
           <div>
             <div style={{fontSize:14,fontWeight:900,color:"#e85d20"}}>لوحة تحكم إدارة تحصيل الديون</div>
-            <div style={{fontSize:9,color:"#555"}}>Debt Collection Management Dashboard · تاريخ التقرير: {data.uploadDate} · {(data.totalRecords||0).toLocaleString()} سجل</div>
+            <div style={{fontSize:9,color:"#555"}}>Debt Collection Management Dashboard · تاريخ التقرير: {data.uploadDate} · {data.totalRecords?.toLocaleString()} سجل</div>
           </div>
         </div>
         <div style={{textAlign:"right",fontSize:9,color:"#555"}}>
@@ -10491,15 +10460,15 @@ export default function Dashboard() {
             <div><span style={{background:"#1e3a5f",color:"#fff",borderRadius:8,padding:"3px 14px",fontSize:small?11:13,fontWeight:900}}>📋 المحفظة</span></div>
             <div style={{background:"#f8f9fc",borderRadius:12,padding:"14px 18px",display:"flex",justifyContent:"space-between",alignItems:"center",border:"1px solid #e8f0fe"}}>
               <div style={{fontSize:small?13:15,color:"#555",fontWeight:700}}>عدد الحسابات</div>
-              <div style={{fontSize:small?20:26,fontWeight:900,color:"#1e3a5f",direction:"ltr",textAlign:"right"}}>{((data.totalPortfolio&&data.totalPortfolio.cnt)||47963).toLocaleString()} <span style={{fontSize:small?11:13,color:"#888",fontWeight:600}}>حساب</span></div>
+              <div style={{fontSize:small?20:26,fontWeight:900,color:"#1e3a5f",direction:"ltr",textAlign:"right"}}>{(data.totalPortfolio?.cnt||47963).toLocaleString()} <span style={{fontSize:small?11:13,color:"#888",fontWeight:600}}>حساب</span></div>
             </div>
             <div style={{background:"#fff3ee",borderRadius:12,padding:"14px 18px",display:"flex",justifyContent:"space-between",alignItems:"center",border:"1px solid #ffe4d4"}}>
               <div style={{fontSize:small?13:15,color:"#555",fontWeight:700}}>قيمة المحفظة</div>
-              <div style={{fontSize:small?20:26,fontWeight:900,color:"#e85d20",direction:"ltr",textAlign:"right"}}>{omr((data.totalPortfolio&&data.totalPortfolio.amt)||9414256.834)} <span style={{fontSize:small?11:13,color:"#888",fontWeight:600}}>OMR</span></div>
+              <div style={{fontSize:small?20:26,fontWeight:900,color:"#e85d20",direction:"ltr",textAlign:"right"}}>{omr(data.totalPortfolio?.amt||9414256.834)} <span style={{fontSize:small?11:13,color:"#888",fontWeight:600}}>OMR</span></div>
             </div>
             <div style={{display:"flex",justifyContent:"center",paddingTop:4}}>
               {(() => {
-                const _s1p=(data.totalCollection&&data.totalCollection.paid)||0, _s1a=(data.totalCollection&&data.totalCollection.adj)||0, _s1m=(data.totalPortfolio&&data.totalPortfolio.amt)||9414256.834;
+                const _s1p=data.totalCollection?.paid||0, _s1a=data.totalCollection?.adj||0, _s1m=data.totalPortfolio?.amt||9414256.834;
                 const pct=_s1m>0?Math.min(100,Math.round((_s1p+_s1a)/_s1m*100)):0;
                 const r=52,cx=60,cy=60,circ=2*Math.PI*r,offset=circ-(pct/100)*circ;
                 return (
@@ -10528,9 +10497,9 @@ export default function Dashboard() {
                 const _gAd = (data.regions||[]).reduce((s,r)=>s+r.adj,0);
                 const _dAd = (data.debtCompanies||[]).reduce((s,r)=>s+r.adj,0);
                 const _hAd = (data.headOffice||[]).reduce((s,r)=>s+Math.max(0,r.adj||0),0);
-                const s1Paid = (data.totalCollection&&data.totalCollection.paid) || (_gPd+_dPd+_hPd);
-                const s1Adj  = (data.totalCollection&&data.totalCollection.adj)  || (_gAd+_dAd+_hAd);
-                const s1Port = (data.totalPortfolio&&data.totalPortfolio.amt)||9414256.834;
+                const s1Paid = data.totalCollection?.paid || (_gPd+_dPd+_hPd);
+                const s1Adj  = data.totalCollection?.adj  || (_gAd+_dAd+_hAd);
+                const s1Port = data.totalPortfolio?.amt||9414256.834;
                 const s1Tot  = s1Paid + s1Adj;
                 const s1Rem  = s1Port - s1Tot;
                 return [
@@ -10586,7 +10555,7 @@ export default function Dashboard() {
                 cntPaid={complaintsCounts.govPaid||gCounts.paid||null}
                 cntAdj={complaintsCounts.govAdj||gCounts.adj||null}
                 cntTotal={complaintsCounts.govTotal||gCounts.combined||null}
-                portAmt={complaintsAmts.gov||gPortAmt||(data.regions&&data.regions.reduce)((s,r)=>s+(r.portAmt||0),0)||0}
+                portAmt={complaintsAmts.gov||gPortAmt||data.regions?.reduce((s,r)=>s+(r.portAmt||0),0)||0}
                 color="#e85d20" icon="🗺" pct={p(gPd+gAd)} small={small} isMobile={isMobile} isTablet={isTablet}/>
               <SummaryCard label="شركات التحصيل"
                 paid={dPd} adj={dAd}
@@ -10615,7 +10584,7 @@ export default function Dashboard() {
           border:"1.5px solid #f0ece8", marginBottom: small?14:18,
           overflow:"hidden"
         }}>
-          <SectionHeader title="🗺 مكاتب أونك" paid={gPd} adj={gAd} color="#e85d20" small={small} portAmt={complaintsAmts.gov||gPortAmt||(data.regions&&data.regions.reduce)((s,r)=>s+(r.portAmt||0),0)||0} portCnt={complaintsCounts.gov||gPortCnt||(data.regions&&data.regions.reduce)((s,r)=>s+(r.portCnt||0),0)||0}/>
+          <SectionHeader title="🗺 مكاتب أونك" paid={gPd} adj={gAd} color="#e85d20" small={small} portAmt={complaintsAmts.gov||gPortAmt||data.regions?.reduce((s,r)=>s+(r.portAmt||0),0)||0} portCnt={complaintsCounts.gov||gPortCnt||data.regions?.reduce((s,r)=>s+(r.portCnt||0),0)||0}/>
           <div style={{ padding: small?"10px":"14px 16px", display:"flex", flexDirection:"column", gap: small?8:10 }}>
             {[...data.regions].sort((a,b)=>(b.portAmt||0)-(a.portAmt||0)).map((r,i) => (
               <RegionRow key={r.id} region={r} idx={i}
