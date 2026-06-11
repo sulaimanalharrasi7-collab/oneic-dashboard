@@ -6212,7 +6212,7 @@ async function parseXLS(file) {
         count:d.count||0, paidCount:d.paidCount||0, adjCount:d.adjCount||0,
         portAmt:d.osAmt||0, portCnt:d.count||0, principalAmt:d.principalAmt||0, principalAmt:d.principalAmt||0
       }))
-      .sort((a,b) => (b.portAmt||0)-(a.portAmt||0))
+      .sort((a,b) => ((b.paid||0)+(b.adj||0))-((a.paid||0)+(a.adj||0)))
   }));
 
   // ── شركات التحصيل ─────────────────────────────────────────────────────
@@ -6231,7 +6231,7 @@ async function parseXLS(file) {
       dcList.push({name:nm,paid:0,adj:0,count:0,paidCount:0,adjCount:0,portAmt:p.portAmt,portCnt:p.portCnt});
     }
   });
-  const debtCompanies = dcList.sort((a,b)=>(b.portAmt||0)-(a.portAmt||0));
+  const debtCompanies = dcList.sort((a,b)=>((b.paid||0)+(b.adj||0))-((a.paid||0)+(a.adj||0)));
 
   // ── المكتب الرئيسي ────────────────────────────────────────────────────
   const HO_KEYS = ["Legal - DR. Sarhaan","Documentation- Omantel","HO","Non-due accounts","Legal -Oneic"];
@@ -9715,52 +9715,73 @@ export default function Dashboard() {
 
     // ══ تحديث تلقائي كل 30 ثانية لمزامنة جميع الأجهزة ══
     const interval = setInterval(async () => {
-      setSyncing(true);
       try {
         const row = await sbGet('oneic_data');
-        setSyncing(false);
-        if (!row?.regions?.length) return;
-        // تحقق: هل Firebase أحدث من الحالي؟
-        const fbTime  = new Date(row._updatedAt||row.lastUpdated||0).getTime();
-        var _lsc=null;try{var _sc=localStorage.getItem('oneic_dashboard_data');if(_sc)_lsc=JSON.parse(_sc);}catch(e){}
-        const curTime=new Date(lastSyncRef.current||(_lsc&&_lsc._updatedAt)||0).getTime();
-        if(fbTime>0&&fbTime<=curTime)return;
-        // البيانات تغيرت — حدّث
+        if (!row || !row.regions || !row.regions.length) return;
+        // قارن مع آخر timestamp محفوظ في ref
+        const fbTime = new Date(row._updatedAt||row.lastUpdated||0).getTime();
+        const myTime = new Date(lastSyncRef.current||0).getTime();
+        if (fbTime > 0 && fbTime <= myTime) return;
+        // Firebase أحدث — حدّث البيانات
         const HO_REQ = ["Legal - DR. Sarhaan","Documentation- Omantel","HO","Non-due accounts","Legal -Oneic"];
         const HO_P = {
           "Legal - DR. Sarhaan":{portAmt:3229651.681,portCnt:3662,principalAmt:3301711.348},
           "Documentation- Omantel":{portAmt:489409.003,portCnt:1136},
           "HO":{portAmt:0,portCnt:340},
           "Non-due accounts":{portAmt:0,portCnt:340},
-          "Legal -Oneic":{portAmt:357170.484,portCnt:217}
+          "Legal -Oneic":{portAmt:357170.484,portCnt:217,principalAmt:357170.484,closed:0,active:217}
         };
         const existingHO = row.headOffice || [];
         const fullHO = HO_REQ.map(nm => existingHO.find(c=>c.name===nm) || {name:nm,paid:0,adj:0,count:0,...(HO_P[nm]||{})});
-        const d = { ...row, headOffice: fullHO };
-        lastSyncRef.current = d._updatedAt||'';
-        if (row.complaintsBranchMap) setComplaintsBranchMap(row.complaintsBranchMap);
-        if (row.complaintsRegionMap) setComplaintsRegionMap(row.complaintsRegionMap);
-        if (row.complaintsPrincipal) setComplaintsPrincipal(row.complaintsPrincipal);
-        if (row.complaintsPaidState) setComplaintsPaidState(row.complaintsPaidState);
-        if (row.complaintsAdjState)  setComplaintsAdjState(row.complaintsAdjState);
+        const d = { ...row, headOffice: fullHO, _updatedAt: row._updatedAt||row.lastUpdated||'' };
+        lastSyncRef.current = d._updatedAt || '';
         setData(d);
-        // حدّث localStorage على جميع الأجهزة
         try { localStorage.setItem('oneic_dashboard_data', JSON.stringify(d)); } catch(e) {}
-        if (row.history?.length > 0) {
+        if (row.history && row.history.length > 0) {
           setHistory(row.history);
           try { localStorage.setItem('oneic_history', JSON.stringify(row.history)); } catch(e) {}
         }
-        setLastSync(new Date());
-        console.log('✅ Data synced from Firebase:', d._updatedAt);
-        // sync Bulk Payment
+        // sync Bulk
         try {
-          const br=await sbGet('oneic_bulk');
-          if(br&&br.daily&&br.daily.length>0){setBulkData(br);try{localStorage.setItem('oneic_bulk_data',JSON.stringify(br));}catch(e){}}
-        } catch(e){}
-      } catch(e) { setSyncing(false); /* Firebase مؤقتاً غير متاح */ }
-    }, 15000); // كل 15 ثانية للاستجابة السريعة
+          const br = await sbGet('oneic_bulk');
+          if (br && br.daily && br.daily.length > 0) {
+            setBulkData(br);
+            try { localStorage.setItem('oneic_bulk_data', JSON.stringify(br)); } catch(e) {}
+          }
+        } catch(e) {}
+        setLastSync(new Date());
+        console.log('✅ Synced:', d._updatedAt);
+      } catch(e) { console.warn('Sync failed:', e.message); }
+    }, 10000); // كل 15 ثانية للاستجابة السريعة
 
-    return () => clearInterval(interval);
+    // تحديث فوري عند العودة للتبويب
+    const onVisible = () => {
+      if (document.visibilityState === 'visible') {
+        sbGet('oneic_data').then(function(row) {
+          if (!row || !row.regions || !row.regions.length) return;
+          var fbTime = new Date(row._updatedAt||row.lastUpdated||0).getTime();
+          var myTime = new Date(lastSyncRef.current||0).getTime();
+          if (fbTime <= myTime) return;
+          var HO_REQ = ["Legal - DR. Sarhaan","Documentation- Omantel","HO","Non-due accounts","Legal -Oneic"];
+          var HO_P = {
+            "Legal - DR. Sarhaan":{portAmt:3229651.681,portCnt:3662,principalAmt:3301711.348},
+            "Documentation- Omantel":{portAmt:489409.003,portCnt:1136},
+            "HO":{portAmt:0,portCnt:340},
+            "Non-due accounts":{portAmt:0,portCnt:340},
+            "Legal -Oneic":{portAmt:357170.484,portCnt:217,principalAmt:357170.484,closed:0,active:217}
+          };
+          var existHO = row.headOffice||[];
+          var fullHO = HO_REQ.map(function(nm){return existHO.find(function(c){return c.name===nm;})||{name:nm,paid:0,adj:0,count:0,...(HO_P[nm]||{})};});
+          var d = {...row, headOffice:fullHO, _updatedAt:row._updatedAt||row.lastUpdated||''};
+          lastSyncRef.current = d._updatedAt||'';
+          setData(d);
+          try{localStorage.setItem('oneic_dashboard_data',JSON.stringify(d));}catch(e){}
+          if(row.history&&row.history.length){setHistory(row.history);}
+        }).catch(function(){});
+      }
+    };
+    document.addEventListener('visibilitychange', onVisible);
+    return () => { clearInterval(interval); document.removeEventListener('visibilitychange', onVisible); };
   }, []);
 
   const UPLOAD_PW = 'Sulaiman1992';
@@ -10743,7 +10764,7 @@ export default function Dashboard() {
           <div style={{ background:"#fff", borderRadius:16, boxShadow:"0 3px 18px rgba(0,0,0,0.07)", border:"1.5px solid #f0ece8", overflow:"hidden" }}>
             <SectionHeader title="🏛 المكتب الرئيسي" paid={complaintsPaidState.ho>0?complaintsPaidState.ho:hPd} adj={complaintsAdjState.ho>0?complaintsAdjState.ho:hAd} color="#6c3fa0" small={small} portAmt={hPortAmt||0} portCnt={hPortCnt||0}/>
             <div style={{ padding: small?"10px":"14px 16px", display:"flex", flexDirection:"column", gap: small?8:10 }}>
-              {[...(data.headOffice||[])].filter(c=>c.name!=='HO').sort((a,b)=>(b.principalAmt||b.portAmt||0)-(a.principalAmt||a.portAmt||0)).map((c,i) => (
+              {[...(data.headOffice||[])].filter(c=>c.name!=='HO').sort((a,b)=>((b.paid||0)+(b.adj||0))-((a.paid||0)+(a.adj||0))).map((c,i) => (
                 <EntityCard key={c.name} name={c.name} paid={c.paid} adj={c.adj} cBranch={complaintsBranchMap} color="#6c3fa0" rank={i+1} closed={c.closed||0} active={c.active||0} small={small} portAmt={c.portAmt||0} portCnt={c.portCnt||0} principalAmt={c.principalAmt||0}/>
               ))}
             </div>
