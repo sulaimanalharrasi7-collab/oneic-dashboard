@@ -9760,10 +9760,12 @@ export default function Dashboard() {
             try { localStorage.setItem('oneic_bulk_data', JSON.stringify(br)); } catch(e) {}
           }
         } catch(e) {}
-        // تحديث Complaints states إذا موجودة في Firebase
+        // تحديث Complaints states
         if (row.complaintsPaidState) setComplaintsPaidState(row.complaintsPaidState);
         if (row.complaintsAdjState)  setComplaintsAdjState(row.complaintsAdjState);
         if (row.complaintsPrincipal) setComplaintsPrincipal(row.complaintsPrincipal);
+        // صفَّر complaintsRegionMap حتى تُحدَّث مكاتب أونك
+        setComplaintsRegionMap({});
         setLastSync(new Date());
         console.log('✅ Synced:', d._updatedAt);
       } catch(e) { console.warn('Sync failed:', e.message); }
@@ -9795,6 +9797,7 @@ export default function Dashboard() {
           if(row.complaintsPaidState) setComplaintsPaidState(row.complaintsPaidState);
           if(row.complaintsAdjState)  setComplaintsAdjState(row.complaintsAdjState);
           if(row.complaintsPrincipal) setComplaintsPrincipal(row.complaintsPrincipal);
+          setComplaintsRegionMap({});
         }).catch(function(){});
       }
     };
@@ -10039,6 +10042,8 @@ export default function Dashboard() {
 
     setUploading(false);
 
+    // صفَّر complaintsRegionMap حتى تتحدث مكاتب أونك بالأرقام الجديدة
+    setComplaintsRegionMap({});
     setData(dataToSave);
     setPending(null);
     setSuccess(true);
