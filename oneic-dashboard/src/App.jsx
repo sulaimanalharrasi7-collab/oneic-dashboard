@@ -9783,7 +9783,14 @@ export default function Dashboard() {
         var sc4=null; try{var _s4=localStorage.getItem('oneic_complaints_region_map');if(_s4)sc4=JSON.parse(_s4);}catch(e){}
         var sb4=null; try{var _b4=localStorage.getItem('oneic_complaints_branch_map');if(_b4)sb4=JSON.parse(_b4);}catch(e){}
         if(sc4&&Object.keys(sc4).length>0){dSync4.regions=(dSync4.regions||[]).map(function(r){var rk2=(r.nameEn||r.nameAr||'').trim().toLowerCase();var rm4=sc4[r.nameEn]||sc4[r.nameAr||''];if(!rm4){var ks=Object.keys(sc4);for(var ki5=0;ki5<ks.length;ki5++){var kl=ks[ki5].toLowerCase();if(kl===rk2||kl.indexOf(rk2)>=0||rk2.indexOf(kl)>=0){rm4=sc4[ks[ki5]];break;}}}return rm4?Object.assign({},r,{paid:rm4.paid||0,adj:rm4.adj||0,principalAmt:rm4.amt||r.principalAmt||r.portAmt||0}):r;});}
-        if(sb4&&Object.keys(sb4).length>0){dSync4.debtCompanies=(dSync4.debtCompanies||[]).map(function(c){var bm4=sb4[c.name];return bm4?Object.assign({},c,{paid:bm4.paid||0,adj:bm4.adj||0}):c;});dSync4.headOffice=(dSync4.headOffice||[]).map(function(c){var bm4=sb4[c.name];return bm4?Object.assign({},c,{paid:bm4.paid||0,adj:bm4.adj||0}):c;});}
+        if(sb4&&Object.keys(sb4).length>0){
+          dSync4.debtCompanies=(dSync4.debtCompanies||[]).map(function(c){var bm4=sb4[c.name];return bm4?Object.assign({},c,{paid:bm4.paid||0,adj:bm4.adj||0,principalAmt:bm4.amt||c.principalAmt||c.portAmt||0}):c;});
+          // أضف Tahseel/HighSpeed من branchMap إذا لم يكونوا في debtCompanies
+          var dcNames4=dSync4.debtCompanies.map(function(c){return c.name;});
+          var bk4=Object.keys(sb4);
+          for(var bi4=0;bi4<bk4.length;bi4++){var bn4=bk4[bi4];if(dcNames4.indexOf(bn4)<0&&(sb4[bn4].paid+sb4[bn4].adj)>0){var bv4=sb4[bn4];dSync4.debtCompanies.push({name:bn4,paid:bv4.paid||0,adj:bv4.adj||0,principalAmt:bv4.amt||0,portAmt:bv4.amt||0,portCnt:bv4.count||0,count:bv4.count||0});}}
+          dSync4.headOffice=(dSync4.headOffice||[]).map(function(c){var bm4=sb4[c.name];return bm4?Object.assign({},c,{paid:bm4.paid||0,adj:bm4.adj||0,principalAmt:bm4.amt||c.principalAmt||c.portAmt||0}):c;});
+        }
         setComplaintsRegionMap({});
         setData(dSync4);
         try{localStorage.setItem('oneic_dashboard_data',JSON.stringify(dSync4));}catch(e){}
@@ -9833,7 +9840,13 @@ export default function Dashboard() {
       var sc5=null; try{var _s5=localStorage.getItem('oneic_complaints_region_map');if(_s5)sc5=JSON.parse(_s5);}catch(e){}
       var sb5=null; try{var _b5=localStorage.getItem('oneic_complaints_branch_map');if(_b5)sb5=JSON.parse(_b5);}catch(e){}
       if(sc5&&Object.keys(sc5).length>0){d5.regions=(d5.regions||[]).map(function(r){var rk2=(r.nameEn||r.nameAr||'').trim().toLowerCase();var rm5=sc5[r.nameEn]||sc5[r.nameAr||''];if(!rm5){var ks=Object.keys(sc5);for(var ki6=0;ki6<ks.length;ki6++){var kl2=ks[ki6].toLowerCase();if(kl2===rk2||kl2.indexOf(rk2)>=0||rk2.indexOf(kl2)>=0){rm5=sc5[ks[ki6]];break;}}}return rm5?Object.assign({},r,{paid:rm5.paid||0,adj:rm5.adj||0,principalAmt:rm5.amt||r.principalAmt||r.portAmt||0}):r;});}
-      if(sb5&&Object.keys(sb5).length>0){d5.debtCompanies=(d5.debtCompanies||[]).map(function(c){var bm5=sb5[c.name];return bm5?Object.assign({},c,{paid:bm5.paid||0,adj:bm5.adj||0}):c;});d5.headOffice=(d5.headOffice||[]).map(function(c){var bm5=sb5[c.name];return bm5?Object.assign({},c,{paid:bm5.paid||0,adj:bm5.adj||0}):c;});}
+      if(sb5&&Object.keys(sb5).length>0){
+        d5.debtCompanies=(d5.debtCompanies||[]).map(function(c){var bm5=sb5[c.name];return bm5?Object.assign({},c,{paid:bm5.paid||0,adj:bm5.adj||0,principalAmt:bm5.amt||c.principalAmt||c.portAmt||0}):c;});
+        var dcNames5=d5.debtCompanies.map(function(c){return c.name;});
+        var bk5=Object.keys(sb5);
+        for(var bi5=0;bi5<bk5.length;bi5++){var bn5=bk5[bi5];if(dcNames5.indexOf(bn5)<0&&(sb5[bn5].paid+sb5[bn5].adj)>0){var bv5=sb5[bn5];d5.debtCompanies.push({name:bn5,paid:bv5.paid||0,adj:bv5.adj||0,principalAmt:bv5.amt||0,portAmt:bv5.amt||0,portCnt:bv5.count||0,count:bv5.count||0});}}
+        d5.headOffice=(d5.headOffice||[]).map(function(c){var bm5=sb5[c.name];return bm5?Object.assign({},c,{paid:bm5.paid||0,adj:bm5.adj||0,principalAmt:bm5.amt||c.principalAmt||c.portAmt||0}):c;});
+      }
       setComplaintsRegionMap({});
       setData(d5);
       try{localStorage.setItem('oneic_dashboard_data',JSON.stringify(d5));}catch(e){}
