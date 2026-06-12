@@ -6035,8 +6035,16 @@ async function parseXLS(file) {
         const h  = (s[0]||[]).map(v => String(v||'').trim());
         if (h.includes('Region') || h.includes('Paid Amount')) { wsName = name; break; }
       }
-      const rows = XLSX.utils.sheet_to_json(wb.Sheets[wsName], { raw:false, defval:'' });
-      if (rows.length > 0) { console.log('[parseXLS] SheetJS OK:', rows.length); return rows; }
+      const rawRows = XLSX.utils.sheet_to_json(wb.Sheets[wsName], { raw:false, defval:'' });
+      const cleanRows = rawRows.map(function(row) {
+        var clean = {};
+        Object.keys(row).forEach(function(k) {
+          var cleanKey = k.replace(/﻿/g,'').replace(/ /g,'').replace(/^\s+|\s+$/g,'');
+          clean[cleanKey] = row[k];
+        });
+        return clean;
+      });
+      if (cleanRows.length > 0) { console.log('[parseXLS] SheetJS OK:', cleanRows.length, 'headers:', Object.keys(cleanRows[0]).slice(0,5).join(',')); return cleanRows; }
       return null;
     } catch(e) { console.warn('[parseXLS] SheetJS failed:', e.message); return null; }
   };
@@ -9728,6 +9736,7 @@ export default function Dashboard() {
         }
         setComplaintsRegionMap({});
         setLastSync(new Date());
+        console.log('🔄 SYNC regions:', (d.regions||[]).map(function(r){return r.nameEn+':'+r.paid;}));
         console.log('✅ Data synced from Firebase:', d._updatedAt);
         try{var brr=await sbGet('oneic_bulk');if(brr&&brr.daily&&brr.daily.length>0){setBulkData(brr);try{localStorage.setItem('oneic_bulk_data',JSON.stringify(brr));}catch(e){}}}catch(e){}
       } catch(e) { setSyncing(false); /* Firebase مؤقتاً غير متاح */ }
