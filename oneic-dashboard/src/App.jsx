@@ -9988,14 +9988,16 @@ export default function Dashboard() {
              + newData.debtCompanies.reduce((s,r)=>s+r.adj,0)
              + newData.headOffice.reduce((s,r)=>s+Math.max(0,r.adj||0),0);
     // حفظ portAmt/portCnt من البيانات الحالية إذا لم تكن في newData
-    const mergedCompanies = (newData.debtCompanies||[]).map(c => {
-      const existing  = data.debtCompanies?.find(d=>d.name===c.name);
-      const DC_FIX = {"Ejada":{portAmt:261235.418,portCnt:1938}};
-      const fix = DC_FIX[c.name];
-      const finalAmt = c.portAmt>0 ? c.portAmt : existing?.portAmt>0 ? existing.portAmt : fix?.portAmt||0;
-      const finalCnt = c.portCnt>0 ? c.portCnt : existing?.portCnt>0 ? existing.portCnt : fix?.portCnt||c.count||0;
-      return { ...c, portAmt: finalAmt, portCnt: finalCnt, osAmt: c.osAmt||existing?.osAmt||0 };
-    });;
+    const mergedCompanies = (newData.debtCompanies||[]).map(function(c) {
+      var existing=(data.debtCompanies||[]).find(function(d){return d.name===c.name;});
+      var DC_FIX={"Ejada":{portAmt:261235.418,portCnt:1938}};
+      var fix=DC_FIX[c.name]||{};
+      var finalAmt=c.portAmt>0?c.portAmt:(existing&&existing.portAmt>0?existing.portAmt:fix.portAmt||0);
+      var finalCnt=c.portCnt>0?c.portCnt:(existing&&existing.portCnt>0?existing.portCnt:fix.portCnt||c.count||0);
+      return Object.assign({},c,{portAmt:finalAmt,portCnt:finalCnt,osAmt:c.osAmt||(existing&&existing.osAmt)||0,principalAmt:c.principalAmt||(existing&&existing.principalAmt)||finalAmt||0});
+    });
+    var DC_ALWAYS=[{name:"Tahseel United",portAmt:0,principalAmt:0,portCnt:108,paid:0,adj:0,count:0},{name:"High Speed Company",portAmt:0,principalAmt:0,portCnt:35,paid:0,adj:0,count:0}];
+    DC_ALWAYS.forEach(function(dc){if(!mergedCompanies.find(function(c){return c.name===dc.name;})){var pdc=(data.debtCompanies||[]).find(function(c){return c.name===dc.name;});mergedCompanies.push(Object.assign({},dc,pdc||{}));}});
     // ضمان وجود كل أقسام المكتب الرئيسي الأربعة دائماً
     const HO_REQUIRED = ["Legal - DR. Sarhaan","Documentation- Omantel","HO","Legal -Oneic"];
     const HO_PORT_DATA = {
