@@ -6044,8 +6044,11 @@ async function parseXLS(file) {
         });
         return clean;
       });
-      if (cleanRows.length > 0) { console.log('[parseXLS] SheetJS OK:', cleanRows.length, 'headers:', Object.keys(cleanRows[0]).slice(0,5).join(',')); return cleanRows; }
-      return null;
+      // تحقق أن headers صحيحة
+      var cleanKeys = cleanRows.length > 0 ? Object.keys(cleanRows[0]) : [];
+      var hasRegion = cleanKeys.some(function(k){ return k==='Region'||k==='region'; });
+      var hasPaid   = cleanKeys.some(function(k){ return k==='Paid Amount'||k==='paid_amount'; });
+      if (cleanRows.length > 0 && (hasRegion||hasPaid)) { console.log('[parseXLS] SheetJS OK:', cleanRows.length); return cleanRows; }
     } catch(e) { console.warn('[parseXLS] SheetJS failed:', e.message); return null; }
   };
 
