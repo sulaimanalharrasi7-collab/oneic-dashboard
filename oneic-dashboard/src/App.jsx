@@ -9760,6 +9760,10 @@ export default function Dashboard() {
             try { localStorage.setItem('oneic_bulk_data', JSON.stringify(br)); } catch(e) {}
           }
         } catch(e) {}
+        // تحديث Complaints states إذا موجودة في Firebase
+        if (row.complaintsPaidState) setComplaintsPaidState(row.complaintsPaidState);
+        if (row.complaintsAdjState)  setComplaintsAdjState(row.complaintsAdjState);
+        if (row.complaintsPrincipal) setComplaintsPrincipal(row.complaintsPrincipal);
         setLastSync(new Date());
         console.log('✅ Synced:', d._updatedAt);
       } catch(e) { console.warn('Sync failed:', e.message); }
@@ -9788,6 +9792,9 @@ export default function Dashboard() {
           setData(d);
           try{localStorage.setItem('oneic_dashboard_data',JSON.stringify(d));}catch(e){}
           if(row.history&&row.history.length){setHistory(row.history);}
+          if(row.complaintsPaidState) setComplaintsPaidState(row.complaintsPaidState);
+          if(row.complaintsAdjState)  setComplaintsAdjState(row.complaintsAdjState);
+          if(row.complaintsPrincipal) setComplaintsPrincipal(row.complaintsPrincipal);
         }).catch(function(){});
       }
     };
@@ -9959,8 +9966,6 @@ export default function Dashboard() {
       lastUpdated: _ts,
       _updatedAt: _ts,
       lastUpdatedDate: _ts.split('T')[0],
-      complaintsBranchMap: complaintsBranchMap||{},
-      complaintsRegionMap: complaintsRegionMap||{},
       complaintsPrincipal: complaintsPrincipal||{},
       complaintsPaidState: complaintsPaidState||{},
       complaintsAdjState: complaintsAdjState||{}
@@ -9969,11 +9974,23 @@ export default function Dashboard() {
     // ── رفع لـ JSONbin + localStorage ───────────────────────────────────
     setUploading(true);
     try {
-      // حفظ فوري في localStorage
+      // تخفيف الحجم للحفظ في Firebase (بدون collectors التفصيلية)
+      const dataToSaveLight = {
+        ...dataToSave,
+        regions: (dataToSave.regions||[]).map(r => ({
+          ...r,
+          collectors: (r.collectors||[]).map(c => ({
+            name:c.name, paid:c.paid, adj:c.adj,
+            portAmt:c.portAmt||0, principalAmt:c.principalAmt||0,
+            count:c.count||0
+          }))
+        }))
+      };
+      // حفظ فوري في localStorage (الكامل)
       try { localStorage.setItem('oneic_dashboard_data', JSON.stringify(dataToSave)); } catch(e) {}
       // حفظ في Firebase
       try {
-        await sbUpsert('oneic_data', { payload: dataToSave });
+        await sbUpsert('oneic_data', { payload: dataToSaveLight });
         lastSyncRef.current = _ts;
         console.log('✅ Saved to Firebase');
       } catch(fbE) { console.warn('Firebase save failed:', fbE.message); }
@@ -10008,7 +10025,7 @@ export default function Dashboard() {
       try { localStorage.setItem('oneic_history', JSON.stringify(newHistory)); } catch(e) {}
       // رفع التاريخ لـ JSONbin أيضاً
       try {
-        const fullData = { ...dataToSave, history: newHistory };
+        const fullData = { ...dataToSaveLight, history: newHistory };
         sbUpsert('oneic_data', { payload: fullData });
       } catch(e) {}
       try {
@@ -10729,7 +10746,7 @@ export default function Dashboard() {
           <SectionHeader title="🗺 مكاتب أونك" paid={complaintsPaidState.gov>0?complaintsPaidState.gov:gPd} adj={complaintsAdjState.gov>0?complaintsAdjState.gov:gAd} color="#e85d20" small={small} portAmt={complaintsPrincipal.gov>0?complaintsPrincipal.gov:(complaintsAmts.gov||gPortAmt||0)} portCnt={complaintsCounts.gov||gPortCnt||data.regions?.reduce((s,r)=>s+(r.portCnt||0),0)||0}/>
           <div style={{ padding: small?"10px":"14px 16px", display:"flex", flexDirection:"column", gap: small?8:10 }}>
             {[...data.regions].sort((a,b)=>(b.paid+b.adj)-(a.paid+a.adj)).map((r,i) => (
-              <RegionRow key={r.id} region={r} idx={i} complaintsRegionMap={complaintsRegionMap}
+              <RegionRow key={r.id+(data._updatedAt||"")} region={r} idx={i} complaintsRegionMap={complaintsRegionMap}
                 open={openRegion===r.id}
                 onToggle={() => setOpenRegion(openRegion===r.id?null:r.id)}
                 small={small}
