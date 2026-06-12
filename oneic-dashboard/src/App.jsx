@@ -6599,8 +6599,8 @@ function EntityCard({name,paid,adj,color,rank,small,cnt,cBranch,portAmt,portCnt,
                 <div style={{fontSize:small?8:9,color:"#aaa",fontWeight:600}}>حساب</div>
               </div>
             )}
-            {(name==="Legal -Oneic"||name==="Documentation- Omantel")&&(closed>0||active>0)&&<div style={{flex:1,background:"#fee2e2",borderRadius:10,padding:small?"5px 6px":"7px 10px",border:"1px solid #fca5a5",textAlign:"center"}}><div style={{fontSize:small?8:10,color:"#dc2626",fontWeight:800,marginBottom:2}}>🔴 مغلقة</div><div style={{fontSize:small?12:15,fontWeight:900,color:"#dc2626"}}>{(closed||0).toLocaleString()}</div></div>}
-            {(name==="Legal -Oneic"||name==="Documentation- Omantel")&&(closed>0||active>0)&&<div style={{flex:1,background:"#dcfce7",borderRadius:10,padding:small?"5px 6px":"7px 10px",border:"1px solid #86efac",textAlign:"center"}}><div style={{fontSize:small?8:10,color:"#16a34a",fontWeight:800,marginBottom:2}}>🟢 نشطة</div><div style={{fontSize:small?12:15,fontWeight:900,color:"#16a34a"}}>{(active||0).toLocaleString()}</div></div>}
+            {(name==="Legal -Oneic"||name==="Documentation- Omantel")&&(closed>0||active>0)&&<div style={{flex:1,background:"#fee2e2",borderRadius:10,padding:small?"5px 6px":"7px 10px",border:"1px solid #fca5a5",textAlign:"center"}}><div style={{fontSize:small?8:10,color:"#dc2626",fontWeight:800,marginBottom:2}}>{"🔴 مغلقة"}</div><div style={{fontSize:small?12:15,fontWeight:900,color:"#dc2626"}}>{(closed||0).toLocaleString()}</div></div>}
+            {(name==="Legal -Oneic"||name==="Documentation- Omantel")&&(closed>0||active>0)&&<div style={{flex:1,background:"#dcfce7",borderRadius:10,padding:small?"5px 6px":"7px 10px",border:"1px solid #86efac",textAlign:"center"}}><div style={{fontSize:small?8:10,color:"#16a34a",fontWeight:800,marginBottom:2}}>{"🟢 نشطة"}</div><div style={{fontSize:small?12:15,fontWeight:900,color:"#16a34a"}}>{(active||0).toLocaleString()}</div></div>}
           </div>
         )}
 
@@ -6793,8 +6793,8 @@ function RegionRow({region, idx, open, onToggle, small, complaintsRegionMap}) {
   const _rMap   = complaintsRegionMap||{};
   const _cReg   = _rMap[region.nameEn]||_rMap[region.id]||null;
   const totalCnt = region.count||0;
-  const regPaid  = _cReg&&_cReg.paid>0 ? _cReg.paid : (region.paid||0);
-  const regAdj   = _cReg&&_cReg.adj>0  ? _cReg.adj  : (region.adj||0);
+  const regPaid  = region.paid||0;
+  const regAdj   = region.adj||0;
   const total    = regPaid + regAdj;
   const portAmt   = _cReg&&_cReg.amt>0 ? _cReg.amt : (region.principalAmt||region.portAmt||0);
   const portCnt   = region.portCnt||0;
@@ -7975,7 +7975,7 @@ function AnalyticsModal({ bulk, onClose, small }) {
   );
 }
 
-function BulkPaymentSection({ bulk, small }) {
+function BulkPaymentSection({ bulk, small, onBulkUpdate }) {
   const [activeTab, setActiveTab]       = useState('daily');
   const [selectedDate, setSelectedDate] = useState(null);
   const [filterFrom, setFilterFrom]     = useState('');
@@ -8079,6 +8079,7 @@ function BulkPaymentSection({ bulk, small }) {
       } catch(e) { console.warn('Firebase bulk upload failed:', e); }
 
       setBulkData(final);
+      if (onBulkUpdate) onBulkUpdate(final);
       setSelectedDate(null);
       setBulkSuccess(true);
       setTimeout(()=>setBulkSuccess(false), 4000);
@@ -9684,18 +9685,7 @@ export default function Dashboard() {
         }
       }
       setLoadingServer(false);
-      // ── Bulk Payment ──
-      try {
-        const br = await sbGet('oneic_bulk');
-        if (br && br.daily && br.daily.length > 0) {
-          setBulkData(br);
-          try { localStorage.setItem('oneic_bulk_data', JSON.stringify(br)); } catch(e) {}
-        } else {
-          try { const sb=localStorage.getItem('oneic_bulk_data'); if(sb){const pb=JSON.parse(sb); if(pb&&pb.daily&&pb.daily.length>0) setBulkData(pb);} } catch(e) {}
-        }
-      } catch(e) {
-        try { const sb=localStorage.getItem('oneic_bulk_data'); if(sb){const pb=JSON.parse(sb); if(pb&&pb.daily&&pb.daily.length>0) setBulkData(pb);} } catch(e2) {}
-      }
+      try{var br=await sbGet('oneic_bulk');if(br&&br.daily&&br.daily.length>0){setBulkData(br);try{localStorage.setItem('oneic_bulk_data',JSON.stringify(br));}catch(e){}}else{try{var sb=localStorage.getItem('oneic_bulk_data');if(sb){var pb=JSON.parse(sb);if(pb&&pb.daily&&pb.daily.length>0)setBulkData(pb);}}catch(e){}}}catch(e){try{var sb2=localStorage.getItem('oneic_bulk_data');if(sb2){var pb2=JSON.parse(sb2);if(pb2&&pb2.daily&&pb2.daily.length>0)setBulkData(pb2);}}catch(e2){}}
     }
     load();
 
@@ -9708,7 +9698,7 @@ export default function Dashboard() {
         if (!row?.regions?.length) return;
         // تحقق: هل Firebase أحدث من الحالي؟
         const fbTime  = new Date(row._updatedAt||row.lastUpdated||0).getTime();
-        var _lsc=null;try{var _sc=localStorage.getItem('oneic_dashboard_data');if(_sc)_lsc=JSON.parse(_sc);}catch(e){}
+        var _lsc=null;try{var _sc=localStorage.getItem('oneic_dashboard_data');if(_sc)_lsc=JSON.parse(_sc);}catch(e2){}
         const curTime=new Date(lastSyncRef.current||(_lsc&&_lsc._updatedAt)||0).getTime();
         if(fbTime>0&&fbTime<=curTime)return;
         // البيانات تغيرت — حدّث
@@ -9736,39 +9726,30 @@ export default function Dashboard() {
           setHistory(row.history);
           try { localStorage.setItem('oneic_history', JSON.stringify(row.history)); } catch(e) {}
         }
-        setLastSync(new Date());
-        try { const br=await sbGet('oneic_bulk'); if(br&&br.daily&&br.daily.length>0){setBulkData(br);try{localStorage.setItem('oneic_bulk_data',JSON.stringify(br));}catch(e){}} } catch(e) {}
         setComplaintsRegionMap({});
+        setLastSync(new Date());
         console.log('✅ Data synced from Firebase:', d._updatedAt);
-        try { const br=await sbGet('oneic_bulk'); if(br&&br.daily&&br.daily.length>0){setBulkData(br);try{localStorage.setItem('oneic_bulk_data',JSON.stringify(br));}catch(e){}} } catch(e) {}
+        try{var brr=await sbGet('oneic_bulk');if(brr&&brr.daily&&brr.daily.length>0){setBulkData(brr);try{localStorage.setItem('oneic_bulk_data',JSON.stringify(brr));}catch(e){}}}catch(e){}
       } catch(e) { setSyncing(false); /* Firebase مؤقتاً غير متاح */ }
-    }, 10000); // كل 10 ثوانٍ للاستجابة السريعة
+    }, 15000); // كل 15 ثانية للاستجابة السريعة
 
-    const onVisible = () => {
+    const onVisible = function() {
       if (document.visibilityState === 'visible') {
         sbGet('oneic_data').then(function(row) {
-          if (!row || !row.regions || !row.regions.length) return;
+          if (!row||!row.regions||!row.regions.length) return;
           var fbTime = new Date(row._updatedAt||row.lastUpdated||0).getTime();
           var myTime = new Date(lastSyncRef.current||0).getTime();
           if (fbTime <= myTime) return;
-          var HO_REQ = ["Legal - DR. Sarhaan","Documentation- Omantel","HO","Non-due accounts","Legal -Oneic"];
-          var HO_P = {
-            "Legal - DR. Sarhaan":{portAmt:3229651.681,portCnt:3662,principalAmt:3301711.348},
-            "Documentation- Omantel":{portAmt:489409.003,portCnt:1136},
-            "HO":{portAmt:0,portCnt:340},
-            "Non-due accounts":{portAmt:0,portCnt:340},
-            "Legal -Oneic":{portAmt:357170.484,portCnt:217,principalAmt:357170.484}
-          };
-          var existHO = row.headOffice||[];
-          var fullHO = HO_REQ.map(function(nm){
-            var found = existHO.find(function(c){return c.name===nm;});
-            return found ? found : {name:nm,paid:0,adj:0,count:0,...(HO_P[nm]||{})};
-          });
-          var d = Object.assign({},row,{headOffice:fullHO,_updatedAt:row._updatedAt||row.lastUpdated||''});
-          lastSyncRef.current = d._updatedAt||'';
-          setData(d);
-          try{localStorage.setItem('oneic_dashboard_data',JSON.stringify(d));}catch(e){}
-          if(row.history&&row.history.length>0){setHistory(row.history);}
+          var HO_REQ2=["Legal - DR. Sarhaan","Documentation- Omantel","HO","Non-due accounts","Legal -Oneic"];
+          var HO_P2={"Legal - DR. Sarhaan":{portAmt:3229651.681,portCnt:3662},"Documentation- Omantel":{portAmt:489409.003,portCnt:1136},"HO":{portAmt:0,portCnt:340},"Non-due accounts":{portAmt:0,portCnt:340},"Legal -Oneic":{portAmt:357170.484,portCnt:217}};
+          var eHO=row.headOffice||[];
+          var fHO=HO_REQ2.map(function(nm){var found=eHO.find(function(c){return c.name===nm;});return found?found:{name:nm,paid:0,adj:0,count:0,...(HO_P2[nm]||{})};});
+          var d2=Object.assign({},row,{headOffice:fHO,_updatedAt:row._updatedAt||row.lastUpdated||''});
+          lastSyncRef.current=d2._updatedAt||'';
+          setComplaintsRegionMap({});
+          setData(d2);
+          try{localStorage.setItem('oneic_dashboard_data',JSON.stringify(d2));}catch(e){}
+          if(row.history&&row.history.length){setHistory(row.history);}
         }).catch(function(){});
       }
     };
@@ -9993,7 +9974,6 @@ export default function Dashboard() {
 
     setUploading(false);
 
-    setComplaintsRegionMap({});
     setData(dataToSave);
     setPending(null);
     setSuccess(true);
@@ -10547,7 +10527,7 @@ export default function Dashboard() {
       {/* ══ BODY ══ */}
       <div style={{ padding:pad, flex:1, overflowY:"auto", overflowX:"hidden" }}>
 
-        {showBulkReport && <BulkPaymentSection bulk={bulkData} small={small}/>}
+        {showBulkReport && <BulkPaymentSection bulk={bulkData} small={small} onBulkUpdate={function(d){setBulkData(d);try{localStorage.setItem('oneic_bulk_data',JSON.stringify(d));}catch(e){}}}/>}
 
         
       {/* ══ Section 1 ══ */}
@@ -10700,7 +10680,7 @@ export default function Dashboard() {
         }}>
           <SectionHeader title="🗺 مكاتب أونك" paid={gPd} adj={gAd} color="#e85d20" small={small} portAmt={complaintsPrincipal.gov>0?complaintsPrincipal.gov:(complaintsAmts.gov||gPortAmt||0)} portCnt={complaintsCounts.gov||gPortCnt||data.regions?.reduce((s,r)=>s+(r.portCnt||0),0)||0}/>
           <div style={{ padding: small?"10px":"14px 16px", display:"flex", flexDirection:"column", gap: small?8:10 }}>
-            {[...data.regions].sort((a,b)=>((b.paid||0)+(b.adj||0))-((a.paid||0)+(a.adj||0))).map((r,i) => (
+            {[...data.regions].sort((a,b)=>(b.principalAmt||b.portAmt||0)-(a.principalAmt||a.portAmt||0)).map((r,i) => (
               <RegionRow key={r.id} region={r} idx={i} complaintsRegionMap={complaintsRegionMap}
                 open={openRegion===r.id}
                 onToggle={() => setOpenRegion(openRegion===r.id?null:r.id)}
@@ -10753,7 +10733,7 @@ export default function Dashboard() {
           <div style={{ background:"#fff", borderRadius:16, boxShadow:"0 3px 18px rgba(0,0,0,0.07)", border:"1.5px solid #f0ece8", overflow:"hidden" }}>
             <SectionHeader title="🏛 المكتب الرئيسي" paid={complaintsPaidState.ho>0?complaintsPaidState.ho:hPd} adj={complaintsAdjState.ho>0?complaintsAdjState.ho:hAd} color="#6c3fa0" small={small} portAmt={hPortAmt||0} portCnt={hPortCnt||0}/>
             <div style={{ padding: small?"10px":"14px 16px", display:"flex", flexDirection:"column", gap: small?8:10 }}>
-              {[...(data.headOffice||[])].filter(c=>c.name!=='HO').sort((a,b)=>((b.paid||0)+(b.adj||0))-((a.paid||0)+(a.adj||0))).map((c,i) => (
+              {[...(data.headOffice||[])].filter(c=>c.name!=='HO').sort((a,b)=>(b.principalAmt||b.portAmt||0)-(a.principalAmt||a.portAmt||0)).map((c,i) => (
                 <EntityCard key={c.name} name={c.name} paid={c.paid} adj={c.adj} cBranch={complaintsBranchMap} color="#6c3fa0" rank={i+1} closed={c.closed||0} active={c.active||0} small={small} portAmt={c.portAmt||0} portCnt={c.portCnt||0} principalAmt={c.principalAmt||0}/>
               ))}
             </div>
