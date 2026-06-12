@@ -9838,8 +9838,9 @@ export default function Dashboard() {
       })();
       
       // كشف النوع: الأولوية لـ performance إذا وُجد Region + Paid Amount + Collector
-      const hasComplaintCols   = sniffText.includes('Complaint ID') || sniffText.includes('Agreement No');
-      const hasPerformanceCols = sniffText.includes('Paid Amount') && sniffText.includes('Region') && sniffText.includes('Collector');
+      const cleanSniff = sniffText.replace(/[\uFEFF\uFFFD\x00]/g,'');
+      const hasComplaintCols   = cleanSniff.includes('Complaint ID') || cleanSniff.includes('Agreement No') || sniffText.includes('Complaint') || sniffText.includes('Agreement');
+      const hasPerformanceCols = (sniffText.includes('Paid Amount')||cleanSniff.includes('Paid Amount')) && (sniffText.includes('Region')||cleanSniff.includes('Region')) && (sniffText.includes('Collector')||cleanSniff.includes('Collector'));
       // Performance يأخذ الأولوية دائماً إذا وُجدت الأعمدة الثلاثة
       const isComplaints = !hasPerformanceCols && hasComplaintCols;
       
