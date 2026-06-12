@@ -9704,45 +9704,32 @@ export default function Dashboard() {
     const interval = setInterval(async () => {
       try {
         const row = await sbGet('oneic_data');
-        if (!row) { console.log('⚠️ Sync: Firebase returned null'); return; }
-        console.log('🔄 Sync check: FB='+row._updatedAt+' MY='+lastSyncRef.current);
-        setSyncing(false);
-        if (!row?.regions?.length) return;
-        // تحقق: هل Firebase أحدث من الحالي؟
+        if (!row || !row.regions || !row.regions.length) return;
+        // تحقق: هل Firebase أحدث؟
         const fbTime = new Date(row._updatedAt||row.lastUpdated||0).getTime();
         const myTime = lastSyncRef.current ? new Date(lastSyncRef.current).getTime() : 0;
         if (fbTime > 0 && myTime > 0 && fbTime <= myTime) return;
-        // البيانات تغيرت — حدّث
-        const HO_REQ = ["Legal - DR. Sarhaan","Documentation- Omantel","HO","Non-due accounts","Legal -Oneic"];
-        const HO_P = {
-          "Legal - DR. Sarhaan":{portAmt:3229651.681,portCnt:3662,principalAmt:3301711.348},
-          "Documentation- Omantel":{portAmt:489409.003,portCnt:1136},
-          "HO":{portAmt:0,portCnt:340},
-          "Non-due accounts":{portAmt:0,portCnt:340},
-          "Legal -Oneic":{portAmt:357170.484,portCnt:217,principalAmt:357170.484,closed:0,active:217}
-        };
-        const existingHO = row.headOffice || [];
-        const fullHO = HO_REQ.map(nm => existingHO.find(c=>c.name===nm) || {name:nm,paid:0,adj:0,count:0,...(HO_P[nm]||{})});
-        const d = { ...row, headOffice: fullHO };
-        lastSyncRef.current = d._updatedAt||'';
-        if (row.complaintsBranchMap) setComplaintsBranchMap(row.complaintsBranchMap);
-        if (row.complaintsRegionMap) setComplaintsRegionMap(row.complaintsRegionMap);
-        if (row.complaintsPrincipal) setComplaintsPrincipal(row.complaintsPrincipal);
-        if (row.complaintsPaidState) setComplaintsPaidState(row.complaintsPaidState);
-        if (row.complaintsAdjState)  setComplaintsAdjState(row.complaintsAdjState);
-        setData(d);
-        // حدّث localStorage على جميع الأجهزة
-        try { localStorage.setItem('oneic_dashboard_data', JSON.stringify(d)); } catch(e) {}
-        if (row.history?.length > 0) {
-          setHistory(row.history);
-          try { localStorage.setItem('oneic_history', JSON.stringify(row.history)); } catch(e) {}
-        }
+        // حدّث!
+        const HO_KEYS2 = ["Legal - DR. Sarhaan","Documentation- Omantel","HO","Non-due accounts","Legal -Oneic"];
+        const HO_DEF = {"Legal - DR. Sarhaan":{portAmt:3229651.681,portCnt:3662,principalAmt:3301711.348},"Documentation- Omantel":{portAmt:489409.003,portCnt:1136},"HO":{portAmt:0,portCnt:340},"Non-due accounts":{portAmt:0,portCnt:340},"Legal -Oneic":{portAmt:357170.484,portCnt:217,principalAmt:357170.484,closed:0,active:217}};
+        const eHO = row.headOffice||[];
+        const fullHO = HO_KEYS2.map(function(nm){
+          var found=eHO.find(function(c){return c.name===nm;});
+          return found ? found : Object.assign({name:nm,paid:0,adj:0,count:0},HO_DEF[nm]||{});
+        });
+        var d = Object.assign({},row,{headOffice:fullHO,_updatedAt:row._updatedAt||row.lastUpdated||''});
+        lastSyncRef.current = d._updatedAt || new Date().toISOString();
         setComplaintsRegionMap({});
+        setData(d);
+        try{localStorage.setItem('oneic_dashboard_data',JSON.stringify(d));}catch(e){}
+        if(row.history&&row.history.length){
+          setHistory(row.history);
+          try{localStorage.setItem('oneic_history',JSON.stringify(row.history));}catch(e){}
+        }
+        try{var br=await sbGet('oneic_bulk');if(br&&br.daily&&br.daily.length){setBulkData(br);try{localStorage.setItem('oneic_bulk_data',JSON.stringify(br));}catch(e){}}}catch(e){}
         setLastSync(new Date());
-        console.log('🔄 SYNC regions:', (d.regions||[]).map(function(r){return r.nameEn+':'+r.paid;}));
-        console.log('✅ Data synced from Firebase:', d._updatedAt);
-        try{var brr=await sbGet('oneic_bulk');if(brr&&brr.daily&&brr.daily.length>0){setBulkData(brr);try{localStorage.setItem('oneic_bulk_data',JSON.stringify(brr));}catch(e){}}}catch(e){}
-      } catch(e) { setSyncing(false); /* Firebase مؤقتاً غير متاح */ }
+        console.log('✅ Synced from Firebase:', d._updatedAt);
+      } catch(e) { console.warn('Sync error:', e.message); }
     }, 8000); // كل 8 ثوانٍ للاستجابة السريعة
 
     const onVisible = function() {
@@ -10010,12 +9997,12 @@ export default function Dashboard() {
   const dPd = data.debtCompanies.reduce((s,r)=>s+r.paid,0);
   const dAd = data.debtCompanies.reduce((s,r)=>s+r.adj,0);
   const dCnt = data.debtCompanies.reduce((s,r)=>s+(r.count||0),0);
-  const dPortAmt = data.debtCompanies.reduce((s,r)=>s+(r.portAmt||0),0);
+  const dPortAmt = data.debtCompanies.reduce((s,r)=>s+(r.principalAmt||r.portAmt||0),0);
   const dPortCnt = data.debtCompanies.reduce((s,r)=>s+(r.portCnt||0),0);
   const hPd = data.headOffice.reduce((s,r)=>s+Math.max(0,r.paid||0),0);
   const hAd = data.headOffice.reduce((s,r)=>s+Math.max(0,r.adj||0),0);
   const hCnt = data.headOffice.reduce((s,r)=>s+(r.count||0),0);
-  const hPortAmt = data.headOffice.reduce((s,r)=>s+Math.max(0,r.portAmt||0),0);
+  const hPortAmt = data.headOffice.reduce((s,r)=>s+Math.max(0,r.principalAmt||r.portAmt||0),0);
   const hPortCnt = data.headOffice.reduce((s,r)=>s+(r.portCnt||0),0);
   const totalPaid = data.totalCollection?.paid || (gPd+dPd+hPd);
   const totalAdj  = data.totalCollection?.adj  || (gAd+dAd+hAd);
@@ -10664,7 +10651,7 @@ export default function Dashboard() {
                 cntPaid={complaintsCounts.govPaid||gCounts.paid||null}
                 cntAdj={complaintsCounts.govAdj||gCounts.adj||null}
                 cntTotal={complaintsCounts.govTotal||gCounts.combined||null}
-                portAmt={complaintsPrincipal.gov>0?complaintsPrincipal.gov:(complaintsAmts.gov||gPortAmt||0)}
+                portAmt={gPortAmt||0}
                 color="#e85d20" icon="🗺" pct={p(gPd+gAd)} small={small} isMobile={isMobile} isTablet={isTablet} principalAmt={complaintsPrincipal.gov||0}/>
               <SummaryCard label="شركات التحصيل"
                 paid={complaintsPaidState.dc>0?complaintsPaidState.dc:dPd} adj={complaintsAdjState.dc>0?complaintsAdjState.dc:dAd}
@@ -10672,7 +10659,7 @@ export default function Dashboard() {
                 cntPaid={complaintsCounts.dcPaid||dCounts.paid||null}
                 cntAdj={complaintsCounts.dcAdj||dCounts.adj||null}
                 cntTotal={complaintsCounts.dcTotal||dCounts.combined||null}
-                portAmt={complaintsPrincipal.dc>0?complaintsPrincipal.dc:(complaintsAmts.dc||dPortAmt||0)}
+                portAmt={dPortAmt||0}
                 color="#1a7a6b" icon="🏢" pct={p(dPd+dAd)} small={small} isMobile={isMobile} isTablet={isTablet} principalAmt={complaintsPrincipal.dc||0}/>
               <SummaryCard label="المكتب الرئيسي"
                 paid={complaintsPaidState.ho>0?complaintsPaidState.ho:hPd} adj={complaintsAdjState.ho>0?complaintsAdjState.ho:hAd}
@@ -10680,7 +10667,7 @@ export default function Dashboard() {
                 cntPaid={complaintsCounts.hoPaid||hCounts.paid||null}
                 cntAdj={complaintsCounts.hoAdj||hCounts.adj||null}
                 cntTotal={complaintsCounts.hoTotal||hCounts.combined||null}
-                portAmt={complaintsPrincipal.ho>0?complaintsPrincipal.ho:(complaintsAmts.ho||hPortAmt||0)}
+                portAmt={hPortAmt||0}
                 color="#6c3fa0" icon="🏛" pct={p(hPd+hAd)} small={small} isMobile={isMobile} isTablet={isTablet} principalAmt={complaintsPrincipal.ho||0}/>
             </>);
           })()}
@@ -10693,7 +10680,7 @@ export default function Dashboard() {
           border:"1.5px solid #f0ece8", marginBottom: small?14:18,
           overflow:"hidden"
         }}>
-          <SectionHeader title="🗺 مكاتب أونك" paid={gPd} adj={gAd} color="#e85d20" small={small} portAmt={complaintsPrincipal.gov>0?complaintsPrincipal.gov:(complaintsAmts.gov||gPortAmt||0)} portCnt={complaintsCounts.gov||gPortCnt||data.regions?.reduce((s,r)=>s+(r.portCnt||0),0)||0}/>
+          <SectionHeader title="🗺 مكاتب أونك" paid={gPd} adj={gAd} color="#e85d20" small={small} portAmt={gPortAmt||0} portCnt={complaintsCounts.gov||gPortCnt||data.regions?.reduce((s,r)=>s+(r.portCnt||0),0)||0}/>
           <div style={{ padding: small?"10px":"14px 16px", display:"flex", flexDirection:"column", gap: small?8:10 }}>
             {[...data.regions].sort((a,b)=>((b.paid||0)+(b.adj||0))-((a.paid||0)+(a.adj||0))).map((r,i) => (
               <RegionRow key={r.id+(data._updatedAt||'')} region={r} idx={i} complaintsRegionMap={complaintsRegionMap}
