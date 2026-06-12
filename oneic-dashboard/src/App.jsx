@@ -9841,8 +9841,9 @@ export default function Dashboard() {
       const cleanSniff = sniffText.replace(/[\uFEFF\uFFFD\x00]/g,'');
       const hasComplaintCols   = cleanSniff.includes('Complaint ID') || cleanSniff.includes('Agreement No') || sniffText.includes('Complaint') || sniffText.includes('Agreement');
       const hasPerformanceCols = (sniffText.includes('Paid Amount')||cleanSniff.includes('Paid Amount')) && (sniffText.includes('Region')||cleanSniff.includes('Region')) && (sniffText.includes('Collector')||cleanSniff.includes('Collector'));
-      // Performance يأخذ الأولوية دائماً إذا وُجدت الأعمدة الثلاثة
-      const isComplaints = !hasPerformanceCols && hasComplaintCols;
+      // اسم الملف يحتوي complaint → complaints دائماً
+      const nameHasComplaint = file.name.toLowerCase().includes('complaint');
+      const isComplaints = nameHasComplaint || (!hasPerformanceCols && hasComplaintCols);
       
       console.log('[handleFile]', file.name, '→', isComplaints ? 'complaints' : 'performance',
         '| complaint cols:', hasComplaintCols, '| performance cols:', hasPerformanceCols);
@@ -9978,10 +9979,10 @@ export default function Dashboard() {
         sbUpsert('oneic_data', { payload: fullData });
       } catch(e) {}
       try {
-        fetch('https://oneic-dashboard-default-rtdb.firebaseio.com/history.json', {
+        try { fetch('https://oneic-dashboard-default-rtdb.firebaseio.com/history.json', {
           method: 'PUT', headers: {'Content-Type':'application/json'},
           body: JSON.stringify({entries: newHistory, _updatedAt: new Date().toISOString()})
-        });
+        }).catch(function(){}); } catch(e) {}
       } catch(e) {}
       return newHistory;
     });
