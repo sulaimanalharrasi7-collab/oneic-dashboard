@@ -6508,18 +6508,19 @@ function EntityCard({name,paid,adj,color,rank,small,cnt,cBranch,portAmt,portCnt,
   const bD = bKey ? (cBranch||{})[bKey] : null;
   // قيمة المحفظة = Principal من complaintsBranchMap
   const bComp   = cBranch ? (cBranch[name]||null) : null;
-  const principal4card = bComp&&bComp.amt>0 ? bComp.amt : (principalAmt||portAmt||0);
-  const cPaid   = bComp&&bComp.paid>0 ? bComp.paid : (paid||0);
-  const cAdj    = bComp&&bComp.adj>0  ? bComp.adj  : (adj||0);
+  const principal4card = principalAmt||portAmt||0; // دائماً من XLS
+  const cPaid   = paid||0;
+  const cAdj    = adj||0;
   const total   = cPaid + cAdj; // الإجمالي = Paid + Adj من Complaints
   const allZero = total === 0 && name !== "Legal -Oneic" && name !== "Non-due accounts" && !["Ejada","Tahseel United","High Speed Company","High Speed company"].includes(name);
   const hasPort  = principal4card > 0;
   const hasCnt   = (portCnt||0) > 0;
-  const effPort  = principal4card > 0 ? principal4card : (bD?.amt||0);
+  const effPort  = principal4card > 0 ? principal4card : 0;
   // إذا الشركة عندها تحصيل لكن portAmt غير محدد، استخدم التحصيل نفسه
-  const displayPort = effPort > 0 ? effPort : 0;
+  const displayPort = effPort > 0 ? effPort : (total>0 ? total : 0);
   const effCnt   = hasCnt  ? portCnt : (bD?.count||0);
-  const remaining = displayPort > 0 ? displayPort - total : 0;
+  const remaining = effPort > 0 ? effPort - total : 0;
+  const pct      = effPort > 0 ? Math.min(100,(total/effPort)*100) : (total>0?100:0);
   const pctVal   = displayPort > 0 ? Math.min(100,(total/displayPort)*100) : 0; // OS/P*100
 
   // Non-due accounts — يعرض فقط عدد الحسابات
@@ -9996,12 +9997,12 @@ export default function Dashboard() {
   const dPd = data.debtCompanies.reduce((s,r)=>s+r.paid,0);
   const dAd = data.debtCompanies.reduce((s,r)=>s+r.adj,0);
   const dCnt = data.debtCompanies.reduce((s,r)=>s+(r.count||0),0);
-  const dPortAmt = data.debtCompanies.reduce((s,r)=>s+(r.portAmt||0),0);
+  const dPortAmt = data.debtCompanies.reduce((s,r)=>s+(r.principalAmt||r.portAmt||0),0);
   const dPortCnt = data.debtCompanies.reduce((s,r)=>s+(r.portCnt||0),0);
   const hPd = data.headOffice.reduce((s,r)=>s+Math.max(0,r.paid||0),0);
   const hAd = data.headOffice.reduce((s,r)=>s+Math.max(0,r.adj||0),0);
   const hCnt = data.headOffice.reduce((s,r)=>s+(r.count||0),0);
-  const hPortAmt = data.headOffice.reduce((s,r)=>s+Math.max(0,r.portAmt||0),0);
+  const hPortAmt = data.headOffice.reduce((s,r)=>s+Math.max(0,r.principalAmt||r.portAmt||0),0);
   const hPortCnt = data.headOffice.reduce((s,r)=>s+(r.portCnt||0),0);
   const totalPaid = data.totalCollection?.paid || (gPd+dPd+hPd);
   const totalAdj  = data.totalCollection?.adj  || (gAd+dAd+hAd);
