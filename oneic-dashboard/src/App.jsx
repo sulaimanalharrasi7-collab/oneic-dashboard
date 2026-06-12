@@ -6148,8 +6148,8 @@ async function parseXLS(file) {
 
     if (region === 'Debt Collection Company') {
       const key = branch || col || 'Unknown';
-      if (!dcMap[key]) dcMap[key] = { paid:0, adj:0, count:0, paidCount:0, adjCount:0, osAmt:0 };
-      dcMap[key].paid  += paid; dcMap[key].adj += adj; dcMap[key].count++; dcMap[key].osAmt += rowPort;
+      if (!dcMap[key]) dcMap[key] = { paid:0, adj:0, count:0, paidCount:0, adjCount:0, osAmt:0, principalAmt:0 };
+      dcMap[key].paid  += paid; dcMap[key].adj += adj; dcMap[key].count++; dcMap[key].osAmt += rowPort; dcMap[key].principalAmt += n(row['Principal Amount']||0);
       if (paid>0) dcMap[key].paidCount++;
       if (adj >0) dcMap[key].adjCount++;
 
@@ -6163,13 +6163,14 @@ async function parseXLS(file) {
       else if (colL.includes('saif')) key = 'Legal -Oneic';
       else if (col.trim() === '')     key = 'Legal -Oneic';
       else                            key = 'Legal -Oneic';
-      if (!hoMap[key]) hoMap[key] = { paid:0, adj:0, count:0, closed:0, active:0 };
-      hoMap[key].paid += paid; hoMap[key].adj += adj; hoMap[key].count++;
+      if (!hoMap[key]) hoMap[key] = { paid:0, adj:0, count:0, closed:0, active:0, principalAmt:0 };
+      hoMap[key].paid += paid; hoMap[key].adj += adj; hoMap[key].count++; hoMap[key].principalAmt += n(row['Principal Amount']||0);
       if (key==='Legal -Oneic'||key==='Documentation- Omantel') { if (osAmt<=0) hoMap[key].closed++; else hoMap[key].active++; }
 
     } else if (REG_AR[region]) {
       if (!regMap[region]) regMap[region] = { paid:0, adj:0, count:0, paidCount:0, adjCount:0, cMap:{}, principalAmt:0 };
       regMap[region].paid  += paid; regMap[region].adj += adj; regMap[region].count++;
+      regMap[region].principalAmt = (regMap[region].principalAmt||0) + n(row['Principal Amount']||0);
       if (paid>0) regMap[region].paidCount++;
       if (adj >0) regMap[region].adjCount++;
       if (col) {
@@ -6178,7 +6179,6 @@ async function parseXLS(file) {
         regMap[region].cMap[col].adj   += adj;
         regMap[region].cMap[col].count++;
         regMap[region].cMap[col].osAmt += rowPort;
-        regMap[region].cMap[col].principalAmt += n(row['Principal Amount']||0);
         regMap[region].cMap[col].principalAmt += n(row['Principal Amount']||0);
         if (paid>0) regMap[region].cMap[col].paidCount++;
         if (adj >0) regMap[region].cMap[col].adjCount++;
@@ -6218,7 +6218,7 @@ async function parseXLS(file) {
   const dcList = Object.entries(dcMap).map(([nm,d]) => {
     const p = PORT.dc[nm.trim()] || {portAmt:0,portCnt:0};
     // portAmt: من الملف (osAmt) إذا متاح، وإلا من PORT.dc
-    const computedPortAmt = d.osAmt > 0 ? d.osAmt : p.portAmt;
+    const computedPortAmt = d.principalAmt > 0 ? d.principalAmt : p.portAmt;
     return { name:nm.trim(), paid:d.paid, adj:d.adj,
       count:d.count||0, paidCount:d.paidCount||0, adjCount:d.adjCount||0,
       portAmt:computedPortAmt, portCnt:d.count||p.portCnt, osAmt:d.osAmt||0 };
@@ -6238,7 +6238,7 @@ async function parseXLS(file) {
     const p = PORT.ho[nm]||{portAmt:0,portCnt:0};
     const HO_DISPLAY = {"HO":"Non-due accounts","Non-due accounts":"Non-due accounts","Documentation- Omantel":"Documentation- Omantel","Legal - DR. Sarhaan":"Legal - DR. Sarhaan","Legal -Oneic":"Legal -Oneic"};
     return {name:HO_DISPLAY[nm]||nm, paid:d.paid, adj:d.adj, count:d.count||0, closed:d.closed||0, active:d.active||0,
-      portAmt: Math.max(0, p.portAmt||0), portCnt: p.portCnt||0,
+      portAmt: Math.max(0, d.principalAmt||p.portAmt||0), portCnt: p.portCnt||0,
       principalAmt: p.principalAmt||0};
   });
   const HO_DN={"HO":"Non-due accounts","Non-due accounts":"Non-due accounts"};
