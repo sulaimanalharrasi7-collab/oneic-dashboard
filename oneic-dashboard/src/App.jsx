@@ -6533,6 +6533,9 @@ function EntityCard({name,paid,adj,color,rank,small,cnt,cBranch,portAmt,portCnt,
           <div style={{fontSize:small?8:9,color:"#9ca3af",marginBottom:2}}>{"الإجمالي"}</div>
           <div style={{fontSize:small?11:13,fontWeight:900,color:"#fff"}}>{omr(total)}</div>
         </div>
+      <div style={{marginTop:8,padding:"6px 10px",background:"#f3f4f6",borderRadius:8,textAlign:"center"}}>
+        <div style={{fontSize:small?9:11,color:"#6b7280",fontStyle:"italic"}}>{"لا توجد عليها مستحقات منذ بداية المشروع"}</div>
+      </div>
       </div>
     </div>);
   }
