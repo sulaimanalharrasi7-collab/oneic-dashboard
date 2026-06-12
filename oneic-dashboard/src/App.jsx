@@ -9939,12 +9939,13 @@ export default function Dashboard() {
       "Legal -Oneic":           { portAmt: 357170.484,   portCnt: 217  }
     };
     const mergedHO = HO_REQUIRED.map(nm => {
-      const fromNew = (newData.headOffice||[]).find(c=>c.name===nm);
-      const fromExisting = data.headOffice?.find(d=>d.name===nm);
+      const displayNm = nm === 'HO' ? 'Non-due accounts' : nm;
+      const fromNew = (newData.headOffice||[]).find(c=>c.name===displayNm||c.name===nm);
+      const fromExisting = (data.headOffice||[]).find(d=>d.name===displayNm||d.name===nm);
       const portInfo = HO_PORT_DATA[nm]||{};
-      if (fromNew) return { ...fromNew, portAmt: fromNew.portAmt||portInfo.portAmt||0, portCnt: fromNew.portCnt||portInfo.portCnt||0 };
-      if (fromExisting) return { ...fromExisting, portAmt: fromExisting.portAmt||portInfo.portAmt||0, portCnt: fromExisting.portCnt||portInfo.portCnt||0 };
-      return { name:nm, paid:0, adj:0, count:0, portAmt:portInfo.portAmt||0, portCnt:portInfo.portCnt||0 };
+      if (fromNew) return { ...fromNew, name:displayNm, portAmt: fromNew.portAmt||portInfo.portAmt||0, portCnt: fromNew.portCnt||portInfo.portCnt||0 };
+      if (fromExisting) return { ...fromExisting, name:displayNm, portAmt: fromExisting.portAmt||portInfo.portAmt||0, portCnt: fromExisting.portCnt||portInfo.portCnt||0 };
+      return { name:displayNm, paid:0, adj:0, count:0, portAmt:portInfo.portAmt||0, portCnt:portInfo.portCnt||0 };
     });
     const _ts = new Date().toISOString();
     const dataToSave = {
