@@ -6201,7 +6201,7 @@ async function parseXLS(file) {
     count: regMap[k].count||0,
     paidCount: regMap[k].paidCount||0,
     adjCount:  regMap[k].adjCount||0,
-    portAmt: (PORT.regions[k]||{portAmt:0}).portAmt,
+    portAmt: regMap[k].principalAmt||(PORT.regions[k]||{portAmt:0}).portAmt,
     principalAmt: regMap[k].principalAmt||0,
     portCnt: (PORT.regions[k]||{portCnt:0}).portCnt,
     collectors: Object.entries(regMap[k].cMap)
