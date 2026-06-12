@@ -9858,6 +9858,11 @@ export default function Dashboard() {
       } else {
         // ملف bulk payment → يحدّث بيانات الداشبورد
         const p = await parseXLS(file);
+        if (!p || !p.regions || p.regions.length === 0) {
+          setError('تعذر قراءة الملف. تأكد أنه ملف XLS يومي يحتوي Region و Paid Amount.');
+          setUploading(false);
+          return;
+        }
         setPending({ data: p, fileName: file.name, fileSize: (file.size/1024/1024).toFixed(1) });
       }
     }
@@ -9931,7 +9936,7 @@ export default function Dashboard() {
       var dataLight=Object.assign({},dataToSave,{regions:lightRegions,_updatedAt:_ts,lastUpdated:_ts});
       await sbUpsert('oneic_data', { payload: dataLight });
       lastSyncRef.current = _ts;
-      console.log('✅ Saved to Firebase');
+      console.log('✅ Firebase saved at:', _ts, 'regions:', dataLight.regions.length);
     } catch(e) {
       console.warn('JSONbin save failed:', e);
     }
