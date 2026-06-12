@@ -6273,7 +6273,7 @@ const FIREBASE_URL = "https://oneic-dashboard-default-rtdb.firebaseio.com";
 // ── Firebase Realtime Database helpers ───────────────────────────────────────
 async function sbGet(table) {
   const key = table === 'oneic_data' ? 'main' : 'bulk';
-  const res = await fetch(`${FIREBASE_URL}/${key}.json`);
+  const res = await fetch(FIREBASE_URL + '/' + key + '.json');
   if (!res.ok) throw new Error(await res.text());
   return await res.json();
 }
@@ -6281,7 +6281,7 @@ async function sbGet(table) {
 async function sbUpsert(table, obj) {
   const key = table === 'oneic_data' ? 'main' : 'bulk';
   const data = obj.payload || obj;
-  const res = await fetch(`${FIREBASE_URL}/${key}.json`, {
+  const res = await fetch(FIREBASE_URL + '/' + key + '.json', {
     method: 'PUT',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify(data) // _updatedAt يأتي من البيانات نفسها
@@ -9742,7 +9742,7 @@ export default function Dashboard() {
           var HO_REQ2=["Legal - DR. Sarhaan","Documentation- Omantel","HO","Non-due accounts","Legal -Oneic"];
           var HO_P2={"Legal - DR. Sarhaan":{portAmt:3229651.681,portCnt:3662},"Documentation- Omantel":{portAmt:489409.003,portCnt:1136},"HO":{portAmt:0,portCnt:340},"Non-due accounts":{portAmt:0,portCnt:340},"Legal -Oneic":{portAmt:357170.484,portCnt:217}};
           var eHO=row.headOffice||[];
-          var fHO=HO_REQ2.map(function(nm){var found=eHO.find(function(c){return c.name===nm;});return found?found:{name:nm,paid:0,adj:0,count:0,...(HO_P2[nm]||{})};});
+          var fHO=HO_REQ2.map(function(nm){var found=eHO.find(function(c){return c.name===nm;});return found?found:Object.assign({name:nm,paid:0,adj:0,count:0},HO_P2[nm]||{});});
           var d2=Object.assign({},row,{headOffice:fHO,_updatedAt:row._updatedAt||row.lastUpdated||''});
           lastSyncRef.current = d2._updatedAt||new Date().toISOString();
           setComplaintsRegionMap({});
@@ -9774,7 +9774,7 @@ export default function Dashboard() {
       };
       const existingHO = row.headOffice || [];
       const fullHO = HO_REQ.map(nm => existingHO.find(c=>c.name===nm) || {name:nm,paid:0,adj:0,count:0,...(HO_P[nm]||{})});
-      const d = { ...row, headOffice: fullHO, _updatedAt: row._updatedAt||row.lastUpdated||'' };
+      const d = Object.assign({},row,{headOffice:fullHO,_updatedAt:row._updatedAt||row.lastUpdated||''});
       setData(d);
       try { localStorage.setItem('oneic_dashboard_data', JSON.stringify(d)); } catch(e) {}
       if (row.history?.length > 0) setHistory(row.history);
@@ -9906,13 +9906,12 @@ export default function Dashboard() {
       const fromNew = (newData.headOffice||[]).find(c=>c.name===displayNm||c.name===nm);
       const fromExisting = (data.headOffice||[]).find(d=>d.name===displayNm||d.name===nm);
       const portInfo = HO_PORT_DATA[nm]||{};
-      if (fromNew) return { ...portInfo, ...fromNew, name:displayNm, portAmt:fromNew.portAmt||portInfo.portAmt||0, portCnt:fromNew.portCnt||portInfo.portCnt||0 };
-      if (fromExisting) return { ...portInfo, ...fromExisting, name:displayNm, portAmt:fromExisting.portAmt||portInfo.portAmt||0, portCnt:fromExisting.portCnt||portInfo.portCnt||0 };
+      if (fromNew) return Object.assign({},portInfo,fromNew,{name:displayNm, portAmt:fromNew.portAmt||portInfo.portAmt||0, portCnt:fromNew.portCnt||portInfo.portCnt||0 };
+      if (fromExisting) return Object.assign({},portInfo,fromExisting,{name:displayNm, portAmt:fromExisting.portAmt||portInfo.portAmt||0, portCnt:fromExisting.portCnt||portInfo.portCnt||0 };
       return { name:displayNm, paid:0, adj:0, count:0, portAmt:portInfo.portAmt||0, portCnt:portInfo.portCnt||0 };
     });
     const _ts = new Date().toISOString();
-    const dataToSave = {
-      ...newData,
+    const dataToSave = Object.assign({},newData,{
       debtCompanies: mergedCompanies,
       headOffice: mergedHO,
       totalPortfolio: newData.totalPortfolio || data.totalPortfolio || { amt: 9414256.834, cnt: 47963 },
