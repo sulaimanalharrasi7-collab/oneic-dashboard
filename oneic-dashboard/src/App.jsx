@@ -6661,7 +6661,7 @@ function EntityCard({name,paid,adj,color,rank,small,cnt,cBranch,portAmt,portCnt,
 // ── SummaryCard ────────────────────────────────────────────────────────────
 function SummaryCard({label,paid,adj,cnt,cntPaid,cntAdj,cntTotal,portAmt,color,icon,pct,small,isMobile,isTablet,principalAmt}) {
   // الإجمالي = Paid + Adj | قيمة المحفظة = Principal
-  const effPortAmt = principalAmt>0 ? principalAmt : portAmt;
+  const effPortAmt = portAmt||0; // دائماً من portAmt (Principal XLS)
   const total = paid + adj;
   // عدد الحسابات المنفصل لكل خانة
   const _cntPaid  = (cntPaid  != null && cntPaid  > 0) ? cntPaid  : (cnt||0);
@@ -10652,7 +10652,7 @@ export default function Dashboard() {
                 cntAdj={complaintsCounts.govAdj||gCounts.adj||null}
                 cntTotal={complaintsCounts.govTotal||gCounts.combined||null}
                 portAmt={gPortAmt||0}
-                color="#e85d20" icon="🗺" pct={p(gPd+gAd)} small={small} isMobile={isMobile} isTablet={isTablet} principalAmt={complaintsPrincipal.gov||0}/>
+                color="#e85d20" icon="🗺" pct={p(gPd+gAd)} small={small} isMobile={isMobile} isTablet={isTablet}/>
               <SummaryCard label="شركات التحصيل"
                 paid={dPd} adj={dAd}
                 cnt={complaintsCounts.dc||dCounts.total||dPortCnt||dCnt||0}
@@ -10660,7 +10660,7 @@ export default function Dashboard() {
                 cntAdj={complaintsCounts.dcAdj||dCounts.adj||null}
                 cntTotal={complaintsCounts.dcTotal||dCounts.combined||null}
                 portAmt={dPortAmt||0}
-                color="#1a7a6b" icon="🏢" pct={p(dPd+dAd)} small={small} isMobile={isMobile} isTablet={isTablet} principalAmt={complaintsPrincipal.dc||0}/>
+                color="#1a7a6b" icon="🏢" pct={p(dPd+dAd)} small={small} isMobile={isMobile} isTablet={isTablet}/>
               <SummaryCard label="المكتب الرئيسي"
                 paid={hPd} adj={hAd}
                 cnt={complaintsCounts.ho||hCounts.total||hPortCnt||hCnt||0}
@@ -10668,7 +10668,7 @@ export default function Dashboard() {
                 cntAdj={complaintsCounts.hoAdj||hCounts.adj||null}
                 cntTotal={complaintsCounts.hoTotal||hCounts.combined||null}
                 portAmt={hPortAmt||0}
-                color="#6c3fa0" icon="🏛" pct={p(hPd+hAd)} small={small} isMobile={isMobile} isTablet={isTablet} principalAmt={complaintsPrincipal.ho||0}/>
+                color="#6c3fa0" icon="🏛" pct={p(hPd+hAd)} small={small} isMobile={isMobile} isTablet={isTablet}/>
             </>);
           })()}
         </div>
