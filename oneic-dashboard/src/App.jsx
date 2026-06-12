@@ -6035,20 +6035,9 @@ async function parseXLS(file) {
         const h  = (s[0]||[]).map(v => String(v||'').trim());
         if (h.includes('Region') || h.includes('Paid Amount')) { wsName = name; break; }
       }
-      const rawRows = XLSX.utils.sheet_to_json(wb.Sheets[wsName], { raw:false, defval:'' });
-      const cleanRows = rawRows.map(function(row) {
-        var clean = {};
-        Object.keys(row).forEach(function(k) {
-          var cleanKey = k.replace(/﻿/g,'').replace(/ /g,'').replace(/^\s+|\s+$/g,'');
-          clean[cleanKey] = row[k];
-        });
-        return clean;
-      });
-      // تحقق أن headers صحيحة
-      var cleanKeys = cleanRows.length > 0 ? Object.keys(cleanRows[0]) : [];
-      var hasRegion = cleanKeys.some(function(k){ return k==='Region'||k==='region'; });
-      var hasPaid   = cleanKeys.some(function(k){ return k==='Paid Amount'||k==='paid_amount'; });
-      if (cleanRows.length > 0 && (hasRegion||hasPaid)) { console.log('[parseXLS] SheetJS OK:', cleanRows.length); return cleanRows; }
+      const rows = XLSX.utils.sheet_to_json(wb.Sheets[wsName], { raw:false, defval:'' });
+      if (rows.length > 0) { console.log('[parseXLS] SheetJS OK:', rows.length); return rows; }
+      return null;
     } catch(e) { console.warn('[parseXLS] SheetJS failed:', e.message); return null; }
   };
 
@@ -6273,7 +6262,7 @@ const FIREBASE_URL = "https://oneic-dashboard-default-rtdb.firebaseio.com";
 // ── Firebase Realtime Database helpers ───────────────────────────────────────
 async function sbGet(table) {
   const key = table === 'oneic_data' ? 'main' : 'bulk';
-  const res = await fetch(FIREBASE_URL + '/' + key + '.json');
+  const res = await fetch(`${FIREBASE_URL}/${key}.json`);
   if (!res.ok) throw new Error(await res.text());
   return await res.json();
 }
@@ -6281,7 +6270,7 @@ async function sbGet(table) {
 async function sbUpsert(table, obj) {
   const key = table === 'oneic_data' ? 'main' : 'bulk';
   const data = obj.payload || obj;
-  const res = await fetch(FIREBASE_URL + '/' + key + '.json', {
+  const res = await fetch(`${FIREBASE_URL}/${key}.json`, {
     method: 'PUT',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify(data) // _updatedAt يأتي من البيانات نفسها
@@ -6807,7 +6796,7 @@ function RegionRow({region, idx, open, onToggle, small, complaintsRegionMap}) {
   const regPaid  = region.paid||0;
   const regAdj   = region.adj||0;
   const total    = regPaid + regAdj;
-  const portAmt   = region.principalAmt||region.portAmt||0; // دائماً Principal Amount
+  const portAmt   = _cReg&&_cReg.amt>0 ? _cReg.amt : (region.principalAmt||region.portAmt||0);
   const portCnt   = region.portCnt||0;
   const remaining = portAmt>0 ? portAmt-total : 0;
   const pctInj    = portAmt>0 ? Math.min(100,(total/portAmt)*100) : 0;
@@ -9558,6 +9547,7 @@ function NotificationStack({ notifications, onDismiss }) {
 }
 
 export default function Dashboard() {
+  const lastSyncRef = useRef('');
   const { w } = useWindowSize();
   const isMobile  = w < 640;
   const isTablet  = w >= 640 && w < 1024;
@@ -9696,64 +9686,43 @@ export default function Dashboard() {
         }
       }
       setLoadingServer(false);
-      try{var br=await sbGet('oneic_bulk');if(br&&br.daily&&br.daily.length>0){setBulkDataMain(br);try{localStorage.setItem('oneic_bulk_data',JSON.stringify(br));}catch(e){}}else{try{var sb=localStorage.getItem('oneic_bulk_data');if(sb){var pb=JSON.parse(sb);if(pb&&pb.daily&&pb.daily.length>0)setBulkDataMain(pb);}}catch(e){}}}catch(e){try{var sb2=localStorage.getItem('oneic_bulk_data');if(sb2){var pb2=JSON.parse(sb2);if(pb2&&pb2.daily&&pb2.daily.length>0)setBulkDataMain(pb2);}}catch(e2){}}
+      sbGet('oneic_bulk').then(function(br){if(br&&br.daily&&br.daily.length){setBulkData(br);try{localStorage.setItem('oneic_bulk_data',JSON.stringify(br));}catch(e){}}}).catch(function(){try{var sb=localStorage.getItem('oneic_bulk_data');if(sb){var pb=JSON.parse(sb);if(pb&&pb.daily&&pb.daily.length)setBulkData(pb);}}catch(e){}});
     }
     load();
 
-    // ══ تحديث تلقائي كل 30 ثانية لمزامنة جميع الأجهزة ══
-    const interval = setInterval(async () => {
-      try {
-        const row = await sbGet('oneic_data');
+    // ══ مزامنة كل 8 ثوانٍ ══
+    var _syncInterval = setInterval(function() {
+      sbGet('oneic_data').then(function(row) {
         if (!row || !row.regions || !row.regions.length) return;
-        // تحقق: هل Firebase أحدث؟
-        const fbTime = new Date(row._updatedAt||row.lastUpdated||0).getTime();
-        const myTime = lastSyncRef.current ? new Date(lastSyncRef.current).getTime() : 0;
+        var fbTime = new Date(row._updatedAt||row.lastUpdated||0).getTime();
+        var myTime = lastSyncRef.current ? new Date(lastSyncRef.current).getTime() : 0;
         if (fbTime > 0 && myTime > 0 && fbTime <= myTime) return;
-        // حدّث!
-        const HO_KEYS2 = ["Legal - DR. Sarhaan","Documentation- Omantel","HO","Non-due accounts","Legal -Oneic"];
-        const HO_DEF = {"Legal - DR. Sarhaan":{portAmt:3229651.681,portCnt:3662,principalAmt:3301711.348},"Documentation- Omantel":{portAmt:489409.003,portCnt:1136},"HO":{portAmt:0,portCnt:340},"Non-due accounts":{portAmt:0,portCnt:340},"Legal -Oneic":{portAmt:357170.484,portCnt:217,principalAmt:357170.484,closed:0,active:217}};
-        const eHO = row.headOffice||[];
-        const fullHO = HO_KEYS2.map(function(nm){
-          var found=eHO.find(function(c){return c.name===nm;});
-          return found ? found : Object.assign({name:nm,paid:0,adj:0,count:0},HO_DEF[nm]||{});
+        var HO_KEYS3 = ["Legal - DR. Sarhaan","Documentation- Omantel","HO","Non-due accounts","Legal -Oneic"];
+        var HO_DEF3 = {"Legal - DR. Sarhaan":{portAmt:3229651.681,portCnt:3662},"Documentation- Omantel":{portAmt:489409.003,portCnt:1136},"HO":{portAmt:0,portCnt:340},"Non-due accounts":{portAmt:0,portCnt:340},"Legal -Oneic":{portAmt:357170.484,portCnt:217}};
+        var eHO3 = row.headOffice||[];
+        var fullHO3 = HO_KEYS3.map(function(nm){
+          var f=eHO3.find(function(c){return c.name===nm;});
+          if(f) return f;
+          var p=HO_DEF3[nm]||{};
+          return {name:nm,paid:0,adj:0,count:0,portAmt:p.portAmt||0,portCnt:p.portCnt||0};
         });
-        var d = Object.assign({},row,{headOffice:fullHO,_updatedAt:row._updatedAt||row.lastUpdated||''});
-        lastSyncRef.current = d._updatedAt || new Date().toISOString();
+        var dSync = {};
+        var rKeys = Object.keys(row);
+        for(var ki=0;ki<rKeys.length;ki++){dSync[rKeys[ki]]=row[rKeys[ki]];}
+        dSync.headOffice = fullHO3;
+        dSync._updatedAt = row._updatedAt||row.lastUpdated||'';
+        lastSyncRef.current = dSync._updatedAt || new Date().toISOString();
         setComplaintsRegionMap({});
-        setData(d);
-        try{localStorage.setItem('oneic_dashboard_data',JSON.stringify(d));}catch(e){}
-        if(row.history&&row.history.length){
-          setHistory(row.history);
-          try{localStorage.setItem('oneic_history',JSON.stringify(row.history));}catch(e){}
-        }
-        try{var br=await sbGet('oneic_bulk');if(br&&br.daily&&br.daily.length){setBulkDataMain(br);try{localStorage.setItem('oneic_bulk_data',JSON.stringify(br));}catch(e){}}}catch(e){}
+        setData(dSync);
+        try{localStorage.setItem('oneic_dashboard_data',JSON.stringify(dSync));}catch(ex){}
+        if(row.history&&row.history.length){setHistory(row.history);try{localStorage.setItem('oneic_history',JSON.stringify(row.history));}catch(ex){}}
+        sbGet('oneic_bulk').then(function(br){if(br&&br.daily&&br.daily.length){setBulkData(br);try{localStorage.setItem('oneic_bulk_data',JSON.stringify(br));}catch(ex){};}}).catch(function(){});
         setLastSync(new Date());
-        console.log('✅ Synced from Firebase:', d._updatedAt);
-      } catch(e) { console.warn('Sync error:', e.message); }
-    }, 8000); // كل 8 ثوانٍ للاستجابة السريعة
-
-    const onVisible = function() {
-      if (document.visibilityState === 'visible') {
-        sbGet('oneic_data').then(function(row) {
-          if (!row||!row.regions||!row.regions.length) return;
-          var fbTime = new Date(row._updatedAt||row.lastUpdated||0).getTime();
-          var myTime = new Date(lastSyncRef.current||0).getTime();
-          if (fbTime > 0 && myTime > 0 && fbTime <= myTime) return;
-          var HO_REQ2=["Legal - DR. Sarhaan","Documentation- Omantel","HO","Non-due accounts","Legal -Oneic"];
-          var HO_P2={"Legal - DR. Sarhaan":{portAmt:3229651.681,portCnt:3662},"Documentation- Omantel":{portAmt:489409.003,portCnt:1136},"HO":{portAmt:0,portCnt:340},"Non-due accounts":{portAmt:0,portCnt:340},"Legal -Oneic":{portAmt:357170.484,portCnt:217}};
-          var eHO=row.headOffice||[];
-          var fHO=HO_REQ2.map(function(nm){var found=eHO.find(function(c){return c.name===nm;});return found?found:Object.assign({name:nm,paid:0,adj:0,count:0},HO_P2[nm]||{});});
-          var d2=Object.assign({},row,{headOffice:fHO,_updatedAt:row._updatedAt||row.lastUpdated||''});
-          lastSyncRef.current = d2._updatedAt||new Date().toISOString();
-          setComplaintsRegionMap({});
-          setData(d2);
-          try{localStorage.setItem('oneic_dashboard_data',JSON.stringify(d2));}catch(e){}
-          if(row.history&&row.history.length){setHistory(row.history);}
-        }).catch(function(){});
-      }
-    };
-    document.addEventListener('visibilitychange', onVisible);
-    return () => { clearInterval(interval); document.removeEventListener('visibilitychange', onVisible); };
+      }).catch(function(e){console.warn('Sync error:',e.message);});
+    }, 8000);
+    var onVisible3 = function(){if(document.visibilityState==='visible'){lastSyncRef.current='';console.log('tab visible - forcing sync');}};
+    document.addEventListener('visibilitychange',onVisible3);
+    return function(){ clearInterval(_syncInterval); document.removeEventListener('visibilitychange',onVisible3); };
   }, []);
 
   const UPLOAD_PW = 'Sulaiman1992';
@@ -9774,7 +9743,7 @@ export default function Dashboard() {
       };
       const existingHO = row.headOffice || [];
       const fullHO = HO_REQ.map(nm => existingHO.find(c=>c.name===nm) || {name:nm,paid:0,adj:0,count:0,...(HO_P[nm]||{})});
-      const d = Object.assign({},row,{headOffice:fullHO,_updatedAt:row._updatedAt||row.lastUpdated||''});
+      const d = { ...row, headOffice: fullHO, _updatedAt: row._updatedAt||row.lastUpdated||'' };
       setData(d);
       try { localStorage.setItem('oneic_dashboard_data', JSON.stringify(d)); } catch(e) {}
       if (row.history?.length > 0) setHistory(row.history);
@@ -9825,10 +9794,9 @@ export default function Dashboard() {
       })();
       
       // كشف النوع: الأولوية لـ performance إذا وُجد Region + Paid Amount + Collector
-      const cleanSniff = sniffText.replace(/[\uFEFF\uFFFD\x00]/g,'');
-      const hasComplaintCols   = cleanSniff.includes('Complaint ID') || cleanSniff.includes('Agreement No') || sniffText.includes('Complaint') || sniffText.includes('Agreement');
-      const hasPerformanceCols = (sniffText.includes('Paid Amount')||cleanSniff.includes('Paid Amount')) && (sniffText.includes('Region')||cleanSniff.includes('Region')) && (sniffText.includes('Collector')||cleanSniff.includes('Collector'));
-      // اسم الملف يحتوي complaint → complaints دائماً
+      const hasComplaintCols   = sniffText.includes('Complaint ID') || sniffText.includes('Agreement No');
+      const hasPerformanceCols = sniffText.includes('Paid Amount') && sniffText.includes('Region') && sniffText.includes('Collector');
+      // Performance يأخذ الأولوية دائماً إذا وُجدت الأعمدة الثلاثة
       const nameHasComplaint = file.name.toLowerCase().includes('complaint');
       const isComplaints = nameHasComplaint || (!hasPerformanceCols && hasComplaintCols);
       
@@ -9858,11 +9826,6 @@ export default function Dashboard() {
       } else {
         // ملف bulk payment → يحدّث بيانات الداشبورد
         const p = await parseXLS(file);
-        if (!p || !p.regions || p.regions.length === 0) {
-          setError('تعذر قراءة الملف. تأكد أنه ملف XLS يومي يحتوي Region و Paid Amount.');
-          setUploading(false);
-          return;
-        }
         setPending({ data: p, fileName: file.name, fileSize: (file.size/1024/1024).toFixed(1) });
       }
     }
@@ -9906,12 +9869,13 @@ export default function Dashboard() {
       const fromNew = (newData.headOffice||[]).find(c=>c.name===displayNm||c.name===nm);
       const fromExisting = (data.headOffice||[]).find(d=>d.name===displayNm||d.name===nm);
       const portInfo = HO_PORT_DATA[nm]||{};
-      if (fromNew) return Object.assign({},portInfo,fromNew,{name:displayNm, portAmt:fromNew.portAmt||portInfo.portAmt||0, portCnt:fromNew.portCnt||portInfo.portCnt||0 });
-      if (fromExisting) return Object.assign({},portInfo,fromExisting,{name:displayNm, portAmt:fromExisting.portAmt||portInfo.portAmt||0, portCnt:fromExisting.portCnt||portInfo.portCnt||0 });
-      return { name:displayNm, paid:0, adj:0, count:0, portAmt:portInfo.portAmt||0, portCnt:portInfo.portCnt||0 };
+      if (fromNew) return { ...fromNew, portAmt: fromNew.portAmt||portInfo.portAmt||0, portCnt: fromNew.portCnt||portInfo.portCnt||0 };
+      if (fromExisting) return { ...fromExisting, portAmt: fromExisting.portAmt||portInfo.portAmt||0, portCnt: fromExisting.portCnt||portInfo.portCnt||0 };
+      return { name:nm, paid:0, adj:0, count:0, portAmt:portInfo.portAmt||0, portCnt:portInfo.portCnt||0 };
     });
     const _ts = new Date().toISOString();
-    const dataToSave = Object.assign({},newData,{
+    const dataToSave = {
+      ...newData,
       debtCompanies: mergedCompanies,
       headOffice: mergedHO,
       totalPortfolio: newData.totalPortfolio || data.totalPortfolio || { amt: 9414256.834, cnt: 47963 },
@@ -9921,21 +9885,20 @@ export default function Dashboard() {
       lastUpdated: _ts,
       _updatedAt: _ts,
       lastUpdatedDate: _ts.split('T')[0],
-      complaintsPrincipal: {}
-
-    });
+      complaintsBranchMap: complaintsBranchMap||{},
+      complaintsRegionMap: complaintsRegionMap||{},
+      complaintsPrincipal: complaintsPrincipal||{},
+      complaintsPaidState: complaintsPaidState||{},
+      complaintsAdjState: complaintsAdjState||{}
+    };
 
     // ── رفع لـ JSONbin + localStorage ───────────────────────────────────
     setUploading(true);
     try {
-      // حفظ كامل في localStorage
       try{localStorage.setItem('oneic_dashboard_data',JSON.stringify(dataToSave));}catch(e){}
-      // حفظ مخفف في Firebase (بدون collectors التفصيلية)
-      var lightRegions=(dataToSave.regions||[]).map(function(r){return {id:r.id,nameAr:r.nameAr,nameEn:r.nameEn,paid:r.paid,adj:r.adj,count:r.count||0,portAmt:r.portAmt||0,principalAmt:r.principalAmt||0,portCnt:r.portCnt||0,collectors:(r.collectors||[]).map(function(c){return {name:c.name,paid:c.paid,adj:c.adj,count:c.count||0,portAmt:c.portAmt||0,principalAmt:c.principalAmt||0};})};});
-      var dataLight=Object.assign({},dataToSave,{regions:lightRegions,_updatedAt:_ts,lastUpdated:_ts});
-      await sbUpsert('oneic_data', { payload: dataLight });
+      await sbUpsert('oneic_data', { payload: dataToSave });
       lastSyncRef.current = _ts;
-      console.log('✅ Firebase saved at:', _ts, 'regions:', dataLight.regions.length);
+      console.log('✅ Saved to Firebase');
     } catch(e) {
       console.warn('JSONbin save failed:', e);
     }
@@ -9970,16 +9933,17 @@ export default function Dashboard() {
         sbUpsert('oneic_data', { payload: fullData });
       } catch(e) {}
       try {
-        try { fetch('https://oneic-dashboard-default-rtdb.firebaseio.com/history.json', {
+        fetch('https://oneic-dashboard-default-rtdb.firebaseio.com/history.json', {
           method: 'PUT', headers: {'Content-Type':'application/json'},
           body: JSON.stringify({entries: newHistory, _updatedAt: new Date().toISOString()})
-        }).catch(function(){}); } catch(e) {}
+        });
       } catch(e) {}
       return newHistory;
     });
 
     setUploading(false);
 
+    setComplaintsRegionMap({});
     setData(dataToSave);
     setPending(null);
     setSuccess(true);
@@ -9996,7 +9960,7 @@ export default function Dashboard() {
   const gPd = data.regions.reduce((s,r)=>s+r.paid,0);
   const gAd = data.regions.reduce((s,r)=>s+r.adj,0);
   const gCnt = data.regions.reduce((s,r)=>s+(r.count||0),0);
-  const gPortAmt = data.regions.reduce((s,r)=>s+(r.principalAmt||r.portAmt||0),0);
+  const gPortAmt = data.regions.reduce((s,r)=>s+(r.portAmt||0),0);
   const gPortCnt = data.regions.reduce((s,r)=>s+(r.portCnt||0),0);
   const dPd = data.debtCompanies.reduce((s,r)=>s+r.paid,0);
   const dAd = data.debtCompanies.reduce((s,r)=>s+r.adj,0);
@@ -10533,7 +10497,7 @@ export default function Dashboard() {
       {/* ══ BODY ══ */}
       <div style={{ padding:pad, flex:1, overflowY:"auto", overflowX:"hidden" }}>
 
-        {showBulkReport && <BulkPaymentSection bulk={bulkData} small={small} onBulkUpdate={function(d){setBulkDataMain(d);try{localStorage.setItem('oneic_bulk_data',JSON.stringify(d));}catch(e){}}} requireUploadAuth={requireUploadAuth}/>}
+        {showBulkReport && <BulkPaymentSection bulk={bulkData} small={small} onBulkUpdate={function(d){setBulkData(d);try{localStorage.setItem('oneic_bulk_data',JSON.stringify(d));}catch(e){}}} requireUploadAuth={requireUploadAuth}/>}
 
         
       {/* ══ Section 1 ══ */}
@@ -10686,8 +10650,8 @@ export default function Dashboard() {
         }}>
           <SectionHeader title="🗺 مكاتب أونك" paid={gPd} adj={gAd} color="#e85d20" small={small} portAmt={gPortAmt||0} portCnt={complaintsCounts.gov||gPortCnt||data.regions?.reduce((s,r)=>s+(r.portCnt||0),0)||0}/>
           <div style={{ padding: small?"10px":"14px 16px", display:"flex", flexDirection:"column", gap: small?8:10 }}>
-            {[...data.regions].sort((a,b)=>((b.paid||0)+(b.adj||0))-((a.paid||0)+(a.adj||0))).map((r,i) => (
-              <RegionRow key={r.id+(data._updatedAt||'')} region={r} idx={i} complaintsRegionMap={complaintsRegionMap}
+            {[...data.regions].sort((a,b)=>(b.principalAmt||b.portAmt||0)-(a.principalAmt||a.portAmt||0)).map((r,i) => (
+              <RegionRow key={r.id} region={r} idx={i} complaintsRegionMap={complaintsRegionMap}
                 open={openRegion===r.id}
                 onToggle={() => setOpenRegion(openRegion===r.id?null:r.id)}
                 small={small}
@@ -10752,5 +10716,4 @@ export default function Dashboard() {
       </div>
     </div>
   );
-  const lastSyncRef = useRef('');
 }
