@@ -9759,7 +9759,7 @@ export default function Dashboard() {
         lastSyncRef.current = dSync4._updatedAt || new Date().toISOString();
         var sc4=null; try{var _s4=localStorage.getItem('oneic_complaints_region_map');if(_s4)sc4=JSON.parse(_s4);}catch(e){}
         var sb4=null; try{var _b4=localStorage.getItem('oneic_complaints_branch_map');if(_b4)sb4=JSON.parse(_b4);}catch(e){}
-        if(sc4&&Object.keys(sc4).length>0){dSync4.regions=(dSync4.regions||[]).map(function(r){var rk2=r.nameEn||r.nameAr||'';var rm4=sc4[rk2];if(!rm4){var ks=Object.keys(sc4);for(var ki5=0;ki5<ks.length;ki5++){if(ks[ki5].indexOf(rk2)>=0||rk2.indexOf(ks[ki5])>=0){rm4=sc4[ks[ki5]];break;}}}return rm4?Object.assign({},r,{paid:rm4.paid||0,adj:rm4.adj||0,principalAmt:rm4.amt||r.principalAmt||r.portAmt||0}):r;});}
+        if(sc4&&Object.keys(sc4).length>0){dSync4.regions=(dSync4.regions||[]).map(function(r){var rk2=(r.nameEn||r.nameAr||'').trim().toLowerCase();var rm4=sc4[r.nameEn]||sc4[r.nameAr||''];if(!rm4){var ks=Object.keys(sc4);for(var ki5=0;ki5<ks.length;ki5++){var kl=ks[ki5].toLowerCase();if(kl===rk2||kl.indexOf(rk2)>=0||rk2.indexOf(kl)>=0){rm4=sc4[ks[ki5]];break;}}}return rm4?Object.assign({},r,{paid:rm4.paid||0,adj:rm4.adj||0,principalAmt:rm4.amt||r.principalAmt||r.portAmt||0}):r;});}
         if(sb4&&Object.keys(sb4).length>0){dSync4.debtCompanies=(dSync4.debtCompanies||[]).map(function(c){var bm4=sb4[c.name];return bm4?Object.assign({},c,{paid:bm4.paid||0,adj:bm4.adj||0}):c;});dSync4.headOffice=(dSync4.headOffice||[]).map(function(c){var bm4=sb4[c.name];return bm4?Object.assign({},c,{paid:bm4.paid||0,adj:bm4.adj||0}):c;});}
         setComplaintsRegionMap({});
         setData(dSync4);
@@ -9797,8 +9797,27 @@ export default function Dashboard() {
   const forceRefresh = () => {
     setSyncing(true);
     lastSyncRef.current = '';
-    doSync();
-    setTimeout(function(){ setSyncing(false); }, 3000);
+    sbGet('oneic_data').then(function(row) {
+      if (!row || !row.regions || !row.regions.length) { setSyncing(false); return; }
+      var HO_KEYS5=["Legal - DR. Sarhaan","Documentation- Omantel","HO","Non-due accounts","Legal -Oneic"];
+      var HO_P5={"Legal - DR. Sarhaan":{portAmt:3229651.681,portCnt:3662},"Documentation- Omantel":{portAmt:489409.003,portCnt:1136},"HO":{portAmt:0,portCnt:340},"Non-due accounts":{portAmt:0,portCnt:340},"Legal -Oneic":{portAmt:357170.484,portCnt:217}};
+      var eHO5=row.headOffice||[];
+      var fullHO5=HO_KEYS5.map(function(nm){var f=eHO5.find(function(c){return c.name===nm;});if(f)return f;var p=HO_P5[nm]||{};return {name:nm,paid:0,adj:0,count:0,portAmt:p.portAmt||0,portCnt:p.portCnt||0};});
+      var d5={}; var rk5=Object.keys(row); for(var ki5=0;ki5<rk5.length;ki5++){d5[rk5[ki5]]=row[rk5[ki5]];}
+      d5.headOffice=fullHO5; d5._updatedAt=row._updatedAt||row.lastUpdated||'';
+      lastSyncRef.current = d5._updatedAt || new Date().toISOString();
+      // دمج Complaints
+      var sc5=null; try{var _s5=localStorage.getItem('oneic_complaints_region_map');if(_s5)sc5=JSON.parse(_s5);}catch(e){}
+      var sb5=null; try{var _b5=localStorage.getItem('oneic_complaints_branch_map');if(_b5)sb5=JSON.parse(_b5);}catch(e){}
+      if(sc5&&Object.keys(sc5).length>0){d5.regions=(d5.regions||[]).map(function(r){var rk2=(r.nameEn||r.nameAr||'').trim().toLowerCase();var rm5=sc5[r.nameEn]||sc5[r.nameAr||''];if(!rm5){var ks=Object.keys(sc5);for(var ki6=0;ki6<ks.length;ki6++){var kl2=ks[ki6].toLowerCase();if(kl2===rk2||kl2.indexOf(rk2)>=0||rk2.indexOf(kl2)>=0){rm5=sc5[ks[ki6]];break;}}}return rm5?Object.assign({},r,{paid:rm5.paid||0,adj:rm5.adj||0,principalAmt:rm5.amt||r.principalAmt||r.portAmt||0}):r;});}
+      if(sb5&&Object.keys(sb5).length>0){d5.debtCompanies=(d5.debtCompanies||[]).map(function(c){var bm5=sb5[c.name];return bm5?Object.assign({},c,{paid:bm5.paid||0,adj:bm5.adj||0}):c;});d5.headOffice=(d5.headOffice||[]).map(function(c){var bm5=sb5[c.name];return bm5?Object.assign({},c,{paid:bm5.paid||0,adj:bm5.adj||0}):c;});}
+      setComplaintsRegionMap({});
+      setData(d5);
+      try{localStorage.setItem('oneic_dashboard_data',JSON.stringify(d5));}catch(e){}
+      if(row.history&&row.history.length>0){setHistory(row.history);}
+      setLastSync(new Date());
+      setSyncing(false);
+    }).catch(function(e){ console.warn('forceRefresh error:',e.message); setSyncing(false); });
   };
 
   const requireUploadAuth = (callback) => {
@@ -9868,13 +9887,14 @@ export default function Dashboard() {
           if (!prev) return prev;
           // حدّث regions من regionMap
           var newRegions = (prev.regions||[]).map(function(r) {
-            var rKey = r.nameEn||r.nameAr||'';
-            var rm = regionMap[rKey];
+            var rKey = (r.nameEn||r.nameAr||'').trim();
+            var rKeyL = rKey.toLowerCase();
+            var rm = regionMap[rKey] || regionMap[r.nameEn] || regionMap[r.nameAr||''];
             if (!rm) {
-              // جرب مطابقة جزئية
               var keys = Object.keys(regionMap);
               for (var ki=0; ki<keys.length; ki++) {
-                if (keys[ki].indexOf(rKey)>=0 || rKey.indexOf(keys[ki])>=0) { rm = regionMap[keys[ki]]; break; }
+                var kl = keys[ki].toLowerCase();
+                if (kl === rKeyL || kl.indexOf(rKeyL)>=0 || rKeyL.indexOf(kl)>=0) { rm = regionMap[keys[ki]]; break; }
               }
             }
             if (rm) return Object.assign({},r,{paid:rm.paid||0, adj:rm.adj||0, principalAmt:rm.amt||r.principalAmt||r.portAmt||0});
