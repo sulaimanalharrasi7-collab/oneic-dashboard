@@ -9708,10 +9708,9 @@ export default function Dashboard() {
         setSyncing(false);
         if (!row?.regions?.length) return;
         // تحقق: هل Firebase أحدث من الحالي؟
-        const fbTime  = new Date(row._updatedAt||row.lastUpdated||0).getTime();
-        var _lsc=null;try{var _sc=localStorage.getItem('oneic_dashboard_data');if(_sc)_lsc=JSON.parse(_sc);}catch(e2){}
-        const curTime=new Date(lastSyncRef.current||(_lsc&&_lsc._updatedAt)||0).getTime();
-        if(fbTime>0&&fbTime<=curTime)return;
+        const fbTime = new Date(row._updatedAt||row.lastUpdated||0).getTime();
+        const myTime = lastSyncRef.current ? new Date(lastSyncRef.current).getTime() : 0;
+        if (fbTime > 0 && myTime > 0 && fbTime <= myTime) return;
         // البيانات تغيرت — حدّث
         const HO_REQ = ["Legal - DR. Sarhaan","Documentation- Omantel","HO","Non-due accounts","Legal -Oneic"];
         const HO_P = {
@@ -9743,7 +9742,7 @@ export default function Dashboard() {
         console.log('✅ Data synced from Firebase:', d._updatedAt);
         try{var brr=await sbGet('oneic_bulk');if(brr&&brr.daily&&brr.daily.length>0){setBulkData(brr);try{localStorage.setItem('oneic_bulk_data',JSON.stringify(brr));}catch(e){}}}catch(e){}
       } catch(e) { setSyncing(false); /* Firebase مؤقتاً غير متاح */ }
-    }, 15000); // كل 15 ثانية للاستجابة السريعة
+    }, 8000); // كل 8 ثوانٍ للاستجابة السريعة
 
     const onVisible = function() {
       if (document.visibilityState === 'visible') {
@@ -9751,13 +9750,13 @@ export default function Dashboard() {
           if (!row||!row.regions||!row.regions.length) return;
           var fbTime = new Date(row._updatedAt||row.lastUpdated||0).getTime();
           var myTime = new Date(lastSyncRef.current||0).getTime();
-          if (fbTime <= myTime) return;
+          if (fbTime > 0 && myTime > 0 && fbTime <= myTime) return;
           var HO_REQ2=["Legal - DR. Sarhaan","Documentation- Omantel","HO","Non-due accounts","Legal -Oneic"];
           var HO_P2={"Legal - DR. Sarhaan":{portAmt:3229651.681,portCnt:3662},"Documentation- Omantel":{portAmt:489409.003,portCnt:1136},"HO":{portAmt:0,portCnt:340},"Non-due accounts":{portAmt:0,portCnt:340},"Legal -Oneic":{portAmt:357170.484,portCnt:217}};
           var eHO=row.headOffice||[];
           var fHO=HO_REQ2.map(function(nm){var found=eHO.find(function(c){return c.name===nm;});return found?found:{name:nm,paid:0,adj:0,count:0,...(HO_P2[nm]||{})};});
           var d2=Object.assign({},row,{headOffice:fHO,_updatedAt:row._updatedAt||row.lastUpdated||''});
-          lastSyncRef.current=d2._updatedAt||'';
+          lastSyncRef.current = d2._updatedAt||new Date().toISOString();
           setComplaintsRegionMap({});
           setData(d2);
           try{localStorage.setItem('oneic_dashboard_data',JSON.stringify(d2));}catch(e){}
