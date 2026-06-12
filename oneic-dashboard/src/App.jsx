@@ -10834,7 +10834,7 @@ export default function Dashboard() {
                   }
                 });
                 return [...dc].sort((a,b)=>((b.paid||0)+(b.adj||0))-((a.paid||0)+(a.adj||0))).map((c,i) => (
-                <EntityCard key={c.name} name={c.name} paid={c.paid} adj={c.adj} cBranch={complaintsBranchMap} color="#1a7a6b" rank={i+1} small={small} portAmt={c.portAmt||0} portCnt={c.portCnt||0} osAmt={c.osAmt||c.portAmt||0}/>
+                <EntityCard key={c.name} name={c.name} paid={c.paid} adj={c.adj} cBranch={complaintsBranchMap} color="#1a7a6b" rank={i+1} small={small} portAmt={c.portAmt||0} portCnt={c.portCnt||0} principalAmt={c.principalAmt||c.portAmt||0} osAmt={c.osAmt||c.portAmt||0}/>
                 ));
               })()}
             </div>
