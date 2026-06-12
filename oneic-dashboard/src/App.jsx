@@ -9788,7 +9788,8 @@ export default function Dashboard() {
           // أضف Tahseel/HighSpeed من branchMap إذا لم يكونوا في debtCompanies
           var dcNames4=dSync4.debtCompanies.map(function(c){return c.name;});
           var bk4=Object.keys(sb4);
-          for(var bi4=0;bi4<bk4.length;bi4++){var bn4=bk4[bi4];if(dcNames4.indexOf(bn4)<0&&(sb4[bn4].paid+sb4[bn4].adj)>0){var bv4=sb4[bn4];dSync4.debtCompanies.push({name:bn4,paid:bv4.paid||0,adj:bv4.adj||0,principalAmt:bv4.amt||0,portAmt:bv4.amt||0,portCnt:bv4.count||0,count:bv4.count||0});}}
+          var HO_SKIP4=["Legal - DR. Sarhaan","Documentation- Omantel","HO","Non-due accounts","Legal -Oneic","Legal","Legal "];
+          for(var bi4=0;bi4<bk4.length;bi4++){var bn4=bk4[bi4];if(dcNames4.indexOf(bn4)<0&&HO_SKIP4.indexOf(bn4)<0&&(sb4[bn4].paid+sb4[bn4].adj)>0){var bv4=sb4[bn4];dSync4.debtCompanies.push({name:bn4,paid:bv4.paid||0,adj:bv4.adj||0,principalAmt:bv4.amt||0,portAmt:bv4.amt||0,portCnt:bv4.count||0,count:bv4.count||0});}}
           dSync4.headOffice=(dSync4.headOffice||[]).map(function(c){var bm4=sb4[c.name];return bm4?Object.assign({},c,{paid:bm4.paid||0,adj:bm4.adj||0,principalAmt:bm4.amt||c.principalAmt||c.portAmt||0}):c;});
         }
         setComplaintsRegionMap({});
@@ -9844,7 +9845,8 @@ export default function Dashboard() {
         d5.debtCompanies=(d5.debtCompanies||[]).map(function(c){var bm5=sb5[c.name];return bm5?Object.assign({},c,{paid:bm5.paid||0,adj:bm5.adj||0,principalAmt:bm5.amt||c.principalAmt||c.portAmt||0}):c;});
         var dcNames5=d5.debtCompanies.map(function(c){return c.name;});
         var bk5=Object.keys(sb5);
-        for(var bi5=0;bi5<bk5.length;bi5++){var bn5=bk5[bi5];if(dcNames5.indexOf(bn5)<0&&(sb5[bn5].paid+sb5[bn5].adj)>0){var bv5=sb5[bn5];d5.debtCompanies.push({name:bn5,paid:bv5.paid||0,adj:bv5.adj||0,principalAmt:bv5.amt||0,portAmt:bv5.amt||0,portCnt:bv5.count||0,count:bv5.count||0});}}
+        var HO_SKIP5=["Legal - DR. Sarhaan","Documentation- Omantel","HO","Non-due accounts","Legal -Oneic","Legal","Legal "];
+        for(var bi5=0;bi5<bk5.length;bi5++){var bn5=bk5[bi5];if(dcNames5.indexOf(bn5)<0&&HO_SKIP5.indexOf(bn5)<0&&(sb5[bn5].paid+sb5[bn5].adj)>0){var bv5=sb5[bn5];d5.debtCompanies.push({name:bn5,paid:bv5.paid||0,adj:bv5.adj||0,principalAmt:bv5.amt||0,portAmt:bv5.amt||0,portCnt:bv5.count||0,count:bv5.count||0});}}
         d5.headOffice=(d5.headOffice||[]).map(function(c){var bm5=sb5[c.name];return bm5?Object.assign({},c,{paid:bm5.paid||0,adj:bm5.adj||0,principalAmt:bm5.amt||c.principalAmt||c.portAmt||0}):c;});
       }
       setComplaintsRegionMap({});
@@ -9953,7 +9955,8 @@ export default function Dashboard() {
           var bmKeys = Object.keys(branchMap);
           for (var bki=0; bki<bmKeys.length; bki++) {
             var bkn = bmKeys[bki];
-            if (existingNames.indexOf(bkn) < 0 && branchMap[bkn].paid+branchMap[bkn].adj > 0) {
+            var HO_SKIP=["Legal - DR. Sarhaan","Documentation- Omantel","HO","Non-due accounts","Legal -Oneic","Legal","Legal "];
+            if (existingNames.indexOf(bkn) < 0 && HO_SKIP.indexOf(bkn)<0 && branchMap[bkn].paid+branchMap[bkn].adj > 0) {
               var bkm = branchMap[bkn];
               newDC.push({name:bkn, paid:bkm.paid||0, adj:bkm.adj||0, principalAmt:bkm.amt||0, portAmt:bkm.amt||0, portCnt:bkm.count||0, count:bkm.count||0});
             }
