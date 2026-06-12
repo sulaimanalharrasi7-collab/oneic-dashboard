@@ -6262,7 +6262,7 @@ const FIREBASE_URL = "https://oneic-dashboard-default-rtdb.firebaseio.com";
 // ── Firebase Realtime Database helpers ───────────────────────────────────────
 async function sbGet(table) {
   const key = table === 'oneic_data' ? 'main' : 'bulk';
-  const res = await fetch(`${FIREBASE_URL}/${key}.json`);
+  const res = await fetch(FIREBASE_URL + '/' + key + '.json');
   if (!res.ok) throw new Error(await res.text());
   return await res.json();
 }
@@ -6270,7 +6270,7 @@ async function sbGet(table) {
 async function sbUpsert(table, obj) {
   const key = table === 'oneic_data' ? 'main' : 'bulk';
   const data = obj.payload || obj;
-  const res = await fetch(`${FIREBASE_URL}/${key}.json`, {
+  const res = await fetch(FIREBASE_URL + '/' + key + '.json', {
     method: 'PUT',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify(data) // _updatedAt يأتي من البيانات نفسها
@@ -9697,6 +9697,7 @@ export default function Dashboard() {
         const existingHO = row.headOffice || [];
         const fullHO = HO_REQ.map(nm => existingHO.find(c=>c.name===nm) || {name:nm,paid:0,adj:0,count:0,...(HO_P[nm]||{})});
         let d = { ...row, headOffice: fullHO, _updatedAt: row._updatedAt||row.lastUpdated||'' };
+        lastSyncRef.current = d._updatedAt||'';
         if (row.complaintsBranchMap) setComplaintsBranchMap(row.complaintsBranchMap);
         if (row.complaintsRegionMap) setComplaintsRegionMap(row.complaintsRegionMap);
         if (row.complaintsPrincipal) setComplaintsPrincipal(row.complaintsPrincipal);
@@ -9983,7 +9984,15 @@ export default function Dashboard() {
         setData(function(latest) {
           try { localStorage.setItem('oneic_dashboard_data', JSON.stringify(latest)); } catch(e) {}
           lastSyncRef.current = latest._updatedAt || lastSyncRef.current;
-          return latest;
+          // احفظ في Firebase حتى تتحدث الأجهزة الأخرى
+          var _ts2 = new Date().toISOString();
+          var latestToSave = Object.assign({},latest,{_updatedAt:_ts2,lastUpdated:_ts2});
+          lastSyncRef.current = _ts2;
+          sbUpsert('oneic_data', { payload: latestToSave }).then(function(){
+            console.log('✅ Complaints data saved to Firebase:', _ts2);
+          }).catch(function(e){ console.warn('Firebase save failed:', e.message); });
+          try { localStorage.setItem('oneic_dashboard_data', JSON.stringify(latestToSave)); } catch(e) {}
+          return latestToSave;
         });
         setSuccess(true);
         setTimeout(()=>setSuccess(false), 3000);
