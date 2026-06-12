@@ -9916,18 +9916,19 @@ export default function Dashboard() {
       lastUpdated: _ts,
       _updatedAt: _ts,
       lastUpdatedDate: _ts.split('T')[0],
-      complaintsBranchMap: complaintsBranchMap||{},
-      complaintsRegionMap: complaintsRegionMap||{},
-      complaintsPrincipal: complaintsPrincipal||{},
-      complaintsPaidState: complaintsPaidState||{},
-      complaintsAdjState: complaintsAdjState||{}
+      complaintsPrincipal: {}
+
     };
 
     // ── رفع لـ JSONbin + localStorage ───────────────────────────────────
     setUploading(true);
     try {
+      // حفظ كامل في localStorage
       try{localStorage.setItem('oneic_dashboard_data',JSON.stringify(dataToSave));}catch(e){}
-      await sbUpsert('oneic_data', { payload: dataToSave });
+      // حفظ مخفف في Firebase (بدون collectors التفصيلية)
+      var lightRegions=(dataToSave.regions||[]).map(function(r){return {id:r.id,nameAr:r.nameAr,nameEn:r.nameEn,paid:r.paid,adj:r.adj,count:r.count||0,portAmt:r.portAmt||0,principalAmt:r.principalAmt||0,portCnt:r.portCnt||0,collectors:(r.collectors||[]).map(function(c){return {name:c.name,paid:c.paid,adj:c.adj,count:c.count||0,portAmt:c.portAmt||0,principalAmt:c.principalAmt||0};})};});
+      var dataLight=Object.assign({},dataToSave,{regions:lightRegions});
+      await sbUpsert('oneic_data', { payload: dataLight });
       lastSyncRef.current = _ts;
       console.log('✅ Saved to Firebase');
     } catch(e) {
@@ -10527,7 +10528,7 @@ export default function Dashboard() {
       {/* ══ BODY ══ */}
       <div style={{ padding:pad, flex:1, overflowY:"auto", overflowX:"hidden" }}>
 
-        {showBulkReport && <BulkPaymentSection bulk={bulkData} small={small} onBulkUpdate={function(d){setBulkData(d);try{localStorage.setItem('oneic_bulk_data',JSON.stringify(d));}catch(e){}}}/>}
+        {showBulkReport && <BulkPaymentSection bulk={bulkData} small={small} onBulkUpdate={function(d){setBulkDataMain(d);try{localStorage.setItem('oneic_bulk_data',JSON.stringify(d));}catch(e){}}}/>}
 
         
       {/* ══ Section 1 ══ */}
