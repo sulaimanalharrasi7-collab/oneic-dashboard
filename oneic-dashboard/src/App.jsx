@@ -9814,6 +9814,37 @@ export default function Dashboard() {
         setComplaintsAdjState({dc:dcAdj,ho:hoAdj,gov:govAdj});
         setComplaintsRegionMap(regionMap||{});
         setComplaintsBranchMap(branchMap||{});
+        // ══ حدّث data مباشرة من Complaints ══
+        setData(function(prev) {
+          if (!prev) return prev;
+          // حدّث regions من regionMap
+          var newRegions = (prev.regions||[]).map(function(r) {
+            var rKey = r.nameEn||r.nameAr||'';
+            var rm = regionMap[rKey];
+            if (!rm) {
+              // جرب مطابقة جزئية
+              var keys = Object.keys(regionMap);
+              for (var ki=0; ki<keys.length; ki++) {
+                if (keys[ki].indexOf(rKey)>=0 || rKey.indexOf(keys[ki])>=0) { rm = regionMap[keys[ki]]; break; }
+              }
+            }
+            if (rm) return Object.assign({},r,{paid:rm.paid||0, adj:rm.adj||0, principalAmt:rm.amt||r.principalAmt||r.portAmt||0});
+            return r;
+          });
+          // حدّث debtCompanies من branchMap
+          var newDC = (prev.debtCompanies||[]).map(function(c) {
+            var bm = branchMap[c.name];
+            if (bm) return Object.assign({},c,{paid:bm.paid||0, adj:bm.adj||0});
+            return c;
+          });
+          // حدّث headOffice من branchMap
+          var newHO = (prev.headOffice||[]).map(function(c) {
+            var bm = branchMap[c.name];
+            if (bm) return Object.assign({},c,{paid:bm.paid||0, adj:bm.adj||0});
+            return c;
+          });
+          return Object.assign({},prev,{regions:newRegions, debtCompanies:newDC, headOffice:newHO});
+        });
         try {
           localStorage.setItem('oneic_complaints_count', String(total));
           localStorage.setItem('oneic_complaints_counts', JSON.stringify({dc:dcCount,ho:hoCount,gov:govCount}));
