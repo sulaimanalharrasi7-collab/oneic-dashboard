@@ -9713,6 +9713,29 @@ export default function Dashboard() {
         dSync.headOffice = fullHO3;
         dSync._updatedAt = row._updatedAt||row.lastUpdated||'';
         lastSyncRef.current = dSync._updatedAt || new Date().toISOString();
+        // دمج Complaints مع البيانات الجديدة من Firebase
+        var savedComplaints = null;
+        try { var _sc2 = localStorage.getItem('oneic_complaints_region_map'); if(_sc2) savedComplaints = JSON.parse(_sc2); } catch(e2) {}
+        var savedBranch = null;
+        try { var _sb2 = localStorage.getItem('oneic_complaints_branch_map'); if(_sb2) savedBranch = JSON.parse(_sb2); } catch(e2) {}
+        if (savedComplaints && Object.keys(savedComplaints).length > 0) {
+          // حدّث regions من complaints
+          dSync.regions = (dSync.regions||[]).map(function(r) {
+            var rKey = r.nameEn||r.nameAr||'';
+            var rm = savedComplaints[rKey];
+            if (!rm) { var keys = Object.keys(savedComplaints); for(var ki2=0;ki2<keys.length;ki2++){if(keys[ki2].indexOf(rKey)>=0||rKey.indexOf(keys[ki2])>=0){rm=savedComplaints[keys[ki2]];break;}} }
+            if (rm) return Object.assign({},r,{paid:rm.paid||0,adj:rm.adj||0,principalAmt:rm.amt||r.principalAmt||r.portAmt||0});
+            return r;
+          });
+        }
+        if (savedBranch && Object.keys(savedBranch).length > 0) {
+          dSync.debtCompanies = (dSync.debtCompanies||[]).map(function(c){
+            var bm=savedBranch[c.name]; return bm ? Object.assign({},c,{paid:bm.paid||0,adj:bm.adj||0}) : c;
+          });
+          dSync.headOffice = (dSync.headOffice||[]).map(function(c){
+            var bm=savedBranch[c.name]; return bm ? Object.assign({},c,{paid:bm.paid||0,adj:bm.adj||0}) : c;
+          });
+        }
         setComplaintsRegionMap({});
         setData(dSync);
         try{localStorage.setItem('oneic_dashboard_data',JSON.stringify(dSync));}catch(ex){}
@@ -9846,6 +9869,7 @@ export default function Dashboard() {
           });
           return Object.assign({},prev,{regions:newRegions, debtCompanies:newDC, headOffice:newHO});
         });
+        // احفظ complaints في localStorage
         try {
           localStorage.setItem('oneic_complaints_count', String(total));
           localStorage.setItem('oneic_complaints_counts', JSON.stringify({dc:dcCount,ho:hoCount,gov:govCount}));
@@ -9853,6 +9877,13 @@ export default function Dashboard() {
           localStorage.setItem('oneic_complaints_region_map', JSON.stringify(regionMap||{}));
           localStorage.setItem('oneic_complaints_branch_map', JSON.stringify(branchMap||{}));
         } catch(ex){}
+        // احفظ data المحدَّثة في localStorage وحدّث lastSyncRef
+        // لمنع interval من تجاوز تحديث Complaints
+        setData(function(latest) {
+          try { localStorage.setItem('oneic_dashboard_data', JSON.stringify(latest)); } catch(e) {}
+          lastSyncRef.current = latest._updatedAt || lastSyncRef.current;
+          return latest;
+        });
         setSuccess(true);
         setTimeout(()=>setSuccess(false), 3000);
       } else {
