@@ -10681,8 +10681,8 @@ export default function Dashboard() {
         }}>
           <SectionHeader title="🗺 مكاتب أونك" paid={gPd} adj={gAd} color="#e85d20" small={small} portAmt={complaintsPrincipal.gov>0?complaintsPrincipal.gov:(complaintsAmts.gov||gPortAmt||0)} portCnt={complaintsCounts.gov||gPortCnt||data.regions?.reduce((s,r)=>s+(r.portCnt||0),0)||0}/>
           <div style={{ padding: small?"10px":"14px 16px", display:"flex", flexDirection:"column", gap: small?8:10 }}>
-            {[...data.regions].sort((a,b)=>(b.principalAmt||b.portAmt||0)-(a.principalAmt||a.portAmt||0)).map((r,i) => (
-              <RegionRow key={r.id} region={r} idx={i} complaintsRegionMap={complaintsRegionMap}
+            {[...data.regions].sort((a,b)=>((b.paid||0)+(b.adj||0))-((a.paid||0)+(a.adj||0))).map((r,i) => (
+              <RegionRow key={r.id+(data._updatedAt||'')} region={r} idx={i} complaintsRegionMap={complaintsRegionMap}
                 open={openRegion===r.id}
                 onToggle={() => setOpenRegion(openRegion===r.id?null:r.id)}
                 small={small}
