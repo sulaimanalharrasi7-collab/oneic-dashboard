@@ -6513,6 +6513,13 @@ function EntityCard({name,paid,adj,color,rank,small,cnt,cBranch,portAmt,portCnt,
   const cAdj    = adj||0;
   const total   = cPaid + cAdj; // الإجمالي = Paid + Adj من Complaints
   const allZero = total === 0 && name !== "Legal -Oneic" && name !== "Non-due accounts" && !["Ejada","Tahseel United","High Speed Company","High Speed company"].includes(name);
+  // Non-due accounts: عرض الإجمالي فقط
+  if (name === "Non-due accounts") {
+    return (<div style={{background:"#fff",borderRadius:13,border:"1.5px solid #e5e7eb",padding:small?"10px 12px":"14px 16px",display:"flex",alignItems:"center",justifyContent:"space-between",gap:8}}>
+      <div style={{fontWeight:800,fontSize:small?12:14,color:"#374151"}}>{name}</div>
+      <div style={{textAlign:"center"}}><div style={{fontSize:small?9:10,color:"#6b7280",marginBottom:2}}>الإجمالي</div><div style={{fontSize:small?14:17,fontWeight:900,color:"#111827"}}>{omr(total)}</div><div style={{fontSize:small?8:9,color:"#6b7280"}}>OMR</div></div>
+    </div>);
+  }
   const hasPort  = principal4card > 0;
   const hasCnt   = (portCnt||0) > 0;
   const effPort  = principal4card > 0 ? principal4card : 0;
@@ -9903,13 +9910,13 @@ export default function Dashboard() {
           // حدّث debtCompanies من branchMap
           var newDC = (prev.debtCompanies||[]).map(function(c) {
             var bm = branchMap[c.name];
-            if (bm) return Object.assign({},c,{paid:bm.paid||0, adj:bm.adj||0});
+            if (bm) return Object.assign({},c,{paid:bm.paid||0, adj:bm.adj||0, principalAmt:bm.amt||c.principalAmt||c.portAmt||0});
             return c;
           });
           // حدّث headOffice من branchMap
           var newHO = (prev.headOffice||[]).map(function(c) {
             var bm = branchMap[c.name];
-            if (bm) return Object.assign({},c,{paid:bm.paid||0, adj:bm.adj||0});
+            if (bm) return Object.assign({},c,{paid:bm.paid||0, adj:bm.adj||0, principalAmt:bm.amt||c.principalAmt||c.portAmt||0});
             return c;
           });
           return Object.assign({},prev,{regions:newRegions, debtCompanies:newDC, headOffice:newHO});
