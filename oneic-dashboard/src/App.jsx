@@ -6210,7 +6210,7 @@ async function parseXLS(file) {
         count:d.count||0, paidCount:d.paidCount||0, adjCount:d.adjCount||0,
         portAmt:d.osAmt||0, portCnt:d.count||0, principalAmt:d.principalAmt||0, principalAmt:d.principalAmt||0
       }))
-      .sort((a,b) => (b.portAmt||0)-(a.portAmt||0))
+      .sort((a,b) => ((b.paid||0)+(b.adj||0))-((a.paid||0)+(a.adj||0)))
   }));
 
   // ── شركات التحصيل ─────────────────────────────────────────────────────
@@ -6796,7 +6796,7 @@ function RegionRow({region, idx, open, onToggle, small, complaintsRegionMap}) {
   const regPaid  = region.paid||0;
   const regAdj   = region.adj||0;
   const total    = regPaid + regAdj;
-  const portAmt   = _cReg&&_cReg.amt>0 ? _cReg.amt : (region.principalAmt||region.portAmt||0);
+  const portAmt   = region.principalAmt||region.portAmt||0;
   const portCnt   = region.portCnt||0;
   const remaining = portAmt>0 ? portAmt-total : 0;
   const pctInj    = portAmt>0 ? Math.min(100,(total/portAmt)*100) : 0;
@@ -9960,7 +9960,7 @@ export default function Dashboard() {
   const gPd = data.regions.reduce((s,r)=>s+r.paid,0);
   const gAd = data.regions.reduce((s,r)=>s+r.adj,0);
   const gCnt = data.regions.reduce((s,r)=>s+(r.count||0),0);
-  const gPortAmt = data.regions.reduce((s,r)=>s+(r.portAmt||0),0);
+  const gPortAmt = data.regions.reduce((s,r)=>s+(r.principalAmt||r.portAmt||0),0);
   const gPortCnt = data.regions.reduce((s,r)=>s+(r.portCnt||0),0);
   const dPd = data.debtCompanies.reduce((s,r)=>s+r.paid,0);
   const dAd = data.debtCompanies.reduce((s,r)=>s+r.adj,0);
