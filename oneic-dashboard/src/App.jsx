@@ -9794,28 +9794,11 @@ export default function Dashboard() {
   const UPLOAD_PW = 'Sulaiman1992';
 
   // ══ تحديث فوري من Firebase ══
-  const forceRefresh = async () => {
+  const forceRefresh = () => {
     setSyncing(true);
-    try {
-      const row = await sbGet('oneic_data');
-      if (!row?.regions?.length) { setSyncing(false); return; }
-      const HO_REQ = ["Legal - DR. Sarhaan","Documentation- Omantel","HO","Non-due accounts","Legal -Oneic"];
-      const HO_P = {
-        "Legal - DR. Sarhaan":{portAmt:3229651.681,portCnt:3662,principalAmt:3301711.348},
-        "Documentation- Omantel":{portAmt:489409.003,portCnt:1136},
-        "HO":{portAmt:0,portCnt:340},
-        "Non-due accounts":{portAmt:0,portCnt:340},
-        "Legal -Oneic":{portAmt:357170.484,portCnt:217,principalAmt:357170.484,closed:0,active:217}
-      };
-      const existingHO = row.headOffice || [];
-      const fullHO = HO_REQ.map(nm => existingHO.find(c=>c.name===nm) || {name:nm,paid:0,adj:0,count:0,...(HO_P[nm]||{})});
-      const d = { ...row, headOffice: fullHO, _updatedAt: row._updatedAt||row.lastUpdated||'' };
-      setData(d);
-      try { localStorage.setItem('oneic_dashboard_data', JSON.stringify(d)); } catch(e) {}
-      if (row.history?.length > 0) setHistory(row.history);
-      setLastSync(new Date());
-    } catch(e) { alert('تعذر الاتصال بالسيرفر'); }
-    setSyncing(false);
+    lastSyncRef.current = '';
+    doSync();
+    setTimeout(function(){ setSyncing(false); }, 3000);
   };
 
   const requireUploadAuth = (callback) => {
