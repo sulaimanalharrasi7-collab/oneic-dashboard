@@ -6163,8 +6163,9 @@ async function parseXLS(file) {
       else if (colL.includes('saif')) key = 'Legal -Oneic';
       else if (col.trim() === '')     key = 'Legal -Oneic';
       else                            key = 'Legal -Oneic';
-      if (!hoMap[key]) hoMap[key] = { paid:0, adj:0, count:0, closed:0, active:0 };
+      if (!hoMap[key]) hoMap[key] = { paid:0, adj:0, count:0, closed:0, active:0, principalAmt:0 };
       hoMap[key].paid += paid; hoMap[key].adj += adj; hoMap[key].count++;
+      hoMap[key].principalAmt += n(row['Principal Amount']||0);
       if (key==='Legal -Oneic'||key==='Documentation- Omantel') {
         if (osAmt<=0) hoMap[key].closed++; else hoMap[key].active++;
       }
@@ -6234,12 +6235,12 @@ async function parseXLS(file) {
   const debtCompanies = dcList.sort((a,b)=>((b.paid||0)+(b.adj||0))-((a.paid||0)+(a.adj||0)));
 
   // ── المكتب الرئيسي ────────────────────────────────────────────────────
-  const HO_KEYS = ["Legal - DR. Sarhaan","Documentation- Omantel","HO","Non-due accounts","Legal -Oneic"];
+  const HO_KEYS = ["Legal - DR. Sarhaan","Documentation- Omantel","HO","Legal -Oneic"];
   const headOffice = HO_KEYS.map(nm => {
     const d = hoMap[nm]||{paid:0,adj:0,count:0};
     const p = PORT.ho[nm]||{portAmt:0,portCnt:0};
     const HO_DISPLAY = {"HO":"Non-due accounts","Non-due accounts":"Non-due accounts","Documentation- Omantel":"Documentation- Omantel","Legal - DR. Sarhaan":"Legal - DR. Sarhaan","Legal -Oneic":"Legal -Oneic"};
-    return {name:HO_DISPLAY[nm]||nm, paid:d.paid, adj:d.adj, count:d.count||0, closed:d.closed||0, active:d.active||0,
+    return {name:HO_DISPLAY[nm]||nm, paid:d.paid, adj:d.adj, count:d.count||0, closed:d.closed||0, active:d.active||0, principalAmt:d.principalAmt||0,
       portAmt: Math.max(0, p.portAmt||0), portCnt: p.portCnt||0,
       principalAmt: p.principalAmt||0};
   });
@@ -9674,7 +9675,7 @@ export default function Dashboard() {
       }
 
       if (row?.regions?.length > 0) {
-        const HO_REQ = ["Legal - DR. Sarhaan","Documentation- Omantel","HO","Non-due accounts","Legal -Oneic"];
+        const HO_REQ = ["Legal - DR. Sarhaan","Documentation- Omantel","HO","Legal -Oneic"];
         const HO_P = {
           "Legal - DR. Sarhaan":{portAmt:3229651.681,portCnt:3662,principalAmt:3301711.348},
           "Documentation- Omantel":{portAmt:489409.003,portCnt:1136},
@@ -9683,7 +9684,12 @@ export default function Dashboard() {
           "Legal -Oneic":{portAmt:357170.484,portCnt:217}
         };
         const existingHO = row.headOffice || [];
-        const fullHO = HO_REQ.map(nm => existingHO.find(c=>c.name===nm) || {name:nm,paid:0,adj:0,count:0,...(HO_P[nm]||{})});
+        const HO_DISPLAY_MAP = {"HO":"Non-due accounts","Legal - DR. Sarhaan":"Legal - DR. Sarhaan","Documentation- Omantel":"Documentation- Omantel","Legal -Oneic":"Legal -Oneic"};
+        const fullHO = HO_REQ.map(nm => {
+          const displayNm = HO_DISPLAY_MAP[nm]||nm;
+          const found = existingHO.find(c=>c.name===displayNm||c.name===nm);
+          return found ? {...(HO_P[nm]||{}), ...found, name:displayNm} : {name:displayNm,paid:0,adj:0,count:0,...(HO_P[nm]||{})};
+        });
         let d = { ...row, headOffice: fullHO, _updatedAt: row._updatedAt||row.lastUpdated||'' };
         if (row.complaintsBranchMap) setComplaintsBranchMap(row.complaintsBranchMap);
         if (row.complaintsRegionMap) setComplaintsRegionMap(row.complaintsRegionMap);
@@ -9723,7 +9729,7 @@ export default function Dashboard() {
         const myTime = new Date(lastSyncRef.current||0).getTime();
         if (fbTime > 0 && fbTime <= myTime) return;
         // Firebase أحدث — حدّث البيانات
-        const HO_REQ = ["Legal - DR. Sarhaan","Documentation- Omantel","HO","Non-due accounts","Legal -Oneic"];
+        const HO_REQ = ["Legal - DR. Sarhaan","Documentation- Omantel","HO","Legal -Oneic"];
         const HO_P = {
           "Legal - DR. Sarhaan":{portAmt:3229651.681,portCnt:3662,principalAmt:3301711.348},
           "Documentation- Omantel":{portAmt:489409.003,portCnt:1136},
@@ -9732,7 +9738,12 @@ export default function Dashboard() {
           "Legal -Oneic":{portAmt:357170.484,portCnt:217,principalAmt:357170.484,closed:0,active:217}
         };
         const existingHO = row.headOffice || [];
-        const fullHO = HO_REQ.map(nm => existingHO.find(c=>c.name===nm) || {name:nm,paid:0,adj:0,count:0,...(HO_P[nm]||{})});
+        const HO_DISPLAY_MAP = {"HO":"Non-due accounts","Legal - DR. Sarhaan":"Legal - DR. Sarhaan","Documentation- Omantel":"Documentation- Omantel","Legal -Oneic":"Legal -Oneic"};
+        const fullHO = HO_REQ.map(nm => {
+          const displayNm = HO_DISPLAY_MAP[nm]||nm;
+          const found = existingHO.find(c=>c.name===displayNm||c.name===nm);
+          return found ? {...(HO_P[nm]||{}), ...found, name:displayNm} : {name:displayNm,paid:0,adj:0,count:0,...(HO_P[nm]||{})};
+        });
         const d = { ...row, headOffice: fullHO, _updatedAt: row._updatedAt||row.lastUpdated||'' };
         lastSyncRef.current = d._updatedAt || '';
         setData(d);
@@ -9762,7 +9773,7 @@ export default function Dashboard() {
           var fbTime = new Date(row._updatedAt||row.lastUpdated||0).getTime();
           var myTime = new Date(lastSyncRef.current||0).getTime();
           if (fbTime <= myTime) return;
-          var HO_REQ = ["Legal - DR. Sarhaan","Documentation- Omantel","HO","Non-due accounts","Legal -Oneic"];
+          var HO_REQ = ["Legal - DR. Sarhaan","Documentation- Omantel","HO","Legal -Oneic"];
           var HO_P = {
             "Legal - DR. Sarhaan":{portAmt:3229651.681,portCnt:3662,principalAmt:3301711.348},
             "Documentation- Omantel":{portAmt:489409.003,portCnt:1136},
@@ -9792,7 +9803,7 @@ export default function Dashboard() {
     try {
       const row = await sbGet('oneic_data');
       if (!row?.regions?.length) { setSyncing(false); return; }
-      const HO_REQ = ["Legal - DR. Sarhaan","Documentation- Omantel","HO","Non-due accounts","Legal -Oneic"];
+      const HO_REQ = ["Legal - DR. Sarhaan","Documentation- Omantel","HO","Legal -Oneic"];
       const HO_P = {
         "Legal - DR. Sarhaan":{portAmt:3229651.681,portCnt:3662,principalAmt:3301711.348},
         "Documentation- Omantel":{portAmt:489409.003,portCnt:1136},
@@ -9801,7 +9812,12 @@ export default function Dashboard() {
         "Legal -Oneic":{portAmt:357170.484,portCnt:217}
       };
       const existingHO = row.headOffice || [];
-      const fullHO = HO_REQ.map(nm => existingHO.find(c=>c.name===nm) || {name:nm,paid:0,adj:0,count:0,...(HO_P[nm]||{})});
+      const HO_DISPLAY_MAP = {"HO":"Non-due accounts","Legal - DR. Sarhaan":"Legal - DR. Sarhaan","Documentation- Omantel":"Documentation- Omantel","Legal -Oneic":"Legal -Oneic"};
+        const fullHO = HO_REQ.map(nm => {
+          const displayNm = HO_DISPLAY_MAP[nm]||nm;
+          const found = existingHO.find(c=>c.name===displayNm||c.name===nm);
+          return found ? {...(HO_P[nm]||{}), ...found, name:displayNm} : {name:displayNm,paid:0,adj:0,count:0,...(HO_P[nm]||{})};
+        });
       const d = { ...row, headOffice: fullHO, _updatedAt: row._updatedAt||row.lastUpdated||'' };
       setData(d);
       try { localStorage.setItem('oneic_dashboard_data', JSON.stringify(d)); } catch(e) {}
@@ -10753,7 +10769,7 @@ export default function Dashboard() {
                     dc[i2] = {...dc[i2], portAmt:bestPort, portCnt:bestCnt};
                   }
                 });
-                return [...dc].sort((a,b)=>(b.principalAmt||b.portAmt||0)-(a.principalAmt||a.portAmt||0)).map((c,i) => (
+                return [...dc].sort((a,b)=>((b.paid||0)+(b.adj||0))-((a.paid||0)+(a.adj||0))).map((c,i) => (
                 <EntityCard key={c.name} name={c.name} paid={c.paid} adj={c.adj} cBranch={complaintsBranchMap} color="#1a7a6b" rank={i+1} small={small} portAmt={c.portAmt||0} portCnt={c.portCnt||0} osAmt={c.osAmt||c.portAmt||0}/>
                 ));
               })()}
