@@ -9906,8 +9906,8 @@ export default function Dashboard() {
       const fromNew = (newData.headOffice||[]).find(c=>c.name===displayNm||c.name===nm);
       const fromExisting = (data.headOffice||[]).find(d=>d.name===displayNm||d.name===nm);
       const portInfo = HO_PORT_DATA[nm]||{};
-      if (fromNew) return Object.assign({},portInfo,fromNew,{name:displayNm, portAmt:fromNew.portAmt||portInfo.portAmt||0, portCnt:fromNew.portCnt||portInfo.portCnt||0 };
-      if (fromExisting) return Object.assign({},portInfo,fromExisting,{name:displayNm, portAmt:fromExisting.portAmt||portInfo.portAmt||0, portCnt:fromExisting.portCnt||portInfo.portCnt||0 };
+      if (fromNew) return Object.assign({},portInfo,fromNew,{name:displayNm, portAmt:fromNew.portAmt||portInfo.portAmt||0, portCnt:fromNew.portCnt||portInfo.portCnt||0 });
+      if (fromExisting) return Object.assign({},portInfo,fromExisting,{name:displayNm, portAmt:fromExisting.portAmt||portInfo.portAmt||0, portCnt:fromExisting.portCnt||portInfo.portCnt||0 });
       return { name:displayNm, paid:0, adj:0, count:0, portAmt:portInfo.portAmt||0, portCnt:portInfo.portCnt||0 };
     });
     const _ts = new Date().toISOString();
@@ -9923,7 +9923,7 @@ export default function Dashboard() {
       lastUpdatedDate: _ts.split('T')[0],
       complaintsPrincipal: {}
 
-    };
+    });
 
     // ── رفع لـ JSONbin + localStorage ───────────────────────────────────
     setUploading(true);
