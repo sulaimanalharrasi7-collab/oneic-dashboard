@@ -6210,7 +6210,7 @@ async function parseXLS(file) {
         count:d.count||0, paidCount:d.paidCount||0, adjCount:d.adjCount||0,
         portAmt:d.osAmt||0, portCnt:d.count||0, principalAmt:d.principalAmt||0
       }))
-      .sort((a,b) => ((b.paid||0)+(b.adj||0))-((a.paid||0)+(a.adj||0)))
+      .sort((a,b) => { var pa=a.principalAmt>0?a.principalAmt:(a.portAmt||0); var pb=b.principalAmt>0?b.principalAmt:(b.portAmt||0); var pctA=pa>0?((a.paid||0)+(a.adj||0))/pa:0; var pctB=pb>0?((b.paid||0)+(b.adj||0))/pb:0; return pctB-pctA; })
   }));
 
   // ── شركات التحصيل ─────────────────────────────────────────────────────
