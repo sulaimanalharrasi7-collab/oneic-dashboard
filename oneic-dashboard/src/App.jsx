@@ -134,8 +134,8 @@ const SEED = {
     { name: "Matrix Debt Collection",        paid: 169090.790,  adj: 29481.071,   portAmt: 2882018.894, portCnt: 23398 },
     { name: "Compass Risk Support Services", paid: 113050.394,  adj: 0.000,       portAmt: 386199.737,  portCnt: 3992  },
     { name: "National Center",               paid: 133891.609,  adj: 3174.667,    portAmt: 1014744.033, portCnt: 6741  },
-    { name: "Tahseel United",                paid: 0.000,       adj: 0.000,       portAmt: 0,           portCnt: 108   },
-    { name: "High Speed Company",            paid: 0.000,       adj: 0.000,       portAmt: 0,           portCnt: 35    }],
+    { name: "Tahseel United",                paid: 0.000,       adj: 0.000,       portAmt: 0, principalAmt: 0,    portCnt: 108   },
+    { name: "High Speed Company",            paid: 0.000,       adj: 0.000,       portAmt: 0, principalAmt: 0,    portCnt: 35    }],
   headOffice: [
     { name: "Legal - DR. Sarhaan", paid: 46866.090, adj: 14781.368, portAmt: 3229651.681, portCnt: 3662, principalAmt: 3301711.348 },
     { name: "Documentation- Omantel",  paid: 1915.939,  adj: 3468.859,  portAmt: 489409.003,  portCnt: 1136 },
@@ -6122,9 +6122,9 @@ async function parseXLS(file) {
       "National Center":               { portAmt: 1014744.033, portCnt: 6741  },
       "Compass Risk Support Services": { portAmt: 386199.737,  portCnt: 3992  },
       "Ejada":                         { portAmt: 0,           portCnt: 1938  },
-      "Tahseel United":                { portAmt: 0,           portCnt: 108   },
-      "High Speed Company":            { portAmt: 0,           portCnt: 35    },
-      "High Speed company":            { portAmt: 0,           portCnt: 35    }
+      "Tahseel United":                { portAmt: 0, principalAmt: 0, portCnt: 108   },
+      "High Speed Company":            { portAmt: 0, principalAmt: 0, portCnt: 35    },
+      "High Speed company":            { portAmt: 0, principalAmt: 0, portCnt: 35    }
     },
     ho: {
       "Legal - DR. Sarhaan": { portAmt: 3229651.681, portCnt: 3662, principalAmt: 3301711.348 },
@@ -6515,9 +6515,25 @@ function EntityCard({name,paid,adj,color,rank,small,cnt,cBranch,portAmt,portCnt,
   const allZero = total === 0 && name !== "Legal -Oneic" && name !== "Non-due accounts" && !["Ejada","Tahseel United","High Speed Company","High Speed company"].includes(name);
   // Non-due accounts: عرض الإجمالي فقط
   if (name === "Non-due accounts") {
-    return (<div style={{background:"#fff",borderRadius:13,border:"1.5px solid #e5e7eb",padding:small?"10px 12px":"14px 16px",display:"flex",alignItems:"center",justifyContent:"space-between",gap:8}}>
-      <div style={{fontWeight:800,fontSize:small?12:14,color:"#374151"}}>{name}</div>
-      <div style={{textAlign:"center"}}><div style={{fontSize:small?9:10,color:"#6b7280",marginBottom:2}}>الإجمالي</div><div style={{fontSize:small?14:17,fontWeight:900,color:"#111827"}}>{omr(total)}</div><div style={{fontSize:small?8:9,color:"#6b7280"}}>OMR</div></div>
+    return (<div style={{background:"#fff",borderRadius:13,border:"1.5px solid #e5e7eb",padding:small?"10px 12px":"14px 16px",direction:"rtl"}}>
+      <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",marginBottom:8}}>
+        <div style={{fontWeight:800,fontSize:small?12:14,color:"#374151"}}>{"Non-due accounts"}</div>
+        {cnt>0&&<div style={{background:"#f3f4f6",borderRadius:8,padding:"2px 8px",fontSize:small?9:11,color:"#6b7280",fontWeight:600}}>{(cnt||0).toLocaleString()} حساب</div>}
+      </div>
+      <div style={{display:"flex",gap:8,flexWrap:"wrap"}}>
+        <div style={{flex:1,minWidth:60,textAlign:"center",background:"#f9fafb",borderRadius:8,padding:"6px 4px"}}>
+          <div style={{fontSize:small?8:9,color:"#6b7280",marginBottom:2}}>{"المدفوع"}</div>
+          <div style={{fontSize:small?11:13,fontWeight:800,color:"#111827"}}>{omr(cPaid)}</div>
+        </div>
+        <div style={{flex:1,minWidth:60,textAlign:"center",background:"#f9fafb",borderRadius:8,padding:"6px 4px"}}>
+          <div style={{fontSize:small?8:9,color:"#6b7280",marginBottom:2}}>{"التسويات"}</div>
+          <div style={{fontSize:small?11:13,fontWeight:800,color:"#111827"}}>{omr(cAdj)}</div>
+        </div>
+        <div style={{flex:1,minWidth:60,textAlign:"center",background:"#111827",borderRadius:8,padding:"6px 4px"}}>
+          <div style={{fontSize:small?8:9,color:"#9ca3af",marginBottom:2}}>{"الإجمالي"}</div>
+          <div style={{fontSize:small?11:13,fontWeight:900,color:"#fff"}}>{omr(total)}</div>
+        </div>
+      </div>
     </div>);
   }
   const hasPort  = principal4card > 0;
@@ -9919,6 +9935,16 @@ export default function Dashboard() {
             if (bm) return Object.assign({},c,{paid:bm.paid||0, adj:bm.adj||0, principalAmt:bm.amt||c.principalAmt||c.portAmt||0});
             return c;
           });
+          // أضف شركات في Complaints ليست في debtCompanies (مثل Tahseel، High Speed)
+          var existingNames = newDC.map(function(c){return c.name;});
+          var bmKeys = Object.keys(branchMap);
+          for (var bki=0; bki<bmKeys.length; bki++) {
+            var bkn = bmKeys[bki];
+            if (existingNames.indexOf(bkn) < 0 && branchMap[bkn].paid+branchMap[bkn].adj > 0) {
+              var bkm = branchMap[bkn];
+              newDC.push({name:bkn, paid:bkm.paid||0, adj:bkm.adj||0, principalAmt:bkm.amt||0, portAmt:bkm.amt||0, portCnt:bkm.count||0, count:bkm.count||0});
+            }
+          }
           return Object.assign({},prev,{regions:newRegions, debtCompanies:newDC, headOffice:newHO});
         });
         // احفظ complaints في localStorage
