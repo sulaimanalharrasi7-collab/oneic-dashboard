@@ -9744,9 +9744,51 @@ export default function Dashboard() {
         setLastSync(new Date());
       }).catch(function(e){console.warn('Sync error:',e.message);});
     }, 8000);
-    var onVisible3 = function(){if(document.visibilityState==='visible'){lastSyncRef.current='';console.log('tab visible - forcing sync');}};
-    document.addEventListener('visibilitychange',onVisible3);
-    return function(){ clearInterval(_syncInterval); document.removeEventListener('visibilitychange',onVisible3); };
+    function doSync() {
+      sbGet('oneic_data').then(function(row) {
+        if (!row || !row.regions || !row.regions.length) return;
+        var fbTime = new Date(row._updatedAt||row.lastUpdated||0).getTime();
+        var myTime = lastSyncRef.current ? new Date(lastSyncRef.current).getTime() : 0;
+        if (fbTime > 0 && myTime > 0 && fbTime <= myTime) return;
+        var HO_KEYS4=["Legal - DR. Sarhaan","Documentation- Omantel","HO","Non-due accounts","Legal -Oneic"];
+        var HO_P4={"Legal - DR. Sarhaan":{portAmt:3229651.681,portCnt:3662},"Documentation- Omantel":{portAmt:489409.003,portCnt:1136},"HO":{portAmt:0,portCnt:340},"Non-due accounts":{portAmt:0,portCnt:340},"Legal -Oneic":{portAmt:357170.484,portCnt:217}};
+        var eHO4=row.headOffice||[];
+        var fullHO4=HO_KEYS4.map(function(nm){var f=eHO4.find(function(c){return c.name===nm;});if(f)return f;var p=HO_P4[nm]||{};return {name:nm,paid:0,adj:0,count:0,portAmt:p.portAmt||0,portCnt:p.portCnt||0};});
+        var dSync4={headOffice:fullHO4,_updatedAt:row._updatedAt||row.lastUpdated||''};
+        var rk=Object.keys(row); for(var ki4=0;ki4<rk.length;ki4++){if(rk[ki4]!=='headOffice')dSync4[rk[ki4]]=row[rk[ki4]];}
+        lastSyncRef.current = dSync4._updatedAt || new Date().toISOString();
+        var sc4=null; try{var _s4=localStorage.getItem('oneic_complaints_region_map');if(_s4)sc4=JSON.parse(_s4);}catch(e){}
+        var sb4=null; try{var _b4=localStorage.getItem('oneic_complaints_branch_map');if(_b4)sb4=JSON.parse(_b4);}catch(e){}
+        if(sc4&&Object.keys(sc4).length>0){dSync4.regions=(dSync4.regions||[]).map(function(r){var rk2=r.nameEn||r.nameAr||'';var rm4=sc4[rk2];if(!rm4){var ks=Object.keys(sc4);for(var ki5=0;ki5<ks.length;ki5++){if(ks[ki5].indexOf(rk2)>=0||rk2.indexOf(ks[ki5])>=0){rm4=sc4[ks[ki5]];break;}}}return rm4?Object.assign({},r,{paid:rm4.paid||0,adj:rm4.adj||0,principalAmt:rm4.amt||r.principalAmt||r.portAmt||0}):r;});}
+        if(sb4&&Object.keys(sb4).length>0){dSync4.debtCompanies=(dSync4.debtCompanies||[]).map(function(c){var bm4=sb4[c.name];return bm4?Object.assign({},c,{paid:bm4.paid||0,adj:bm4.adj||0}):c;});dSync4.headOffice=(dSync4.headOffice||[]).map(function(c){var bm4=sb4[c.name];return bm4?Object.assign({},c,{paid:bm4.paid||0,adj:bm4.adj||0}):c;});}
+        setComplaintsRegionMap({});
+        setData(dSync4);
+        try{localStorage.setItem('oneic_dashboard_data',JSON.stringify(dSync4));}catch(e){}
+        if(row.history&&row.history.length){setHistory(row.history);}
+        sbGet('oneic_bulk').then(function(br){if(br&&br.daily&&br.daily.length){setBulkData(br);}}).catch(function(){});
+        setLastSync(new Date());
+      }).catch(function(e){console.warn('Sync error:',e.message);});
+    }
+    var onVisible3 = function() {
+      if (document.visibilityState === 'visible') {
+        lastSyncRef.current = '';
+        doSync();
+      }
+    };
+    var onPageShow3 = function(e) {
+      // موبايل: pageshow عند العودة من الخلفية
+      lastSyncRef.current = '';
+      doSync();
+    };
+    var onFocus3 = function() {
+      // موبايل: focus عند العودة
+      lastSyncRef.current = '';
+      doSync();
+    };
+    document.addEventListener('visibilitychange', onVisible3);
+    window.addEventListener('pageshow', onPageShow3);
+    window.addEventListener('focus', onFocus3);
+    return function(){ clearInterval(_syncInterval); document.removeEventListener('visibilitychange',onVisible3); window.removeEventListener('pageshow',onPageShow3); window.removeEventListener('focus',onFocus3); };
   }, []);
 
   const UPLOAD_PW = 'Sulaiman1992';
