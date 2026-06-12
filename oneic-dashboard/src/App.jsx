@@ -9928,7 +9928,7 @@ export default function Dashboard() {
       try{localStorage.setItem('oneic_dashboard_data',JSON.stringify(dataToSave));}catch(e){}
       // حفظ مخفف في Firebase (بدون collectors التفصيلية)
       var lightRegions=(dataToSave.regions||[]).map(function(r){return {id:r.id,nameAr:r.nameAr,nameEn:r.nameEn,paid:r.paid,adj:r.adj,count:r.count||0,portAmt:r.portAmt||0,principalAmt:r.principalAmt||0,portCnt:r.portCnt||0,collectors:(r.collectors||[]).map(function(c){return {name:c.name,paid:c.paid,adj:c.adj,count:c.count||0,portAmt:c.portAmt||0,principalAmt:c.principalAmt||0};})};});
-      var dataLight=Object.assign({},dataToSave,{regions:lightRegions});
+      var dataLight=Object.assign({},dataToSave,{regions:lightRegions,_updatedAt:_ts,lastUpdated:_ts});
       await sbUpsert('oneic_data', { payload: dataLight });
       lastSyncRef.current = _ts;
       console.log('✅ Saved to Firebase');
@@ -9997,12 +9997,12 @@ export default function Dashboard() {
   const dPd = data.debtCompanies.reduce((s,r)=>s+r.paid,0);
   const dAd = data.debtCompanies.reduce((s,r)=>s+r.adj,0);
   const dCnt = data.debtCompanies.reduce((s,r)=>s+(r.count||0),0);
-  const dPortAmt = data.debtCompanies.reduce((s,r)=>s+(r.principalAmt||r.portAmt||0),0);
+  const dPortAmt = data.debtCompanies.reduce((s,r)=>s+(r.portAmt||0),0);
   const dPortCnt = data.debtCompanies.reduce((s,r)=>s+(r.portCnt||0),0);
   const hPd = data.headOffice.reduce((s,r)=>s+Math.max(0,r.paid||0),0);
   const hAd = data.headOffice.reduce((s,r)=>s+Math.max(0,r.adj||0),0);
   const hCnt = data.headOffice.reduce((s,r)=>s+(r.count||0),0);
-  const hPortAmt = data.headOffice.reduce((s,r)=>s+Math.max(0,r.principalAmt||r.portAmt||0),0);
+  const hPortAmt = data.headOffice.reduce((s,r)=>s+Math.max(0,r.portAmt||0),0);
   const hPortCnt = data.headOffice.reduce((s,r)=>s+(r.portCnt||0),0);
   const totalPaid = data.totalCollection?.paid || (gPd+dPd+hPd);
   const totalAdj  = data.totalCollection?.adj  || (gAd+dAd+hAd);
