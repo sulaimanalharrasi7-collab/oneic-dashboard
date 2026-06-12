@@ -6893,7 +6893,7 @@ function RegionRow({region, idx, open, onToggle, small, complaintsRegionMap}) {
             <span style={{color:"#888",fontWeight:600}}>{region.collectors?.length||0} محصّل</span>
           </div>
 
-          {(region.collectors||[]).map((c,i) => {
+          {[...(region.collectors||[])].sort(function(a,b){var pa=a.principalAmt>0?a.principalAmt:(a.portAmt||0);var pb=b.principalAmt>0?b.principalAmt:(b.portAmt||0);var pA=pa>0?((a.paid||0)+(a.adj||0))/pa:0;var pB=pb>0?((b.paid||0)+(b.adj||0))/pb:0;return pB-pA;}).map((c,i) => {
             const cPrincipal = c.principalAmt>0 ? c.principalAmt : 0;
             const ct    = (c.paid||0)+(c.adj||0); // paid+adj
             const cPort = cPrincipal; // Principal
