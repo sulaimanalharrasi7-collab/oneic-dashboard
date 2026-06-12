@@ -6807,7 +6807,7 @@ function RegionRow({region, idx, open, onToggle, small, complaintsRegionMap}) {
   const regPaid  = region.paid||0;
   const regAdj   = region.adj||0;
   const total    = regPaid + regAdj;
-  const portAmt   = _cReg&&_cReg.amt>0 ? _cReg.amt : (region.principalAmt||region.portAmt||0);
+  const portAmt   = region.principalAmt||region.portAmt||0; // دائماً Principal Amount
   const portCnt   = region.portCnt||0;
   const remaining = portAmt>0 ? portAmt-total : 0;
   const pctInj    = portAmt>0 ? Math.min(100,(total/portAmt)*100) : 0;
@@ -9702,9 +9702,10 @@ export default function Dashboard() {
 
     // ══ تحديث تلقائي كل 30 ثانية لمزامنة جميع الأجهزة ══
     const interval = setInterval(async () => {
-      setSyncing(true);
       try {
         const row = await sbGet('oneic_data');
+        if (!row) { console.log('⚠️ Sync: Firebase returned null'); return; }
+        console.log('🔄 Sync check: FB='+row._updatedAt+' MY='+lastSyncRef.current);
         setSyncing(false);
         if (!row?.regions?.length) return;
         // تحقق: هل Firebase أحدث من الحالي؟
@@ -10004,7 +10005,7 @@ export default function Dashboard() {
   const gPd = data.regions.reduce((s,r)=>s+r.paid,0);
   const gAd = data.regions.reduce((s,r)=>s+r.adj,0);
   const gCnt = data.regions.reduce((s,r)=>s+(r.count||0),0);
-  const gPortAmt = data.regions.reduce((s,r)=>s+(r.portAmt||0),0);
+  const gPortAmt = data.regions.reduce((s,r)=>s+(r.principalAmt||r.portAmt||0),0);
   const gPortCnt = data.regions.reduce((s,r)=>s+(r.portCnt||0),0);
   const dPd = data.debtCompanies.reduce((s,r)=>s+r.paid,0);
   const dAd = data.debtCompanies.reduce((s,r)=>s+r.adj,0);
