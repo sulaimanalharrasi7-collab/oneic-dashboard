@@ -9696,7 +9696,7 @@ export default function Dashboard() {
         }
       }
       setLoadingServer(false);
-      try{var br=await sbGet('oneic_bulk');if(br&&br.daily&&br.daily.length>0){setBulkData(br);try{localStorage.setItem('oneic_bulk_data',JSON.stringify(br));}catch(e){}}else{try{var sb=localStorage.getItem('oneic_bulk_data');if(sb){var pb=JSON.parse(sb);if(pb&&pb.daily&&pb.daily.length>0)setBulkData(pb);}}catch(e){}}}catch(e){try{var sb2=localStorage.getItem('oneic_bulk_data');if(sb2){var pb2=JSON.parse(sb2);if(pb2&&pb2.daily&&pb2.daily.length>0)setBulkData(pb2);}}catch(e2){}}
+      try{var br=await sbGet('oneic_bulk');if(br&&br.daily&&br.daily.length>0){setBulkDataMain(br);try{localStorage.setItem('oneic_bulk_data',JSON.stringify(br));}catch(e){}}else{try{var sb=localStorage.getItem('oneic_bulk_data');if(sb){var pb=JSON.parse(sb);if(pb&&pb.daily&&pb.daily.length>0)setBulkDataMain(pb);}}catch(e){}}}catch(e){try{var sb2=localStorage.getItem('oneic_bulk_data');if(sb2){var pb2=JSON.parse(sb2);if(pb2&&pb2.daily&&pb2.daily.length>0)setBulkDataMain(pb2);}}catch(e2){}}
     }
     load();
 
@@ -9726,7 +9726,7 @@ export default function Dashboard() {
           setHistory(row.history);
           try{localStorage.setItem('oneic_history',JSON.stringify(row.history));}catch(e){}
         }
-        try{var br=await sbGet('oneic_bulk');if(br&&br.daily&&br.daily.length){setBulkData(br);try{localStorage.setItem('oneic_bulk_data',JSON.stringify(br));}catch(e){}}}catch(e){}
+        try{var br=await sbGet('oneic_bulk');if(br&&br.daily&&br.daily.length){setBulkDataMain(br);try{localStorage.setItem('oneic_bulk_data',JSON.stringify(br));}catch(e){}}}catch(e){}
         setLastSync(new Date());
         console.log('✅ Synced from Firebase:', d._updatedAt);
       } catch(e) { console.warn('Sync error:', e.message); }
