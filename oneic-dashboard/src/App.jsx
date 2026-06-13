@@ -10846,7 +10846,7 @@ export default function Dashboard() {
         }}>
           {/* DC */}
           <div style={{ background:"#fff", borderRadius:16, boxShadow:"0 3px 18px rgba(0,0,0,0.07)", border:"1.5px solid #f0ece8", overflow:"hidden" }}>
-            <SectionHeader title="🏢 شركات التحصيل" paid={dPd} adj={dAd} color="#1a7a6b" small={small} portAmt={dPortAmt||0} portCnt={dPortCnt||0}/>
+            <SectionHeader title="🏢 شركات التحصيل" paid={dPd} adj={dAd} color="#1a7a6b" small={small} portAmt={dPortAmt||0} portCnt={complaintsCounts.dc||dCnt||dPortCnt||0}/>
             <div style={{ padding: small?"10px":"14px 16px", display:"flex", flexDirection:"column", gap: small?8:10 }}>
               {(() => {
                 const ALWAYS_SHOW = [
@@ -10879,7 +10879,7 @@ export default function Dashboard() {
 
           {/* HO */}
           <div style={{ background:"#fff", borderRadius:16, boxShadow:"0 3px 18px rgba(0,0,0,0.07)", border:"1.5px solid #f0ece8", overflow:"hidden" }}>
-            <SectionHeader title="🏛 المكتب الرئيسي" paid={hPd} adj={hAd} color="#6c3fa0" small={small} portAmt={hPortAmt||0} portCnt={hPortCnt||0}/>
+            <SectionHeader title="🏛 المكتب الرئيسي" paid={hPd} adj={hAd} color="#6c3fa0" small={small} portAmt={hPortAmt||0} portCnt={complaintsCounts.ho||hCnt||hPortCnt||0}/>
             <div style={{ padding: small?"10px":"14px 16px", display:"flex", flexDirection:"column", gap: small?8:10 }}>
               {[...(data.headOffice||[])].filter(c=>c.name!=='HO').sort((a,b)=>((b.paid||0)+(b.adj||0))-((a.paid||0)+(a.adj||0))).map((c,i) => (
                 <EntityCard key={c.name} name={c.name} paid={c.paid} adj={c.adj} cBranch={complaintsBranchMap} color="#6c3fa0" rank={i+1} closed={c.closed||0} active={c.active||0} small={small} portAmt={c.portAmt||0} portCnt={c.portCnt||0} principalAmt={c.principalAmt||0}/>
