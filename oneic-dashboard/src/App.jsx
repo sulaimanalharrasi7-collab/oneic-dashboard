@@ -10678,7 +10678,7 @@ export default function Dashboard() {
       {/* ══ BODY ══ */}
       <div style={{ padding:pad, flex:1, overflowY:"auto", overflowX:"hidden" }}>
 
-        {showBulkReport && <BulkPaymentSection bulk={bulkData} small={small} onBulkUpdate={function(d){setBulkData(d);try{localStorage.setItem('oneic_bulk_data',JSON.stringify(d));}catch(e){}}} requireUploadAuth={requireUploadAuth}/>}
+        {showBulkReport && <BulkPaymentSection bulk={bulkData} small={small} onBulkUpdate={function(d){setBulkDataMain(d);try{localStorage.setItem('oneic_bulk_data',JSON.stringify(d));}catch(e){}}} requireUploadAuth={requireUploadAuth}/>}
 
         
       {/* ══ Section 1 ══ */}
