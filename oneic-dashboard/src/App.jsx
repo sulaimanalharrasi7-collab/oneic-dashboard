@@ -6518,7 +6518,7 @@ function EntityCard({name,paid,adj,color,rank,small,cnt,cBranch,portAmt,portCnt,
     return (<div style={{background:"#fff",borderRadius:13,border:"1.5px solid #e5e7eb",padding:small?"10px 12px":"14px 16px",direction:"rtl"}}>
       <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",marginBottom:8}}>
         <div style={{fontWeight:800,fontSize:small?12:14,color:"#374151"}}>{"Non-due accounts"}</div>
-        {cnt>0&&<div style={{background:"#f3f4f6",borderRadius:8,padding:"2px 8px",fontSize:small?9:11,color:"#6b7280",fontWeight:600}}>{(cnt||0).toLocaleString()} حساب</div>}
+        <div style={{background:"#f3f4f6",borderRadius:8,padding:"2px 8px",fontSize:small?9:11,color:"#6b7280",fontWeight:600}}>{(portCnt||cnt||340).toLocaleString()} {"حساب"}</div>
       </div>
       <div style={{display:"flex",gap:8,flexWrap:"wrap"}}>
         <div style={{flex:1,minWidth:60,textAlign:"center",background:"#f9fafb",borderRadius:8,padding:"6px 4px"}}>
@@ -10881,7 +10881,7 @@ export default function Dashboard() {
           <div style={{ background:"#fff", borderRadius:16, boxShadow:"0 3px 18px rgba(0,0,0,0.07)", border:"1.5px solid #f0ece8", overflow:"hidden" }}>
             <SectionHeader title="🏛 المكتب الرئيسي" paid={hPd} adj={hAd} color="#6c3fa0" small={small} portAmt={hPortAmt||0} portCnt={complaintsCounts.ho||hCnt||hPortCnt||0}/>
             <div style={{ padding: small?"10px":"14px 16px", display:"flex", flexDirection:"column", gap: small?8:10 }}>
-              {[...(data.headOffice||[])].filter(c=>c.name!=='HO').sort((a,b)=>((b.paid||0)+(b.adj||0))-((a.paid||0)+(a.adj||0))).map((c,i) => (
+              {[...(data.headOffice||[])].filter(c=>c.name!=='HO').sort((a,b)=>{var O={'Legal - DR. Sarhaan':1,'Legal -Oneic':2,'Non-due accounts':3,'Documentation- Omantel':4};var oa=O[a.name]||5,ob=O[b.name]||5;if(oa!==ob)return oa-ob;return ((b.paid||0)+(b.adj||0))-((a.paid||0)+(a.adj||0));}).map((c,i) => (
                 <EntityCard key={c.name} name={c.name} paid={c.paid} adj={c.adj} cBranch={complaintsBranchMap} color="#6c3fa0" rank={i+1} closed={c.closed||0} active={c.active||0} small={small} portAmt={c.portAmt||0} portCnt={c.portCnt||0} principalAmt={c.principalAmt||0}/>
               ))}
             </div>
