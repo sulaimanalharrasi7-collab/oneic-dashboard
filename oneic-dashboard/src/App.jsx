@@ -6518,7 +6518,7 @@ function EntityCard({name,paid,adj,color,rank,small,cnt,cBranch,portAmt,portCnt,
     return (<div style={{background:"#fff",borderRadius:13,border:"1.5px solid #e5e7eb",padding:small?"10px 12px":"14px 16px",direction:"rtl"}}>
       <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",marginBottom:8}}>
         <div style={{display:"flex",alignItems:"center",gap:6}}>
-          <div style={{background:"#6c3fa0",color:"#fff",borderRadius:"50%",width:22,height:22,display:"flex",alignItems:"center",justifyContent:"center",fontSize:11,fontWeight:900,flexShrink:0}}>{rank||3}</div>
+          <div style={{width:small?28:34,height:small?28:34,borderRadius:8,background:"#6c3fa0",flexShrink:0,display:"flex",alignItems:"center",justifyContent:"center",fontSize:small?13:15,fontWeight:900,color:"#fff"}}>{rank||3}</div>
           <div style={{fontWeight:800,fontSize:small?12:14,color:"#374151"}}>{"Non-due accounts"}</div>
         </div>
         <div style={{background:"#f3f4f6",borderRadius:8,padding:"2px 8px",fontSize:small?9:11,color:"#6b7280",fontWeight:600}}>{(portCnt||cnt||340).toLocaleString()} {"حساب"}</div>
