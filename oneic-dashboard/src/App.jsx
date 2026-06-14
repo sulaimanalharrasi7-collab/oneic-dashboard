@@ -9688,6 +9688,7 @@ export default function Dashboard() {
 
     // ══ تحديث تلقائي كل 30 ثانية لمزامنة جميع الأجهزة ══
     const interval = setInterval(async () => {
+      if (window._noSyncUntil && Date.now() < window._noSyncUntil) return;
       setSyncing(true);
       try {
         const row = await sbGet('oneic_data');
@@ -9733,6 +9734,7 @@ export default function Dashboard() {
 
   // ══ تحديث فوري من Firebase ══
   const forceRefresh = async () => {
+    window._noSyncUntil = 0;
     setSyncing(true);
     try {
       const row = await sbGet('oneic_data');
@@ -9832,6 +9834,7 @@ export default function Dashboard() {
           var _nho = (_bd.headOffice||[]).map(function(c){var b=branchMap[c.name];return b?Object.assign({},c,{paid:b.paid||0,adj:b.adj||0}):c;});
           var _ud = Object.assign({},_bd,{regions:_nr,debtCompanies:_ndc,headOffice:_nho,_updatedAt:_t3,lastUpdated:_t3});
           lastSyncRef.current = _t3;
+          window._noSyncUntil = Date.now() + 60000;
           setData(_ud);
           try{localStorage.setItem('oneic_dashboard_data',JSON.stringify(_ud));}catch(e){}
           sbUpsert('oneic_data',{payload:_ud}).then(function(){console.log('Complaints saved to Firebase');}).catch(function(e){console.warn(e);});
