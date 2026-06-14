@@ -9256,7 +9256,7 @@ function handlePrint(data) {
   });
 
   // ── شركات التحصيل ──
-  var dcHTML = (data.debtCompanies||[]).map(function(c,i){
+  var dcHTML = (data.debtCompanies||[]).filter(function(c){return c.name!=='Blanks';}).map(function(c,i){
     var tot=(c.paid||0)+(c.adj||0);
     var inactive=['Ejada','Tahseel United','High Speed Company','High Speed company'].includes(c.name)?'<span class="badge-inactive">غير نشطة</span>':'';
     return '<tr class="'+(i%2===0?'even':'odd')+'"><td class="rank">'+String(i+1)+'</td><td class="col-name">'+c.name+inactive+'</td>'
@@ -10856,8 +10856,8 @@ export default function Dashboard() {
                 let dc = (data.debtCompanies||[]).map(c =>
                   c.name==="High Speed company" ? {...c, name:"High Speed Company"} : c
                 );
-                // إزالة التكرار
-                dc = dc.filter((c,i,arr) => arr.findIndex(x=>x.name===c.name)===i);
+                // إزالة التكرار وإخفاء Blanks
+                dc = dc.filter((c,i,arr) => arr.findIndex(x=>x.name===c.name)===i && c.name!=='Blanks');
                 ALWAYS_SHOW.forEach(co => {
                   if (!dc.find(c=>c.name===co.name)) dc.push(co);
                   else {
