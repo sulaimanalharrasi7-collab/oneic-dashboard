@@ -9998,6 +9998,8 @@ export default function Dashboard() {
         '| complaint cols:', hasComplaintCols, '| performance cols:', hasPerformanceCols);
       
       if (isComplaints) {
+        // امنع الـ sync فوراً قبل المعالجة (5 دقائق)
+        window._noSyncUntil = Date.now() + 300000;
         // ملف complaints → يحدّث عدد الحسابات والمبالغ
         const {total,dcCount,hoCount,govCount,dcAmt,hoAmt,govAmt,dcPaid,hoPaid,govPaid,dcAdj,hoAdj,govAdj,regionMap,branchMap} = await parseComplaints(file);
         setComplaintsCount(total);
@@ -10011,7 +10013,11 @@ export default function Dashboard() {
         // ══ حدّث data مباشرة من Complaints ══
         setData(function(prev) {
           var base = dataRef.current || prev;
-          if(!base||!base.regions||!base.regions.length) return prev;
+          if(!base||!base.regions||!base.regions.length) {
+            console.warn('[Complaints] base.regions فارغة، رجع prev');
+            return prev;
+          }
+          console.log('[Complaints] معالجة الملف → regions:', base.regions.length, '| branchMap keys:', Object.keys(branchMap).length, '| regionMap keys:', Object.keys(regionMap).length);
 
           // ── بحث case-insensitive في branchMap ──
           var bmLower = {};
@@ -10087,12 +10093,17 @@ export default function Dashboard() {
 
           var _tF=new Date().toISOString();
           var mg=Object.assign({},base,{regions:newRegions,debtCompanies:newDC,headOffice:newHO,_updatedAt:_tF,lastUpdated:_tF});
+          // امنع الـ sync لمدة 5 دقائق حتى يكتمل الحفظ في Firebase
           lastSyncRef.current=_tF;
-          window._noSyncUntil=Date.now()+60000;
+          window._noSyncUntil=Date.now()+300000;
           try{localStorage.setItem('oneic_dashboard_data',JSON.stringify(mg));}catch(e){}
           try{localStorage.setItem('oneic_complaints_region_map',JSON.stringify(regionMap||{}));}catch(e){}
           try{localStorage.setItem('oneic_complaints_branch_map',JSON.stringify(branchMap||{}));}catch(e){}
-          sbUpsert('oneic_data',{payload:mg}).then(function(){console.log('Complaints saved');}).catch(function(e){console.warn(e);});
+          // احفظ في Firebase وبعد النجاح حدّث lastSyncRef
+          sbUpsert('oneic_data',{payload:mg}).then(function(){
+            console.log('Complaints saved to Firebase ✅');
+            lastSyncRef.current=_tF;
+          }).catch(function(e){console.warn('Firebase save failed:',e);});
           return mg;
         });
         // احفظ complaints في localStorage
