@@ -9578,6 +9578,7 @@ function NotificationStack({ notifications, onDismiss }) {
 
 export default function Dashboard() {
   const lastSyncRef = useRef('');
+  const pendingComplaintsRef = useRef(null);
   const { w } = useWindowSize();
   const isMobile  = w < 640;
   const isTablet  = w >= 640 && w < 1024;
@@ -9704,6 +9705,14 @@ export default function Dashboard() {
         const fullHO = HO_REQ.map(nm => existingHO.find(c=>c.name===nm) || {name:nm,paid:0,adj:0,count:0,...(HO_P[nm]||{})});
         let d = { ...row, headOffice: fullHO, _updatedAt: row._updatedAt||row.lastUpdated||'' };
         lastSyncRef.current = d._updatedAt||'';
+        if (pendingComplaintsRef.current) {
+          var pc=pendingComplaintsRef.current; pendingComplaintsRef.current=null;
+          var rm2=pc.rm||{}; var bm2=pc.bm||{}; lastSyncRef.current=pc.ts||lastSyncRef.current;
+          d.regions=(d.regions||[]).map(function(r){var rk=(r.nameEn||'').trim().toLowerCase();var rm3=rm2[r.nameEn]||rm2[r.nameAr||''];if(!rm3){var ks=Object.keys(rm2);for(var i=0;i<ks.length;i++){var kl=ks[i].toLowerCase();if(kl===rk||kl.indexOf(rk)>=0||rk.indexOf(kl)>=0){rm3=rm2[ks[i]];break;}}}return rm3?Object.assign({},r,{paid:rm3.paid||0,adj:rm3.adj||0,principalAmt:rm3.amt||r.principalAmt||r.portAmt||0}):r;});
+          d.debtCompanies=(d.debtCompanies||[]).map(function(c){var b=bm2[c.name];return b?Object.assign({},c,{paid:b.paid||0,adj:b.adj||0,principalAmt:b.amt||c.principalAmt||0}):c;});
+          d.headOffice=(d.headOffice||[]).map(function(c){var b=bm2[c.name];return b?Object.assign({},c,{paid:b.paid||0,adj:b.adj||0,principalAmt:b.amt||c.principalAmt||0}):c;});
+          d._updatedAt=pc.ts; console.log('[load] Applied pending Complaints!');
+        }
         if (row.complaintsBranchMap) setComplaintsBranchMap(row.complaintsBranchMap);
         if (row.complaintsRegionMap) setComplaintsRegionMap(row.complaintsRegionMap);
         if (row.complaintsPrincipal) setComplaintsPrincipal(row.complaintsPrincipal);
@@ -9930,6 +9939,7 @@ export default function Dashboard() {
         // ══ حدّث data مباشرة من Complaints ══
         var _tsComp = new Date().toISOString();
         lastSyncRef.current = _tsComp;
+        pendingComplaintsRef.current = {rm:regionMap,bm:branchMap,ts:_tsComp};
         setComplaintsRegionMap({});
         setData(function(prev) {
           if (!prev || !prev.regions || !prev.regions.length) { console.warn('[Complaints] No base data - upload XLS first!'); return prev; }
@@ -10157,8 +10167,8 @@ export default function Dashboard() {
   const hCnt = data.headOffice.reduce((s,r)=>s+(r.count||0),0);
   const hPortAmt = data.headOffice.reduce((s,r)=>s+Math.max(0,r.principalAmt||r.portAmt||0),0);
   const hPortCnt = data.headOffice.reduce((s,r)=>s+(r.portCnt||0),0);
-  const totalPaid = data.totalCollection?.paid || (gPd+dPd+hPd);
-  const totalAdj  = data.totalCollection?.adj  || (gAd+dAd+hAd);
+  const totalPaid = gPd+dPd+hPd;
+  const totalAdj  = gAd+dAd+hAd;
   const totalPort = data.totalPortfolio?.amt    || 9414256.834;
   const gTotal = totalPaid+totalAdj;
   const GRAND_TOTAL_FIXED = 1020464.134;
