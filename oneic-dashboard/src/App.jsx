@@ -9008,9 +9008,10 @@ async function parseComplaints(file) {
             }
           } else if (HO_REGIONS.some(k => region.trim() === k.trim())) {
             // المكتب الرئيسي → نجمّع الكل تحت مفتاح واحد
-            hoCount++; hoAmt += amt; hoPaid += paidAmt; hoAdj += adjAmt;
             // per-collector للـ HO
             if (collector2) {
+              // نعدّ فقط السجلات التي لها collector (نستبعد Blanks من العداد)
+              hoCount++; hoAmt += amt; hoPaid += paidAmt; hoAdj += adjAmt;
               var hoColKey = collector2;
               var cLow = collector2.toLowerCase();
               if (cLow.indexOf('sarhaan')>=0||cLow.indexOf('sarhan')>=0||cLow.indexOf('dr.')>=0||cLow.indexOf(' dr')>=0) hoColKey='Legal - DR. Sarhaan';
@@ -9022,10 +9023,11 @@ async function parseComplaints(file) {
               branchMap[hoColKey].amt  += amt;
               branchMap[hoColKey].paid += paidAmt;
               branchMap[hoColKey].adj  += adjAmt;
+              const hoKey = 'HEAD_OFFICE_TOTAL';
+              if (!branchMap[hoKey]) branchMap[hoKey] = {count:0, amt:0};
+              branchMap[hoKey].count++; branchMap[hoKey].amt += amt;
             }
-            const hoKey = 'HEAD_OFFICE_TOTAL';
-            if (!branchMap[hoKey]) branchMap[hoKey] = {count:0, amt:0};
-            branchMap[hoKey].count++; branchMap[hoKey].amt += amt;
+            // السجلات بدون collector (Blanks) يتم تجاهلها تماماً
           } else {
             // مكاتب أونك → نجمّع حسب Region
             govCount++; govAmt += amt; govPaid += paidAmt; govAdj += adjAmt;
@@ -9187,8 +9189,9 @@ function handlePrint(data) {
   var govAdj  = (data.regions||[]).reduce(function(s,r){return s+r.adj;},0);
   var dcPaid  = (data.debtCompanies||[]).reduce(function(s,r){return s+r.paid;},0);
   var dcAdj   = (data.debtCompanies||[]).reduce(function(s,r){return s+r.adj;},0);
-  var hoPaid  = (data.headOffice||[]).reduce(function(s,r){return s+Math.max(0,r.paid||0);},0);
-  var hoAdj   = (data.headOffice||[]).reduce(function(s,r){return s+Math.max(0,r.adj||0);},0);
+  var _hoF    = (data.headOffice||[]).filter(function(r){return r.name&&r.name!=='HO'&&r.name!=='Blanks';});
+  var hoPaid  = _hoF.reduce(function(s,r){return s+Math.max(0,r.paid||0);},0);
+  var hoAdj   = _hoF.reduce(function(s,r){return s+Math.max(0,r.adj||0);},0);
   // نفس منطق الداشبورد بالضبط: data.totalCollection?.paid || (gPd+dPd+hPd)
   var grandPaid = (data.totalCollection&&data.totalCollection.paid) ? data.totalCollection.paid : (govPaid+dcPaid+hoPaid);
   var grandAdj  = (data.totalCollection&&data.totalCollection.adj)  ? data.totalCollection.adj  : (govAdj+dcAdj+hoAdj);
@@ -9261,7 +9264,7 @@ function handlePrint(data) {
   }).join('');
 
   // ── المكتب الرئيسي ──
-  var hoHTML = (data.headOffice||[]).map(function(c,i){
+  var hoHTML = (data.headOffice||[]).filter(function(c){return c.name&&c.name!=='HO'&&c.name!=='Blanks';}).map(function(c,i){
     if (c.name==='Non-due accounts'||c.name==='HO') {
       return '<tr class="'+(i%2===0?'even':'odd')+'"><td class="rank">'+String(i+1)+'</td><td class="col-name">'+c.name+' <span class="badge-sm">'+((c.portCnt||0).toLocaleString())+' حساب فقط</span></td>'
         +'<td colspan="3" class="center-cell" style="color:#888;font-style:italic">حسابات غير مستحقة</td></tr>';
@@ -10139,11 +10142,12 @@ export default function Dashboard() {
   const dCnt = data.debtCompanies.reduce((s,r)=>s+(r.count||0),0);
   const dPortAmt = data.debtCompanies.reduce((s,r)=>s+(r.principalAmt||r.portAmt||0),0);
   const dPortCnt = data.debtCompanies.reduce((s,r)=>s+(r.portCnt||0),0);
-  const hPd = data.headOffice.reduce((s,r)=>s+Math.max(0,r.paid||0),0);
-  const hAd = data.headOffice.reduce((s,r)=>s+Math.max(0,r.adj||0),0);
-  const hCnt = data.headOffice.reduce((s,r)=>s+(r.count||0),0);
-  const hPortAmt = data.headOffice.reduce((s,r)=>s+Math.max(0,r.principalAmt||r.portAmt||0),0);
-  const hPortCnt = data.headOffice.reduce((s,r)=>s+(r.portCnt||0),0);
+  const _hoFiltered = data.headOffice.filter(r=>r.name&&r.name!=='HO'&&r.name!=='Blanks');
+  const hPd = _hoFiltered.reduce((s,r)=>s+Math.max(0,r.paid||0),0);
+  const hAd = _hoFiltered.reduce((s,r)=>s+Math.max(0,r.adj||0),0);
+  const hCnt = _hoFiltered.reduce((s,r)=>s+(r.count||0),0);
+  const hPortAmt = _hoFiltered.reduce((s,r)=>s+Math.max(0,r.principalAmt||r.portAmt||0),0);
+  const hPortCnt = _hoFiltered.reduce((s,r)=>s+(r.portCnt||0),0);
   const totalPaid = data.totalCollection?.paid || (gPd+dPd+hPd);
   const totalAdj  = data.totalCollection?.adj  || (gAd+dAd+hAd);
   const totalPort = data.totalPortfolio?.amt    || 9414256.834;
