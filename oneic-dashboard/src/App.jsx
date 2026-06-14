@@ -6656,7 +6656,7 @@ function EntityCard({name,paid,adj,color,rank,small,cnt,cBranch,portAmt,portCnt,
 // ── SummaryCard ────────────────────────────────────────────────────────────
 function SummaryCard({label,paid,adj,cnt,cntPaid,cntAdj,cntTotal,portAmt,color,icon,pct,small,isMobile,isTablet,principalAmt}) {
   // الإجمالي = Paid + Adj | قيمة المحفظة = Principal
-  const effPortAmt = principalAmt>0 ? principalAmt : portAmt;
+  const effPortAmt = portAmt||0;
   const total = paid + adj;
   // عدد الحسابات المنفصل لكل خانة
   const _cntPaid  = (cntPaid  != null && cntPaid  > 0) ? cntPaid  : (cnt||0);
@@ -10634,24 +10634,24 @@ export default function Dashboard() {
                 cntPaid={complaintsCounts.govPaid||gCounts.paid||null}
                 cntAdj={complaintsCounts.govAdj||gCounts.adj||null}
                 cntTotal={complaintsCounts.govTotal||gCounts.combined||null}
-                portAmt={complaintsPrincipal.gov>0?complaintsPrincipal.gov:(complaintsAmts.gov||gPortAmt||0)}
-                color="#e85d20" icon="🗺" pct={p(gPd+gAd)} small={small} isMobile={isMobile} isTablet={isTablet} principalAmt={complaintsPrincipal.gov||0}/>
+                portAmt={gPortAmt||0}
+                color="#e85d20" icon="🗺" pct={p(gPd+gAd)} small={small} isMobile={isMobile} isTablet={isTablet} />
               <SummaryCard label="شركات التحصيل"
                 paid={dPd} adj={dAd}
                 cnt={complaintsCounts.dc||dCounts.total||dPortCnt||dCnt||0}
                 cntPaid={complaintsCounts.dcPaid||dCounts.paid||null}
                 cntAdj={complaintsCounts.dcAdj||dCounts.adj||null}
                 cntTotal={complaintsCounts.dcTotal||dCounts.combined||null}
-                portAmt={complaintsPrincipal.dc>0?complaintsPrincipal.dc:(complaintsAmts.dc||dPortAmt||0)}
-                color="#1a7a6b" icon="🏢" pct={p(dPd+dAd)} small={small} isMobile={isMobile} isTablet={isTablet} principalAmt={complaintsPrincipal.dc||0}/>
+                portAmt={dPortAmt||0}
+                color="#1a7a6b" icon="🏢" pct={p(dPd+dAd)} small={small} isMobile={isMobile} isTablet={isTablet} />
               <SummaryCard label="المكتب الرئيسي"
                 paid={hPd} adj={hAd}
                 cnt={complaintsCounts.ho||hCounts.total||hPortCnt||hCnt||0}
                 cntPaid={complaintsCounts.hoPaid||hCounts.paid||null}
                 cntAdj={complaintsCounts.hoAdj||hCounts.adj||null}
                 cntTotal={complaintsCounts.hoTotal||hCounts.combined||null}
-                portAmt={complaintsPrincipal.ho>0?complaintsPrincipal.ho:(complaintsAmts.ho||hPortAmt||0)}
-                color="#6c3fa0" icon="🏛" pct={p(hPd+hAd)} small={small} isMobile={isMobile} isTablet={isTablet} principalAmt={complaintsPrincipal.ho||0}/>
+                portAmt={hPortAmt||0}
+                color="#6c3fa0" icon="🏛" pct={p(hPd+hAd)} small={small} isMobile={isMobile} isTablet={isTablet} />
             </>);
           })()}
         </div>
@@ -10663,7 +10663,7 @@ export default function Dashboard() {
           border:"1.5px solid #f0ece8", marginBottom: small?14:18,
           overflow:"hidden"
         }}>
-          <SectionHeader title="🗺 مكاتب أونك" paid={gPd} adj={gAd} color="#e85d20" small={small} portAmt={complaintsPrincipal.gov>0?complaintsPrincipal.gov:(complaintsAmts.gov||gPortAmt||0)} portCnt={complaintsCounts.gov||gPortCnt||data.regions?.reduce((s,r)=>s+(r.portCnt||0),0)||0}/>
+          <SectionHeader title="🗺 مكاتب أونك" paid={gPd} adj={gAd} color="#e85d20" small={small} portAmt={gPortAmt||0} portCnt={complaintsCounts.gov||gPortCnt||data.regions?.reduce((s,r)=>s+(r.portCnt||0),0)||0}/>
           <div style={{ padding: small?"10px":"14px 16px", display:"flex", flexDirection:"column", gap: small?8:10 }}>
             {[...data.regions].sort((a,b)=>(b.principalAmt||b.portAmt||0)-(a.principalAmt||a.portAmt||0)).map((r,i) => (
               <RegionRow key={r.id} region={r} idx={i} complaintsRegionMap={complaintsRegionMap}
