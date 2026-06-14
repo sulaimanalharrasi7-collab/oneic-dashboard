@@ -9898,7 +9898,7 @@ export default function Dashboard() {
           }
           // Decode first 500 chars
           let s = '';
-          for (let i = start; i < Math.min(start+1000, bytes.length-1); i += 2) {
+          for (let i = start; i < Math.min(start+4000, bytes.length-1); i += 2) {
             const c = bytes[i] | (bytes[i+1] << 8);
             if (c > 0) s += String.fromCharCode(c);
           }
@@ -9907,11 +9907,11 @@ export default function Dashboard() {
       })();
       
       // كشف النوع: الأولوية لـ performance إذا وُجد Region + Paid Amount + Collector
-      const hasComplaintCols   = sniffText.includes('Complaint ID') || sniffText.includes('Agreement No');
-      const hasPerformanceCols = sniffText.includes('Paid Amount') && sniffText.includes('Region') && sniffText.includes('Collector');
-      // Performance يأخذ الأولوية دائماً إذا وُجدت الأعمدة الثلاثة
-      const nameHasComplaint = file.name.toLowerCase().includes('complaint');
-      const isComplaints = nameHasComplaint || (!hasPerformanceCols && hasComplaintCols);
+      const hasComplaintCols   = sniffText.includes('Complaint ID') || sniffText.includes('Agreement No') || sniffText.includes('Complaint Type') || sniffText.includes('Civil/CR No') || sniffText.includes('Complaint Code');
+      const nameHasComplaint  = file.name.toLowerCase().includes('complaint');
+      const nameHasExport     = file.name.toLowerCase().includes('export');
+      // Complaints = اسمه complaints/export أو يحتوي أعمدة Complaints الحصرية
+      const isComplaints = nameHasComplaint || nameHasExport || hasComplaintCols;
       
       console.log('[handleFile]', file.name, '→', isComplaints ? 'complaints' : 'performance',
         '| complaint cols:', hasComplaintCols, '| performance cols:', hasPerformanceCols);
@@ -9928,8 +9928,11 @@ export default function Dashboard() {
         setComplaintsRegionMap(regionMap||{});
         setComplaintsBranchMap(branchMap||{});
         // ══ حدّث data مباشرة من Complaints ══
+        var _tsComp = new Date().toISOString();
+        lastSyncRef.current = _tsComp;
+        setComplaintsRegionMap({});
         setData(function(prev) {
-          if (!prev) return prev;
+          if (!prev || !prev.regions || !prev.regions.length) { console.warn('[Complaints] No base data - upload XLS first!'); return prev; }
           // حدّث regions من regionMap
           var newRegions = (prev.regions||[]).map(function(r) {
             var rKey = (r.nameEn||r.nameAr||'').trim();
@@ -9975,15 +9978,32 @@ export default function Dashboard() {
               newDC.push({name:bkn, paid:bkm.paid||0, adj:bkm.adj||0, principalAmt:bkm.amt||0, portAmt:bkm.amt||0, portCnt:bkm.count||0, count:bkm.count||0});
             }
           }
-          var _ts2 = new Date().toISOString();
+          var _ts2 = _tsComp || new Date().toISOString();
           var updatedData = Object.assign({},prev,{regions:newRegions, debtCompanies:newDC, headOffice:newHO, _updatedAt:_ts2, lastUpdated:_ts2});
           lastSyncRef.current = _ts2;
           try { localStorage.setItem('oneic_complaints_count', String(total)); localStorage.setItem('oneic_complaints_counts', JSON.stringify({dc:dcCount,ho:hoCount,gov:govCount})); localStorage.setItem('oneic_complaints_amts', JSON.stringify({dc:dcAmt,ho:hoAmt,gov:govAmt})); localStorage.setItem('oneic_complaints_region_map', JSON.stringify(regionMap||{})); localStorage.setItem('oneic_complaints_branch_map', JSON.stringify(branchMap||{})); } catch(ex){}
           try { localStorage.setItem('oneic_dashboard_data', JSON.stringify(updatedData)); } catch(e) {}
           sbUpsert('oneic_data', { payload: updatedData }).then(function(){ console.log('Complaints saved to Firebase'); }).catch(function(e){ console.warn('Firebase save failed:', e.message); });
+          console.log('[Complaints] Updated: regions='+newRegions.length+' DC='+newDC.length+' HO='+newHO.length);
           return updatedData;
         });
 
+        // retry بعد ثانيتين
+        setTimeout(function(){
+          setData(function(prevR){
+            if(!prevR||!prevR.regions||!prevR.regions.length) return prevR;
+            var changed=false;
+            var rr=(prevR.regions||[]).map(function(r){
+              var rKey=(r.nameEn||r.nameAr||'').trim();var rKeyL=rKey.toLowerCase();
+              var rm=regionMap[rKey]||regionMap[r.nameEn||'']||regionMap[r.nameAr||''];
+              if(!rm){var ks=Object.keys(regionMap);for(var ki=0;ki<ks.length;ki++){var kl=ks[ki].toLowerCase();if(kl===rKeyL||kl.indexOf(rKeyL)>=0||rKeyL.indexOf(kl)>=0){rm=regionMap[ks[ki]];break;}}}
+              if(rm&&(r.paid!==rm.paid||r.adj!==rm.adj)){changed=true;return Object.assign({},r,{paid:rm.paid||0,adj:rm.adj||0,principalAmt:rm.amt||r.principalAmt||r.portAmt||0});}
+              return r;
+            });
+            if(changed){console.log('[Complaints Retry] Applied!');return Object.assign({},prevR,{regions:rr});}
+            return prevR;
+          });
+        },2000);
         setSuccess(true);
         setTimeout(()=>setSuccess(false), 3000);
       } else {
