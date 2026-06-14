@@ -10091,6 +10091,24 @@ export default function Dashboard() {
             return Object.assign({},c,{paid:0, adj:0, count:0});
           });
 
+          // تنظيف newDC: إزالة التكرار والأسماء المحجوبة
+          var HIDE_DC = ['blanks','ho','over paid','siaf legal','unknown','nan'];
+          var seenDC = {};
+          newDC = newDC.filter(function(c) {
+            var nl = (c.name||'').trim().toLowerCase();
+            if (HIDE_DC.indexOf(nl) >= 0) return false;
+            // توحيد "high speed company" بكل أشكالها
+            var normName = nl === 'high speed company' ? 'High Speed Company' : c.name;
+            c.name = normName;
+            if (seenDC[nl]) return false;
+            seenDC[nl] = true;
+            return true;
+          });
+
+          // تنظيف newHO: إزالة الأسماء المحجوبة
+          var HIDE_HO = ['blanks','ho','over paid','siaf legal','unknown','nan'];
+          newHO = newHO.filter(function(c){ return HIDE_HO.indexOf((c.name||'').trim().toLowerCase()) < 0; });
+
           var _tF=new Date().toISOString();
           var mg=Object.assign({},base,{regions:newRegions,debtCompanies:newDC,headOffice:newHO,_updatedAt:_tF,lastUpdated:_tF});
           // امنع الـ sync لمدة 5 دقائق حتى يكتمل الحفظ في Firebase
@@ -10103,7 +10121,10 @@ export default function Dashboard() {
           sbUpsert('oneic_data',{payload:mg}).then(function(){
             console.log('Complaints saved to Firebase ✅');
             lastSyncRef.current=_tF;
+            // تأكيد: امنع الـ sync لمدة 5 دقائق إضافية بعد الحفظ
+            window._noSyncUntil = Date.now() + 300000;
           }).catch(function(e){console.warn('Firebase save failed:',e);});
+          console.log('[Complaints] setData mg.debtCompanies:', mg.debtCompanies.map(function(c){return c.name+':'+c.paid.toFixed(0);}));
           return mg;
         });
         // احفظ complaints في localStorage
