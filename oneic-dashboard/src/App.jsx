@@ -9577,8 +9577,8 @@ function NotificationStack({ notifications, onDismiss }) {
 }
 
 export default function Dashboard() {
-
-  const dataRef = useRef(null);  const lastSyncRef = useRef('');
+  const dataRef = useRef(null);
+  const lastSyncRef = useRef('');
   const { w } = useWindowSize();
   const isMobile  = w < 640;
   const isTablet  = w >= 640 && w < 1024;
@@ -9712,8 +9712,7 @@ export default function Dashboard() {
         if (row.complaintsPrincipal) setComplaintsPrincipal(row.complaintsPrincipal);
         if (row.complaintsPaidState) setComplaintsPaidState(row.complaintsPaidState);
         if (row.complaintsAdjState)  setComplaintsAdjState(row.complaintsAdjState);
-        if(d.headOffice)d.headOffice=d.headOffice.map(function(c){return(c.name==='Legal -Oneic'||!c.name)?Object.assign({},c,{name:'Legal -Oneic'}):c;});
-        if(d.headOffice)d.headOffice=d.headOffice.filter(function(c){return c.name!=='Legal -Oneic';}).map(function(c){return(!c.name)?Object.assign({},c,{name:'Legal -Oneic'}):c;});
+        if(d.headOffice)d.headOffice=d.headOffice.filter(function(c){return c.name&&c.name!=='Blanks';});
         setData(d);
         try { localStorage.setItem('oneic_dashboard_data', JSON.stringify(d)); } catch(e) {}
         if (row.history?.length > 0) {
@@ -9936,10 +9935,8 @@ export default function Dashboard() {
         setComplaintsRegionMap(regionMap||{});
         setComplaintsBranchMap(branchMap||{});
         // ══ حدّث data مباشرة من Complaints ══
-        setData(function(prev) {
-          var base = dataRef.current || prev;
-          if (!base || !base.regions || !base.regions.length) return prev;
-          // حدّث regions من regionMap
+        setData(function(prev) { var base = dataRef.current || prev; if(!base||!base.regions||!base.regions.length)return prev;
+          var newRegions = (base.regions||[]).map(function(r) {
           var newRegions = (base.regions||[]).map(function(r) {
             var rKey = (r.nameEn||r.nameAr||'').trim();
             var rKeyL = rKey.toLowerCase();
@@ -9984,7 +9981,7 @@ export default function Dashboard() {
               newDC.push({name:bkn, paid:bkm.paid||0, adj:bkm.adj||0, principalAmt:bkm.amt||0, portAmt:bkm.amt||0, portCnt:bkm.count||0, count:bkm.count||0});
             }
           }
-          return Object.assign({},base,{regions:newRegions, debtCompanies:newDC, headOffice:newHO});
+          var _tF=new Date().toISOString();var mg=Object.assign({},base,{regions:newRegions,debtCompanies:newDC,headOffice:newHO,_updatedAt:_tF,lastUpdated:_tF});lastSyncRef.current=_tF;window._noSyncUntil=Date.now()+60000;try{localStorage.setItem('oneic_dashboard_data',JSON.stringify(mg));}catch(e){}try{localStorage.setItem('oneic_complaints_region_map',JSON.stringify(regionMap||{}));}catch(e){}try{localStorage.setItem('oneic_complaints_branch_map',JSON.stringify(branchMap||{}));}catch(e){}sbUpsert('oneic_data',{payload:mg}).then(function(){console.log('Complaints saved');}).catch(function(e){console.warn(e);});return mg;
         });
         // احفظ complaints في localStorage
         try {
@@ -9996,12 +9993,6 @@ export default function Dashboard() {
         } catch(ex){}
         // احفظ data المحدَّثة في localStorage وحدّث lastSyncRef
         // لمنع interval من تجاوز تحديث Complaints
-        setData(function(latest) {
-          try { localStorage.setItem('oneic_dashboard_data', JSON.stringify(latest)); } catch(e) {}
-          lastSyncRef.current = latest._updatedAt || lastSyncRef.current;
-          // احفظ في Firebase حتى تتحدث الأجهزة الأخرى
-          var _ts2 = new Date().toISOString();
-          var latestToSave = Object.assign({},latest,{_updatedAt:_ts2,lastUpdated:_ts2});
           lastSyncRef.current = _ts2;
           sbUpsert('oneic_data', { payload: latestToSave }).then(function(){
             console.log('✅ Complaints data saved to Firebase:', _ts2);
@@ -10009,9 +10000,7 @@ export default function Dashboard() {
           try { localStorage.setItem('oneic_dashboard_data', JSON.stringify(latestToSave)); } catch(e) {}
           return latestToSave;
         });
-        window._noSyncUntil = Date.now() + 60000;
-        console.log('[Complaints] Blocking sync for 60s');
-        setData(function(lt){if(!lt||!lt.regions)return lt;var _ts=new Date().toISOString();var sv=Object.assign({},lt,{_updatedAt:_ts,lastUpdated:_ts});lastSyncRef.current=_ts;try{localStorage.setItem('oneic_dashboard_data',JSON.stringify(sv));}catch(e){}try{localStorage.setItem('oneic_complaints_region_map',JSON.stringify(regionMap||{}));}catch(e){}try{localStorage.setItem('oneic_complaints_branch_map',JSON.stringify(branchMap||{}));}catch(e){}sbUpsert('oneic_data',{payload:sv}).then(function(){console.log('Complaints saved to Firebase');}).catch(function(e){console.warn(e);});return sv;});
+        // حفظ في Firebase + منع interval
         setSuccess(true);
         setTimeout(()=>setSuccess(false), 3000);
       } else {
