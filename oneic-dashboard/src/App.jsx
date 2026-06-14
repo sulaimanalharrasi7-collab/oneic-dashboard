@@ -9577,7 +9577,8 @@ function NotificationStack({ notifications, onDismiss }) {
 }
 
 export default function Dashboard() {
-  const lastSyncRef = useRef('');
+
+  const dataRef = useRef(null);  const lastSyncRef = useRef('');
   const { w } = useWindowSize();
   const isMobile  = w < 640;
   const isTablet  = w >= 640 && w < 1024;
@@ -9630,7 +9631,9 @@ export default function Dashboard() {
   });
 
   // ── تحميل السجل التاريخي من Firebase على كل الأجهزة ─────────────────────
-  useEffect(() => {
+  useEffect(() => { dataRef.current = data; }, [data]);
+
+    useEffect(() => {
     async function loadHistory() {
       try {
         const res = await fetch('https://oneic-dashboard-default-rtdb.firebaseio.com/history.json');
@@ -9709,6 +9712,7 @@ export default function Dashboard() {
         if (row.complaintsPrincipal) setComplaintsPrincipal(row.complaintsPrincipal);
         if (row.complaintsPaidState) setComplaintsPaidState(row.complaintsPaidState);
         if (row.complaintsAdjState)  setComplaintsAdjState(row.complaintsAdjState);
+        if(d.headOffice)d.headOffice=d.headOffice.map(function(c){return(c.name==='Blanks'||!c.name)?Object.assign({},c,{name:'Legal -Oneic'}):c;});
         setData(d);
         try { localStorage.setItem('oneic_dashboard_data', JSON.stringify(d)); } catch(e) {}
         if (row.history?.length > 0) {
@@ -9911,7 +9915,7 @@ export default function Dashboard() {
       const hasPerformanceCols = sniffText.includes('Paid Amount') && sniffText.includes('Region') && sniffText.includes('Collector');
       // Performance يأخذ الأولوية دائماً إذا وُجدت الأعمدة الثلاثة
       const nameHasComplaint = file.name.toLowerCase().includes('complaint');
-      const isComplaints = nameHasComplaint || (!hasPerformanceCols && hasComplaintCols);
+      const isComplaints = nameHasComplaint || file.name.toLowerCase().includes('export') || hasComplaintCols;
       
       console.log('[handleFile]', file.name, '→', isComplaints ? 'complaints' : 'performance',
         '| complaint cols:', hasComplaintCols, '| performance cols:', hasPerformanceCols);
@@ -9929,9 +9933,10 @@ export default function Dashboard() {
         setComplaintsBranchMap(branchMap||{});
         // ══ حدّث data مباشرة من Complaints ══
         setData(function(prev) {
-          if (!prev) return prev;
+          var base = dataRef.current || prev;
+          if (!base || !base.regions || !base.regions.length) return prev;
           // حدّث regions من regionMap
-          var newRegions = (prev.regions||[]).map(function(r) {
+          var newRegions = (base.regions||[]).map(function(r) {
             var rKey = (r.nameEn||r.nameAr||'').trim();
             var rKeyL = rKey.toLowerCase();
             var rm = regionMap[rKey] || regionMap[r.nameEn] || regionMap[r.nameAr||''];
@@ -9953,13 +9958,13 @@ export default function Dashboard() {
             return r;
           });
           // حدّث debtCompanies من branchMap
-          var newDC = (prev.debtCompanies||[]).map(function(c) {
+          var newDC = (base.debtCompanies||[]).map(function(c) {
             var bm = branchMap[c.name];
             if (bm) return Object.assign({},c,{paid:bm.paid||0, adj:bm.adj||0, principalAmt:bm.amt||c.principalAmt||c.portAmt||0, portCnt:bm.count||c.portCnt||0, count:bm.count||c.count||0});
             return c;
           });
           // حدّث headOffice من branchMap
-          var newHO = (prev.headOffice||[]).map(function(c) {
+          var newHO = (base.headOffice||[]).map(function(c) {
             var bm = branchMap[c.name];
             if (bm) return Object.assign({},c,{paid:bm.paid||0, adj:bm.adj||0, principalAmt:bm.amt||c.principalAmt||c.portAmt||0, portCnt:bm.count||c.portCnt||0, count:bm.count||c.count||0});
             return c;
@@ -9975,7 +9980,7 @@ export default function Dashboard() {
               newDC.push({name:bkn, paid:bkm.paid||0, adj:bkm.adj||0, principalAmt:bkm.amt||0, portAmt:bkm.amt||0, portCnt:bkm.count||0, count:bkm.count||0});
             }
           }
-          return Object.assign({},prev,{regions:newRegions, debtCompanies:newDC, headOffice:newHO});
+          return Object.assign({},base,{regions:newRegions, debtCompanies:newDC, headOffice:newHO});
         });
         // احفظ complaints في localStorage
         try {
@@ -10000,6 +10005,7 @@ export default function Dashboard() {
           try { localStorage.setItem('oneic_dashboard_data', JSON.stringify(latestToSave)); } catch(e) {}
           return latestToSave;
         });
+        setData(function(lt){if(!lt||!lt.regions)return lt;var _ts=new Date().toISOString();var sv=Object.assign({},lt,{_updatedAt:_ts,lastUpdated:_ts});lastSyncRef.current=_ts;try{localStorage.setItem('oneic_dashboard_data',JSON.stringify(sv));}catch(e){}try{localStorage.setItem('oneic_complaints_region_map',JSON.stringify(regionMap||{}));}catch(e){}try{localStorage.setItem('oneic_complaints_branch_map',JSON.stringify(branchMap||{}));}catch(e){}sbUpsert('oneic_data',{payload:sv}).then(function(){console.log('Complaints saved to Firebase');}).catch(function(e){console.warn(e);});return sv;});
         setSuccess(true);
         setTimeout(()=>setSuccess(false), 3000);
       } else {
@@ -10587,7 +10593,7 @@ export default function Dashboard() {
           <img src={LOGO} alt="ONEIC" style={{height:40,objectFit:"contain"}}/>
           <div>
             <div style={{fontSize:14,fontWeight:900,color:"#e85d20"}}>لوحة تحكم إدارة تحصيل الديون</div>
-            <div style={{fontSize:11,color:"#555"}}>Debt Collection Management Dashboard · تاريخ التقرير: {data.uploadDate} · {data.totalRecords?.toLocaleString()} سجل</div>
+            <div style={{fontSize:9,color:"#555"}}>Debt Collection Management Dashboard · تاريخ التقرير: {data.uploadDate} · {data.totalRecords?.toLocaleString()} سجل</div>
           </div>
         </div>
         <div style={{textAlign:"right",fontSize:9,color:"#555"}}>
@@ -10612,7 +10618,7 @@ export default function Dashboard() {
               {isMobile ? "إدارة الديون" : "لوحة تحكم إدارة تحصيل الديون"}
             </div>
             {!isMobile && <div style={{ fontSize:12, color:"#e85d20", fontWeight:700, marginTop:3 }}>
-              Debt Collection Management Dashboard
+              Omantel Debt Collection Management Dashboard
             </div>}
             {!isMobile && <div style={{ fontSize:10, color:"#16a34a", fontWeight:700, marginTop:2, display:"flex", alignItems:"center", gap:4 }}>
               <span>{"💾"}</span>
