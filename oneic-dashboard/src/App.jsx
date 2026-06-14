@@ -9890,17 +9890,18 @@ export default function Dashboard() {
     }
     var onVisible3 = function() {
       if (document.visibilityState === 'visible') {
+        if (window._noSyncUntil && Date.now() < window._noSyncUntil) return;
         lastSyncRef.current = '';
         doSync();
       }
     };
     var onPageShow3 = function(e) {
-      // موبايل: pageshow عند العودة من الخلفية
+      if (window._noSyncUntil && Date.now() < window._noSyncUntil) return;
       lastSyncRef.current = '';
       doSync();
     };
     var onFocus3 = function() {
-      // موبايل: focus عند العودة
+      if (window._noSyncUntil && Date.now() < window._noSyncUntil) return;
       lastSyncRef.current = '';
       doSync();
     };
@@ -10125,6 +10126,8 @@ export default function Dashboard() {
             window._noSyncUntil = Date.now() + 300000;
           }).catch(function(e){console.warn('Firebase save failed:',e);});
           console.log('[Complaints] setData mg.debtCompanies:', mg.debtCompanies.map(function(c){return c.name+':'+c.paid.toFixed(0);}));
+          // حفظ فوري في localStorage قبل return
+          try { localStorage.setItem('oneic_dashboard_data', JSON.stringify(mg)); } catch(e) {}
           return mg;
         });
         // احفظ complaints في localStorage
