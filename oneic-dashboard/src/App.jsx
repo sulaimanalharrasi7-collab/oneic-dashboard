@@ -9990,15 +9990,6 @@ export default function Dashboard() {
           localStorage.setItem('oneic_complaints_region_map', JSON.stringify(regionMap||{}));
           localStorage.setItem('oneic_complaints_branch_map', JSON.stringify(branchMap||{}));
         } catch(ex){}
-        // احفظ data المحدَّثة في localStorage وحدّث lastSyncRef
-        // لمنع interval من تجاوز تحديث Complaints
-          lastSyncRef.current = _ts2;
-          sbUpsert('oneic_data', { payload: latestToSave }).then(function(){
-            console.log('✅ Complaints data saved to Firebase:', _ts2);
-          }).catch(function(e){ console.warn('Firebase save failed:', e.message); });
-          try { localStorage.setItem('oneic_dashboard_data', JSON.stringify(latestToSave)); } catch(e) {}
-          return latestToSave;
-        });
         // حفظ في Firebase + منع interval
         setSuccess(true);
         setTimeout(()=>setSuccess(false), 3000);
