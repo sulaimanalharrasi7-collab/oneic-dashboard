@@ -6215,7 +6215,7 @@ async function parseXLS(file) {
 
   // ── شركات التحصيل ─────────────────────────────────────────────────────
   const DC_REQUIRED = ["Matrix Debt Collection","National Center","Compass Risk Support Services","Ejada","Tahseel United","High Speed Company"];
-  const dcList = Object.entries(dcMap).map(([nm,d]) => {
+  const dcList = Object.entries(dcMap).filter(([nm])=>nm.trim()!=='Blanks').map(([nm,d]) => {
     const p = PORT.dc[nm.trim()] || {portAmt:0,portCnt:0};
     // portAmt: من الملف (osAmt) إذا متاح، وإلا من PORT.dc
     const computedPortAmt = d.principalAmt > 0 ? d.principalAmt : p.portAmt;
