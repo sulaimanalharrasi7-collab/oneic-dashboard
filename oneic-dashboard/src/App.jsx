@@ -9838,7 +9838,7 @@ export default function Dashboard() {
           setData(_ud);
           try{localStorage.setItem('oneic_dashboard_data',JSON.stringify(_ud));}catch(e){}
           sbUpsert('oneic_data',{payload:_ud}).then(function(){console.log('Complaints saved to Firebase');}).catch(function(e){console.warn(e);});
-          console.log('[Complaints] paid='+_nr.reduce(function(s,r){return s+(r.paid||0);},0).toFixed(3));
+          console.log('[Complaints] govPaid='+govPaid+' dcPaid='+dcPaid+' paid='+_nr.reduce(function(s,r){return s+(r.paid||0);},0).toFixed(3));
         } else { console.warn('[Complaints] dataRef empty!'); }
         setSuccess(true);
         setTimeout(()=>setSuccess(false), 3000);
@@ -10629,7 +10629,7 @@ export default function Dashboard() {
             const hCounts = calcCounts(data.headOffice);
             return (<>
               <SummaryCard label="مكاتب أونك"
-                paid={complaintsPaidState.gov>0?complaintsPaidState.gov:gPd} adj={complaintsAdjState.gov>0?complaintsAdjState.gov:gAd}
+                paid={gPd} adj={gAd}
                 cnt={complaintsCounts.gov||gCounts.total||gPortCnt||gCnt||0}
                 cntPaid={complaintsCounts.govPaid||gCounts.paid||null}
                 cntAdj={complaintsCounts.govAdj||gCounts.adj||null}
@@ -10637,7 +10637,7 @@ export default function Dashboard() {
                 portAmt={complaintsPrincipal.gov>0?complaintsPrincipal.gov:(complaintsAmts.gov||gPortAmt||0)}
                 color="#e85d20" icon="🗺" pct={p(gPd+gAd)} small={small} isMobile={isMobile} isTablet={isTablet} principalAmt={complaintsPrincipal.gov||0}/>
               <SummaryCard label="شركات التحصيل"
-                paid={complaintsPaidState.dc>0?complaintsPaidState.dc:dPd} adj={complaintsAdjState.dc>0?complaintsAdjState.dc:dAd}
+                paid={dPd} adj={dAd}
                 cnt={complaintsCounts.dc||dCounts.total||dPortCnt||dCnt||0}
                 cntPaid={complaintsCounts.dcPaid||dCounts.paid||null}
                 cntAdj={complaintsCounts.dcAdj||dCounts.adj||null}
@@ -10645,7 +10645,7 @@ export default function Dashboard() {
                 portAmt={complaintsPrincipal.dc>0?complaintsPrincipal.dc:(complaintsAmts.dc||dPortAmt||0)}
                 color="#1a7a6b" icon="🏢" pct={p(dPd+dAd)} small={small} isMobile={isMobile} isTablet={isTablet} principalAmt={complaintsPrincipal.dc||0}/>
               <SummaryCard label="المكتب الرئيسي"
-                paid={complaintsPaidState.ho>0?complaintsPaidState.ho:hPd} adj={complaintsAdjState.ho>0?complaintsAdjState.ho:hAd}
+                paid={hPd} adj={hAd}
                 cnt={complaintsCounts.ho||hCounts.total||hPortCnt||hCnt||0}
                 cntPaid={complaintsCounts.hoPaid||hCounts.paid||null}
                 cntAdj={complaintsCounts.hoAdj||hCounts.adj||null}
@@ -10663,7 +10663,7 @@ export default function Dashboard() {
           border:"1.5px solid #f0ece8", marginBottom: small?14:18,
           overflow:"hidden"
         }}>
-          <SectionHeader title="🗺 مكاتب أونك" paid={complaintsPaidState.gov>0?complaintsPaidState.gov:gPd} adj={complaintsAdjState.gov>0?complaintsAdjState.gov:gAd} color="#e85d20" small={small} portAmt={complaintsPrincipal.gov>0?complaintsPrincipal.gov:(complaintsAmts.gov||gPortAmt||0)} portCnt={complaintsCounts.gov||gPortCnt||data.regions?.reduce((s,r)=>s+(r.portCnt||0),0)||0}/>
+          <SectionHeader title="🗺 مكاتب أونك" paid={gPd} adj={gAd} color="#e85d20" small={small} portAmt={complaintsPrincipal.gov>0?complaintsPrincipal.gov:(complaintsAmts.gov||gPortAmt||0)} portCnt={complaintsCounts.gov||gPortCnt||data.regions?.reduce((s,r)=>s+(r.portCnt||0),0)||0}/>
           <div style={{ padding: small?"10px":"14px 16px", display:"flex", flexDirection:"column", gap: small?8:10 }}>
             {[...data.regions].sort((a,b)=>(b.principalAmt||b.portAmt||0)-(a.principalAmt||a.portAmt||0)).map((r,i) => (
               <RegionRow key={r.id} region={r} idx={i} complaintsRegionMap={complaintsRegionMap}
@@ -10683,7 +10683,7 @@ export default function Dashboard() {
         }}>
           {/* DC */}
           <div style={{ background:"#fff", borderRadius:16, boxShadow:"0 3px 18px rgba(0,0,0,0.07)", border:"1.5px solid #f0ece8", overflow:"hidden" }}>
-            <SectionHeader title="🏢 شركات التحصيل" paid={complaintsPaidState.dc>0?complaintsPaidState.dc:dPd} adj={complaintsAdjState.dc>0?complaintsAdjState.dc:dAd} color="#1a7a6b" small={small} portAmt={dPortAmt||0} portCnt={dPortCnt||0}/>
+            <SectionHeader title="🏢 شركات التحصيل" paid={dPd} adj={dAd} color="#1a7a6b" small={small} portAmt={dPortAmt||0} portCnt={dPortCnt||0}/>
             <div style={{ padding: small?"10px":"14px 16px", display:"flex", flexDirection:"column", gap: small?8:10 }}>
               {(() => {
                 const ALWAYS_SHOW = [
@@ -10716,7 +10716,7 @@ export default function Dashboard() {
 
           {/* HO */}
           <div style={{ background:"#fff", borderRadius:16, boxShadow:"0 3px 18px rgba(0,0,0,0.07)", border:"1.5px solid #f0ece8", overflow:"hidden" }}>
-            <SectionHeader title="🏛 المكتب الرئيسي" paid={complaintsPaidState.ho>0?complaintsPaidState.ho:hPd} adj={complaintsAdjState.ho>0?complaintsAdjState.ho:hAd} color="#6c3fa0" small={small} portAmt={hPortAmt||0} portCnt={hPortCnt||0}/>
+            <SectionHeader title="🏛 المكتب الرئيسي" paid={hPd} adj={hAd} color="#6c3fa0" small={small} portAmt={hPortAmt||0} portCnt={hPortCnt||0}/>
             <div style={{ padding: small?"10px":"14px 16px", display:"flex", flexDirection:"column", gap: small?8:10 }}>
               {[...(data.headOffice||[])].filter(c=>c.name!=='HO').sort((a,b)=>(b.principalAmt||b.portAmt||0)-(a.principalAmt||a.portAmt||0)).map((c,i) => (
                 <EntityCard key={c.name} name={c.name} paid={c.paid} adj={c.adj} cBranch={complaintsBranchMap} color="#6c3fa0" rank={i+1} small={small} portAmt={c.portAmt||0} portCnt={c.portCnt||0} principalAmt={c.principalAmt||0}/>
