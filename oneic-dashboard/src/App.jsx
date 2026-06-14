@@ -9994,16 +9994,10 @@ export default function Dashboard() {
           try { localStorage.setItem('oneic_complaints_count', String(total)); localStorage.setItem('oneic_complaints_counts', JSON.stringify({dc:dcCount,ho:hoCount,gov:govCount})); localStorage.setItem('oneic_complaints_amts', JSON.stringify({dc:dcAmt,ho:hoAmt,gov:govAmt})); localStorage.setItem('oneic_complaints_region_map', JSON.stringify(regionMap||{})); localStorage.setItem('oneic_complaints_branch_map', JSON.stringify(branchMap||{})); } catch(ex){}
           try { localStorage.setItem('oneic_dashboard_data', JSON.stringify(updatedData)); } catch(e) {}
           sbUpsert('oneic_data', { payload: updatedData }).then(function(){
-            console.log('Complaints saved to Firebase - forcing reload...');
-            // أجبر قراءة Firebase الجديدة مباشرة
-            lastSyncRef.current = '';
-            sbGet('oneic_data').then(function(freshRow){
-              if(!freshRow||!freshRow.regions) return;
-              var fresh = JSON.parse(JSON.stringify(freshRow));
-              setData(fresh);
-              lastSyncRef.current = fresh._updatedAt||'';
-              console.log('✅ Fresh data loaded from Firebase after Complaints!');
-            }).catch(function(){});
+            console.log('✅ Complaints saved to Firebase!');
+            // طبق updatedData مباشرة بدون Firebase read
+            setData(function(){ return JSON.parse(JSON.stringify(updatedData)); });
+            lastSyncRef.current = _ts2;
           }).catch(function(e){ console.warn('Firebase save failed:', e.message); });
           console.log('[Complaints] Updated: regions='+newRegions.length+' DC='+newDC.length+' HO='+newHO.length);
           return updatedData;
