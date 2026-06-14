@@ -9712,7 +9712,7 @@ export default function Dashboard() {
         if (row.complaintsPrincipal) setComplaintsPrincipal(row.complaintsPrincipal);
         if (row.complaintsPaidState) setComplaintsPaidState(row.complaintsPaidState);
         if (row.complaintsAdjState)  setComplaintsAdjState(row.complaintsAdjState);
-        if(d.headOffice)d.headOffice=d.headOffice.filter(function(c){return c.name&&c.name!=='Blanks';});
+        if(d.headOffice)d.headOffice=d.headOffice.filter(function(c){return c.name&&c.name!=='Legal -Oneic'&&c.name!=='blank';}).map(function(c){return(!c.name||c.name==='Legal -Oneic')?Object.assign({},c,{name:'Legal -Oneic'}):c;});
         setData(d);
         try { localStorage.setItem('oneic_dashboard_data', JSON.stringify(d)); } catch(e) {}
         if (row.history?.length > 0) {
@@ -9773,7 +9773,7 @@ export default function Dashboard() {
           });
         }
         setComplaintsRegionMap({});
-        setData(dSync);
+        if(dSync&&dSync.headOffice)dSync.headOffice=dSync.headOffice.filter(function(c){return c.name&&c.name!=='Legal -Oneic';}); setData(dSync);
         try{localStorage.setItem('oneic_dashboard_data',JSON.stringify(dSync));}catch(ex){}
         if(row.history&&row.history.length){setHistory(row.history);try{localStorage.setItem('oneic_history',JSON.stringify(row.history));}catch(ex){}}
         sbGet('oneic_bulk').then(function(br){if(br&&br.daily&&br.daily.length){setBulkData(br);try{localStorage.setItem('oneic_bulk_data',JSON.stringify(br));}catch(ex){};}}).catch(function(){});
