@@ -9914,7 +9914,7 @@ export default function Dashboard() {
       const isComplaints = nameHasComplaint || nameHasExport || hasComplaintCols;
       
       console.log('[handleFile]', file.name, '→', isComplaints ? 'complaints' : 'performance',
-        '| complaint cols:', hasComplaintCols, '| performance cols:', hasPerformanceCols);
+        '| complaint cols:', hasComplaintCols);
       
       if (isComplaints) {
         // ملف complaints → يحدّث عدد الحسابات والمبالغ
