@@ -9712,7 +9712,8 @@ export default function Dashboard() {
         if (row.complaintsPrincipal) setComplaintsPrincipal(row.complaintsPrincipal);
         if (row.complaintsPaidState) setComplaintsPaidState(row.complaintsPaidState);
         if (row.complaintsAdjState)  setComplaintsAdjState(row.complaintsAdjState);
-        if(d.headOffice)d.headOffice=d.headOffice.map(function(c){return(c.name==='Blanks'||!c.name)?Object.assign({},c,{name:'Legal -Oneic'}):c;});
+        if(d.headOffice)d.headOffice=d.headOffice.map(function(c){return(c.name==='Legal -Oneic'||!c.name)?Object.assign({},c,{name:'Legal -Oneic'}):c;});
+        if(d.headOffice)d.headOffice=d.headOffice.filter(function(c){return c.name!=='Legal -Oneic';}).map(function(c){return(!c.name)?Object.assign({},c,{name:'Legal -Oneic'}):c;});
         setData(d);
         try { localStorage.setItem('oneic_dashboard_data', JSON.stringify(d)); } catch(e) {}
         if (row.history?.length > 0) {
@@ -9727,6 +9728,8 @@ export default function Dashboard() {
 
     // ══ مزامنة كل 8 ثوانٍ ══
     var _syncInterval = setInterval(function() {
+      if (window._noSyncUntil && Date.now() < window._noSyncUntil) return;
+      if (window._noSyncUntil && Date.now() < window._noSyncUntil) return;
       sbGet('oneic_data').then(function(row) {
         if (!row || !row.regions || !row.regions.length) return;
         var fbTime = new Date(row._updatedAt||row.lastUpdated||0).getTime();
@@ -9779,6 +9782,7 @@ export default function Dashboard() {
       }).catch(function(e){console.warn('Sync error:',e.message);});
     }, 8000);
     function doSync() {
+      if (window._noSyncUntil && Date.now() < window._noSyncUntil) return;
       sbGet('oneic_data').then(function(row) {
         if (!row || !row.regions || !row.regions.length) return;
         var fbTime = new Date(row._updatedAt||row.lastUpdated||0).getTime();
@@ -10005,6 +10009,8 @@ export default function Dashboard() {
           try { localStorage.setItem('oneic_dashboard_data', JSON.stringify(latestToSave)); } catch(e) {}
           return latestToSave;
         });
+        window._noSyncUntil = Date.now() + 60000;
+        console.log('[Complaints] Blocking sync for 60s');
         setData(function(lt){if(!lt||!lt.regions)return lt;var _ts=new Date().toISOString();var sv=Object.assign({},lt,{_updatedAt:_ts,lastUpdated:_ts});lastSyncRef.current=_ts;try{localStorage.setItem('oneic_dashboard_data',JSON.stringify(sv));}catch(e){}try{localStorage.setItem('oneic_complaints_region_map',JSON.stringify(regionMap||{}));}catch(e){}try{localStorage.setItem('oneic_complaints_branch_map',JSON.stringify(branchMap||{}));}catch(e){}sbUpsert('oneic_data',{payload:sv}).then(function(){console.log('Complaints saved to Firebase');}).catch(function(e){console.warn(e);});return sv;});
         setSuccess(true);
         setTimeout(()=>setSuccess(false), 3000);
