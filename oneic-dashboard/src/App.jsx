@@ -6243,7 +6243,7 @@ async function parseXLS(file) {
   });
   const HO_DN={"HO":"Non-due accounts","Non-due accounts":"Non-due accounts"};
   Object.keys(hoMap).forEach(k => {
-    if (!HO_KEYS.includes(k))
+    if (!HO_KEYS.includes(k) && k !== 'Blanks')
       headOffice.push({name:HO_DN[k]||k,paid:hoMap[k].paid,adj:hoMap[k].adj,count:hoMap[k].count||0,portAmt:0,portCnt:0});
   });
 
