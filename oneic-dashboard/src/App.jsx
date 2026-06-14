@@ -9975,31 +9975,15 @@ export default function Dashboard() {
               newDC.push({name:bkn, paid:bkm.paid||0, adj:bkm.adj||0, principalAmt:bkm.amt||0, portAmt:bkm.amt||0, portCnt:bkm.count||0, count:bkm.count||0});
             }
           }
-          return Object.assign({},prev,{regions:newRegions, debtCompanies:newDC, headOffice:newHO});
-        });
-        // احفظ complaints في localStorage
-        try {
-          localStorage.setItem('oneic_complaints_count', String(total));
-          localStorage.setItem('oneic_complaints_counts', JSON.stringify({dc:dcCount,ho:hoCount,gov:govCount}));
-          localStorage.setItem('oneic_complaints_amts', JSON.stringify({dc:dcAmt,ho:hoAmt,gov:govAmt}));
-          localStorage.setItem('oneic_complaints_region_map', JSON.stringify(regionMap||{}));
-          localStorage.setItem('oneic_complaints_branch_map', JSON.stringify(branchMap||{}));
-        } catch(ex){}
-        // احفظ data المحدَّثة في localStorage وحدّث lastSyncRef
-        // لمنع interval من تجاوز تحديث Complaints
-        setData(function(latest) {
-          try { localStorage.setItem('oneic_dashboard_data', JSON.stringify(latest)); } catch(e) {}
-          lastSyncRef.current = latest._updatedAt || lastSyncRef.current;
-          // احفظ في Firebase حتى تتحدث الأجهزة الأخرى
           var _ts2 = new Date().toISOString();
-          var latestToSave = Object.assign({},latest,{_updatedAt:_ts2,lastUpdated:_ts2});
+          var updatedData = Object.assign({},prev,{regions:newRegions, debtCompanies:newDC, headOffice:newHO, _updatedAt:_ts2, lastUpdated:_ts2});
           lastSyncRef.current = _ts2;
-          sbUpsert('oneic_data', { payload: latestToSave }).then(function(){
-            console.log('✅ Complaints data saved to Firebase:', _ts2);
-          }).catch(function(e){ console.warn('Firebase save failed:', e.message); });
-          try { localStorage.setItem('oneic_dashboard_data', JSON.stringify(latestToSave)); } catch(e) {}
-          return latestToSave;
+          try { localStorage.setItem('oneic_complaints_count', String(total)); localStorage.setItem('oneic_complaints_counts', JSON.stringify({dc:dcCount,ho:hoCount,gov:govCount})); localStorage.setItem('oneic_complaints_amts', JSON.stringify({dc:dcAmt,ho:hoAmt,gov:govAmt})); localStorage.setItem('oneic_complaints_region_map', JSON.stringify(regionMap||{})); localStorage.setItem('oneic_complaints_branch_map', JSON.stringify(branchMap||{})); } catch(ex){}
+          try { localStorage.setItem('oneic_dashboard_data', JSON.stringify(updatedData)); } catch(e) {}
+          sbUpsert('oneic_data', { payload: updatedData }).then(function(){ console.log('Complaints saved to Firebase'); }).catch(function(e){ console.warn('Firebase save failed:', e.message); });
+          return updatedData;
         });
+
         setSuccess(true);
         setTimeout(()=>setSuccess(false), 3000);
       } else {
@@ -10587,7 +10571,7 @@ export default function Dashboard() {
           <img src={LOGO} alt="ONEIC" style={{height:40,objectFit:"contain"}}/>
           <div>
             <div style={{fontSize:14,fontWeight:900,color:"#e85d20"}}>لوحة تحكم إدارة تحصيل الديون</div>
-            <div style={{fontSize:11,color:"#555"}}>Debt Collection Management Dashboard · تاريخ التقرير: {data.uploadDate} · {data.totalRecords?.toLocaleString()} سجل</div>
+            <div style={{fontSize:9,color:"#555"}}>Debt Collection Management Dashboard · تاريخ التقرير: {data.uploadDate} · {data.totalRecords?.toLocaleString()} سجل</div>
           </div>
         </div>
         <div style={{textAlign:"right",fontSize:9,color:"#555"}}>
@@ -10612,7 +10596,7 @@ export default function Dashboard() {
               {isMobile ? "إدارة الديون" : "لوحة تحكم إدارة تحصيل الديون"}
             </div>
             {!isMobile && <div style={{ fontSize:12, color:"#e85d20", fontWeight:700, marginTop:3 }}>
-              Debt Collection Management Dashboard
+              Omantel Debt Collection Management Dashboard
             </div>}
             {!isMobile && <div style={{ fontSize:10, color:"#16a34a", fontWeight:700, marginTop:2, display:"flex", alignItems:"center", gap:4 }}>
               <span>{"💾"}</span>
