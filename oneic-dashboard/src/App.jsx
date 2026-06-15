@@ -10150,7 +10150,7 @@ export default function Dashboard() {
   const hPortCnt = data.headOffice.reduce((s,r)=>s+(r.portCnt||0),0);
   const totalPaid = gPd+dPd+hPd;
   const totalAdj  = gAd+dAd+hAd;
-  const totalPort = data.totalPortfolio?.amt || 9414256.834;
+  const totalPort = 9414256.834;
   const ONEIC_DISCOUNT = data.totalDiscount||1544.191;
   const gTotal = totalPaid+totalAdj;
   const gRem = totalPort - gTotal - ONEIC_DISCOUNT;
@@ -10741,7 +10741,7 @@ export default function Dashboard() {
                 const _hAd = (data.headOffice||[]).reduce((s,r)=>s+Math.max(0,r.adj||0),0);
                 const s1Paid = _gPd+_dPd+_hPd;
                 const s1Adj  = _gAd+_dAd+_hAd;
-                const s1Port = data.totalPortfolio?.amt||9414256.834;
+                const s1Port = 9414256.834;
                 const s1Tot  = s1Paid + s1Adj;
                 const s1Rem  = s1Port - s1Tot - ONEIC_DISCOUNT;
                 return [
