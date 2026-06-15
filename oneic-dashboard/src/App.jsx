@@ -9938,7 +9938,7 @@ export default function Dashboard() {
         setComplaintsRegionMap(regionMap||{});
         setComplaintsBranchMap(branchMap||{});
         // ══ حدّث data مباشرة من Complaints ══
-        setData(function(prev) { var base = dataRef.current || prev; if(!base||!base.regions||!base.regions.length)return prev;
+        setData(function(prev) { var base = prev; if(!base||!base.regions||!base.regions.length)return prev;
           var newRegions = (base.regions||[]).map(function(r) {
             var rKey = (r.nameEn||r.nameAr||'').trim();
             var rKeyL = rKey.toLowerCase();
