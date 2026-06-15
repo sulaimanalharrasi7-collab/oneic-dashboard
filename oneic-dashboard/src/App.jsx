@@ -9999,9 +9999,9 @@ export default function Dashboard() {
         '| complaint cols:', hasComplaintCols, '| performance cols:', hasPerformanceCols);
       
       if (isComplaints) {
-        // امنع الـ sync فوراً قبل المعالجة (5 دقائق)
-        window._noSyncUntil = Date.now() + 300000;
-        // ملف complaints → يحدّث عدد الحسابات والمبالغ
+        // ── الحل الذكي: امنع كل sync فوراً ──
+        window._noSyncUntil = Date.now() + 600000; // 10 دقائق
+        
         const {total,dcCount,hoCount,govCount,dcAmt,hoAmt,govAmt,dcPaid,hoPaid,govPaid,dcAdj,hoAdj,govAdj,regionMap,branchMap} = await parseComplaints(file);
         setComplaintsCount(total);
         setComplaintsCounts({dc:dcCount,ho:hoCount,gov:govCount});
@@ -10011,125 +10011,86 @@ export default function Dashboard() {
         setComplaintsAdjState({dc:dcAdj,ho:hoAdj,gov:govAdj});
         setComplaintsRegionMap(regionMap||{});
         setComplaintsBranchMap(branchMap||{});
-        // ══ حدّث data مباشرة من Complaints ══
-        setData(function(prev) {
-          var base = dataRef.current || prev;
-          if(!base||!base.regions||!base.regions.length) {
-            console.warn('[Complaints] base.regions فارغة، رجع prev');
-            return prev;
-          }
-          console.log('[Complaints] معالجة الملف → regions:', base.regions.length, '| branchMap keys:', Object.keys(branchMap).length, '| regionMap keys:', Object.keys(regionMap).length);
+        // ══ الحل الذكي: بناء data كاملة من الملف مباشرة ══
+        // بدل الدمج مع base القديم — نأخذ SEED كـ template ونضع الأرقام الجديدة
+        const HIDE_NAMES = new Set(['blanks','ho','over paid','siaf legal','unknown','nan','']);
+        const getBM = (name) => branchMap[name] || branchMap[Object.keys(branchMap).find(k=>k.toLowerCase()===(name||'').toLowerCase())||''];
+        const getReg = (nameEn) => {
+          if (regionMap[nameEn]) return regionMap[nameEn];
+          const kl = (nameEn||'').toLowerCase();
+          const found = Object.keys(regionMap).find(k => k.toLowerCase()===kl || k.toLowerCase().includes(kl) || kl.includes(k.toLowerCase()));
+          return found ? regionMap[found] : null;
+        };
 
-          // ── بحث case-insensitive في branchMap ──
-          var bmLower = {};
-          Object.keys(branchMap).forEach(function(k){ bmLower[k.toLowerCase()] = branchMap[k]; });
-          var getBM = function(name){ return branchMap[name] || bmLower[(name||'').toLowerCase()]; };
+        const base = dataRef.current || SEED;
 
-          // ── بحث مرن في regionMap ──
-          var getReg = function(nameEn, nameAr) {
-            var rm = regionMap[nameEn] || regionMap[nameAr||''];
-            if (!rm) {
-              var rKeyL = (nameEn||'').toLowerCase();
-              var keys = Object.keys(regionMap);
-              for (var ki=0; ki<keys.length; ki++) {
-                var kl = keys[ki].toLowerCase();
-                if (kl===rKeyL || kl.indexOf(rKeyL)>=0 || rKeyL.indexOf(kl)>=0) { rm=regionMap[keys[ki]]; break; }
-              }
-            }
-            return rm;
-          };
-
-          // ── تحديث المناطق الحكومية ──
-          var newRegions = (base.regions||[]).map(function(r) {
-            var rm = getReg(r.nameEn, r.nameAr);
-            if (!rm) return r;
-            // تحديث collectors الموجودة
-            var updatedCols = (r.collectors||[]).map(function(col){
-              var cm = rm.collectors && rm.collectors[col.name];
-              if (!cm && rm.collectors) {
-                var ck = Object.keys(rm.collectors);
-                for (var ci=0; ci<ck.length; ci++) {
-                  if (ck[ci].toLowerCase()===col.name.toLowerCase()) { cm=rm.collectors[ck[ci]]; break; }
-                }
-              }
-              if (cm) return Object.assign({},col,{paid:cm.paid||0, adj:cm.adj||0, principalAmt:cm.principal||cm.amt||col.principalAmt||0, count:cm.count||col.count||0});
-              return Object.assign({},col,{paid:0, adj:0});
-            });
-            // أضف collectors جديدة من الملف
-            var existingColNames = updatedCols.map(function(c){return c.name.toLowerCase();});
-            if (rm.collectors) {
-              Object.keys(rm.collectors).forEach(function(cn){
-                if (existingColNames.indexOf(cn.toLowerCase())<0) {
-                  var cd=rm.collectors[cn];
-                  updatedCols.push({name:cn,paid:cd.paid||0,adj:cd.adj||0,principalAmt:cd.principal||0,portAmt:0,portCnt:0,count:cd.count||0,paidCount:0,adjCount:0});
-                }
-              });
-            }
-            return Object.assign({},r,{paid:rm.paid||0, adj:rm.adj||0, principalAmt:rm.amt||r.principalAmt||r.portAmt||0, count:rm.count||r.count||0, collectors:updatedCols});
+        // ── بناء المناطق ──
+        const newRegions = (base.regions||[]).map(r => {
+          const rm = getReg(r.nameEn);
+          if (!rm) return {...r, paid:0, adj:0};
+          // تحديث collectors
+          const existingNames = new Set((r.collectors||[]).map(c=>c.name.toLowerCase()));
+          const updatedCols = (r.collectors||[]).map(col => {
+            const colKey = Object.keys(rm.collectors||{}).find(k=>k.toLowerCase()===col.name.toLowerCase());
+            const cm = colKey ? rm.collectors[colKey] : null;
+            return cm ? {...col, paid:cm.paid||0, adj:cm.adj||0, count:cm.count||0} : {...col, paid:0, adj:0};
           });
-
-          // ── تحديث شركات التحصيل ──
-          var HO_NAMES_L = ['legal - dr. sarhaan','documentation- omantel','non-due accounts','legal -oneic','head_office_total'];
-          var newDC = (base.debtCompanies||[]).map(function(c) {
-            var bm = getBM(c.name);
-            if (bm) return Object.assign({},c,{paid:bm.paid||0, adj:bm.adj||0, principalAmt:bm.amt||c.principalAmt||c.portAmt||0, portCnt:bm.count||c.portCnt||0, count:bm.count||c.count||0});
-            return Object.assign({},c,{paid:0, adj:0, count:0});
+          // أضف collectors جديدة
+          Object.entries(rm.collectors||{}).forEach(([cn,cd]) => {
+            if (!existingNames.has(cn.toLowerCase()))
+              updatedCols.push({name:cn, paid:cd.paid||0, adj:cd.adj||0, principalAmt:cd.principal||0, portAmt:0, portCnt:0, count:cd.count||0});
           });
-          // أضف شركات DC جديدة من الملف
-          var existingDC = newDC.map(function(c){return c.name.toLowerCase();});
-          Object.keys(branchMap).forEach(function(bkn) {
-            if (HO_NAMES_L.indexOf(bkn.toLowerCase())>=0) return;
-            if (existingDC.indexOf(bkn.toLowerCase())>=0) return;
-            var bkm=branchMap[bkn];
-            if ((bkm.paid||0)+(bkm.adj||0)<=0) return;
-            newDC.push({name:bkn,paid:bkm.paid||0,adj:bkm.adj||0,principalAmt:bkm.amt||0,portAmt:bkm.amt||0,portCnt:bkm.count||0,count:bkm.count||0});
-          });
-
-          // ── تحديث المكتب الرئيسي ──
-          var newHO = (base.headOffice||[]).map(function(c) {
-            var bm = getBM(c.name);
-            if (bm) return Object.assign({},c,{paid:bm.paid||0, adj:bm.adj||0, principalAmt:bm.amt||c.principalAmt||c.portAmt||0, portCnt:bm.count||c.portCnt||0, count:bm.count||c.count||0});
-            return Object.assign({},c,{paid:0, adj:0, count:0});
-          });
-
-          // تنظيف newDC: إزالة التكرار والأسماء المحجوبة
-          var HIDE_DC = ['blanks','ho','over paid','siaf legal','unknown','nan'];
-          var seenDC = {};
-          newDC = newDC.filter(function(c) {
-            var nl = (c.name||'').trim().toLowerCase();
-            if (HIDE_DC.indexOf(nl) >= 0) return false;
-            // توحيد "high speed company" بكل أشكالها
-            var normName = nl === 'high speed company' ? 'High Speed Company' : c.name;
-            c.name = normName;
-            if (seenDC[nl]) return false;
-            seenDC[nl] = true;
-            return true;
-          });
-
-          // تنظيف newHO: إزالة الأسماء المحجوبة
-          var HIDE_HO = ['blanks','ho','over paid','siaf legal','unknown','nan'];
-          newHO = newHO.filter(function(c){ return HIDE_HO.indexOf((c.name||'').trim().toLowerCase()) < 0; });
-
-          var _tF=new Date().toISOString();
-          var mg=Object.assign({},base,{regions:newRegions,debtCompanies:newDC,headOffice:newHO,_updatedAt:_tF,lastUpdated:_tF});
-          // امنع الـ sync لمدة 5 دقائق حتى يكتمل الحفظ في Firebase
-          lastSyncRef.current=_tF;
-          window._noSyncUntil=Date.now()+300000;
-          try{localStorage.setItem('oneic_dashboard_data',JSON.stringify(mg));}catch(e){}
-          try{localStorage.setItem('oneic_complaints_region_map',JSON.stringify(regionMap||{}));}catch(e){}
-          try{localStorage.setItem('oneic_complaints_branch_map',JSON.stringify(branchMap||{}));}catch(e){}
-          // احفظ في Firebase وبعد النجاح حدّث lastSyncRef
-          sbUpsert('oneic_data',{payload:mg}).then(function(){
-            console.log('Complaints saved to Firebase ✅');
-            lastSyncRef.current=_tF;
-            // تأكيد: امنع الـ sync لمدة 5 دقائق إضافية بعد الحفظ
-            window._noSyncUntil = Date.now() + 300000;
-          }).catch(function(e){console.warn('Firebase save failed:',e);});
-          console.log('[Complaints] setData mg.debtCompanies:', mg.debtCompanies.map(function(c){return c.name+':'+c.paid.toFixed(0);}));
-          // حفظ فوري في localStorage قبل return
-          try { localStorage.setItem('oneic_dashboard_data', JSON.stringify(mg)); } catch(e) {}
-          return mg;
+          return {...r, paid:rm.paid||0, adj:rm.adj||0, count:rm.count||0, collectors:updatedCols};
         });
+
+        // ── بناء شركات التحصيل ──
+        const HO_KEYS_L = new Set(['legal - dr. sarhaan','documentation- omantel','non-due accounts','legal -oneic']);
+        const seenDC = new Set();
+        const newDC = (base.debtCompanies||[])
+          .filter(c => !HIDE_NAMES.has((c.name||'').toLowerCase()))
+          .map(c => {
+            const normName = c.name.toLowerCase()==='high speed company' ? 'High Speed Company' : c.name;
+            const bm = getBM(normName) || getBM(c.name);
+            seenDC.add(normName.toLowerCase());
+            return bm ? {...c, name:normName, paid:bm.paid||0, adj:bm.adj||0, count:bm.count||0} : {...c, name:normName, paid:0, adj:0, count:0};
+          });
+        // أضف شركات جديدة من الملف
+        Object.entries(branchMap).forEach(([nm,bm]) => {
+          const nl = nm.toLowerCase();
+          if (HO_KEYS_L.has(nl) || HIDE_NAMES.has(nl) || seenDC.has(nl)) return;
+          if ((bm.paid||0)+(bm.adj||0) <= 0) return;
+          newDC.push({name:nm, paid:bm.paid||0, adj:bm.adj||0, principalAmt:bm.amt||0, portAmt:bm.amt||0, portCnt:bm.count||0, count:bm.count||0});
+        });
+
+        // ── بناء المكتب الرئيسي ──
+        const newHO = (base.headOffice||[])
+          .filter(c => !HIDE_NAMES.has((c.name||'').toLowerCase()))
+          .map(c => {
+            const bm = getBM(c.name);
+            return bm ? {...c, paid:bm.paid||0, adj:bm.adj||0, count:bm.count||0} : {...c, paid:0, adj:0, count:0};
+          });
+
+        const _tF = new Date().toISOString();
+        const mg = {...base, regions:newRegions, debtCompanies:newDC, headOffice:newHO, _updatedAt:_tF, lastUpdated:_tF};
+
+        console.log('[Complaints] ✅ DC:', newDC.map(c=>c.name+':'+c.paid.toFixed(0)));
+
+        // ── حفظ فوري في كل مكان ──
+        lastSyncRef.current = _tF;
+        window._noSyncUntil = Date.now() + 600000; // 10 دقائق
+        try { localStorage.setItem('oneic_dashboard_data', JSON.stringify(mg)); } catch(e) {}
+        try { localStorage.setItem('oneic_complaints_region_map', JSON.stringify(regionMap||{})); } catch(e) {}
+        try { localStorage.setItem('oneic_complaints_branch_map', JSON.stringify(branchMap||{})); } catch(e) {}
+
+        // ── تحديث الـ state مباشرة (بدون دالة) ──
+        setData(mg);
+
+        // ── حفظ في Firebase ──
+        sbUpsert('oneic_data', {payload:mg}).then(() => {
+          console.log('Complaints saved to Firebase ✅');
+          lastSyncRef.current = _tF;
+          window._noSyncUntil = Date.now() + 600000;
+        }).catch(e => console.warn('Firebase save failed:', e));
         // احفظ complaints في localStorage
         try {
           localStorage.setItem('oneic_complaints_count', String(total));
