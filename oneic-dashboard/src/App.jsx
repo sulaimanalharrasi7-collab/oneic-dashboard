@@ -10150,9 +10150,9 @@ export default function Dashboard() {
   const totalPaid = gPd+dPd+hPd;
   const totalAdj  = gAd+dAd+hAd;
   const totalPort = data.totalPortfolio?.amt || 9414256.834;
-  const gRem = totalPort - gTotal - ONEIC_DISCOUNT;
   const ONEIC_DISCOUNT = data.totalDiscount||1544.191;
   const gTotal = totalPaid+totalAdj;
+  const gRem = totalPort - gTotal - ONEIC_DISCOUNT;
   const GRAND_TOTAL_FIXED = 1020464.134;
   const p = v => GRAND_TOTAL_FIXED>0 ? ((v/GRAND_TOTAL_FIXED)*100).toFixed(1) : "0";
 
