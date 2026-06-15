@@ -9929,7 +9929,6 @@ export default function Dashboard() {
       if (isComplaints) {
         // ملف complaints → يحدّث عدد الحسابات والمبالغ
         const {total,dcCount,hoCount,govCount,dcAmt,hoAmt,govAmt,dcPaid,hoPaid,govPaid,dcAdj,hoAdj,govAdj,regionMap,branchMap,totalDiscount} = await parseComplaints(file);
-        console.log("[C] dcPaid="+dcPaid.toFixed(0)+" branchKeys="+Object.keys(branchMap||{}).slice(0,4).join(",")+" count="+Object.keys(branchMap||{}).length);
         setComplaintsCount(total);
         setComplaintsCounts({dc:dcCount,ho:hoCount,gov:govCount});
         setComplaintsAmts({dc:dcAmt,ho:hoAmt,gov:govAmt});
@@ -9961,8 +9960,6 @@ export default function Dashboard() {
             });
             return r;
           });
-          console.log("[DC] baseDC="+((base.debtCompanies||[]).map(function(c){return c.name+":"+c.paid;}).join("|")));
-          console.log("[DC] Matrix="+JSON.stringify(branchMap["Matrix Debt Collection"]));
           // حدّث debtCompanies من branchMap
           var newDC = (base.debtCompanies||[]).map(function(c) {
             var bm = branchMap[c.name];
@@ -9986,7 +9983,8 @@ export default function Dashboard() {
               newDC.push({name:bkn, paid:bkm.paid||0, adj:bkm.adj||0, principalAmt:bkm.amt||0, portAmt:bkm.amt||0, portCnt:bkm.count||0, count:bkm.count||0});
             }
           }
-          var _tF=new Date().toISOString();var mg=Object.assign({},base,{regions:newRegions,debtCompanies:newDC,headOffice:newHO,totalDiscount:totalDiscount||base.totalDiscount||0,_updatedAt:_tF,lastUpdated:_tF});lastSyncRef.current=_tF;window._noSyncUntil=Date.now()+60000;try{localStorage.setItem('oneic_dashboard_data',JSON.stringify(mg));}catch(e){}try{localStorage.setItem('oneic_complaints_region_map',JSON.stringify(regionMap||{}));}catch(e){}try{localStorage.setItem('oneic_complaints_branch_map',JSON.stringify(branchMap||{}));}catch(e){}sbUpsert('oneic_data',{payload:mg}).then(function(){console.log('Complaints saved');}).catch(function(e){console.warn(e);});return mg;
+          var _tF=new Date().toISOString();console.log("[mg]",newDC[0]?newDC[0].name+":"+newDC[0].paid:"?",newDC.length);
+          var mg=Object.assign({},base,{regions:newRegions,debtCompanies:newDC,headOffice:newHO,totalDiscount:totalDiscount||base.totalDiscount||0,_updatedAt:_tF,lastUpdated:_tF});lastSyncRef.current=_tF;window._noSyncUntil=Date.now()+60000;try{localStorage.setItem('oneic_dashboard_data',JSON.stringify(mg));}catch(e){}try{localStorage.setItem('oneic_complaints_region_map',JSON.stringify(regionMap||{}));}catch(e){}try{localStorage.setItem('oneic_complaints_branch_map',JSON.stringify(branchMap||{}));}catch(e){}sbUpsert('oneic_data',{payload:mg}).then(function(){console.log('Complaints saved');}).catch(function(e){console.warn(e);});return mg;
         });
         // احفظ complaints في localStorage
         try {
@@ -10741,7 +10739,7 @@ export default function Dashboard() {
                 const _gAd = (data.regions||[]).reduce((s,r)=>s+r.adj,0);
                 const _dAd = (data.debtCompanies||[]).reduce((s,r)=>s+r.adj,0);
                 const _hAd = (data.headOffice||[]).reduce((s,r)=>s+Math.max(0,r.adj||0),0);
-                const s1Paid = _gPd+_dPd+_hPd; console.log("[DISPLAY] s1Paid="+s1Paid.toFixed(3)+" _gPd="+_gPd.toFixed(3));
+                const s1Paid = _gPd+_dPd+_hPd;
                 const s1Adj  = _gAd+_dAd+_hAd;
                 const s1Port = data.totalPortfolio?.amt||9414256.834;
                 const s1Tot  = s1Paid + s1Adj;
