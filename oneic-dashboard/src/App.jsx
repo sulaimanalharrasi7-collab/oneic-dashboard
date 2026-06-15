@@ -9980,7 +9980,7 @@ export default function Dashboard() {
             var HO_SKIP=["Legal - DR. Sarhaan","Documentation- Omantel","HO","Non-due accounts","Legal -Oneic","Legal","Legal "];
             if (existingNames.indexOf(bkn) < 0 && HO_SKIP.indexOf(bkn)<0 && branchMap[bkn].paid+branchMap[bkn].adj > 0) {
               var bkm = branchMap[bkn];
-              newDC.push({name:bkn, paid:bkm.paid||0, adj:bkm.adj||0, principalAmt:bkm.amt||0, portAmt:bkm.amt||0, portCnt:bkm.count||0, count:bkm.count||0});
+              newDC.push({name:bkn, paid:bkm.paid||0, adj:bkm.adj||0, principalAmt:0, portAmt:0, portCnt:bkm.count||0, count:bkm.count||0});
             }
           }
           var _tF=new Date().toISOString();var mg=Object.assign({},base,{regions:newRegions,debtCompanies:newDC,headOffice:newHO,totalDiscount:totalDiscount||base.totalDiscount||0,_updatedAt:_tF,lastUpdated:_tF});lastSyncRef.current=_tF;window._noSyncUntil=Date.now()+60000;try{localStorage.setItem('oneic_dashboard_data',JSON.stringify(mg));}catch(e){}try{localStorage.setItem('oneic_complaints_region_map',JSON.stringify(regionMap||{}));}catch(e){}try{localStorage.setItem('oneic_complaints_branch_map',JSON.stringify(branchMap||{}));}catch(e){}sbUpsert('oneic_data',{payload:mg}).then(function(){console.log('Complaints saved');}).catch(function(e){console.warn(e);});return mg;
@@ -10135,17 +10135,17 @@ export default function Dashboard() {
   const gPd = data.regions.reduce((s,r)=>s+r.paid,0);
   const gAd = data.regions.reduce((s,r)=>s+r.adj,0);
   const gCnt = data.regions.reduce((s,r)=>s+(r.count||0),0);
-  const gPortAmt = data.regions.reduce((s,r)=>s+(r.portAmt||r.principalAmt||0),0);
+  const gPortAmt = data.regions.reduce((s,r)=>s+(r.principalAmt||r.portAmt||0),0);
   const gPortCnt = data.regions.reduce((s,r)=>s+(r.portCnt||0),0);
   const dPd = data.debtCompanies.reduce((s,r)=>s+r.paid,0);
   const dAd = data.debtCompanies.reduce((s,r)=>s+r.adj,0);
   const dCnt = data.debtCompanies.reduce((s,r)=>s+(r.count||0),0);
-  const dPortAmt = data.debtCompanies.reduce((s,r)=>s+(r.portAmt||r.principalAmt||0),0);
+  const dPortAmt = data.debtCompanies.reduce((s,r)=>s+(r.principalAmt||r.portAmt||0),0);
   const dPortCnt = data.debtCompanies.reduce((s,r)=>s+(r.portCnt||0),0);
   const hPd = data.headOffice.reduce((s,r)=>s+Math.max(0,r.paid||0),0);
   const hAd = data.headOffice.reduce((s,r)=>s+Math.max(0,r.adj||0),0);
   const hCnt = data.headOffice.reduce((s,r)=>s+(r.count||0),0);
-  const hPortAmt = data.headOffice.reduce((s,r)=>s+Math.max(0,r.portAmt||r.principalAmt||0),0);
+  const hPortAmt = data.headOffice.reduce((s,r)=>s+Math.max(0,r.principalAmt||r.portAmt||0),0);
   const hPortCnt = data.headOffice.reduce((s,r)=>s+(r.portCnt||0),0);
   const totalPaid = gPd+dPd+hPd;
   const totalAdj  = gAd+dAd+hAd;
