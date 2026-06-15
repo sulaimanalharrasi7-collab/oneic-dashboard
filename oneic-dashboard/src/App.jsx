@@ -9929,6 +9929,7 @@ export default function Dashboard() {
       if (isComplaints) {
         // ملف complaints → يحدّث عدد الحسابات والمبالغ
         const {total,dcCount,hoCount,govCount,dcAmt,hoAmt,govAmt,dcPaid,hoPaid,govPaid,dcAdj,hoAdj,govAdj,regionMap,branchMap,totalDiscount} = await parseComplaints(file);
+        console.log("[C] dcPaid="+dcPaid.toFixed(0)+" branchKeys="+Object.keys(branchMap||{}).slice(0,4).join(",")+" count="+Object.keys(branchMap||{}).length);
         setComplaintsCount(total);
         setComplaintsCounts({dc:dcCount,ho:hoCount,gov:govCount});
         setComplaintsAmts({dc:dcAmt,ho:hoAmt,gov:govAmt});
