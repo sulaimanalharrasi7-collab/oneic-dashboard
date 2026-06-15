@@ -8972,6 +8972,8 @@ async function parseComplaints(file) {
         const principalIdx= headers.findIndex(h => h === 'Principal Amount');
         const paidIdx     = headers.findIndex(h => h === 'Paid Amount');
         const adjIdx      = headers.findIndex(h => h === 'Adjustment');
+        const discIdx = headers.findIndex(h => h === 'Oneic Discount');
+        let totalDiscount = 0;
         if (regionIdx < 0) { reject(new Error('عمود Region غير موجود')); return; }
 
         // خريطة التجميع الدقيقة
@@ -8996,6 +8998,7 @@ async function parseComplaints(file) {
           const amt       = principalIdx>=0 ? (parseFloat(row[principalIdx])||0) : 0;
           const paidAmt   = paidIdx>=0    ? (parseFloat(row[paidIdx])||0)    : 0;
           const adjAmt    = adjIdx>=0     ? (parseFloat(row[adjIdx])||0)     : 0;
+          totalDiscount += discIdx>=0 ? (parseFloat(row[discIdx])||0) : 0;
           const collector2= collectorIdx>=0 ? (row[collectorIdx]||'').replace(/\r/g,'').trim() : '';
           total++;
           
@@ -9042,7 +9045,7 @@ async function parseComplaints(file) {
             }
           }
         }
-        resolve({ total, dcCount, hoCount, govCount, dcAmt, hoAmt, govAmt, dcPaid, hoPaid, govPaid, dcAdj, hoAdj, govAdj, regionMap, branchMap });
+        resolve({ total, dcCount, hoCount, govCount, dcAmt, hoAmt, govAmt, dcPaid, hoPaid, govPaid, dcAdj, hoAdj, govAdj, regionMap, branchMap, totalDiscount });
       } catch(e) { reject(e); }
     };
     reader.onerror = () => reject(new Error('فشل قراءة الملف'));
@@ -9925,7 +9928,7 @@ export default function Dashboard() {
       
       if (isComplaints) {
         // ملف complaints → يحدّث عدد الحسابات والمبالغ
-        const {total,dcCount,hoCount,govCount,dcAmt,hoAmt,govAmt,dcPaid,hoPaid,govPaid,dcAdj,hoAdj,govAdj,regionMap,branchMap} = await parseComplaints(file);
+        const {total,dcCount,hoCount,govCount,dcAmt,hoAmt,govAmt,dcPaid,hoPaid,govPaid,dcAdj,hoAdj,govAdj,regionMap,branchMap,totalDiscount} = await parseComplaints(file);
         setComplaintsCount(total);
         setComplaintsCounts({dc:dcCount,ho:hoCount,gov:govCount});
         setComplaintsAmts({dc:dcAmt,ho:hoAmt,gov:govAmt});
@@ -9980,7 +9983,7 @@ export default function Dashboard() {
               newDC.push({name:bkn, paid:bkm.paid||0, adj:bkm.adj||0, principalAmt:bkm.amt||0, portAmt:bkm.amt||0, portCnt:bkm.count||0, count:bkm.count||0});
             }
           }
-          var _tF=new Date().toISOString();var mg=Object.assign({},base,{regions:newRegions,debtCompanies:newDC,headOffice:newHO,_updatedAt:_tF,lastUpdated:_tF});lastSyncRef.current=_tF;window._noSyncUntil=Date.now()+60000;try{localStorage.setItem('oneic_dashboard_data',JSON.stringify(mg));}catch(e){}try{localStorage.setItem('oneic_complaints_region_map',JSON.stringify(regionMap||{}));}catch(e){}try{localStorage.setItem('oneic_complaints_branch_map',JSON.stringify(branchMap||{}));}catch(e){}sbUpsert('oneic_data',{payload:mg}).then(function(){console.log('Complaints saved');}).catch(function(e){console.warn(e);});return mg;
+          var _tF=new Date().toISOString();var mg=Object.assign({},base,{regions:newRegions,debtCompanies:newDC,headOffice:newHO,totalDiscount:totalDiscount||base.totalDiscount||0,_updatedAt:_tF,lastUpdated:_tF});lastSyncRef.current=_tF;window._noSyncUntil=Date.now()+60000;try{localStorage.setItem('oneic_dashboard_data',JSON.stringify(mg));}catch(e){}try{localStorage.setItem('oneic_complaints_region_map',JSON.stringify(regionMap||{}));}catch(e){}try{localStorage.setItem('oneic_complaints_branch_map',JSON.stringify(branchMap||{}));}catch(e){}sbUpsert('oneic_data',{payload:mg}).then(function(){console.log('Complaints saved');}).catch(function(e){console.warn(e);});return mg;
         });
         // احفظ complaints في localStorage
         try {
@@ -10146,7 +10149,9 @@ export default function Dashboard() {
   const hPortCnt = data.headOffice.reduce((s,r)=>s+(r.portCnt||0),0);
   const totalPaid = gPd+dPd+hPd;
   const totalAdj  = gAd+dAd+hAd;
-  const totalPort = data.totalPortfolio?.amt    || 9414256.834;
+  const totalPort = data.totalPortfolio?.amt || 9414256.834;
+  const gRem = totalPort - gTotal - ONEIC_DISCOUNT;
+  const ONEIC_DISCOUNT = data.totalDiscount||1544.191;
   const gTotal = totalPaid+totalAdj;
   const GRAND_TOTAL_FIXED = 1020464.134;
   const p = v => GRAND_TOTAL_FIXED>0 ? ((v/GRAND_TOTAL_FIXED)*100).toFixed(1) : "0";
@@ -10737,7 +10742,7 @@ export default function Dashboard() {
                 const s1Adj  = _gAd+_dAd+_hAd;
                 const s1Port = data.totalPortfolio?.amt||9414256.834;
                 const s1Tot  = s1Paid + s1Adj;
-                const s1Rem  = s1Port - s1Tot;
+                const s1Rem  = s1Port - s1Tot - ONEIC_DISCOUNT;
                 return [
                   ["المدفوع",            s1Paid,   "#16a34a"],
                   ["تسويات عُمانتل",     s1Adj,    "#d97706"],
