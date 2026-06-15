@@ -9708,7 +9708,7 @@ export default function Dashboard() {
           "Legal -Oneic":{portAmt:64528.164,portCnt:144,principalAmt:64528.164,closed:3,active:141}
         };
         const existingHO = row.headOffice || [];
-        const fullHO = HO_REQ.map(function(nm){var f=existingHO.find(function(x){return x.name===nm;});var p=HO_P[nm]||{};if(f)return Object.assign({},p,f,{closed:f.closed||p.closed||0,active:f.active||p.active||0});return Object.assign({name:nm,paid:0,adj:0,count:0,closed:0,active:0},p);});
+        const fullHO = HO_REQ.map(function(nm){var f=existingHO.find(function(x){return x.name===nm;});var p=HO_P[nm]||{};if(f)return Object.assign({},p,f,{closed:f.closed>0?f.closed:(p.closed||0),active:f.active>0?f.active:(p.active||0)});return Object.assign({name:nm,paid:0,adj:0,count:0,closed:0,active:0},p);});
         let d = Object.assign({},row,{headOffice:fullHO,_updatedAt:row._updatedAt||row.lastUpdated||''});
         lastSyncRef.current = d._updatedAt||'';
         if (row.complaintsBranchMap) setComplaintsBranchMap(row.complaintsBranchMap);
@@ -9744,7 +9744,7 @@ export default function Dashboard() {
         var fullHO3 = HO_KEYS3.map(function(nm){
           var f=eHO3.find(function(c){return c.name===nm;});
           var p=HO_DEF3[nm]||{};
-          if(f) return Object.assign({},p,f,{closed:f.closed||p.closed||0,active:f.active||p.active||0});
+          if(f) return Object.assign({},p,f,{closed:f.closed>0?f.closed:(p.closed||0),active:f.active>0?f.active:(p.active||0)});
           return {name:nm,paid:0,adj:0,count:0,portAmt:p.portAmt||0,portCnt:p.portCnt||0,closed:0,active:0};
         });
         var dSync = {};
@@ -9794,7 +9794,7 @@ export default function Dashboard() {
         var HO_KEYS4=["Legal - DR. Sarhaan","Documentation- Omantel","HO","Non-due accounts","Legal -Oneic"];
         var HO_P4={"Legal - DR. Sarhaan":{portAmt:3229651.681,portCnt:3662},"Documentation- Omantel":{portAmt:471756.070,portCnt:1099,closed:8,active:1091},"HO":{portAmt:0,portCnt:340},"Non-due accounts":{portAmt:0,portCnt:340},"Legal -Oneic":{portAmt:64528.164,portCnt:144,closed:3,active:141}};
         var eHO4=row.headOffice||[];
-        var fullHO4=HO_KEYS4.map(function(nm){var f=eHO4.find(function(c){return c.name===nm;});var p=HO_P4[nm]||{};if(f)return Object.assign({closed:0,active:0},p,f);return {name:nm,paid:0,adj:0,count:0,portAmt:p.portAmt||0,portCnt:p.portCnt||0,closed:0,active:0};});
+        var fullHO4=HO_KEYS4.map(function(nm){var f=eHO4.find(function(c){return c.name===nm;});var p=HO_P4[nm]||{};if(f)return Object.assign({},p,f,{closed:f.closed>0?f.closed:(p.closed||0),active:f.active>0?f.active:(p.active||0)});return {name:nm,paid:0,adj:0,count:0,portAmt:p.portAmt||0,portCnt:p.portCnt||0,closed:0,active:0};});
         var dSync4={headOffice:fullHO4,_updatedAt:row._updatedAt||row.lastUpdated||''};
         var rk=Object.keys(row); for(var ki4=0;ki4<rk.length;ki4++){if(rk[ki4]!=='headOffice')dSync4[rk[ki4]]=row[rk[ki4]];}
         lastSyncRef.current = dSync4._updatedAt || new Date().toISOString();
