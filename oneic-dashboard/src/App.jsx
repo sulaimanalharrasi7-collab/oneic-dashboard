@@ -9708,7 +9708,7 @@ export default function Dashboard() {
           "Legal -Oneic":{portAmt:64528.164,portCnt:144,principalAmt:64528.164,closed:3,active:141}
         };
         const existingHO = row.headOffice || [];
-        const fullHO = HO_REQ.map(nm => existingHO.find(c=>c.name===nm) || Object.assign({name:nm,paid:0,adj:0,count:0},HO_P[nm]||{}));
+        const fullHO = HO_REQ.map(function(nm){var f=existingHO.find(function(x){return x.name===nm;});var p=HO_P[nm]||{};if(f)return Object.assign({},p,f,{closed:f.closed||p.closed||0,active:f.active||p.active||0});return Object.assign({name:nm,paid:0,adj:0,count:0,closed:0,active:0},p);});
         let d = Object.assign({},row,{headOffice:fullHO,_updatedAt:row._updatedAt||row.lastUpdated||''});
         lastSyncRef.current = d._updatedAt||'';
         if (row.complaintsBranchMap) setComplaintsBranchMap(row.complaintsBranchMap);
@@ -9744,7 +9744,7 @@ export default function Dashboard() {
         var fullHO3 = HO_KEYS3.map(function(nm){
           var f=eHO3.find(function(c){return c.name===nm;});
           var p=HO_DEF3[nm]||{};
-          if(f) return Object.assign({closed:0,active:0},p,f);
+          if(f) return Object.assign({},p,f,{closed:f.closed||p.closed||0,active:f.active||p.active||0});
           return {name:nm,paid:0,adj:0,count:0,portAmt:p.portAmt||0,portCnt:p.portCnt||0,closed:0,active:0};
         });
         var dSync = {};
