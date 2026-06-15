@@ -10738,7 +10738,7 @@ export default function Dashboard() {
                 const _gAd = (data.regions||[]).reduce((s,r)=>s+r.adj,0);
                 const _dAd = (data.debtCompanies||[]).reduce((s,r)=>s+r.adj,0);
                 const _hAd = (data.headOffice||[]).reduce((s,r)=>s+Math.max(0,r.adj||0),0);
-                const s1Paid = _gPd+_dPd+_hPd;
+                const s1Paid = _gPd+_dPd+_hPd; console.log("[DISPLAY] s1Paid="+s1Paid.toFixed(3)+" _gPd="+_gPd.toFixed(3));
                 const s1Adj  = _gAd+_dAd+_hAd;
                 const s1Port = data.totalPortfolio?.amt||9414256.834;
                 const s1Tot  = s1Paid + s1Adj;
@@ -10746,7 +10746,7 @@ export default function Dashboard() {
                 return [
                   ["المدفوع",            s1Paid,   "#16a34a"],
                   ["تسويات عُمانتل",     s1Adj,    "#d97706"],
-                  ["خصومات أونك",        1544.191, "#7c3aed"],
+                  ["خصومات أونك",        ONEIC_DISCOUNT, "#7c3aed"],
                   ["الإجمالي",           s1Tot,    "#1e3a5f"],
                   ["المتبقي من المحفظة", s1Rem,    "#e85d20"],
                 ];
