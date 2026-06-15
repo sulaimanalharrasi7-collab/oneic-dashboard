@@ -9961,6 +9961,8 @@ export default function Dashboard() {
             });
             return r;
           });
+          console.log("[DC] baseDC="+((base.debtCompanies||[]).map(function(c){return c.name+":"+c.paid;}).join("|")));
+          console.log("[DC] Matrix="+JSON.stringify(branchMap["Matrix Debt Collection"]));
           // حدّث debtCompanies من branchMap
           var newDC = (base.debtCompanies||[]).map(function(c) {
             var bm = branchMap[c.name];
