@@ -6899,7 +6899,7 @@ function RegionRow({region, idx, open, onToggle, small, complaintsRegionMap}) {
             <span style={{color:"#888",fontWeight:600}}>{region.collectors?.length||0} محصّل</span>
           </div>
 
-          {[...(region.collectors||[])].sort(function(a,b){return ((b.paid||0)+(b.adj||0))-((a.paid||0)+(a.adj||0));}).map((c,i) => {
+          {[...(region.collectors||[])].filter(function(col){return col.name && col.name!=="Legal -Oneic";}).sort(function(a,b){return ((b.paid||0)+(b.adj||0))-((a.paid||0)+(a.adj||0));}).map((c,i) => {
             const cPrincipal = c.principalAmt>0 ? c.principalAmt : 0;
             const ct    = (c.paid||0)+(c.adj||0); // paid+adj
             const cPort = cPrincipal; // Principal
@@ -9742,9 +9742,9 @@ export default function Dashboard() {
         var eHO3 = row.headOffice||[];
         var fullHO3 = HO_KEYS3.map(function(nm){
           var f=eHO3.find(function(c){return c.name===nm;});
-          if(f) return f;
           var p=HO_DEF3[nm]||{};
-          return {name:nm,paid:0,adj:0,count:0,portAmt:p.portAmt||0,portCnt:p.portCnt||0};
+          if(f) return Object.assign({closed:0,active:0},p,f);
+          return {name:nm,paid:0,adj:0,count:0,portAmt:p.portAmt||0,portCnt:p.portCnt||0,closed:0,active:0};
         });
         var dSync = {};
         var rKeys = Object.keys(row);
@@ -9793,7 +9793,7 @@ export default function Dashboard() {
         var HO_KEYS4=["Legal - DR. Sarhaan","Documentation- Omantel","HO","Non-due accounts","Legal -Oneic"];
         var HO_P4={"Legal - DR. Sarhaan":{portAmt:3229651.681,portCnt:3662},"Documentation- Omantel":{portAmt:489409.003,portCnt:1136},"HO":{portAmt:0,portCnt:340},"Non-due accounts":{portAmt:0,portCnt:340},"Legal -Oneic":{portAmt:357170.484,portCnt:217}};
         var eHO4=row.headOffice||[];
-        var fullHO4=HO_KEYS4.map(function(nm){var f=eHO4.find(function(c){return c.name===nm;});if(f)return f;var p=HO_P4[nm]||{};return {name:nm,paid:0,adj:0,count:0,portAmt:p.portAmt||0,portCnt:p.portCnt||0};});
+        var fullHO4=HO_KEYS4.map(function(nm){var f=eHO4.find(function(c){return c.name===nm;});var p=HO_P4[nm]||{};if(f)return Object.assign({closed:0,active:0},p,f);return {name:nm,paid:0,adj:0,count:0,portAmt:p.portAmt||0,portCnt:p.portCnt||0,closed:0,active:0};});
         var dSync4={headOffice:fullHO4,_updatedAt:row._updatedAt||row.lastUpdated||''};
         var rk=Object.keys(row); for(var ki4=0;ki4<rk.length;ki4++){if(rk[ki4]!=='headOffice')dSync4[rk[ki4]]=row[rk[ki4]];}
         lastSyncRef.current = dSync4._updatedAt || new Date().toISOString();
