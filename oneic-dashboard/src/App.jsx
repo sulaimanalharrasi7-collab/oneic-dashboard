@@ -9020,11 +9020,12 @@ async function parseComplaints(file) {
               else if (cLow.indexOf('doc')>=0) hoColKey='Documentation- Omantel';
               else if (cLow.indexOf('non-due')>=0||collector2.toUpperCase()==='HO') hoColKey='Non-due accounts';
               else hoColKey='Legal -Oneic';
-              if (!branchMap[hoColKey]) branchMap[hoColKey]={count:0,amt:0,paid:0,adj:0};
+              if (!branchMap[hoColKey]) branchMap[hoColKey]={count:0,amt:0,paid:0,adj:0,closed:0,active:0};
               branchMap[hoColKey].count++;
               branchMap[hoColKey].amt  += amt;
               branchMap[hoColKey].paid += paidAmt;
-              branchMap[hoColKey].adj  += adjAmt;
+              branchMap[hoColKey].adj += adjAmt;
+              if(hoColKey==="Legal -Oneic"||hoColKey==="Documentation- Omantel"){if(amt<=0)branchMap[hoColKey].closed++;else branchMap[hoColKey].active++;}
             }
             const hoKey = 'HEAD_OFFICE_TOTAL';
             if (!branchMap[hoKey]) branchMap[hoKey] = {count:0, amt:0};
@@ -9963,13 +9964,13 @@ export default function Dashboard() {
           // حدّث debtCompanies من branchMap
           var newDC = (base.debtCompanies||[]).map(function(c) {
             var bm = branchMap[c.name];
-            if (bm) return Object.assign({},c,{paid:bm.paid||0, adj:bm.adj||0, portCnt:bm.count||c.portCnt||0, count:bm.count||c.count||0});
+            if (bm) return Object.assign({},c,{paid:bm.paid||0,adj:bm.adj||0,portCnt:bm.count||c.portCnt||0,count:bm.count||c.count||0,closed:bm.closed!==undefined?bm.closed:c.closed||0,active:bm.active!==undefined?bm.active:c.active||0});
             return c;
           });
           // حدّث headOffice من branchMap
           var newHO = (base.headOffice||[]).map(function(c) {
             var bm = branchMap[c.name];
-            if (bm) return Object.assign({},c,{paid:bm.paid||0, adj:bm.adj||0, portCnt:bm.count||c.portCnt||0, count:bm.count||c.count||0});
+            if (bm) return Object.assign({},c,{paid:bm.paid||0,adj:bm.adj||0,portCnt:bm.count||c.portCnt||0,count:bm.count||c.count||0,closed:bm.closed!==undefined?bm.closed:c.closed||0,active:bm.active!==undefined?bm.active:c.active||0});
             return c;
           });
           // أضف شركات في Complaints ليست في debtCompanies (مثل Tahseel، High Speed)
