@@ -10140,7 +10140,7 @@ export default function Dashboard() {
   const dPd = data.debtCompanies.reduce((s,r)=>s+r.paid,0);
   const dAd = data.debtCompanies.reduce((s,r)=>s+r.adj,0);
   const dCnt = data.debtCompanies.reduce((s,r)=>s+(r.count||0),0);
-  const dPortAmt = data.debtCompanies.reduce((s,r)=>s+(r.principalAmt||r.portAmt||0),0);
+  const dPortAmt=(()=>{var seen={};return(data.debtCompanies||[]).reduce(function(s,r){var nm=(r.name||"").toLowerCase().trim();if(seen[nm])return s;seen[nm]=1;return s+(r.principalAmt||r.portAmt||0);},0);})();
   const dPortCnt = data.debtCompanies.reduce((s,r)=>s+(r.portCnt||0),0);
   const hPd = data.headOffice.reduce((s,r)=>s+Math.max(0,r.paid||0),0);
   const hAd = data.headOffice.reduce((s,r)=>s+Math.max(0,r.adj||0),0);
