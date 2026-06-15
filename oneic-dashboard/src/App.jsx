@@ -9950,7 +9950,7 @@ export default function Dashboard() {
                 if (kl === rKeyL || kl.indexOf(rKeyL)>=0 || rKeyL.indexOf(kl)>=0) { rm = regionMap[keys[ki]]; break; }
               }
             }
-            if (rm) return Object.assign({},r,{paid:rm.paid||0, adj:rm.adj||0, principalAmt:rm.amt||r.principalAmt||r.portAmt||0,
+            if (rm) return Object.assign({},r,{paid:rm.paid||0, adj:rm.adj||0,
               collectors:(r.collectors||[]).map(function(col){
                 var cm=rm.collectors&&(rm.collectors[col.name]);
                 if(!cm&&rm.collectors){var ck=Object.keys(rm.collectors);for(var ci=0;ci<ck.length;ci++){if(ck[ci].toLowerCase()===col.name.toLowerCase()){cm=rm.collectors[ck[ci]];break;}}}
@@ -9963,13 +9963,13 @@ export default function Dashboard() {
           // حدّث debtCompanies من branchMap
           var newDC = (base.debtCompanies||[]).map(function(c) {
             var bm = branchMap[c.name];
-            if (bm) return Object.assign({},c,{paid:bm.paid||0, adj:bm.adj||0, principalAmt:bm.amt||c.principalAmt||c.portAmt||0, portCnt:bm.count||c.portCnt||0, count:bm.count||c.count||0});
+            if (bm) return Object.assign({},c,{paid:bm.paid||0, adj:bm.adj||0, portCnt:bm.count||c.portCnt||0, count:bm.count||c.count||0});
             return c;
           });
           // حدّث headOffice من branchMap
           var newHO = (base.headOffice||[]).map(function(c) {
             var bm = branchMap[c.name];
-            if (bm) return Object.assign({},c,{paid:bm.paid||0, adj:bm.adj||0, principalAmt:bm.amt||c.principalAmt||c.portAmt||0, portCnt:bm.count||c.portCnt||0, count:bm.count||c.count||0});
+            if (bm) return Object.assign({},c,{paid:bm.paid||0, adj:bm.adj||0, portCnt:bm.count||c.portCnt||0, count:bm.count||c.count||0});
             return c;
           });
           // أضف شركات في Complaints ليست في debtCompanies (مثل Tahseel، High Speed)
@@ -10135,17 +10135,17 @@ export default function Dashboard() {
   const gPd = data.regions.reduce((s,r)=>s+r.paid,0);
   const gAd = data.regions.reduce((s,r)=>s+r.adj,0);
   const gCnt = data.regions.reduce((s,r)=>s+(r.count||0),0);
-  const gPortAmt = data.regions.reduce((s,r)=>s+(r.principalAmt||r.portAmt||0),0);
+  const gPortAmt = data.regions.reduce((s,r)=>s+(r.portAmt||r.principalAmt||0),0);
   const gPortCnt = data.regions.reduce((s,r)=>s+(r.portCnt||0),0);
   const dPd = data.debtCompanies.reduce((s,r)=>s+r.paid,0);
   const dAd = data.debtCompanies.reduce((s,r)=>s+r.adj,0);
   const dCnt = data.debtCompanies.reduce((s,r)=>s+(r.count||0),0);
-  const dPortAmt = data.debtCompanies.reduce((s,r)=>s+(r.principalAmt||r.portAmt||0),0);
+  const dPortAmt = data.debtCompanies.reduce((s,r)=>s+(r.portAmt||r.principalAmt||0),0);
   const dPortCnt = data.debtCompanies.reduce((s,r)=>s+(r.portCnt||0),0);
   const hPd = data.headOffice.reduce((s,r)=>s+Math.max(0,r.paid||0),0);
   const hAd = data.headOffice.reduce((s,r)=>s+Math.max(0,r.adj||0),0);
   const hCnt = data.headOffice.reduce((s,r)=>s+(r.count||0),0);
-  const hPortAmt = data.headOffice.reduce((s,r)=>s+Math.max(0,r.principalAmt||r.portAmt||0),0);
+  const hPortAmt = data.headOffice.reduce((s,r)=>s+Math.max(0,r.portAmt||r.principalAmt||0),0);
   const hPortCnt = data.headOffice.reduce((s,r)=>s+(r.portCnt||0),0);
   const totalPaid = gPd+dPd+hPd;
   const totalAdj  = gAd+dAd+hAd;
