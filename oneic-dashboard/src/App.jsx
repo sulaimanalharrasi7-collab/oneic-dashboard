@@ -9717,7 +9717,7 @@ export default function Dashboard() {
         if (row.complaintsPaidState) setComplaintsPaidState(row.complaintsPaidState);
         if (row.complaintsAdjState)  setComplaintsAdjState(row.complaintsAdjState);
         
-        setData(d);
+        setData(function(prev){d.uploadCount=Math.max(d.uploadCount||0,(prev&&prev.uploadCount)||0);if((prev&&prev.uploadDate||"")>(d.uploadDate||""))d.uploadDate=prev.uploadDate||d.uploadDate;return d;});
         try { localStorage.setItem('oneic_dashboard_data', JSON.stringify(d)); } catch(e) {}
         if (row.history?.length > 0) {
           setHistory(row.history);
@@ -9939,7 +9939,8 @@ export default function Dashboard() {
         setComplaintsRegionMap(regionMap||{});
         setComplaintsBranchMap(branchMap||{});
         // ══ حدّث data مباشرة من Complaints ══
-        setData(function(prev) { var base = prev; if(!base||!base.regions||!base.regions.length)return prev;
+        console.log('[B]',prev&&prev.regions&&prev.regions.length,prev&&prev.debtCompanies&&prev.debtCompanies.length);
+        setData(function(prev) { var base = prev; if(!base||!base.regions||!base.regions.length){console.warn('[EMPTY]');return prev;}
           var newRegions = (base.regions||[]).map(function(r) {
             var rKey = (r.nameEn||r.nameAr||'').trim();
             var rKeyL = rKey.toLowerCase();
