@@ -9777,7 +9777,7 @@ export default function Dashboard() {
           });
         }
         setComplaintsRegionMap({});
-        setData(dSync);
+        setData(function(prev){dSync.uploadCount=Math.max(dSync.uploadCount||0,(prev&&prev.uploadCount)||0);if(prev&&prev.uploadDate>(dSync.uploadDate||""))dSync.uploadDate=prev.uploadDate;return dSync;});
         try{localStorage.setItem('oneic_dashboard_data',JSON.stringify(dSync));}catch(ex){}
         if(row.history&&row.history.length){setHistory(row.history);try{localStorage.setItem('oneic_history',JSON.stringify(row.history));}catch(ex){}}
         sbGet('oneic_bulk').then(function(br){if(br&&br.daily&&br.daily.length){setBulkData(br);try{localStorage.setItem('oneic_bulk_data',JSON.stringify(br));}catch(ex){};}}).catch(function(){});
@@ -9811,7 +9811,7 @@ export default function Dashboard() {
           dSync4.headOffice=(dSync4.headOffice||[]).map(function(c){var bm4=sb4[c.name];return bm4?Object.assign({},c,{paid:bm4.paid||0,adj:bm4.adj||0,principalAmt:bm4.amt||c.principalAmt||c.portAmt||0,portCnt:bm4.count||c.portCnt||0,count:bm4.count||c.count||0}):c;});
         }
         setComplaintsRegionMap({});
-        setData(dSync4);
+        setData(function(prev){dSync4.uploadCount=Math.max(dSync4.uploadCount||0,(prev&&prev.uploadCount)||0);if(prev&&prev.uploadDate>(dSync4.uploadDate||""))dSync4.uploadDate=prev.uploadDate;return dSync4;});
         try{localStorage.setItem('oneic_dashboard_data',JSON.stringify(dSync4));}catch(e){}
         if(row.history&&row.history.length){setHistory(row.history);}
         sbGet('oneic_bulk').then(function(br){if(br&&br.daily&&br.daily.length){setBulkData(br);}}).catch(function(){});
