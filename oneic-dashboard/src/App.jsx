@@ -9939,7 +9939,6 @@ export default function Dashboard() {
         setComplaintsRegionMap(regionMap||{});
         setComplaintsBranchMap(branchMap||{});
         // ══ حدّث data مباشرة من Complaints ══
-        console.log('[B]',prev&&prev.regions&&prev.regions.length,prev&&prev.debtCompanies&&prev.debtCompanies.length);
         setData(function(prev) { var base = prev; if(!base||!base.regions||!base.regions.length){console.warn('[EMPTY]');return prev;}
           var newRegions = (base.regions||[]).map(function(r) {
             var rKey = (r.nameEn||r.nameAr||'').trim();
