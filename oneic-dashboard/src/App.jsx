@@ -9949,35 +9949,72 @@ export default function Dashboard() {
                 if (kl === rKeyL || kl.indexOf(rKeyL)>=0 || rKeyL.indexOf(kl)>=0) { rm = regionMap[keys[ki]]; break; }
               }
             }
-            if (rm) return Object.assign({},r,{paid:rm.paid||0, adj:rm.adj||0,
-              collectors:(r.collectors||[]).map(function(col){
-                var cm=rm.collectors&&(rm.collectors[col.name]);
-                if(!cm&&rm.collectors){var ck=Object.keys(rm.collectors);for(var ci=0;ci<ck.length;ci++){if(ck[ci].toLowerCase()===col.name.toLowerCase()){cm=rm.collectors[ck[ci]];break;}}}
-                if(cm) return Object.assign({},col,{paid:cm.paid||0,adj:cm.adj||0,principalAmt:cm.principal||cm.amt||col.principalAmt||0});
-                return col;
-              })
-            });
+            if (rm) {
+              var rmColKeys = Object.keys(rm.collectors||{});
+              var newCollectors = rmColKeys.map(function(cname){
+                var cm = rm.collectors[cname];
+                var existingCol = (r.collectors||[]).find(function(oc){return oc.name===cname || oc.name.toLowerCase()===cname.toLowerCase();});
+                return Object.assign({}, existingCol||{name:cname,principalAmt:0,portAmt:0}, {
+                  name: cname,
+                  paid: cm.paid||0,
+                  adj: cm.adj||0,
+                  principalAmt: (existingCol&&existingCol.principalAmt>0) ? existingCol.principalAmt : (cm.principal||cm.amt||0)
+                });
+              });
+              return Object.assign({},r,{paid:rm.paid||0, adj:rm.adj||0, collectors:newCollectors});
+            }
             return r;
           });
-          // حدّث debtCompanies من branchMap
+          // دالة مطابقة ذكية: حرفية ثم case-insensitive ثم جزئية
+          var findBM = function(name){
+            if (!name) return null;
+            if (branchMap[name]) return branchMap[name];
+            var nameL = name.trim().toLowerCase();
+            var bks = Object.keys(branchMap);
+            for (var i=0;i<bks.length;i++){
+              var kl = bks[i].trim().toLowerCase();
+              if (kl===nameL) return branchMap[bks[i]];
+            }
+            for (var i=0;i<bks.length;i++){
+              var kl = bks[i].trim().toLowerCase();
+              if (kl.indexOf(nameL)>=0 || nameL.indexOf(kl)>=0) return branchMap[bks[i]];
+            }
+            return null;
+          };
+          var matchedBmKeys = {};
+          var findBMTrack = function(name){
+            if (!name) return null;
+            if (branchMap[name]) { matchedBmKeys[name]=1; return branchMap[name]; }
+            var nameL = name.trim().toLowerCase();
+            var bks = Object.keys(branchMap);
+            for (var i=0;i<bks.length;i++){
+              var kl = bks[i].trim().toLowerCase();
+              if (kl===nameL) { matchedBmKeys[bks[i]]=1; return branchMap[bks[i]]; }
+            }
+            for (var i=0;i<bks.length;i++){
+              var kl = bks[i].trim().toLowerCase();
+              if (kl.indexOf(nameL)>=0 || nameL.indexOf(kl)>=0) { matchedBmKeys[bks[i]]=1; return branchMap[bks[i]]; }
+            }
+            return null;
+          };
+          // حدّث debtCompanies من branchMap (مطابقة ذكية)
           var newDC = (base.debtCompanies||[]).map(function(c) {
-            var bm = branchMap[c.name];
+            var bm = findBMTrack(c.name);
             if (bm) return Object.assign({},c,{paid:bm.paid||0,adj:bm.adj||0,portCnt:bm.count||c.portCnt||0,count:bm.count||c.count||0,closed:c.closed||0,active:c.active||0});
             return c;
           });
-          // حدّث headOffice من branchMap
+          // حدّث headOffice من branchMap (مطابقة ذكية)
           var newHO = (base.headOffice||[]).map(function(c) {
-            var bm = branchMap[c.name];
+            var bm = findBMTrack(c.name);
             if (bm) return Object.assign({},c,{paid:bm.paid||0,adj:bm.adj||0,portCnt:bm.count||c.portCnt||0,count:bm.count||c.count||0,closed:c.closed||0,active:c.active||0});
             return c;
           });
-          // أضف شركات في Complaints ليست في debtCompanies (مثل Tahseel، High Speed)
-          var existingNames = newDC.map(function(c){return c.name;});
+          // أضف شركات في Complaints ليست في debtCompanies (مثل Tahseel، High Speed) - فقط إذا لم تُطابق بالفعل
           var bmKeys = Object.keys(branchMap);
           for (var bki=0; bki<bmKeys.length; bki++) {
             var bkn = bmKeys[bki];
-            var HO_SKIP=["Legal - DR. Sarhaan","Documentation- Omantel","HO","Non-due accounts","Legal -Oneic","Legal","Legal "];
-            if (existingNames.indexOf(bkn) < 0 && HO_SKIP.indexOf(bkn)<0 && branchMap[bkn].paid+branchMap[bkn].adj > 0) {
+            var HO_SKIP=["Legal - DR. Sarhaan","Documentation- Omantel","HO","Non-due accounts","Legal -Oneic","Legal","Legal ","HEAD_OFFICE_TOTAL"];
+            if (!matchedBmKeys[bkn] && HO_SKIP.indexOf(bkn)<0 && (branchMap[bkn].paid+branchMap[bkn].adj) > 0) {
               var bkm = branchMap[bkn];
               newDC.push({name:bkn, paid:bkm.paid||0, adj:bkm.adj||0, principalAmt:0, portAmt:0, portCnt:bkm.count||0, count:bkm.count||0});
             }
