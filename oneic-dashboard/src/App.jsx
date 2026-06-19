@@ -9653,8 +9653,7 @@ export default function Dashboard() {
       try {
         const row = await sbGet('oneic_data');
         if (row?.history?.length > 0) {
-          setHistory(row.history);
-          try { localStorage.setItem('oneic_history', JSON.stringify(row.history)); } catch(e) {}
+          setHistory(function(prevH){ var rh=row.history||[]; var merged=(rh.length>=(prevH||[]).length)?rh:prevH; try { localStorage.setItem('oneic_history', JSON.stringify(merged)); } catch(e) {} return merged; });
         }
       } catch(e) {}
     }
@@ -9720,8 +9719,7 @@ export default function Dashboard() {
         setData(function(prev){d.uploadCount=Math.max(d.uploadCount||0,(prev&&prev.uploadCount)||0);if((prev&&prev.uploadDate||"")>(d.uploadDate||""))d.uploadDate=prev.uploadDate||d.uploadDate;return d;});
         try { localStorage.setItem('oneic_dashboard_data', JSON.stringify(d)); } catch(e) {}
         if (row.history?.length > 0) {
-          setHistory(row.history);
-          try { localStorage.setItem('oneic_history', JSON.stringify(row.history)); } catch(e) {}
+          setHistory(function(prevH){ var rh=row.history||[]; var merged=(rh.length>=(prevH||[]).length)?rh:prevH; try { localStorage.setItem('oneic_history', JSON.stringify(merged)); } catch(e) {} return merged; });
         }
       }
       setLoadingServer(false);
@@ -9779,7 +9777,7 @@ export default function Dashboard() {
         setComplaintsRegionMap({});
         setData(function(prev){dSync.uploadCount=Math.max(dSync.uploadCount||0,(prev&&prev.uploadCount)||0);if(prev&&prev.uploadDate>(dSync.uploadDate||""))dSync.uploadDate=prev.uploadDate;return dSync;});
         try{localStorage.setItem('oneic_dashboard_data',JSON.stringify(dSync));}catch(ex){}
-        if(row.history&&row.history.length){setHistory(row.history);try{localStorage.setItem('oneic_history',JSON.stringify(row.history));}catch(ex){}}
+        if(row.history&&row.history.length){setHistory(function(prevH){var rh=row.history||[];var merged=(rh.length>=(prevH||[]).length)?rh:prevH;try{localStorage.setItem('oneic_history',JSON.stringify(merged));}catch(ex){}return merged;});}
         sbGet('oneic_bulk').then(function(br){if(br&&br.daily&&br.daily.length){setBulkData(br);try{localStorage.setItem('oneic_bulk_data',JSON.stringify(br));}catch(ex){};}}).catch(function(){});
         setLastSync(new Date());
       }).catch(function(e){console.warn('Sync error:',e.message);});
@@ -9813,7 +9811,7 @@ export default function Dashboard() {
         setComplaintsRegionMap({});
         setData(function(prev){dSync4.uploadCount=Math.max(dSync4.uploadCount||0,(prev&&prev.uploadCount)||0);if(prev&&prev.uploadDate>(dSync4.uploadDate||""))dSync4.uploadDate=prev.uploadDate;return dSync4;});
         try{localStorage.setItem('oneic_dashboard_data',JSON.stringify(dSync4));}catch(e){}
-        if(row.history&&row.history.length){setHistory(row.history);}
+        if(row.history&&row.history.length){setHistory(function(prevH){var rh=row.history||[];return (rh.length>=(prevH||[]).length)?rh:prevH;});}
         sbGet('oneic_bulk').then(function(br){if(br&&br.daily&&br.daily.length){setBulkData(br);}}).catch(function(){});
         setLastSync(new Date());
       }).catch(function(e){console.warn('Sync error:',e.message);});
@@ -9870,7 +9868,7 @@ export default function Dashboard() {
       setComplaintsRegionMap({});
       setData(function(prev){d5.uploadCount=Math.max(d5.uploadCount||0,(prev&&prev.uploadCount)||0);if(prev&&prev.uploadDate&&prev.uploadDate>(d5.uploadDate||''))d5.uploadDate=prev.uploadDate;return d5;});
       try{localStorage.setItem('oneic_dashboard_data',JSON.stringify(d5));}catch(e){}
-      if(row.history&&row.history.length>0){setHistory(row.history);}
+      if(row.history&&row.history.length>0){setHistory(function(prevH){var rh=row.history||[];return (rh.length>=(prevH||[]).length)?rh:prevH;});}
       setLastSync(new Date());
       setSyncing(false);
     }).catch(function(e){ console.warn('forceRefresh error:',e.message); setSyncing(false); });
@@ -9984,7 +9982,7 @@ export default function Dashboard() {
               newDC.push({name:bkn, paid:bkm.paid||0, adj:bkm.adj||0, principalAmt:0, portAmt:0, portCnt:bkm.count||0, count:bkm.count||0});
             }
           }
-          var _tF=new Date().toISOString();var _tFd=_tF.split("T")[0];var mg=Object.assign({},base,{regions:newRegions,debtCompanies:newDC,headOffice:newHO,totalDiscount:totalDiscount||base.totalDiscount||0,_updatedAt:_tF,lastUpdated:_tF,uploadDate:_tFd,complaintsDate:_tFd,uploadCount:(base.uploadCount||0)+1});lastSyncRef.current=_tF;window._noSyncUntil=Date.now()+60000;try{localStorage.setItem('oneic_dashboard_data',JSON.stringify(mg));}catch(e){}try{localStorage.setItem('oneic_complaints_region_map',JSON.stringify(regionMap||{}));}catch(e){}try{localStorage.setItem('oneic_complaints_branch_map',JSON.stringify(branchMap||{}));}catch(e){}sbUpsert('oneic_data',{payload:mg}).then(function(){console.log('Complaints saved size='+JSON.stringify(mg).length);}).catch(function(e){console.error('Complaints save FAILED:',e&&e.message||e);try{fetch(FIREBASE_URL+'/main/uploadCount.json',{method:'PUT',headers:{'Content-Type':'application/json'},body:JSON.stringify(mg.uploadCount)});fetch(FIREBASE_URL+'/main/uploadDate.json',{method:'PUT',headers:{'Content-Type':'application/json'},body:JSON.stringify(mg.uploadDate)});}catch(e2){}});var _gp2=newRegions.reduce(function(s,r){return s+(r.paid||0);},0)+(mg.debtCompanies||[]).reduce(function(s,r){return s+(r.paid||0);},0)+(mg.headOffice||[]).reduce(function(s,r){return s+(r.paid||0);},0);var _ga2=newRegions.reduce(function(s,r){return s+(r.adj||0);},0)+(mg.debtCompanies||[]).reduce(function(s,r){return s+(r.adj||0);},0)+(mg.headOffice||[]).reduce(function(s,r){return s+(r.adj||0);},0);var _he={date:_tFd,savedAt:_tF,totalRecords:base.totalRecords||0,grandPaid:_gp2,grandAdj:_ga2,grandTotal:_gp2+_ga2};setHistory(function(prev){var fl=(prev||[]).filter(function(h){return h.date!==_he.date;});var nh=[_he].concat(fl).slice(0,90);try{localStorage.setItem('oneic_history',JSON.stringify(nh));}catch(e){}return nh;});return mg;
+          var _tF=new Date().toISOString();var _tFd=_tF.split("T")[0];var _gp2=newRegions.reduce(function(s,r){return s+(r.paid||0);},0)+newDC.reduce(function(s,r){return s+(r.paid||0);},0)+newHO.reduce(function(s,r){return s+(r.paid||0);},0);var _ga2=newRegions.reduce(function(s,r){return s+(r.adj||0);},0)+newDC.reduce(function(s,r){return s+(r.adj||0);},0)+newHO.reduce(function(s,r){return s+(r.adj||0);},0);var _he={date:_tFd,savedAt:_tF,totalRecords:base.totalRecords||0,grandPaid:_gp2,grandAdj:_ga2,grandTotal:_gp2+_ga2};var _prevHist=base.history||[];var _flHist=_prevHist.filter(function(h){return h.date!==_he.date;});var _nh=[_he].concat(_flHist).slice(0,90);var mg=Object.assign({},base,{regions:newRegions,debtCompanies:newDC,headOffice:newHO,totalDiscount:totalDiscount||base.totalDiscount||0,_updatedAt:_tF,lastUpdated:_tF,uploadDate:_tFd,complaintsDate:_tFd,uploadCount:(base.uploadCount||0)+1,history:_nh});lastSyncRef.current=_tF;window._noSyncUntil=Date.now()+60000;try{localStorage.setItem('oneic_dashboard_data',JSON.stringify(mg));}catch(e){}try{localStorage.setItem('oneic_complaints_region_map',JSON.stringify(regionMap||{}));}catch(e){}try{localStorage.setItem('oneic_complaints_branch_map',JSON.stringify(branchMap||{}));}catch(e){}try{localStorage.setItem('oneic_history',JSON.stringify(_nh));}catch(e){}sbUpsert('oneic_data',{payload:mg}).then(function(){console.log('Complaints saved size='+JSON.stringify(mg).length);}).catch(function(e){console.error('Complaints save FAILED:',e&&e.message||e);try{fetch(FIREBASE_URL+'/main/uploadCount.json',{method:'PUT',headers:{'Content-Type':'application/json'},body:JSON.stringify(mg.uploadCount)});fetch(FIREBASE_URL+'/main/uploadDate.json',{method:'PUT',headers:{'Content-Type':'application/json'},body:JSON.stringify(mg.uploadDate)});fetch(FIREBASE_URL+'/main/history.json',{method:'PUT',headers:{'Content-Type':'application/json'},body:JSON.stringify(_nh)});}catch(e2){}});setHistory(function(prev){return (_nh.length>=(prev||[]).length)?_nh:prev;});return mg;
         });
         // احفظ complaints في localStorage
         try {
