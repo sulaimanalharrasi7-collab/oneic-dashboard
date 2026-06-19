@@ -9868,7 +9868,7 @@ export default function Dashboard() {
         d5.headOffice=(d5.headOffice||[]).map(function(c){var bm5=sb5[c.name];return bm5?Object.assign({},c,{paid:bm5.paid||0,adj:bm5.adj||0,principalAmt:bm5.amt||c.principalAmt||c.portAmt||0,portCnt:bm5.count||c.portCnt||0,count:bm5.count||c.count||0}):c;});
       }
       setComplaintsRegionMap({});
-      setData(d5);
+      setData(function(prev){d5.uploadCount=Math.max(d5.uploadCount||0,(prev&&prev.uploadCount)||0);if(prev&&prev.uploadDate&&prev.uploadDate>(d5.uploadDate||''))d5.uploadDate=prev.uploadDate;return d5;});
       try{localStorage.setItem('oneic_dashboard_data',JSON.stringify(d5));}catch(e){}
       if(row.history&&row.history.length>0){setHistory(row.history);}
       setLastSync(new Date());
