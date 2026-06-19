@@ -9193,14 +9193,14 @@ function handlePrint(data) {
   var dcAdj   = (data.debtCompanies||[]).reduce(function(s,r){return s+r.adj;},0);
   var hoPaid  = (data.headOffice||[]).reduce(function(s,r){return s+Math.max(0,r.paid||0);},0);
   var hoAdj   = (data.headOffice||[]).reduce(function(s,r){return s+Math.max(0,r.adj||0);},0);
-  // نفس منطق الداشبورد بالضبط: data.totalCollection?.paid || (gPd+dPd+hPd)
-  var grandPaid = (data.totalCollection&&data.totalCollection.paid) ? data.totalCollection.paid : (govPaid+dcPaid+hoPaid);
-  var grandAdj  = (data.totalCollection&&data.totalCollection.adj)  ? data.totalCollection.adj  : (govAdj+dcAdj+hoAdj);
+  var grandPaid = govPaid+dcPaid+hoPaid;
+  var grandAdj  = govAdj+dcAdj+hoAdj;
   var grandTotal = grandPaid + grandAdj;
-  var portAmt    = (data.totalPortfolio&&data.totalPortfolio.amt) ? data.totalPortfolio.amt : 9414256.834;
+  var portAmt    = 9414256.834;
   var portCnt    = (data.totalPortfolio&&data.totalPortfolio.cnt) ? data.totalPortfolio.cnt : 47963;
+  var ONEIC_DISC = data.totalDiscount||1544.191;
   var pctDone    = portAmt>0 ? Math.min(100,Math.round(grandTotal/portAmt*100)) : 0;
-  var remaining  = portAmt - grandTotal;
+  var remaining  = portAmt - grandTotal - ONEIC_DISC;
   var date      = data.uploadDate||new Date().toISOString().split('T')[0];
   var printDate = new Date().toLocaleDateString('ar-OM',{year:'numeric',month:'long',day:'numeric'});
   var LOGO_SRC  = typeof LOGO!=='undefined'?LOGO:'';
@@ -9210,7 +9210,7 @@ function handlePrint(data) {
   var s1rows = [
     ['المدفوع',            grandPaid,  '#16a34a'],
     ['تسويات عُمانتل',     grandAdj,   '#d97706'],
-    ['خصومات ONEIC',       1544.191,   '#7c3aed'],
+    ['خصومات ONEIC',       ONEIC_DISC, '#7c3aed'],
     ['الإجمالي',           grandTotal, '#1e3a5f'],
     ['المتبقي من المحفظة', remaining,  '#e85d20'],
   ];
