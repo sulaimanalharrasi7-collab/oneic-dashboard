@@ -10629,7 +10629,7 @@ export default function Dashboard() {
               {isMobile ? "إدارة الديون" : "لوحة تحكم إدارة تحصيل الديون"}
             </div>
             {!isMobile && <div style={{ fontSize:12, color:"#e85d20", fontWeight:700, marginTop:3 }}>
-              Omantel Debt Collection Management Dashboard
+              Debt Collection Management Dashboard
             </div>}
             {!isMobile && <div style={{ fontSize:10, color:"#16a34a", fontWeight:700, marginTop:2, display:"flex", alignItems:"center", gap:4 }}>
               <span>{"💾"}</span>
@@ -10768,7 +10768,7 @@ export default function Dashboard() {
                 return [
                   ["المدفوع",            s1Paid,   "#16a34a"],
                   ["تسويات عُمانتل",     s1Adj,    "#d97706"],
-                  ["دفعات زائدة (Over Recovery)", s1OverRec, "#0891b2"],
+                  ["دفعات زائدة", s1OverRec, "#0891b2"],
                   ["خصومات أونك",        ONEIC_DISCOUNT, "#7c3aed"],
                   ["الإجمالي",           s1Tot,    "#1e3a5f"],
                   ["المتبقي من المحفظة", s1Rem,    "#e85d20"],
