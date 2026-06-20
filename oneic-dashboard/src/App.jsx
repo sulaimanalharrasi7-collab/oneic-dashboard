@@ -8976,6 +8976,8 @@ async function parseComplaints(file) {
         const overPaidIdx = headers.findIndex(h => h === 'OverPaid');
         const discIdx = headers.findIndex(h => h === 'Oneic Discount');
         let totalDiscount = 0;
+        let totalOverRecovery = 0;
+        let totalOverRecoveryCount = 0;
         if (regionIdx < 0) { reject(new Error('عمود Region غير موجود')); return; }
 
         // خريطة التجميع الدقيقة
@@ -8998,9 +9000,11 @@ async function parseComplaints(file) {
           const branch = branchIdx>=0 ? (row[branchIdx]||'').replace(/\r/g,'').trim() : '';
           if (!region) continue;
           const amt       = principalIdx>=0 ? (parseFloat(row[principalIdx])||0) : 0;
-          const overPaidAmt = overPaidIdx>=0 ? (parseFloat(row[overPaidIdx])||0) : 0;
-          const paidAmt   = (paidIdx>=0    ? (parseFloat(row[paidIdx])||0)    : 0) + overPaidAmt;
+          const paidAmt   = paidIdx>=0    ? (parseFloat(row[paidIdx])||0)    : 0;
           const adjAmt    = adjIdx>=0     ? (parseFloat(row[adjIdx])||0)     : 0;
+          const overPaidAmt = overPaidIdx>=0 ? (parseFloat(row[overPaidIdx])||0) : 0;
+          totalOverRecovery += overPaidAmt;
+          if (overPaidAmt > 0) totalOverRecoveryCount++;
           totalDiscount += discIdx>=0 ? (parseFloat(row[discIdx])||0) : 0;
           const collector2= collectorIdx>=0 ? (row[collectorIdx]||'').replace(/\r/g,'').trim() : '';
           total++;
@@ -9048,7 +9052,7 @@ async function parseComplaints(file) {
             }
           }
         }
-        resolve({ total, dcCount, hoCount, govCount, dcAmt, hoAmt, govAmt, dcPaid, hoPaid, govPaid, dcAdj, hoAdj, govAdj, regionMap, branchMap, totalDiscount });
+        resolve({ total, dcCount, hoCount, govCount, dcAmt, hoAmt, govAmt, dcPaid, hoPaid, govPaid, dcAdj, hoAdj, govAdj, regionMap, branchMap, totalDiscount, totalOverRecovery, totalOverRecoveryCount });
       } catch(e) { reject(e); }
     };
     reader.onerror = () => reject(new Error('فشل قراءة الملف'));
@@ -9929,7 +9933,7 @@ export default function Dashboard() {
       
       if (isComplaints) {
         // ملف complaints → يحدّث عدد الحسابات والمبالغ
-        const {total,dcCount,hoCount,govCount,dcAmt,hoAmt,govAmt,dcPaid,hoPaid,govPaid,dcAdj,hoAdj,govAdj,regionMap,branchMap,totalDiscount} = await parseComplaints(file);
+        const {total,dcCount,hoCount,govCount,dcAmt,hoAmt,govAmt,dcPaid,hoPaid,govPaid,dcAdj,hoAdj,govAdj,regionMap,branchMap,totalDiscount,totalOverRecovery,totalOverRecoveryCount} = await parseComplaints(file);
         setComplaintsCount(total);
         setComplaintsCounts({dc:dcCount,ho:hoCount,gov:govCount});
         setComplaintsAmts({dc:dcAmt,ho:hoAmt,gov:govAmt});
@@ -10044,7 +10048,7 @@ export default function Dashboard() {
               newDC.push({name:bkn, paid:bkm.paid||0, adj:bkm.adj||0, principalAmt:0, portAmt:0, portCnt:bkm.count||0, count:bkm.count||0});
             }
           }
-          var _tF=new Date().toISOString();var _tFd=_tF.split("T")[0];var _gp2=newRegions.reduce(function(s,r){return s+(r.paid||0);},0)+newDC.reduce(function(s,r){return s+(r.paid||0);},0)+newHO.reduce(function(s,r){return s+(r.paid||0);},0);var _ga2=newRegions.reduce(function(s,r){return s+(r.adj||0);},0)+newDC.reduce(function(s,r){return s+(r.adj||0);},0)+newHO.reduce(function(s,r){return s+(r.adj||0);},0);var _he={date:_tFd,savedAt:_tF,totalRecords:base.totalRecords||0,grandPaid:_gp2,grandAdj:_ga2,grandTotal:_gp2+_ga2};var _prevHist=base.history||[];var _flHist=_prevHist.filter(function(h){return h.date!==_he.date;});var _nh=[_he].concat(_flHist).slice(0,90);var mg=Object.assign({},base,{regions:newRegions,debtCompanies:newDC,headOffice:newHO,totalDiscount:totalDiscount||base.totalDiscount||0,_updatedAt:_tF,lastUpdated:_tF,uploadDate:_tFd,complaintsDate:_tFd,uploadCount:(base.uploadCount||0)+1,history:_nh});lastSyncRef.current=_tF;window._noSyncUntil=Date.now()+60000;try{localStorage.setItem('oneic_dashboard_data',JSON.stringify(mg));}catch(e){}try{localStorage.setItem('oneic_complaints_region_map',JSON.stringify(regionMap||{}));}catch(e){}try{localStorage.setItem('oneic_complaints_branch_map',JSON.stringify(branchMap||{}));}catch(e){}try{localStorage.setItem('oneic_history',JSON.stringify(_nh));}catch(e){}sbUpsert('oneic_data',{payload:mg}).then(function(){console.log('Complaints saved size='+JSON.stringify(mg).length);}).catch(function(e){console.error('Complaints save FAILED:',e&&e.message||e);try{fetch(FIREBASE_URL+'/main/uploadCount.json',{method:'PUT',headers:{'Content-Type':'application/json'},body:JSON.stringify(mg.uploadCount)});fetch(FIREBASE_URL+'/main/uploadDate.json',{method:'PUT',headers:{'Content-Type':'application/json'},body:JSON.stringify(mg.uploadDate)});fetch(FIREBASE_URL+'/main/history.json',{method:'PUT',headers:{'Content-Type':'application/json'},body:JSON.stringify(_nh)});}catch(e2){}});setHistory(function(prev){return (_nh.length>=(prev||[]).length)?_nh:prev;});return mg;
+          var _tF=new Date().toISOString();var _tFd=_tF.split("T")[0];var _gp2=newRegions.reduce(function(s,r){return s+(r.paid||0);},0)+newDC.reduce(function(s,r){return s+(r.paid||0);},0)+newHO.reduce(function(s,r){return s+(r.paid||0);},0);var _ga2=newRegions.reduce(function(s,r){return s+(r.adj||0);},0)+newDC.reduce(function(s,r){return s+(r.adj||0);},0)+newHO.reduce(function(s,r){return s+(r.adj||0);},0);var _he={date:_tFd,savedAt:_tF,totalRecords:base.totalRecords||0,grandPaid:_gp2,grandAdj:_ga2,grandTotal:_gp2+_ga2};var _prevHist=base.history||[];var _flHist=_prevHist.filter(function(h){return h.date!==_he.date;});var _nh=[_he].concat(_flHist).slice(0,90);var mg=Object.assign({},base,{regions:newRegions,debtCompanies:newDC,headOffice:newHO,totalDiscount:totalDiscount||base.totalDiscount||0,overRecovery:totalOverRecovery||0,overRecoveryCount:totalOverRecoveryCount||0,_updatedAt:_tF,lastUpdated:_tF,uploadDate:_tFd,complaintsDate:_tFd,uploadCount:(base.uploadCount||0)+1,history:_nh});lastSyncRef.current=_tF;window._noSyncUntil=Date.now()+60000;try{localStorage.setItem('oneic_dashboard_data',JSON.stringify(mg));}catch(e){}try{localStorage.setItem('oneic_complaints_region_map',JSON.stringify(regionMap||{}));}catch(e){}try{localStorage.setItem('oneic_complaints_branch_map',JSON.stringify(branchMap||{}));}catch(e){}try{localStorage.setItem('oneic_history',JSON.stringify(_nh));}catch(e){}sbUpsert('oneic_data',{payload:mg}).then(function(){console.log('Complaints saved size='+JSON.stringify(mg).length);}).catch(function(e){console.error('Complaints save FAILED:',e&&e.message||e);try{fetch(FIREBASE_URL+'/main/uploadCount.json',{method:'PUT',headers:{'Content-Type':'application/json'},body:JSON.stringify(mg.uploadCount)});fetch(FIREBASE_URL+'/main/uploadDate.json',{method:'PUT',headers:{'Content-Type':'application/json'},body:JSON.stringify(mg.uploadDate)});fetch(FIREBASE_URL+'/main/history.json',{method:'PUT',headers:{'Content-Type':'application/json'},body:JSON.stringify(_nh)});}catch(e2){}});setHistory(function(prev){return (_nh.length>=(prev||[]).length)?_nh:prev;});return mg;
         });
         // احفظ complaints في localStorage
         try {
@@ -10802,11 +10806,13 @@ export default function Dashboard() {
                 const s1Paid = _gPd+_dPd+_hPd;
                 const s1Adj  = _gAd+_dAd+_hAd;
                 const s1Port = 9414256.834;
+                const s1OverRec = data.overRecovery||0;
                 const s1Tot  = s1Paid + s1Adj;
                 const s1Rem  = s1Port - s1Tot - ONEIC_DISCOUNT;
                 return [
                   ["المدفوع",            s1Paid,   "#16a34a"],
                   ["تسويات عُمانتل",     s1Adj,    "#d97706"],
+                  ["دفعات زائدة (Over Recovery)", s1OverRec, "#0891b2"],
                   ["خصومات أونك",        ONEIC_DISCOUNT, "#7c3aed"],
                   ["الإجمالي",           s1Tot,    "#1e3a5f"],
                   ["المتبقي من المحفظة", s1Rem,    "#e85d20"],
