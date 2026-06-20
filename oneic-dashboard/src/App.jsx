@@ -9848,6 +9848,7 @@ export default function Dashboard() {
 
   // ══ تحديث فوري من Firebase ══
   const forceRefresh = () => {
+    if (window._noSyncUntil && Date.now() < window._noSyncUntil) { return; }
     setSyncing(true);
     lastSyncRef.current = '';
     sbGet('oneic_data').then(function(row) {
@@ -9942,6 +9943,8 @@ export default function Dashboard() {
         setComplaintsAdjState({dc:dcAdj,ho:hoAdj,gov:govAdj});
         setComplaintsRegionMap(regionMap||{});
         setComplaintsBranchMap(branchMap||{});
+        // ══ حماية فورية ضد interval قبل أي شيء آخر (لا تعتمد على توقيت setData) ══
+        window._noSyncUntil = Date.now() + 60000;
         // ══ حدّث data مباشرة من Complaints ══
         setData(function(prev) { var base = prev; if(!base||!base.regions||!base.regions.length){console.warn('[EMPTY]');return prev;}
           // ══ تنظيف وتوحيد الأسماء المكررة (case-insensitive) في debtCompanies قبل أي شيء آخر ══
