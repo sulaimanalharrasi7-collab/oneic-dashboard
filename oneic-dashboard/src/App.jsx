@@ -10635,7 +10635,7 @@ export default function Dashboard() {
               <span>{"💾"}</span>
               <span>{(() => {
                 try {
-                  const t = localStorage.getItem('oneic_last_update');
+                  const t = data._updatedAt || data.lastUpdated;
                   if (t) {
                     const d = new Date(t);
                     return `محفوظ على السيرفر · ${d.toLocaleDateString('ar-OM')} ${d.toLocaleTimeString('ar-OM',{hour:'2-digit',minute:'2-digit'})}`;
