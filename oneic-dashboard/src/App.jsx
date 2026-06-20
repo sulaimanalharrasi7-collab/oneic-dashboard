@@ -9940,6 +9940,29 @@ export default function Dashboard() {
         setComplaintsBranchMap(branchMap||{});
         // ══ حدّث data مباشرة من Complaints ══
         setData(function(prev) { var base = prev; if(!base||!base.regions||!base.regions.length){console.warn('[EMPTY]');return prev;}
+          // ══ تنظيف وتوحيد الأسماء المكررة (case-insensitive) في debtCompanies قبل أي شيء آخر ══
+          if (base.debtCompanies && base.debtCompanies.length) {
+            var dcSeen = {};
+            var dcMerged = [];
+            base.debtCompanies.forEach(function(dcItem){
+              var dcKeyL = (dcItem.name||'').trim().toLowerCase();
+              if (dcSeen[dcKeyL] !== undefined) {
+                var existIdx = dcSeen[dcKeyL];
+                dcMerged[existIdx] = Object.assign({}, dcMerged[existIdx], {
+                  paid: (dcMerged[existIdx].paid||0) + (dcItem.paid||0),
+                  adj: (dcMerged[existIdx].adj||0) + (dcItem.adj||0),
+                  count: (dcMerged[existIdx].count||0) + (dcItem.count||0),
+                  portCnt: (dcMerged[existIdx].portCnt||0) + (dcItem.portCnt||0),
+                  principalAmt: Math.max(dcMerged[existIdx].principalAmt||0, dcItem.principalAmt||0),
+                  portAmt: Math.max(dcMerged[existIdx].portAmt||0, dcItem.portAmt||0)
+                });
+              } else {
+                dcSeen[dcKeyL] = dcMerged.length;
+                dcMerged.push(Object.assign({}, dcItem));
+              }
+            });
+            base = Object.assign({}, base, {debtCompanies: dcMerged});
+          }
           var newRegions = (base.regions||[]).map(function(r) {
             var rKey = (r.nameEn||r.nameAr||'').trim();
             var rKeyL = rKey.toLowerCase();
@@ -10892,11 +10915,22 @@ export default function Dashboard() {
                   {name:"High Speed Company", portAmt:0,          portCnt:0,    paid:0, adj:0, count:0},
                 ];
                 // توحيد اسم High Speed company → High Speed Company
-                let dc = (data.debtCompanies||[]).map(c =>
+                let dcRaw = (data.debtCompanies||[]).map(c =>
                   c.name==="High Speed company" ? {...c, name:"High Speed Company"} : c
-                );
-                // إزالة التكرار
-                dc = dc.filter((c,i,arr) => arr.findIndex(x=>x.name===c.name)===i).filter(c=>c.name&&c.name!=="Blanks");
+                ).filter(c=>c.name&&c.name!=="Blanks");
+                // دمج التكرار (جمع القيم بدل حذف أحدها) - حماية إضافية
+                let dc = [];
+                let dcIdx = {};
+                dcRaw.forEach(c => {
+                  const k = c.name.trim().toLowerCase();
+                  if (dcIdx[k] !== undefined) {
+                    const ei = dcIdx[k];
+                    dc[ei] = {...dc[ei], paid:(dc[ei].paid||0)+(c.paid||0), adj:(dc[ei].adj||0)+(c.adj||0), count:(dc[ei].count||0)+(c.count||0), portCnt:(dc[ei].portCnt||0)+(c.portCnt||0), principalAmt: Math.max(dc[ei].principalAmt||0, c.principalAmt||0), portAmt: Math.max(dc[ei].portAmt||0, c.portAmt||0)};
+                  } else {
+                    dcIdx[k] = dc.length;
+                    dc.push({...c});
+                  }
+                });
                 ALWAYS_SHOW.forEach(co => {
                   if (!dc.find(c=>c.name===co.name)) dc.push(co);
                   else {
