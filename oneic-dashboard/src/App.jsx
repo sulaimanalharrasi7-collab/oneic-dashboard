@@ -9744,9 +9744,10 @@ export default function Dashboard() {
 
     // ══ مزامنة كل 8 ثوانٍ ══
     var _syncInterval = setInterval(function() {
-      if (window._noSyncUntil && Date.now() < window._noSyncUntil) return;
-      if (window._noSyncUntil && Date.now() < window._noSyncUntil) return;
+      if (window._noSyncUntil && Date.now() < window._noSyncUntil) { console.log('[INTERVAL] Skipped - protected for', Math.round((window._noSyncUntil-Date.now())/1000), 'more sec'); return; }
+      console.log('[INTERVAL] Proceeding to fetch Firebase...');
       sbGet('oneic_data').then(function(row) {
+        console.log('[INTERVAL] Firebase row._updatedAt=', row&&row._updatedAt, 'my lastSyncRef=', lastSyncRef.current);
         if (!row || !row.regions || !row.regions.length) return;
         var fbTime = new Date(row._updatedAt||row.lastUpdated||0).getTime();
         var myTime = lastSyncRef.current ? new Date(lastSyncRef.current).getTime() : 0;
@@ -10224,6 +10225,9 @@ export default function Dashboard() {
   }, []);
 
   const gPd = data.regions.reduce((s,r)=>s+r.paid,0);
+  if (typeof window !== 'undefined') {
+    console.log('[RENDER]', new Date().toLocaleTimeString(), 'gPd='+gPd.toFixed(2), 'data._updatedAt='+(data._updatedAt||'none'), 'noSyncUntil_remaining_sec='+(window._noSyncUntil?Math.max(0,Math.round((window._noSyncUntil-Date.now())/1000)):'0'));
+  }
   const gAd = data.regions.reduce((s,r)=>s+r.adj,0);
   const gCnt = data.regions.reduce((s,r)=>s+(r.count||0),0);
   const gPortAmt = data.regions.reduce((s,r)=>s+(r.principalAmt||r.portAmt||0),0);
