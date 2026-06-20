@@ -9596,7 +9596,16 @@ export default function Dashboard() {
   const small = w < 768;
 
   // ── تحميل البيانات من API عند البداية ───────────────────────────────────
-  const [data, setData] = useState(SEED);
+  const [data, setData] = useState(() => {
+    try {
+      const saved = localStorage.getItem('oneic_dashboard_data');
+      if (saved) {
+        const parsed = JSON.parse(saved);
+        if (parsed && parsed.regions && parsed.regions.length > 0) return parsed;
+      }
+    } catch(e) {}
+    return SEED;
+  });
   const [loadingServer, setLoadingServer] = useState(true);
   const [complaintsCount, setComplaintsCount] = useState(() => { try { return parseInt(localStorage.getItem('oneic_complaints_count')||'0'); } catch(e){return 0;} });
   const [complaintsCounts, setComplaintsCounts] = useState(() => {
