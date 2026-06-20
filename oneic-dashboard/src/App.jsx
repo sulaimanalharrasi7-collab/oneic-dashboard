@@ -9994,6 +9994,7 @@ export default function Dashboard() {
             });
             base = Object.assign({}, base, {debtCompanies: dcMerged});
           }
+          console.log('[SETDATA] regionMap keys=', Object.keys(regionMap), 'base.regions names=', base.regions.map(function(r){return r.nameEn;}));
           var newRegions = (base.regions||[]).map(function(r) {
             var rKey = (r.nameEn||r.nameAr||'').trim();
             var rKeyL = rKey.toLowerCase();
@@ -10054,6 +10055,7 @@ export default function Dashboard() {
             return null;
           };
           // حدّث debtCompanies من branchMap (مطابقة ذكية)
+          console.log('[SETDATA] newRegions paid values=', newRegions.map(function(r){return r.nameEn+':'+r.paid;}));
           var newDC = (base.debtCompanies||[]).map(function(c) {
             var bm = findBMTrack(c.name);
             if (bm) return Object.assign({},c,{paid:bm.paid||0,adj:bm.adj||0,portCnt:bm.count||c.portCnt||0,count:bm.count||c.count||0,closed:c.closed||0,active:c.active||0});
