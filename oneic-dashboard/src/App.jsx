@@ -8973,6 +8973,7 @@ async function parseComplaints(file) {
         const principalIdx= headers.findIndex(h => h === 'Principal Amount');
         const paidIdx     = headers.findIndex(h => h === 'Paid Amount');
         const adjIdx      = headers.findIndex(h => h === 'Adjustment');
+        const overPaidIdx = headers.findIndex(h => h === 'OverPaid');
         const discIdx = headers.findIndex(h => h === 'Oneic Discount');
         let totalDiscount = 0;
         if (regionIdx < 0) { reject(new Error('عمود Region غير موجود')); return; }
@@ -8997,7 +8998,8 @@ async function parseComplaints(file) {
           const branch = branchIdx>=0 ? (row[branchIdx]||'').replace(/\r/g,'').trim() : '';
           if (!region) continue;
           const amt       = principalIdx>=0 ? (parseFloat(row[principalIdx])||0) : 0;
-          const paidAmt   = paidIdx>=0    ? (parseFloat(row[paidIdx])||0)    : 0;
+          const overPaidAmt = overPaidIdx>=0 ? (parseFloat(row[overPaidIdx])||0) : 0;
+          const paidAmt   = (paidIdx>=0    ? (parseFloat(row[paidIdx])||0)    : 0) + overPaidAmt;
           const adjAmt    = adjIdx>=0     ? (parseFloat(row[adjIdx])||0)     : 0;
           totalDiscount += discIdx>=0 ? (parseFloat(row[discIdx])||0) : 0;
           const collector2= collectorIdx>=0 ? (row[collectorIdx]||'').replace(/\r/g,'').trim() : '';
