@@ -9744,10 +9744,8 @@ export default function Dashboard() {
 
     // ══ مزامنة كل 8 ثوانٍ ══
     var _syncInterval = setInterval(function() {
-      if (window._noSyncUntil && Date.now() < window._noSyncUntil) { console.log('[INTERVAL] Skipped - protected for', Math.round((window._noSyncUntil-Date.now())/1000), 'more sec'); return; }
-      console.log('[INTERVAL] Proceeding to fetch Firebase...');
+      if (window._noSyncUntil && Date.now() < window._noSyncUntil) return;
       sbGet('oneic_data').then(function(row) {
-        console.log('[INTERVAL] Firebase row._updatedAt=', row&&row._updatedAt, 'my lastSyncRef=', lastSyncRef.current);
         if (!row || !row.regions || !row.regions.length) return;
         var fbTime = new Date(row._updatedAt||row.lastUpdated||0).getTime();
         var myTime = lastSyncRef.current ? new Date(lastSyncRef.current).getTime() : 0;
@@ -9865,12 +9863,12 @@ export default function Dashboard() {
     var _myLastKnownSync = lastSyncRef.current || (dataRef.current && dataRef.current._updatedAt) || '';
     sbGet('oneic_data').then(function(row) {
       if (!row || !row.regions || !row.regions.length) { setSyncing(false); return; }
-      // ══ حماية: لا تستبدل البيانات الحالية ببيانات Firebase أقدم ══
+      // ══ حماية: لا تستبدل البيانات الحالية إذا Firebase ليس أحدث فعلياً (>) - الحالية هي المصدر الصحيح دائماً ══
       if (_myLastKnownSync) {
         var _fbT = new Date(row._updatedAt||row.lastUpdated||0).getTime();
         var _curT = new Date(_myLastKnownSync).getTime();
-        if (_fbT > 0 && _curT > 0 && _fbT < _curT) {
-          console.log('[forceRefresh] Firebase data is older - keeping current state (no change)');
+        if (_fbT > 0 && _curT > 0 && _fbT <= _curT) {
+          console.log('[forceRefresh] Firebase is not newer (fbT='+_fbT+' curT='+_curT+') - keeping current state as-is (no rebuild)');
           setSyncing(false);
           setLastSync(new Date());
           return;
@@ -9994,7 +9992,6 @@ export default function Dashboard() {
             });
             base = Object.assign({}, base, {debtCompanies: dcMerged});
           }
-          console.log('[SETDATA] regionMap keys=', Object.keys(regionMap), 'base.regions names=', base.regions.map(function(r){return r.nameEn;}));
           var newRegions = (base.regions||[]).map(function(r) {
             var rKey = (r.nameEn||r.nameAr||'').trim();
             var rKeyL = rKey.toLowerCase();
@@ -10055,7 +10052,6 @@ export default function Dashboard() {
             return null;
           };
           // حدّث debtCompanies من branchMap (مطابقة ذكية)
-          console.log('[SETDATA] newRegions paid values=', newRegions.map(function(r){return r.nameEn+':'+r.paid;}));
           var newDC = (base.debtCompanies||[]).map(function(c) {
             var bm = findBMTrack(c.name);
             if (bm) return Object.assign({},c,{paid:bm.paid||0,adj:bm.adj||0,portCnt:bm.count||c.portCnt||0,count:bm.count||c.count||0,closed:c.closed||0,active:c.active||0});
@@ -10227,9 +10223,6 @@ export default function Dashboard() {
   }, []);
 
   const gPd = data.regions.reduce((s,r)=>s+r.paid,0);
-  if (typeof window !== 'undefined') {
-    console.log('[RENDER]', new Date().toLocaleTimeString(), 'gPd='+gPd.toFixed(2), 'data._updatedAt='+(data._updatedAt||'none'), 'noSyncUntil_remaining_sec='+(window._noSyncUntil?Math.max(0,Math.round((window._noSyncUntil-Date.now())/1000)):'0'));
-  }
   const gAd = data.regions.reduce((s,r)=>s+r.adj,0);
   const gCnt = data.regions.reduce((s,r)=>s+(r.count||0),0);
   const gPortAmt = data.regions.reduce((s,r)=>s+(r.principalAmt||r.portAmt||0),0);
