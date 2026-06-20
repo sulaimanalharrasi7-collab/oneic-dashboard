@@ -9851,21 +9851,22 @@ export default function Dashboard() {
     // إجراء متعمد من المستخدم - يعمل دائماً حتى خلال فترة حماية الـ interval
     window._noSyncUntil = 0;
     setSyncing(true);
-    lastSyncRef.current = '';
+    // احفظ آخر توقيت معروف قبل أي تصفير - هذا الأكثر موثوقية لأنه يُحدَّث سينكرونياً عند كل Complaints/XLS
+    var _myLastKnownSync = lastSyncRef.current || (dataRef.current && dataRef.current._updatedAt) || '';
     sbGet('oneic_data').then(function(row) {
       if (!row || !row.regions || !row.regions.length) { setSyncing(false); return; }
       // ══ حماية: لا تستبدل البيانات الحالية ببيانات Firebase أقدم ══
-      var _curD = dataRef.current;
-      if (_curD && _curD._updatedAt) {
+      if (_myLastKnownSync) {
         var _fbT = new Date(row._updatedAt||row.lastUpdated||0).getTime();
-        var _curT = new Date(_curD._updatedAt).getTime();
+        var _curT = new Date(_myLastKnownSync).getTime();
         if (_fbT > 0 && _curT > 0 && _fbT < _curT) {
-          console.log('[forceRefresh] Firebase data is older - keeping current state');
+          console.log('[forceRefresh] Firebase data is older - keeping current state (no change)');
           setSyncing(false);
-          lastSyncRef.current = _curD._updatedAt;
+          setLastSync(new Date());
           return;
         }
       }
+      lastSyncRef.current = '';
       var HO_KEYS5=["Legal - DR. Sarhaan","Documentation- Omantel","HO","Non-due accounts","Legal -Oneic"];
       var HO_P5={"Legal - DR. Sarhaan":{portAmt:3229651.681,portCnt:3662},"Documentation- Omantel":{portAmt:471756.070,portCnt:1099,closed:8,active:1091},"HO":{portAmt:0,portCnt:340},"Non-due accounts":{portAmt:0,portCnt:340},"Legal -Oneic":{portAmt:64528.164,portCnt:144,closed:3,active:141}};
       var eHO5=row.headOffice||[];
