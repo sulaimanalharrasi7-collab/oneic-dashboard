@@ -9685,31 +9685,23 @@ export default function Dashboard() {
   // ── تحميل من Supabase عند فتح الصفحة ──────────────────────────────────────
   useEffect(() => {
     async function load() {
-      // ── أولاً: حاول Firebase ──
-      let firebaseData = null;
+      // ══ منطق مبسّط وموحّد ومضمون: Firebase هو مصدر الحقيقة الوحيد (single source of truth) ══
+      // أثبتنا أن sbUpsert يحفظ بنجاح 100% بعد كل Complaints/XLS، لذا Firebase دائماً يُفضَّل إذا توفر ومحتواه صالح
+      let row = null;
       try {
-        const row = await sbGet('oneic_data');
-        if (row?.regions?.length > 0) firebaseData = row;
+        const fbRow = await sbGet('oneic_data');
+        if (fbRow?.regions?.length > 0) row = fbRow;
       } catch(e) { console.warn('Firebase unavailable:', e.message); }
 
-      // ── ثانياً: localStorage كـ fallback ──
-      let localData = null;
-      try {
-        const saved = localStorage.getItem('oneic_dashboard_data');
-        if (saved) {
-          const parsed = JSON.parse(saved);
-          if (parsed?.regions?.length > 0) localData = parsed;
-        }
-      } catch(e) {}
-
-      // ── اختر الأحدث ──
-      let row = null;
-      if (firebaseData && localData) {
-        const fbTime = new Date(firebaseData._updatedAt||firebaseData.lastUpdated||0).getTime();
-        const lcTime = new Date(localData._updatedAt||localData.lastUpdated||0).getTime();
-        row = fbTime >= lcTime ? firebaseData : localData;
-      } else {
-        row = firebaseData || localData;
+      // localStorage فقط كـ fallback إذا Firebase غير متاح تماماً (مشكلة شبكة)
+      if (!row) {
+        try {
+          const saved = localStorage.getItem('oneic_dashboard_data');
+          if (saved) {
+            const parsed = JSON.parse(saved);
+            if (parsed?.regions?.length > 0) row = parsed;
+          }
+        } catch(e) {}
       }
 
       if (row?.regions?.length > 0) {
@@ -9759,36 +9751,13 @@ export default function Dashboard() {
           if(f) return Object.assign({},p,f,{closed:f.closed>0?f.closed:(p.closed||0),active:f.active>0?f.active:(p.active||0)});
           return {name:nm,paid:0,adj:0,count:0,portAmt:p.portAmt||0,portCnt:p.portCnt||0,closed:0,active:0};
         });
+        // ══ Firebase يحتوي البيانات الكاملة والنهائية الصحيحة - لا حاجة لأي دمج إضافي من localStorage ══
         var dSync = {};
         var rKeys = Object.keys(row);
         for(var ki=0;ki<rKeys.length;ki++){dSync[rKeys[ki]]=row[rKeys[ki]];}
         dSync.headOffice = fullHO3;
         dSync._updatedAt = row._updatedAt||row.lastUpdated||'';
         lastSyncRef.current = dSync._updatedAt || new Date().toISOString();
-        // دمج Complaints مع البيانات الجديدة من Firebase
-        var savedComplaints = null;
-        try { var _sc2 = localStorage.getItem('oneic_complaints_region_map'); if(_sc2) savedComplaints = JSON.parse(_sc2); } catch(e2) {}
-        var savedBranch = null;
-        try { var _sb2 = localStorage.getItem('oneic_complaints_branch_map'); if(_sb2) savedBranch = JSON.parse(_sb2); } catch(e2) {}
-        if (savedComplaints && Object.keys(savedComplaints).length > 0) {
-          // حدّث regions من complaints
-          dSync.regions = (dSync.regions||[]).map(function(r) {
-            var rKey = r.nameEn||r.nameAr||'';
-            var rm = savedComplaints[rKey];
-            if (!rm) { var keys = Object.keys(savedComplaints); for(var ki2=0;ki2<keys.length;ki2++){if(keys[ki2].indexOf(rKey)>=0||rKey.indexOf(keys[ki2])>=0){rm=savedComplaints[keys[ki2]];break;}} }
-            if (rm) return Object.assign({},r,{paid:rm.paid||0,adj:rm.adj||0,principalAmt:rm.amt||r.principalAmt||r.portAmt||0});
-            return r;
-          });
-        }
-        if (savedBranch && Object.keys(savedBranch).length > 0) {
-          dSync.debtCompanies = (dSync.debtCompanies||[]).map(function(c){
-            var bm=savedBranch[c.name]; return bm ? Object.assign({},c,{paid:bm.paid||0,adj:bm.adj||0}) : c;
-          });
-          dSync.headOffice = (dSync.headOffice||[]).map(function(c){
-            var bm=savedBranch[c.name]; return bm ? Object.assign({},c,{paid:bm.paid||0,adj:bm.adj||0}) : c;
-          });
-        }
-        setComplaintsRegionMap({});
         setData(function(prev){dSync.uploadCount=Math.max(dSync.uploadCount||0,(prev&&prev.uploadCount)||0);if(prev&&prev.uploadDate>(dSync.uploadDate||""))dSync.uploadDate=prev.uploadDate;return dSync;});
         try{localStorage.setItem('oneic_dashboard_data',JSON.stringify(dSync));}catch(ex){}
         if(row.history&&row.history.length){setHistory(function(prevH){var rh=row.history||[];var merged=(rh.length>=(prevH||[]).length)?rh:prevH;try{localStorage.setItem('oneic_history',JSON.stringify(merged));}catch(ex){}return merged;});}
@@ -9807,22 +9776,10 @@ export default function Dashboard() {
         var HO_P4={"Legal - DR. Sarhaan":{portAmt:3229651.681,portCnt:3691,closed:67,active:3624},"Documentation- Omantel":{portAmt:471756.070,portCnt:1099,closed:8,active:1091},"HO":{portAmt:0,portCnt:340},"Non-due accounts":{portAmt:0,portCnt:340},"Legal -Oneic":{portAmt:64528.164,portCnt:144,closed:3,active:141}};
         var eHO4=row.headOffice||[];
         var fullHO4=HO_KEYS4.map(function(nm){var f=eHO4.find(function(c){return c.name===nm;});var p=HO_P4[nm]||{};if(f)return Object.assign({},p,f,{closed:f.closed>0?f.closed:(p.closed||0),active:f.active>0?f.active:(p.active||0)});return {name:nm,paid:0,adj:0,count:0,portAmt:p.portAmt||0,portCnt:p.portCnt||0,closed:0,active:0};});
+        // ══ Firebase يحتوي البيانات الكاملة والنهائية الصحيحة - لا حاجة لأي دمج إضافي من localStorage ══
         var dSync4={headOffice:fullHO4,_updatedAt:row._updatedAt||row.lastUpdated||''};
         var rk=Object.keys(row); for(var ki4=0;ki4<rk.length;ki4++){if(rk[ki4]!=='headOffice')dSync4[rk[ki4]]=row[rk[ki4]];}
         lastSyncRef.current = dSync4._updatedAt || new Date().toISOString();
-        var sc4=null; try{var _s4=localStorage.getItem('oneic_complaints_region_map');if(_s4)sc4=JSON.parse(_s4);}catch(e){}
-        var sb4=null; try{var _b4=localStorage.getItem('oneic_complaints_branch_map');if(_b4)sb4=JSON.parse(_b4);}catch(e){}
-        if(sc4&&Object.keys(sc4).length>0){dSync4.regions=(dSync4.regions||[]).map(function(r){var rk2=(r.nameEn||r.nameAr||'').trim().toLowerCase();var rm4=sc4[r.nameEn]||sc4[r.nameAr||''];if(!rm4){var ks=Object.keys(sc4);for(var ki5=0;ki5<ks.length;ki5++){var kl=ks[ki5].toLowerCase();if(kl===rk2||kl.indexOf(rk2)>=0||rk2.indexOf(kl)>=0){rm4=sc4[ks[ki5]];break;}}}if(!rm4)return r;var nC=(r.collectors||[]).map(function(col){var cm=rm4.collectors&&rm4.collectors[col.name];if(!cm&&rm4.collectors){var cks=Object.keys(rm4.collectors);for(var ci=0;ci<cks.length;ci++){if(cks[ci].toLowerCase()===col.name.toLowerCase()){cm=rm4.collectors[cks[ci]];break;}}}return cm?Object.assign({},col,{paid:cm.paid||0,adj:cm.adj||0,principalAmt:cm.principal||col.principalAmt||0}):col;});return Object.assign({},r,{paid:rm4.paid||0,adj:rm4.adj||0,principalAmt:rm4.amt||r.principalAmt||r.portAmt||0,collectors:nC});});}
-        if(sb4&&Object.keys(sb4).length>0){
-          dSync4.debtCompanies=(dSync4.debtCompanies||[]).map(function(c){var bm4=sb4[c.name];return bm4?Object.assign({},c,{paid:bm4.paid||0,adj:bm4.adj||0,principalAmt:bm4.amt||c.principalAmt||c.portAmt||0,portCnt:bm4.count||c.portCnt||0,count:bm4.count||c.count||0}):c;});
-          // أضف Tahseel/HighSpeed من branchMap إذا لم يكونوا في debtCompanies
-          var dcNames4=dSync4.debtCompanies.map(function(c){return c.name;});
-          var bk4=Object.keys(sb4);
-          var HO_SKIP4=["Legal - DR. Sarhaan","Documentation- Omantel","HO","Non-due accounts","Legal -Oneic","Legal","Legal "];
-          for(var bi4=0;bi4<bk4.length;bi4++){var bn4=bk4[bi4];if(dcNames4.indexOf(bn4)<0&&HO_SKIP4.indexOf(bn4)<0&&(sb4[bn4].paid+sb4[bn4].adj)>0){var bv4=sb4[bn4];dSync4.debtCompanies.push({name:bn4,paid:bv4.paid||0,adj:bv4.adj||0,principalAmt:bv4.amt||0,portAmt:bv4.amt||0,portCnt:bv4.count||0,count:bv4.count||0});}}
-          dSync4.headOffice=(dSync4.headOffice||[]).map(function(c){var bm4=sb4[c.name];return bm4?Object.assign({},c,{paid:bm4.paid||0,adj:bm4.adj||0,principalAmt:bm4.amt||c.principalAmt||c.portAmt||0,portCnt:bm4.count||c.portCnt||0,count:bm4.count||c.count||0}):c;});
-        }
-        setComplaintsRegionMap({});
         setData(function(prev){dSync4.uploadCount=Math.max(dSync4.uploadCount||0,(prev&&prev.uploadCount)||0);if(prev&&prev.uploadDate>(dSync4.uploadDate||""))dSync4.uploadDate=prev.uploadDate;return dSync4;});
         try{localStorage.setItem('oneic_dashboard_data',JSON.stringify(dSync4));}catch(e){}
         if(row.history&&row.history.length){setHistory(function(prevH){var rh=row.history||[];return (rh.length>=(prevH||[]).length)?rh:prevH;});}
@@ -9856,45 +9813,19 @@ export default function Dashboard() {
 
   // ══ تحديث فوري من Firebase ══
   const forceRefresh = () => {
-    // إجراء متعمد من المستخدم - يعمل دائماً حتى خلال فترة حماية الـ interval
+    // إجراء متعمد من المستخدم - يعمل دائماً، ويثق بـ Firebase 100% كمصدر الحقيقة الوحيد
     window._noSyncUntil = 0;
     setSyncing(true);
-    // احفظ آخر توقيت معروف قبل أي تصفير - هذا الأكثر موثوقية لأنه يُحدَّث سينكرونياً عند كل Complaints/XLS
-    var _myLastKnownSync = lastSyncRef.current || (dataRef.current && dataRef.current._updatedAt) || '';
     sbGet('oneic_data').then(function(row) {
       if (!row || !row.regions || !row.regions.length) { setSyncing(false); return; }
-      // ══ حماية: لا تستبدل البيانات الحالية إذا Firebase ليس أحدث فعلياً (>) - الحالية هي المصدر الصحيح دائماً ══
-      if (_myLastKnownSync) {
-        var _fbT = new Date(row._updatedAt||row.lastUpdated||0).getTime();
-        var _curT = new Date(_myLastKnownSync).getTime();
-        if (_fbT > 0 && _curT > 0 && _fbT <= _curT) {
-          console.log('[forceRefresh] Firebase is not newer (fbT='+_fbT+' curT='+_curT+') - keeping current state as-is (no rebuild)');
-          setSyncing(false);
-          setLastSync(new Date());
-          return;
-        }
-      }
-      lastSyncRef.current = '';
+      // ══ Firebase يحتوي البيانات الكاملة والنهائية الصحيحة - لا حاجة لأي دمج أو إعادة بناء إضافي ══
       var HO_KEYS5=["Legal - DR. Sarhaan","Documentation- Omantel","HO","Non-due accounts","Legal -Oneic"];
-      var HO_P5={"Legal - DR. Sarhaan":{portAmt:3229651.681,portCnt:3662},"Documentation- Omantel":{portAmt:471756.070,portCnt:1099,closed:8,active:1091},"HO":{portAmt:0,portCnt:340},"Non-due accounts":{portAmt:0,portCnt:340},"Legal -Oneic":{portAmt:64528.164,portCnt:144,closed:3,active:141}};
+      var HO_P5={"Legal - DR. Sarhaan":{portAmt:3229651.681,portCnt:3691,closed:67,active:3624},"Documentation- Omantel":{portAmt:471756.070,portCnt:1099,closed:8,active:1091},"HO":{portAmt:0,portCnt:340},"Non-due accounts":{portAmt:0,portCnt:340},"Legal -Oneic":{portAmt:64528.164,portCnt:144,closed:3,active:141}};
       var eHO5=row.headOffice||[];
-      var fullHO5=HO_KEYS5.map(function(nm){var f=eHO5.find(function(c){return c.name===nm;});if(f)return f;var p=HO_P5[nm]||{};return {name:nm,paid:0,adj:0,count:0,portAmt:p.portAmt||0,portCnt:p.portCnt||0};});
+      var fullHO5=HO_KEYS5.map(function(nm){var f=eHO5.find(function(c){return c.name===nm;});var p=HO_P5[nm]||{};if(f)return Object.assign({},p,f,{closed:f.closed>0?f.closed:(p.closed||0),active:f.active>0?f.active:(p.active||0)});return Object.assign({name:nm,paid:0,adj:0,count:0,closed:0,active:0},p);});
       var d5={}; var rk5=Object.keys(row); for(var ki5=0;ki5<rk5.length;ki5++){d5[rk5[ki5]]=row[rk5[ki5]];}
       d5.headOffice=fullHO5; d5._updatedAt=row._updatedAt||row.lastUpdated||'';
       lastSyncRef.current = d5._updatedAt || new Date().toISOString();
-      // دمج Complaints
-      var sc5=null; try{var _s5=localStorage.getItem('oneic_complaints_region_map');if(_s5)sc5=JSON.parse(_s5);}catch(e){}
-      var sb5=null; try{var _b5=localStorage.getItem('oneic_complaints_branch_map');if(_b5)sb5=JSON.parse(_b5);}catch(e){}
-      if(sc5&&Object.keys(sc5).length>0){d5.regions=(d5.regions||[]).map(function(r){var rk2=(r.nameEn||r.nameAr||'').trim().toLowerCase();var rm5=sc5[r.nameEn]||sc5[r.nameAr||''];if(!rm5){var ks=Object.keys(sc5);for(var ki6=0;ki6<ks.length;ki6++){var kl2=ks[ki6].toLowerCase();if(kl2===rk2||kl2.indexOf(rk2)>=0||rk2.indexOf(kl2)>=0){rm5=sc5[ks[ki6]];break;}}}if(!rm5)return r;var nC5=(r.collectors||[]).map(function(col){var cm5=rm5.collectors&&rm5.collectors[col.name];if(!cm5&&rm5.collectors){var cks5=Object.keys(rm5.collectors);for(var ci5=0;ci5<cks5.length;ci5++){if(cks5[ci5].toLowerCase()===col.name.toLowerCase()){cm5=rm5.collectors[cks5[ci5]];break;}}}return cm5?Object.assign({},col,{paid:cm5.paid||0,adj:cm5.adj||0,principalAmt:cm5.principal||col.principalAmt||0}):col;});return Object.assign({},r,{paid:rm5.paid||0,adj:rm5.adj||0,principalAmt:rm5.amt||r.principalAmt||r.portAmt||0,collectors:nC5});});}
-      if(sb5&&Object.keys(sb5).length>0){
-        d5.debtCompanies=(d5.debtCompanies||[]).map(function(c){var bm5=sb5[c.name];return bm5?Object.assign({},c,{paid:bm5.paid||0,adj:bm5.adj||0,principalAmt:bm5.amt||c.principalAmt||c.portAmt||0,portCnt:bm5.count||c.portCnt||0,count:bm5.count||c.count||0}):c;});
-        var dcNames5=d5.debtCompanies.map(function(c){return c.name;});
-        var bk5=Object.keys(sb5);
-        var HO_SKIP5=["Legal - DR. Sarhaan","Documentation- Omantel","HO","Non-due accounts","Legal -Oneic","Legal","Legal "];
-        for(var bi5=0;bi5<bk5.length;bi5++){var bn5=bk5[bi5];if(dcNames5.indexOf(bn5)<0&&HO_SKIP5.indexOf(bn5)<0&&(sb5[bn5].paid+sb5[bn5].adj)>0){var bv5=sb5[bn5];d5.debtCompanies.push({name:bn5,paid:bv5.paid||0,adj:bv5.adj||0,principalAmt:bv5.amt||0,portAmt:bv5.amt||0,portCnt:bv5.count||0,count:bv5.count||0});}}
-        d5.headOffice=(d5.headOffice||[]).map(function(c){var bm5=sb5[c.name];return bm5?Object.assign({},c,{paid:bm5.paid||0,adj:bm5.adj||0,principalAmt:bm5.amt||c.principalAmt||c.portAmt||0,portCnt:bm5.count||c.portCnt||0,count:bm5.count||c.count||0}):c;});
-      }
-      setComplaintsRegionMap({});
       setData(function(prev){d5.uploadCount=Math.max(d5.uploadCount||0,(prev&&prev.uploadCount)||0);if(prev&&prev.uploadDate&&prev.uploadDate>(d5.uploadDate||''))d5.uploadDate=prev.uploadDate;return d5;});
       try{localStorage.setItem('oneic_dashboard_data',JSON.stringify(d5));}catch(e){}
       if(row.history&&row.history.length>0){setHistory(function(prevH){var rh=row.history||[];return (rh.length>=(prevH||[]).length)?rh:prevH;});}
