@@ -8971,6 +8971,7 @@ async function parseComplaints(file) {
         const branchIdx   = headers.findIndex(h => h === 'Branch');
         const collectorIdx= headers.findIndex(h => h === 'Collector');
         const principalIdx= headers.findIndex(h => h === 'Principal Amount');
+        const osIdx       = headers.findIndex(h => h === 'O/S Amount');
         const paidIdx     = headers.findIndex(h => h === 'Paid Amount');
         const adjIdx      = headers.findIndex(h => h === 'Adjustment');
         const overPaidIdx = headers.findIndex(h => h === 'OverPaid');
@@ -9003,6 +9004,7 @@ async function parseComplaints(file) {
           const paidAmt   = paidIdx>=0    ? (parseFloat(row[paidIdx])||0)    : 0;
           const adjAmt    = adjIdx>=0     ? (parseFloat(row[adjIdx])||0)     : 0;
           const overPaidAmt = overPaidIdx>=0 ? (parseFloat(row[overPaidIdx])||0) : 0;
+          const osAmt = osIdx>=0 ? (parseFloat(row[osIdx])||0) : (amt - paidAmt - adjAmt);
           totalOverRecovery += overPaidAmt;
           if (overPaidAmt > 0) totalOverRecoveryCount++;
           totalDiscount += discIdx>=0 ? (parseFloat(row[discIdx])||0) : 0;
@@ -9027,11 +9029,14 @@ async function parseComplaints(file) {
               else if (cLow.indexOf('doc')>=0) hoColKey='Documentation- Omantel';
               else if (cLow.indexOf('non-due')>=0||collector2.toUpperCase()==='HO') hoColKey='Non-due accounts';
               else hoColKey='Legal -Oneic';
-              if (!branchMap[hoColKey]) branchMap[hoColKey]={count:0,amt:0,paid:0,adj:0};
+              if (!branchMap[hoColKey]) branchMap[hoColKey]={count:0,amt:0,paid:0,adj:0,closed:0,active:0};
               branchMap[hoColKey].count++;
               branchMap[hoColKey].amt  += amt;
               branchMap[hoColKey].paid += paidAmt;
               branchMap[hoColKey].adj += adjAmt;
+              if (hoColKey==='Legal -Oneic'||hoColKey==='Documentation- Omantel'||hoColKey==='Legal - DR. Sarhaan') {
+                if (osAmt<=0) branchMap[hoColKey].closed++; else branchMap[hoColKey].active++;
+              }
             }
             const hoKey = 'HEAD_OFFICE_TOTAL';
             if (!branchMap[hoKey]) branchMap[hoKey] = {count:0, amt:0};
@@ -9988,10 +9993,20 @@ export default function Dashboard() {
             if (bm) return Object.assign({},c,{paid:bm.paid||0,adj:bm.adj||0,portCnt:bm.count||c.portCnt||0,count:bm.count||c.count||0,closed:c.closed||0,active:c.active||0});
             return c;
           });
-          // حدّث headOffice من branchMap (مطابقة ذكية)
+          // حدّث headOffice من branchMap (مطابقة ذكية) - closed/active تُحسب من Complaints مباشرة (O/S Amount لكل حساب)
           var newHO = (base.headOffice||[]).map(function(c) {
             var bm = findBMTrack(c.name);
-            if (bm) return Object.assign({},c,{paid:bm.paid||0,adj:bm.adj||0,portCnt:bm.count||c.portCnt||0,count:bm.count||c.count||0,closed:c.closed||0,active:c.active||0});
+            if (bm) {
+              var hasClosedData = (c.name==='Legal -Oneic'||c.name==='Documentation- Omantel'||c.name==='Legal - DR. Sarhaan');
+              return Object.assign({},c,{
+                paid:bm.paid||0,
+                adj:bm.adj||0,
+                portCnt:bm.count||c.portCnt||0,
+                count:bm.count||c.count||0,
+                closed: hasClosedData ? (bm.closed||0) : (c.closed||0),
+                active: hasClosedData ? (bm.active||0) : (c.active||0)
+              });
+            }
             return c;
           });
           // أضف شركات في Complaints ليست في debtCompanies (مثل Tahseel، High Speed) - فقط إذا لم تُطابق بالفعل
