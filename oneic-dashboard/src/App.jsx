@@ -9934,6 +9934,31 @@ export default function Dashboard() {
             });
             base = Object.assign({}, base, {debtCompanies: dcMerged});
           }
+          // ══ تنظيف وتوحيد الأسماء المكررة (case-insensitive) في headOffice قبل أي شيء آخر ══
+          // (يصلح حالات قديمة محفوظة فيها بطاقة "Non-due accounts"/"HO" مكررة تُضخّم عدد الحسابات)
+          if (base.headOffice && base.headOffice.length) {
+            var hoSeen = {};
+            var hoMerged = [];
+            base.headOffice.forEach(function(hoItem){
+              var hoKeyL = (hoItem.name||'').trim().toLowerCase();
+              if (hoSeen[hoKeyL] !== undefined) {
+                var existIdx = hoSeen[hoKeyL];
+                hoMerged[existIdx] = Object.assign({}, hoMerged[existIdx], {
+                  paid: (hoMerged[existIdx].paid||0) + (hoItem.paid||0),
+                  adj: (hoMerged[existIdx].adj||0) + (hoItem.adj||0),
+                  count: (hoMerged[existIdx].count||0) + (hoItem.count||0),
+                  portCnt: Math.max(hoMerged[existIdx].portCnt||0, hoItem.portCnt||0),
+                  portAmt: Math.max(hoMerged[existIdx].portAmt||0, hoItem.portAmt||0),
+                  closed: (hoMerged[existIdx].closed||0) + (hoItem.closed||0),
+                  active: (hoMerged[existIdx].active||0) + (hoItem.active||0)
+                });
+              } else {
+                hoSeen[hoKeyL] = hoMerged.length;
+                hoMerged.push(Object.assign({}, hoItem));
+              }
+            });
+            base = Object.assign({}, base, {headOffice: hoMerged});
+          }
           var newRegions = (base.regions||[]).map(function(r) {
             var rKey = (r.nameEn||r.nameAr||'').trim();
             var rKeyL = rKey.toLowerCase();
