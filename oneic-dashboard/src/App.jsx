@@ -9939,11 +9939,17 @@ export default function Dashboard() {
           if (base.headOffice && base.headOffice.length) {
             var hoSeen = {};
             var hoMerged = [];
+            var hoCanon = function(nm){
+              var l = (nm||'').trim().toLowerCase();
+              if (l === 'ho' || l === 'non-due accounts') return 'non-due accounts';
+              return l;
+            };
             base.headOffice.forEach(function(hoItem){
-              var hoKeyL = (hoItem.name||'').trim().toLowerCase();
+              var hoKeyL = hoCanon(hoItem.name);
               if (hoSeen[hoKeyL] !== undefined) {
                 var existIdx = hoSeen[hoKeyL];
                 hoMerged[existIdx] = Object.assign({}, hoMerged[existIdx], {
+                  name: hoKeyL === 'non-due accounts' ? 'Non-due accounts' : hoMerged[existIdx].name,
                   paid: (hoMerged[existIdx].paid||0) + (hoItem.paid||0),
                   adj: (hoMerged[existIdx].adj||0) + (hoItem.adj||0),
                   count: (hoMerged[existIdx].count||0) + (hoItem.count||0),
@@ -9954,7 +9960,7 @@ export default function Dashboard() {
                 });
               } else {
                 hoSeen[hoKeyL] = hoMerged.length;
-                hoMerged.push(Object.assign({}, hoItem));
+                hoMerged.push(Object.assign({}, hoItem, {name: hoKeyL==='non-due accounts' ? 'Non-due accounts' : hoItem.name}));
               }
             });
             base = Object.assign({}, base, {headOffice: hoMerged});
