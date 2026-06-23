@@ -6203,7 +6203,7 @@ async function parseXLS(file) {
     adjCount:  regMap[k].adjCount||0,
     portAmt: regMap[k].principalAmt||(PORT.regions[k]||{portAmt:0}).portAmt,
     principalAmt: regMap[k].principalAmt||0,
-    portCnt: (PORT.regions[k]||{portCnt:0}).portCnt,
+    portCnt: regMap[k].count || (PORT.regions[k]||{portCnt:0}).portCnt,
     collectors: Object.entries(regMap[k].cMap)
       .map(([nm,d]) => ({
         name:nm, paid:d.paid, adj:d.adj,
@@ -6224,7 +6224,7 @@ async function parseXLS(file) {
       portAmt:computedPortAmt, portCnt:d.count||p.portCnt, osAmt:d.osAmt||0 };
   });
   DC_REQUIRED.forEach(nm => {
-    if (!dcList.find(c=>c.name===nm)) {
+    if (!dcList.find(c=>c.name.toLowerCase()===nm.toLowerCase())) {
       const p = PORT.dc[nm]||{portAmt:0,portCnt:0};
       dcList.push({name:nm,paid:0,adj:0,count:0,paidCount:0,adjCount:0,portAmt:p.portAmt,portCnt:p.portCnt});
     }
@@ -6232,7 +6232,7 @@ async function parseXLS(file) {
   const debtCompanies = dcList.sort((a,b)=>((b.paid||0)+(b.adj||0))-((a.paid||0)+(a.adj||0)));
 
   // ── المكتب الرئيسي ────────────────────────────────────────────────────
-  const HO_KEYS = ["Legal - DR. Sarhaan","Documentation- Omantel","HO","Non-due accounts","Legal -Oneic"];
+  const HO_KEYS = ["Legal - DR. Sarhaan","Documentation- Omantel","HO","Legal -Oneic"];
   const headOffice = HO_KEYS.map(nm => {
     const d = hoMap[nm]||{paid:0,adj:0,count:0};
     const p = PORT.ho[nm]||{portAmt:0,portCnt:0};
@@ -6251,7 +6251,11 @@ async function parseXLS(file) {
     uploadDate: new Date().toISOString().split('T')[0],
     totalRecords: rows.length,
     regions, debtCompanies, headOffice,
-    totalPortfolio: { amt: 9414256.834, cnt: 47963, outstanding: 8394362.802 }
+    totalPortfolio: {
+      amt: rows.reduce((s,r)=>s+n(r['Principal Amount']||0),0),
+      cnt: rows.length,
+      outstanding: rows.reduce((s,r)=>s+n(r['O/S Amount']||0),0)
+    }
   };
 }
 
@@ -9207,7 +9211,7 @@ function handlePrint(data) {
   var grandPaid = govPaid+dcPaid+hoPaid;
   var grandAdj  = govAdj+dcAdj+hoAdj;
   var grandTotal = grandPaid + grandAdj;
-  var portAmt    = 9414256.834;
+  var portAmt    = (data.totalPortfolio&&data.totalPortfolio.amt) ? data.totalPortfolio.amt : 9414256.834;
   var portCnt    = (data.totalPortfolio&&data.totalPortfolio.cnt) ? data.totalPortfolio.cnt : 47963;
   var ONEIC_DISC = data.totalDiscount||1544.191;
   var pctDone    = portAmt>0 ? Math.min(100,Math.round(grandTotal/portAmt*100)) : 0;
@@ -10185,7 +10189,7 @@ export default function Dashboard() {
   const hPortCnt = data.headOffice.reduce((s,r)=>s+(r.portCnt||0),0);
   const totalPaid = gPd+dPd+hPd;
   const totalAdj  = gAd+dAd+hAd;
-  const totalPort = 9414256.834;
+  const totalPort = (data.totalPortfolio&&data.totalPortfolio.amt) ? data.totalPortfolio.amt : 9414256.834;
   const ONEIC_DISCOUNT = data.totalDiscount||1544.191;
   const gTotal = totalPaid+totalAdj;
   const gRem = totalPort - gTotal - ONEIC_DISCOUNT;
@@ -10776,7 +10780,7 @@ export default function Dashboard() {
                 const _hAd = (data.headOffice||[]).reduce((s,r)=>s+Math.max(0,r.adj||0),0);
                 const s1Paid = _gPd+_dPd+_hPd;
                 const s1Adj  = _gAd+_dAd+_hAd;
-                const s1Port = 9414256.834;
+                const s1Port = (data.totalPortfolio&&data.totalPortfolio.amt) ? data.totalPortfolio.amt : 9414256.834;
                 const s1OverRec = data.overRecovery||0;
                 const s1Tot  = s1Paid + s1Adj;
                 const s1Rem  = s1Port - s1Tot - ONEIC_DISCOUNT;
