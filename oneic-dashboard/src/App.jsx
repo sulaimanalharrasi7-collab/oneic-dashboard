@@ -10228,7 +10228,7 @@ export default function Dashboard() {
   const gTotal = totalPaid+totalAdj;
   const gRem = (data.totalPortfolio&&data.totalPortfolio.outstanding!=null) ? data.totalPortfolio.outstanding : (totalPort - gTotal - ONEIC_DISCOUNT);
   const GRAND_TOTAL_FIXED = 1020464.134;
-  const p = v => GRAND_TOTAL_FIXED>0 ? ((v/GRAND_TOTAL_FIXED)*100).toFixed(1) : "0";
+  const p = v => gTotal>0 ? ((v/gTotal)*100).toFixed(1) : "0";
 
   // ── Smart Notifications ───────────────────────────────────────────────────
   const hoPrincipalCurrent = (function(){var _f=(data.headOffice||[]).find(function(x){return x.name==='Legal - DR. Sarhaan';});return _f?(_f.principalAmt||0):0;})();
