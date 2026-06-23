@@ -9984,7 +9984,7 @@ export default function Dashboard() {
                   name: cname,
                   paid: cm.paid||0,
                   adj: cm.adj||0,
-                  principalAmt: (existingCol&&existingCol.principalAmt>0) ? existingCol.principalAmt : (cm.principal||cm.amt||0)
+                  principalAmt: (cm.principal||cm.amt||0) || (existingCol&&existingCol.principalAmt) || 0
                 });
               });
               return Object.assign({},r,{paid:rm.paid||0, adj:rm.adj||0, count:rm.count||0, portCnt:rm.count||r.portCnt||0, principalAmt:rm.amt||r.principalAmt||0, collectors:newCollectors});
