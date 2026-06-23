@@ -9984,6 +9984,7 @@ export default function Dashboard() {
                   name: cname,
                   paid: cm.paid||0,
                   adj: cm.adj||0,
+                  count: cm.count||(existingCol&&existingCol.count)||0,
                   principalAmt: (cm.principal||cm.amt||0) || (existingCol&&existingCol.principalAmt) || 0
                 });
               });
