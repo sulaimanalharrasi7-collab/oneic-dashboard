@@ -8993,6 +8993,7 @@ async function parseComplaints(file) {
         let dcAmt=0, hoAmt=0, govAmt=0;
         let dcPaid=0, hoPaid=0, govPaid=0;
         let dcAdj=0, hoAdj=0, govAdj=0;
+        let totalOS=0;
         
         // تجميع حسب Region للمحافظات وحسب Branch لشركات التحصيل
         const regionMap = {}; // للمحافظات الخمس (Region)
@@ -9009,6 +9010,7 @@ async function parseComplaints(file) {
           const adjAmt    = adjIdx>=0     ? (parseFloat(row[adjIdx])||0)     : 0;
           const overPaidAmt = overPaidIdx>=0 ? (parseFloat(row[overPaidIdx])||0) : 0;
           const osAmt = osIdx>=0 ? (parseFloat(row[osIdx])||0) : (amt - paidAmt - adjAmt);
+          totalOS += osAmt;
           totalOverRecovery += overPaidAmt;
           if (overPaidAmt > 0) totalOverRecoveryCount++;
           totalDiscount += discIdx>=0 ? (parseFloat(row[discIdx])||0) : 0;
@@ -9061,7 +9063,7 @@ async function parseComplaints(file) {
             }
           }
         }
-        resolve({ total, dcCount, hoCount, govCount, dcAmt, hoAmt, govAmt, dcPaid, hoPaid, govPaid, dcAdj, hoAdj, govAdj, regionMap, branchMap, totalDiscount, totalOverRecovery, totalOverRecoveryCount });
+        resolve({ total, dcCount, hoCount, govCount, dcAmt, hoAmt, govAmt, dcPaid, hoPaid, govPaid, dcAdj, hoAdj, govAdj, regionMap, branchMap, totalDiscount, totalOverRecovery, totalOverRecoveryCount, totalOS });
       } catch(e) { reject(e); }
     };
     reader.onerror = () => reject(new Error('فشل قراءة الملف'));
@@ -9896,7 +9898,7 @@ export default function Dashboard() {
       
       if (isComplaints) {
         // ملف complaints → يحدّث عدد الحسابات والمبالغ
-        const {total,dcCount,hoCount,govCount,dcAmt,hoAmt,govAmt,dcPaid,hoPaid,govPaid,dcAdj,hoAdj,govAdj,regionMap,branchMap,totalDiscount,totalOverRecovery,totalOverRecoveryCount} = await parseComplaints(file);
+        const {total,dcCount,hoCount,govCount,dcAmt,hoAmt,govAmt,dcPaid,hoPaid,govPaid,dcAdj,hoAdj,govAdj,regionMap,branchMap,totalDiscount,totalOverRecovery,totalOverRecoveryCount,totalOS} = await parseComplaints(file);
         setComplaintsCount(total);
         setComplaintsCounts({dc:dcCount,ho:hoCount,gov:govCount});
         setComplaintsAmts({dc:dcAmt,ho:hoAmt,gov:govAmt});
@@ -10023,7 +10025,7 @@ export default function Dashboard() {
               newDC.push({name:bkn, paid:bkm.paid||0, adj:bkm.adj||0, principalAmt:0, portAmt:0, portCnt:bkm.count||0, count:bkm.count||0});
             }
           }
-          var _tF=new Date().toISOString();var _tFd=_tF.split("T")[0];var _gp2=newRegions.reduce(function(s,r){return s+(r.paid||0);},0)+newDC.reduce(function(s,r){return s+(r.paid||0);},0)+newHO.reduce(function(s,r){return s+(r.paid||0);},0);var _ga2=newRegions.reduce(function(s,r){return s+(r.adj||0);},0)+newDC.reduce(function(s,r){return s+(r.adj||0);},0)+newHO.reduce(function(s,r){return s+(r.adj||0);},0);var _he={date:_tFd,savedAt:_tF,totalRecords:base.totalRecords||0,grandPaid:_gp2,grandAdj:_ga2,grandTotal:_gp2+_ga2};var _prevHist=base.history||[];var _flHist=_prevHist.filter(function(h){return h.date!==_he.date;});var _nh=[_he].concat(_flHist).slice(0,90);var mg=Object.assign({},base,{regions:newRegions,debtCompanies:newDC,headOffice:newHO,totalDiscount:totalDiscount||base.totalDiscount||0,overRecovery:totalOverRecovery||0,overRecoveryCount:totalOverRecoveryCount||0,_updatedAt:_tF,lastUpdated:_tF,uploadDate:_tFd,complaintsDate:_tFd,uploadCount:(base.uploadCount||0)+1,history:_nh});lastSyncRef.current=_tF;window._noSyncUntil=Date.now()+60000;try{localStorage.setItem('oneic_dashboard_data',JSON.stringify(mg));}catch(e){}try{localStorage.setItem('oneic_complaints_region_map',JSON.stringify(regionMap||{}));}catch(e){}try{localStorage.setItem('oneic_complaints_branch_map',JSON.stringify(branchMap||{}));}catch(e){}try{localStorage.setItem('oneic_history',JSON.stringify(_nh));}catch(e){}sbUpsert('oneic_data',{payload:mg}).then(function(){console.log('Complaints saved size='+JSON.stringify(mg).length);}).catch(function(e){console.error('Complaints save FAILED:',e&&e.message||e);try{fetch(FIREBASE_URL+'/main/uploadCount.json',{method:'PUT',headers:{'Content-Type':'application/json'},body:JSON.stringify(mg.uploadCount)});fetch(FIREBASE_URL+'/main/uploadDate.json',{method:'PUT',headers:{'Content-Type':'application/json'},body:JSON.stringify(mg.uploadDate)});fetch(FIREBASE_URL+'/main/history.json',{method:'PUT',headers:{'Content-Type':'application/json'},body:JSON.stringify(_nh)});}catch(e2){}});setHistory(function(prev){return (_nh.length>=(prev||[]).length)?_nh:prev;});return mg;
+          var _tF=new Date().toISOString();var _tFd=_tF.split("T")[0];var _gp2=newRegions.reduce(function(s,r){return s+(r.paid||0);},0)+newDC.reduce(function(s,r){return s+(r.paid||0);},0)+newHO.reduce(function(s,r){return s+(r.paid||0);},0);var _ga2=newRegions.reduce(function(s,r){return s+(r.adj||0);},0)+newDC.reduce(function(s,r){return s+(r.adj||0);},0)+newHO.reduce(function(s,r){return s+(r.adj||0);},0);var _he={date:_tFd,savedAt:_tF,totalRecords:base.totalRecords||0,grandPaid:_gp2,grandAdj:_ga2,grandTotal:_gp2+_ga2};var _prevHist=base.history||[];var _flHist=_prevHist.filter(function(h){return h.date!==_he.date;});var _nh=[_he].concat(_flHist).slice(0,90);var mg=Object.assign({},base,{regions:newRegions,debtCompanies:newDC,headOffice:newHO,totalPortfolio:{amt:dcAmt+hoAmt+govAmt,cnt:total,outstanding:totalOS},totalDiscount:totalDiscount||base.totalDiscount||0,overRecovery:totalOverRecovery||0,overRecoveryCount:totalOverRecoveryCount||0,_updatedAt:_tF,lastUpdated:_tF,uploadDate:_tFd,complaintsDate:_tFd,uploadCount:(base.uploadCount||0)+1,history:_nh});lastSyncRef.current=_tF;window._noSyncUntil=Date.now()+60000;try{localStorage.setItem('oneic_dashboard_data',JSON.stringify(mg));}catch(e){}try{localStorage.setItem('oneic_complaints_region_map',JSON.stringify(regionMap||{}));}catch(e){}try{localStorage.setItem('oneic_complaints_branch_map',JSON.stringify(branchMap||{}));}catch(e){}try{localStorage.setItem('oneic_history',JSON.stringify(_nh));}catch(e){}sbUpsert('oneic_data',{payload:mg}).then(function(){console.log('Complaints saved size='+JSON.stringify(mg).length);}).catch(function(e){console.error('Complaints save FAILED:',e&&e.message||e);try{fetch(FIREBASE_URL+'/main/uploadCount.json',{method:'PUT',headers:{'Content-Type':'application/json'},body:JSON.stringify(mg.uploadCount)});fetch(FIREBASE_URL+'/main/uploadDate.json',{method:'PUT',headers:{'Content-Type':'application/json'},body:JSON.stringify(mg.uploadDate)});fetch(FIREBASE_URL+'/main/history.json',{method:'PUT',headers:{'Content-Type':'application/json'},body:JSON.stringify(_nh)});}catch(e2){}});setHistory(function(prev){return (_nh.length>=(prev||[]).length)?_nh:prev;});return mg;
         });
         // احفظ complaints في localStorage
         try {
