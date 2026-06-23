@@ -9217,7 +9217,7 @@ function handlePrint(data) {
   var portCnt    = (data.totalPortfolio&&data.totalPortfolio.cnt) ? data.totalPortfolio.cnt : 47963;
   var ONEIC_DISC = data.totalDiscount||1544.191;
   var pctDone    = portAmt>0 ? Math.min(100,Math.round(grandTotal/portAmt*100)) : 0;
-  var remaining  = portAmt - grandTotal - ONEIC_DISC;
+  var remaining  = (data.totalPortfolio&&data.totalPortfolio.outstanding!=null) ? data.totalPortfolio.outstanding : (portAmt - grandTotal - ONEIC_DISC);
   var date      = data.uploadDate||new Date().toISOString().split('T')[0];
   var printDate = new Date().toLocaleDateString('ar-OM',{year:'numeric',month:'long',day:'numeric'});
   var LOGO_SRC  = typeof LOGO!=='undefined'?LOGO:'';
@@ -10226,7 +10226,7 @@ export default function Dashboard() {
   const totalPort = (data.totalPortfolio&&data.totalPortfolio.amt) ? data.totalPortfolio.amt : 9414256.834;
   const ONEIC_DISCOUNT = data.totalDiscount||1544.191;
   const gTotal = totalPaid+totalAdj;
-  const gRem = totalPort - gTotal - ONEIC_DISCOUNT;
+  const gRem = (data.totalPortfolio&&data.totalPortfolio.outstanding!=null) ? data.totalPortfolio.outstanding : (totalPort - gTotal - ONEIC_DISCOUNT);
   const GRAND_TOTAL_FIXED = 1020464.134;
   const p = v => GRAND_TOTAL_FIXED>0 ? ((v/GRAND_TOTAL_FIXED)*100).toFixed(1) : "0";
 
@@ -10817,7 +10817,7 @@ export default function Dashboard() {
                 const s1Port = (data.totalPortfolio&&data.totalPortfolio.amt) ? data.totalPortfolio.amt : 9414256.834;
                 const s1OverRec = data.overRecovery||0;
                 const s1Tot  = s1Paid + s1Adj;
-                const s1Rem  = s1Port - s1Tot - ONEIC_DISCOUNT;
+                const s1Rem  = (data.totalPortfolio&&data.totalPortfolio.outstanding!=null) ? data.totalPortfolio.outstanding : (s1Port - s1Tot - ONEIC_DISCOUNT);
                 return [
                   ["المدفوع",            s1Paid,   "#16a34a"],
                   ["تسويات عُمانتل",     s1Adj,    "#d97706"],
