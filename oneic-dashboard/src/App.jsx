@@ -9987,7 +9987,7 @@ export default function Dashboard() {
                   principalAmt: (existingCol&&existingCol.principalAmt>0) ? existingCol.principalAmt : (cm.principal||cm.amt||0)
                 });
               });
-              return Object.assign({},r,{paid:rm.paid||0, adj:rm.adj||0, collectors:newCollectors});
+              return Object.assign({},r,{paid:rm.paid||0, adj:rm.adj||0, count:rm.count||0, portCnt:rm.count||r.portCnt||0, principalAmt:rm.amt||r.principalAmt||0, collectors:newCollectors});
             }
             return r;
           });
@@ -10026,7 +10026,7 @@ export default function Dashboard() {
           // حدّث debtCompanies من branchMap (مطابقة ذكية)
           var newDC = (base.debtCompanies||[]).map(function(c) {
             var bm = findBMTrack(c.name);
-            if (bm) return Object.assign({},c,{paid:bm.paid||0,adj:bm.adj||0,portCnt:bm.count||c.portCnt||0,count:bm.count||c.count||0,closed:c.closed||0,active:c.active||0});
+            if (bm) return Object.assign({},c,{paid:bm.paid||0,adj:bm.adj||0,portCnt:bm.count||c.portCnt||0,count:bm.count||c.count||0,principalAmt:bm.amt||c.principalAmt||0,portAmt:bm.amt||c.portAmt||0,closed:c.closed||0,active:c.active||0});
             return c;
           });
           // حدّث headOffice من branchMap (مطابقة ذكية) - closed/active تُحسب من Complaints مباشرة (O/S Amount لكل حساب)
@@ -10039,6 +10039,8 @@ export default function Dashboard() {
                 adj:bm.adj||0,
                 portCnt:bm.count||c.portCnt||0,
                 count:bm.count||c.count||0,
+                principalAmt:bm.amt||c.principalAmt||0,
+                portAmt:bm.amt||c.portAmt||0,
                 closed: hasClosedData ? (bm.closed||0) : (c.closed||0),
                 active: hasClosedData ? (bm.active||0) : (c.active||0)
               });
