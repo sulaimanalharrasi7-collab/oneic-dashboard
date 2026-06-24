@@ -9243,7 +9243,7 @@ function handlePrint(data) {
   ];
   var sumHTML = summaries.map(function(s){
     var tot = s.paid+s.adj;
-    var pct = GRAND_TOTAL_FIXED>0?((tot/GRAND_TOTAL_FIXED)*100).toFixed(1):'0';
+    var pct = grandTotal>0?((tot/grandTotal)*100).toFixed(1):'0';
     return '<div class="sum-card" style="border-top:4px solid '+s.color+'">'
       +'<div class="sum-header" style="background:'+s.color+'"><span class="sum-icon">'+s.icon+'</span><span class="sum-title">'+s.label+'</span><span class="sum-pct">'+pct+'%</span></div>'
       +'<div class="sum-body">'
