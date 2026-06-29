@@ -9922,7 +9922,7 @@ export default function Dashboard() {
                   paid: (dcMerged[existIdx].paid||0) + (dcItem.paid||0),
                   adj: (dcMerged[existIdx].adj||0) + (dcItem.adj||0),
                   count: (dcMerged[existIdx].count||0) + (dcItem.count||0),
-                  portCnt: (dcMerged[existIdx].portCnt||0) + (dcItem.portCnt||0),
+                  portCnt: Math.max(dcMerged[existIdx].portCnt||0, dcItem.portCnt||0),
                   principalAmt: Math.max(dcMerged[existIdx].principalAmt||0, dcItem.principalAmt||0),
                   portAmt: Math.max(dcMerged[existIdx].portAmt||0, dcItem.portAmt||0)
                 });
@@ -10055,7 +10055,7 @@ export default function Dashboard() {
           for (var bki=0; bki<bmKeys.length; bki++) {
             var bkn = bmKeys[bki];
             var HO_SKIP=["Legal - DR. Sarhaan","Documentation- Omantel","HO","Non-due accounts","Legal -Oneic","Legal","Legal ","HEAD_OFFICE_TOTAL"];
-            if (!matchedBmKeys[bkn] && HO_SKIP.indexOf(bkn)<0 && (branchMap[bkn].paid+branchMap[bkn].adj) > 0) {
+            if (!matchedBmKeys[bkn] && HO_SKIP.indexOf(bkn)<0 && (branchMap[bkn].count||0) > 0) {
               var bkm = branchMap[bkn];
               newDC.push({name:bkn, paid:bkm.paid||0, adj:bkm.adj||0, principalAmt:0, portAmt:0, portCnt:bkm.count||0, count:bkm.count||0});
             }
