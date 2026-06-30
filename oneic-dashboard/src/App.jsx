@@ -6165,7 +6165,7 @@ async function parseXLS(file) {
       else                            key = 'Legal -Oneic';
       if (!hoMap[key]) hoMap[key] = { paid:0, adj:0, count:0, closed:0, active:0, principalAmt:0 };
       hoMap[key].paid += paid; hoMap[key].adj += adj; hoMap[key].count++; hoMap[key].principalAmt += n(row['Principal Amount']||0);
-      if (key==='Legal -Oneic'||key==='Documentation- Omantel'||key==='Legal - DR. Sarhaan') { if (osAmt<=0) hoMap[key].closed++; else hoMap[key].active++; }
+      if (key==='Legal -Oneic'||key==='Documentation- Omantel'||key==='Legal - DR. Sarhaan'||key==='HO') { if (osAmt<=0) hoMap[key].closed++; else hoMap[key].active++; }
 
     } else if (REG_AR[region]) {
       if (!regMap[region]) regMap[region] = { paid:0, adj:0, count:0, paidCount:0, adjCount:0, cMap:{}, principalAmt:0 };
@@ -6518,35 +6518,49 @@ function EntityCard({name,paid,adj,color,rank,small,cnt,cBranch,portAmt,portCnt,
   const cAdj    = adj||0;
   const total   = cPaid + cAdj; // الإجمالي = Paid + Adj من Complaints
   const allZero = total === 0 && name !== "Legal -Oneic" && name !== "Non-due accounts" && !["Ejada","Tahseel United","High Speed Company","High Speed company"].includes(name);
-  // Non-due accounts: عرض الإجمالي فقط
+  // Non-due accounts: عرض كامل (عدد الحسابات + مغلقة/نشطة + مدفوع/تسويات/إجمالي)
   if (name === "Non-due accounts") {
-    return (<div style={{background:"#fff",borderRadius:13,border:"1.5px solid #e5e7eb",padding:small?"10px 12px":"14px 16px",direction:"rtl"}}>
-      <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",marginBottom:8}}>
-        <div style={{display:"flex",alignItems:"center",gap:6}}>
-          <div style={{width:small?28:34,height:small?28:34,borderRadius:8,background:"#6c3fa0",flexShrink:0,display:"flex",alignItems:"center",justifyContent:"center",fontSize:small?13:15,fontWeight:900,color:"#fff"}}>{rank||3}</div>
-          <div style={{fontWeight:800,fontSize:small?12:14,color:"#374151"}}>{"Non-due accounts"}</div>
-        </div>
-        <div style={{background:"#f3f4f6",borderRadius:8,padding:"2px 8px",fontSize:small?9:11,color:"#6b7280",fontWeight:600}}>{(portCnt||cnt||340).toLocaleString()} {"حساب"}</div>
+    return (<div style={{background:"#fff",borderRadius:13,border:`1.5px solid ${color}33`,
+      boxShadow:"0 2px 10px rgba(0,0,0,0.05)",overflow:"hidden",borderRight:`5px solid ${color}`}}>
+      <div style={{display:"flex",alignItems:"center",gap:10,padding:small?"10px 12px":"12px 16px",
+        background:`${color}06`,borderBottom:`1px solid ${color}18`}}>
+        <div style={{width:small?28:34,height:small?28:34,borderRadius:8,background:color,flexShrink:0,display:"flex",alignItems:"center",justifyContent:"center",fontSize:small?13:15,fontWeight:900,color:"#fff"}}>{rank||3}</div>
+        <div style={{fontSize:small?13:16,fontWeight:900,color:"#000",flex:1}}>{"Non-due accounts"}</div>
       </div>
-      <div style={{display:"flex",gap:8,flexWrap:"wrap"}}>
-        <div style={{flex:1,minWidth:60,textAlign:"center",background:"#f9fafb",borderRadius:8,padding:"6px 4px"}}>
-          <div style={{fontSize:small?8:9,color:"#6b7280",marginBottom:2}}>{"المدفوع"}</div>
-          <div style={{fontSize:small?11:13,fontWeight:800,color:"#111827"}}>{omr(cPaid)}</div>
+      <div style={{padding:small?"10px 12px":"12px 16px",display:"flex",flexDirection:"column",gap:8}}>
+        <div style={{display:"flex",gap:6}}>
+          <div style={{flex:1,background:`${color}08`,borderRadius:10,padding:small?"6px 8px":"8px 12px",border:`1px solid ${color}22`,textAlign:"center"}}>
+            <div style={{fontSize:small?9:11,color:color,fontWeight:800,marginBottom:3}}>عدد الحسابات</div>
+            <div style={{fontSize:small?13:16,fontWeight:900,color:color}}>{(portCnt||cnt||340).toLocaleString()}</div>
+            <div style={{fontSize:small?8:9,color:"#aaa",fontWeight:600}}>حساب</div>
+          </div>
+          <div style={{flex:1,background:"#fee2e2",borderRadius:10,padding:small?"5px 6px":"7px 10px",border:"1px solid #fca5a5",textAlign:"center"}}>
+            <div style={{fontSize:small?8:10,color:"#dc2626",fontWeight:800,marginBottom:2}}>{"🔴 مغلقة"}</div>
+            <div style={{fontSize:small?12:15,fontWeight:900,color:"#dc2626"}}>{effClosed.toLocaleString()}</div>
+          </div>
+          <div style={{flex:1,background:"#dcfce7",borderRadius:10,padding:small?"5px 6px":"7px 10px",border:"1px solid #86efac",textAlign:"center"}}>
+            <div style={{fontSize:small?8:10,color:"#16a34a",fontWeight:800,marginBottom:2}}>{"🟢 نشطة"}</div>
+            <div style={{fontSize:small?12:15,fontWeight:900,color:"#16a34a"}}>{effActive.toLocaleString()}</div>
+          </div>
         </div>
-        <div style={{flex:1,minWidth:60,textAlign:"center",background:"#f9fafb",borderRadius:8,padding:"6px 4px"}}>
-          <div style={{fontSize:small?8:9,color:"#6b7280",marginBottom:2}}>{"التسويات"}</div>
-          <div style={{fontSize:small?11:13,fontWeight:800,color:"#111827"}}>{omr(cAdj)}</div>
+        <div style={{display:"flex",border:"1.5px solid #f0ece8",borderRadius:10,overflow:"hidden",background:"#fafafa"}}>
+          {[["المدفوع",cPaid,"#16a34a"],["التسويات",cAdj,"#d97706"],["الإجمالي",total,color]].map(([lbl,val,clr],i)=>(
+            <div key={lbl} style={{flex:1,textAlign:"center",padding:small?"7px 4px":"10px 6px",
+              borderRight:i<2?"1px solid #f0ece8":"none",
+              background:i===2?`${clr}06`:"transparent"}}>
+              <div style={{fontSize:small?10:12,color:clr,fontWeight:900,marginBottom:3,
+                background:`${clr}10`,borderRadius:6,padding:"1px 5px",display:"inline-block"}}>{lbl}</div>
+              <div style={{fontSize:small?13:17,fontWeight:900,color:clr}}>{omr(val)}</div>
+            </div>
+          ))}
         </div>
-        <div style={{flex:1,minWidth:60,textAlign:"center",background:"#111827",borderRadius:8,padding:"6px 4px"}}>
-          <div style={{fontSize:small?8:9,color:"#9ca3af",marginBottom:2}}>{"الإجمالي"}</div>
-          <div style={{fontSize:small?11:13,fontWeight:900,color:"#fff"}}>{omr(total)}</div>
+        <div style={{padding:"6px 10px",background:"#f3f4f6",borderRadius:8,textAlign:"center"}}>
+          <div style={{fontSize:small?9:11,color:"#6b7280",fontStyle:"italic"}}>{"لا توجد عليها مستحقات منذ بداية المشروع"}</div>
         </div>
-      <div style={{marginTop:8,padding:"6px 10px",background:"#f3f4f6",borderRadius:8,textAlign:"center"}}>
-        <div style={{fontSize:small?9:11,color:"#6b7280",fontStyle:"italic"}}>{"لا توجد عليها مستحقات منذ بداية المشروع"}</div>
-      </div>
       </div>
     </div>);
   }
+
   const hasPort  = principal4card > 0;
   const hasCnt   = (portCnt||0) > 0;
   const effPort  = principal4card > 0 ? principal4card : 0;
@@ -6556,29 +6570,6 @@ function EntityCard({name,paid,adj,color,rank,small,cnt,cBranch,portAmt,portCnt,
   const remaining = effPort > 0 ? effPort - total : 0;
   const pct      = effPort > 0 ? Math.min(100,(total/effPort)*100) : (total>0?100:0);
   const pctVal   = displayPort > 0 ? Math.min(100,(total/displayPort)*100) : 0; // OS/P*100
-
-  // Non-due accounts — يعرض فقط عدد الحسابات
-  if (name === "Non-due accounts") {
-    return (
-      <div style={{background:"#fff",borderRadius:13,border:`1.5px solid ${color}33`,
-        boxShadow:"0 2px 10px rgba(0,0,0,0.05)",overflow:"hidden",borderRight:`5px solid ${color}`}}>
-        <div style={{display:"flex",alignItems:"center",gap:10,padding:small?"10px 12px":"12px 16px",
-          background:`${color}06`,borderBottom:`1px solid ${color}18`}}>
-          <div style={{width:small?28:34,height:small?28:34,borderRadius:8,background:color,flexShrink:0,
-            display:"flex",alignItems:"center",justifyContent:"center",fontSize:small?13:15,fontWeight:900,color:"#fff"}}>{rank}</div>
-          <div style={{fontSize:small?13:16,fontWeight:900,color:"#000",flex:1}}>{name}</div>
-        </div>
-        <div style={{padding:small?"12px":"16px",display:"flex",flexDirection:"column",alignItems:"center",gap:4}}>
-          <div style={{fontSize:small?11:13,color:"#888",fontWeight:700}}>عدد الحسابات</div>
-          <div style={{fontSize:small?22:30,fontWeight:900,color:color}}>{(cnt||effCnt||0).toLocaleString()}</div>
-          <div style={{fontSize:small?10:12,color:"#aaa",fontWeight:600}}>حساب</div>
-          <div style={{marginTop:6,fontSize:small?10:11,color:"#bbb",fontStyle:"italic",textAlign:"center"}}>
-            حسابات غير مستحقة — لا توجد حركات مالية
-          </div>
-        </div>
-      </div>
-    );
-  }
 
   if (allZero) {
     return (
@@ -9040,7 +9031,7 @@ async function parseComplaints(file) {
               branchMap[hoColKey].amt  += amt;
               branchMap[hoColKey].paid += paidAmt;
               branchMap[hoColKey].adj += adjAmt;
-              if (hoColKey==='Legal -Oneic'||hoColKey==='Documentation- Omantel'||hoColKey==='Legal - DR. Sarhaan') {
+              if (hoColKey==='Legal -Oneic'||hoColKey==='Documentation- Omantel'||hoColKey==='Legal - DR. Sarhaan'||hoColKey==='Non-due accounts') {
                 if (osAmt<=0) branchMap[hoColKey].closed++; else branchMap[hoColKey].active++;
               }
             }
@@ -10036,7 +10027,7 @@ export default function Dashboard() {
           var newHO = (base.headOffice||[]).map(function(c) {
             var bm = findBMTrack(c.name);
             if (bm) {
-              var hasClosedData = (c.name==='Legal -Oneic'||c.name==='Documentation- Omantel'||c.name==='Legal - DR. Sarhaan');
+              var hasClosedData = (c.name==='Legal -Oneic'||c.name==='Documentation- Omantel'||c.name==='Legal - DR. Sarhaan'||c.name==='Non-due accounts');
               return Object.assign({},c,{
                 paid:bm.paid||0,
                 adj:bm.adj||0,
