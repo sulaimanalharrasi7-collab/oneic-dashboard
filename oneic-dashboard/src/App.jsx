@@ -6665,18 +6665,6 @@ function EntityCard({name,paid,adj,color,rank,small,cnt,cBranch,portAmt,portCnt,
             </div>
           </div>
         )}
-
-        {/* Principal Amount */}
-        {(principalAmt||0) > 0 && (
-          <div style={{background:"#f0f9ff",borderRadius:8,padding:small?"4px 8px":"5px 10px",
-            display:"flex",justifyContent:"space-between",alignItems:"center",border:"1px solid #bae6fd"}}>
-            <div style={{display:"flex",alignItems:"center",gap:6}}>
-              <span style={{fontSize:small?9:10,color:"#0369a1",fontWeight:700}}>Principal Amount</span>
-              <span style={{fontSize:small?8:9,background:"#0369a1",color:"#fff",borderRadius:10,padding:"1px 6px",fontWeight:800}}>{(portCnt||0).toLocaleString()} حساب</span>
-            </div>
-            <span style={{fontSize:small?11:13,fontWeight:900,color:"#0369a1"}}>{omr(principalAmt)}</span>
-          </div>
-        )}
       </div>
     </div>
   );
