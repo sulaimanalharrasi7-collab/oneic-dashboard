@@ -140,7 +140,9 @@ const SEED = {
     { name: "Legal - DR. Sarhaan", paid: 46866.090, adj: 14781.368, portAmt: 3229651.681, portCnt: 3691, closed:67, active:3624, principalAmt: 3301711.348 },
     { name: "Documentation- Omantel",  paid: 1915.939,  adj: 3468.859,  portAmt: 471756.070,  portCnt: 1099, closed:8, active:1091 },
     { name: "Non-due accounts",                   paid: 0.000,     adj: 0.000,     portAmt: 0,           portCnt: 340  },
-    { name: "Legal -Oneic",           paid:0, adj:0, portAmt:64528.164, portCnt:144, closed:3, active:141  }
+    { name: "Legal -Oneic",           paid:0, adj:0, portAmt:64528.164, portCnt:144, closed:3, active:141  },
+    { name: "Refund - before legal",  paid:0, adj:0, portAmt:0, portCnt:0, count:0, closed:0, active:0 },
+    { name: "Refund - after legal",   paid:0, adj:0, portAmt:0, portCnt:0, count:0, closed:0, active:0 }
   ],
   totalPortfolio: { amt: 9414256.834, cnt: 47963, outstanding: 8394362.802 },
   totalCollection: { paid: 863165.364, adj: 128508.848 }
@@ -6129,7 +6131,7 @@ async function parseXLS(file) {
     ho: {
       "Legal - DR. Sarhaan": { portAmt: 3229651.681, portCnt: 3691, closed:67, active:3624, principalAmt: 3301711.348 },
       "Documentation- Omantel": { portAmt: 471756.070,  portCnt: 1099, closed:8, active:1091 },
-      "Legal -Oneic":{portAmt:64528.164,portCnt:144,principalAmt:64528.164,closed:3,active:141},
+      "Legal -Oneic":{portAmt:64528.164,portCnt:144,principalAmt:64528.164,closed:3,active:141},"Refund - before legal":{portAmt:0,portCnt:0,closed:0,active:0},"Refund - after legal":{portAmt:0,portCnt:0,closed:0,active:0},
       "HO":                  { portAmt: 0,           portCnt: 340  },
       "Non-due accounts":    { portAmt: 0,           portCnt: 340  }
     }
@@ -6160,12 +6162,15 @@ async function parseXLS(file) {
       else if (colL.includes('doc'))  key = 'Documentation- Omantel';
       else if (colL.includes('non-due') || colL.includes('nondue')) key = 'HO';
       else if (col.trim().toUpperCase() === 'HO') key = 'HO';
+      else if (colL.includes('refund') && colL.includes('before')) key = 'Refund - before legal';
+      else if (colL.includes('refund') && colL.includes('after'))  key = 'Refund - after legal';
+      else if (colL.includes('refund')) key = 'Refund - before legal';
       else if (colL.includes('saif')) key = 'Legal -Oneic';
       else if (col.trim() === '')     key = 'Legal -Oneic';
       else                            key = 'Legal -Oneic';
       if (!hoMap[key]) hoMap[key] = { paid:0, adj:0, count:0, closed:0, active:0, principalAmt:0 };
       hoMap[key].paid += paid; hoMap[key].adj += adj; hoMap[key].count++; hoMap[key].principalAmt += n(row['Principal Amount']||0);
-      if (key==='Legal -Oneic'||key==='Documentation- Omantel'||key==='Legal - DR. Sarhaan'||key==='HO') { if (osAmt<=0) hoMap[key].closed++; else hoMap[key].active++; }
+      if (key==='Legal -Oneic'||key==='Documentation- Omantel'||key==='Legal - DR. Sarhaan'||key==='HO'||key==='Refund - before legal'||key==='Refund - after legal') { if (osAmt<=0) hoMap[key].closed++; else hoMap[key].active++; }
 
     } else if (REG_AR[region]) {
       if (!regMap[region]) regMap[region] = { paid:0, adj:0, count:0, paidCount:0, adjCount:0, cMap:{}, principalAmt:0 };
@@ -9013,13 +9018,16 @@ async function parseComplaints(file) {
               if (cLow.indexOf('sarhaan')>=0||cLow.indexOf('sarhan')>=0||cLow.indexOf('dr.')>=0||cLow.indexOf(' dr')>=0) hoColKey='Legal - DR. Sarhaan';
               else if (cLow.indexOf('doc')>=0) hoColKey='Documentation- Omantel';
               else if (cLow.indexOf('non-due')>=0||collector2.toUpperCase()==='HO') hoColKey='Non-due accounts';
+              else if (cLow.indexOf('refund')>=0&&cLow.indexOf('before')>=0) hoColKey='Refund - before legal';
+              else if (cLow.indexOf('refund')>=0&&cLow.indexOf('after')>=0) hoColKey='Refund - after legal';
+              else if (cLow.indexOf('refund')>=0) hoColKey='Refund - before legal';
               else hoColKey='Legal -Oneic';
               if (!branchMap[hoColKey]) branchMap[hoColKey]={count:0,amt:0,paid:0,adj:0,closed:0,active:0};
               branchMap[hoColKey].count++;
               branchMap[hoColKey].amt  += amt;
               branchMap[hoColKey].paid += paidAmt;
               branchMap[hoColKey].adj += adjAmt;
-              if (hoColKey==='Legal -Oneic'||hoColKey==='Documentation- Omantel'||hoColKey==='Legal - DR. Sarhaan'||hoColKey==='Non-due accounts') {
+              if (hoColKey==='Legal -Oneic'||hoColKey==='Documentation- Omantel'||hoColKey==='Legal - DR. Sarhaan'||hoColKey==='Non-due accounts'||hoColKey==='Refund - before legal'||hoColKey==='Refund - after legal') {
                 if (osAmt<=0) branchMap[hoColKey].closed++; else branchMap[hoColKey].active++;
               }
             }
@@ -9695,12 +9703,12 @@ export default function Dashboard() {
       }
 
       if (row?.regions?.length > 0) {
-        const HO_REQ = ["Legal - DR. Sarhaan","Documentation- Omantel","Non-due accounts","Legal -Oneic"];
+        const HO_REQ = ["Legal - DR. Sarhaan","Documentation- Omantel","Non-due accounts","Legal -Oneic","Refund - before legal","Refund - after legal"];
         const HO_P = {
           "Legal - DR. Sarhaan":{portAmt:3229651.681,portCnt:3691,closed:67,active:3624,principalAmt:3301711.348},
           "Documentation- Omantel":{portAmt:471756.070,portCnt:1099,closed:8,active:1091},
           "Non-due accounts":{portAmt:0,portCnt:340},
-          "Legal -Oneic":{portAmt:64528.164,portCnt:144,principalAmt:64528.164,closed:3,active:141}
+          "Legal -Oneic":{portAmt:64528.164,portCnt:144,principalAmt:64528.164,closed:3,active:141},"Refund - before legal":{portAmt:0,portCnt:0,closed:0,active:0},"Refund - after legal":{portAmt:0,portCnt:0,closed:0,active:0}
         };
         const existingHO = row.headOffice || [];
         const fullHO = HO_REQ.map(function(nm){var f=existingHO.find(function(x){return x.name===nm;})||(nm==='Non-due accounts'?existingHO.find(function(x){return x.name==='HO';}):null);var p=HO_P[nm]||{};if(f)return Object.assign({},p,f,{name:nm,closed:(f.closed!==undefined&&f.closed!==null)?f.closed:(p.closed||0),active:(f.active!==undefined&&f.active!==null)?f.active:(p.active||0)});return Object.assign({name:nm,paid:0,adj:0,count:0,closed:0,active:0},p);});
@@ -9731,8 +9739,8 @@ export default function Dashboard() {
         var fbTime = new Date(row._updatedAt||row.lastUpdated||0).getTime();
         var myTime = lastSyncRef.current ? new Date(lastSyncRef.current).getTime() : 0;
         if (fbTime > 0 && myTime > 0 && fbTime <= myTime) return;
-        var HO_KEYS3 = ["Legal - DR. Sarhaan","Documentation- Omantel","Non-due accounts","Legal -Oneic"];
-        var HO_DEF3 = {"Legal - DR. Sarhaan":{portAmt:3229651.681,portCnt:3691,closed:67,active:3624},"Documentation- Omantel":{portAmt:471756.070,portCnt:1099,closed:8,active:1091},"Non-due accounts":{portAmt:0,portCnt:340},"Legal -Oneic":{portAmt:64528.164,portCnt:144,closed:3,active:141}};
+        var HO_KEYS3 = ["Legal - DR. Sarhaan","Documentation- Omantel","Non-due accounts","Legal -Oneic","Refund - before legal","Refund - after legal"];
+        var HO_DEF3 = {"Legal - DR. Sarhaan":{portAmt:3229651.681,portCnt:3691,closed:67,active:3624},"Documentation- Omantel":{portAmt:471756.070,portCnt:1099,closed:8,active:1091},"Non-due accounts":{portAmt:0,portCnt:340},"Legal -Oneic":{portAmt:64528.164,portCnt:144,closed:3,active:141},"Refund - before legal":{portAmt:0,portCnt:0,closed:0,active:0},"Refund - after legal":{portAmt:0,portCnt:0,closed:0,active:0}};
         var eHO3 = row.headOffice||[];
         var fullHO3 = HO_KEYS3.map(function(nm){
           var f=eHO3.find(function(c){return c.name===nm;})||(nm==='Non-due accounts'?eHO3.find(function(c){return c.name==='HO';}):null);
@@ -9761,8 +9769,8 @@ export default function Dashboard() {
         var fbTime = new Date(row._updatedAt||row.lastUpdated||0).getTime();
         var myTime = lastSyncRef.current ? new Date(lastSyncRef.current).getTime() : 0;
         if (fbTime > 0 && myTime > 0 && fbTime <= myTime) return;
-        var HO_KEYS4=["Legal - DR. Sarhaan","Documentation- Omantel","Non-due accounts","Legal -Oneic"];
-        var HO_P4={"Legal - DR. Sarhaan":{portAmt:3229651.681,portCnt:3691,closed:67,active:3624},"Documentation- Omantel":{portAmt:471756.070,portCnt:1099,closed:8,active:1091},"Non-due accounts":{portAmt:0,portCnt:340},"Legal -Oneic":{portAmt:64528.164,portCnt:144,closed:3,active:141}};
+        var HO_KEYS4=["Legal - DR. Sarhaan","Documentation- Omantel","Non-due accounts","Legal -Oneic","Refund - before legal","Refund - after legal"];
+        var HO_P4={"Legal - DR. Sarhaan":{portAmt:3229651.681,portCnt:3691,closed:67,active:3624},"Documentation- Omantel":{portAmt:471756.070,portCnt:1099,closed:8,active:1091},"Non-due accounts":{portAmt:0,portCnt:340},"Legal -Oneic":{portAmt:64528.164,portCnt:144,closed:3,active:141},"Refund - before legal":{portAmt:0,portCnt:0,closed:0,active:0},"Refund - after legal":{portAmt:0,portCnt:0,closed:0,active:0}};
         var eHO4=row.headOffice||[];
         var fullHO4=HO_KEYS4.map(function(nm){var f=eHO4.find(function(c){return c.name===nm;})||(nm==='Non-due accounts'?eHO4.find(function(c){return c.name==='HO';}):null);var p=HO_P4[nm]||{};if(f)return Object.assign({},p,f,{name:nm,closed:(f.closed!==undefined&&f.closed!==null)?f.closed:(p.closed||0),active:(f.active!==undefined&&f.active!==null)?f.active:(p.active||0)});return {name:nm,paid:0,adj:0,count:0,portAmt:p.portAmt||0,portCnt:p.portCnt||0,closed:0,active:0};});
         // ══ Firebase يحتوي البيانات الكاملة والنهائية الصحيحة - لا حاجة لأي دمج إضافي من localStorage ══
@@ -9808,8 +9816,8 @@ export default function Dashboard() {
     sbGet('oneic_data').then(function(row) {
       if (!row || !row.regions || !row.regions.length) { setSyncing(false); return; }
       // ══ Firebase يحتوي البيانات الكاملة والنهائية الصحيحة - لا حاجة لأي دمج أو إعادة بناء إضافي ══
-      var HO_KEYS5=["Legal - DR. Sarhaan","Documentation- Omantel","Non-due accounts","Legal -Oneic"];
-      var HO_P5={"Legal - DR. Sarhaan":{portAmt:3229651.681,portCnt:3691,closed:67,active:3624},"Documentation- Omantel":{portAmt:471756.070,portCnt:1099,closed:8,active:1091},"Non-due accounts":{portAmt:0,portCnt:340},"Legal -Oneic":{portAmt:64528.164,portCnt:144,closed:3,active:141}};
+      var HO_KEYS5=["Legal - DR. Sarhaan","Documentation- Omantel","Non-due accounts","Legal -Oneic","Refund - before legal","Refund - after legal"];
+      var HO_P5={"Legal - DR. Sarhaan":{portAmt:3229651.681,portCnt:3691,closed:67,active:3624},"Documentation- Omantel":{portAmt:471756.070,portCnt:1099,closed:8,active:1091},"Non-due accounts":{portAmt:0,portCnt:340},"Legal -Oneic":{portAmt:64528.164,portCnt:144,closed:3,active:141},"Refund - before legal":{portAmt:0,portCnt:0,closed:0,active:0},"Refund - after legal":{portAmt:0,portCnt:0,closed:0,active:0}};
       var eHO5=row.headOffice||[];
       var fullHO5=HO_KEYS5.map(function(nm){var f=eHO5.find(function(c){return c.name===nm;})||(nm==='Non-due accounts'?eHO5.find(function(c){return c.name==='HO';}):null);var p=HO_P5[nm]||{};if(f)return Object.assign({},p,f,{name:nm,closed:(f.closed!==undefined&&f.closed!==null)?f.closed:(p.closed||0),active:(f.active!==undefined&&f.active!==null)?f.active:(p.active||0)});return Object.assign({name:nm,paid:0,adj:0,count:0,closed:0,active:0},p);});
       var d5={}; var rk5=Object.keys(row); for(var ki5=0;ki5<rk5.length;ki5++){d5[rk5[ki5]]=row[rk5[ki5]];}
@@ -10033,7 +10041,7 @@ export default function Dashboard() {
           var bmKeys = Object.keys(branchMap);
           for (var bki=0; bki<bmKeys.length; bki++) {
             var bkn = bmKeys[bki];
-            var HO_SKIP=["Legal - DR. Sarhaan","Documentation- Omantel","HO","Non-due accounts","Legal -Oneic","Legal","Legal ","HEAD_OFFICE_TOTAL"];
+            var HO_SKIP=["Legal - DR. Sarhaan","Documentation- Omantel","HO","Non-due accounts","Legal -Oneic","Refund - before legal","Refund - after legal","Legal","Legal ","HEAD_OFFICE_TOTAL"];
             if (!matchedBmKeys[bkn] && HO_SKIP.indexOf(bkn)<0 && (branchMap[bkn].count||0) > 0) {
               var bkm = branchMap[bkn];
               newDC.push({name:bkn, paid:bkm.paid||0, adj:bkm.adj||0, principalAmt:0, portAmt:0, portCnt:bkm.count||0, count:bkm.count||0});
@@ -10093,7 +10101,7 @@ export default function Dashboard() {
       "Documentation- Omantel":  { portAmt: 471756.070,  portCnt: 1099, closed:8, active:1091 },
       "HO":                   { portAmt: 0,           portCnt: 340  },
       "Non-due accounts":     { portAmt: 0,           portCnt: 340  },
-      "Legal -Oneic":{portAmt:64528.164,portCnt:144,principalAmt:64528.164,closed:3,active:141}
+      "Legal -Oneic":{portAmt:64528.164,portCnt:144,principalAmt:64528.164,closed:3,active:141},"Refund - before legal":{portAmt:0,portCnt:0,closed:0,active:0},"Refund - after legal":{portAmt:0,portCnt:0,closed:0,active:0}
     };
     const mergedHO = HO_REQUIRED.map(nm => {
       const displayNm = nm==='HO'?'Non-due accounts':nm;
@@ -10949,7 +10957,7 @@ export default function Dashboard() {
           <div style={{ background:"#fff", borderRadius:16, boxShadow:"0 3px 18px rgba(0,0,0,0.07)", border:"1.5px solid #f0ece8", overflow:"hidden" }}>
             <SectionHeader title="🏛 المكتب الرئيسي" paid={hPd} adj={hAd} color="#6c3fa0" small={small} portAmt={hPortAmt||0} portCnt={hPortCnt||hCnt||complaintsCounts.ho||0}/>
             <div style={{ padding: small?"10px":"14px 16px", display:"flex", flexDirection:"column", gap: small?8:10 }}>
-              {[...(data.headOffice||[])].filter(c=>c.name&&c.name!=='HO'&&c.name!=='Blanks').sort((a,b)=>{var O={'Legal - DR. Sarhaan':1,'Legal -Oneic':2,'Non-due accounts':3,'Documentation- Omantel':4};var oa=O[a.name]||5,ob=O[b.name]||5;if(oa!==ob)return oa-ob;return ((b.paid||0)+(b.adj||0))-((a.paid||0)+(a.adj||0));}).map((c,i) => (
+              {[...(data.headOffice||[])].filter(c=>c.name&&c.name!=='HO'&&c.name!=='Blanks').sort((a,b)=>{return ((b.paid||0)+(b.adj||0))-((a.paid||0)+(a.adj||0));}).map((c,i) => (
                 <EntityCard key={c.name} name={c.name} paid={c.paid} adj={c.adj} cBranch={complaintsBranchMap} color="#6c3fa0" rank={i+1} closed={c.closed||0} active={c.active||0} small={small} portAmt={c.portAmt||0} portCnt={c.portCnt||0} principalAmt={c.principalAmt||0}/>
               ))}
             </div>
