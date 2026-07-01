@@ -9203,7 +9203,7 @@ function handlePrint(data) {
   var portAmt    = (data.totalPortfolio&&data.totalPortfolio.amt) ? data.totalPortfolio.amt : 9414256.834;
   var portCnt    = (data.totalPortfolio&&data.totalPortfolio.cnt) ? data.totalPortfolio.cnt : 47963;
   var ONEIC_DISC = data.totalDiscount||1544.191;
-  var pctDone    = portAmt>0 ? Math.min(100,Math.round(grandTotal/portAmt*100)) : 0;
+  var pctDone    = portAmt>0 ? Math.min(100,(grandTotal/portAmt*100)).toFixed(1) : '0';
   var remaining  = (data.totalPortfolio&&data.totalPortfolio.outstanding!=null) ? data.totalPortfolio.outstanding : (portAmt - grandTotal - ONEIC_DISC);
   var date      = data.uploadDate||new Date().toISOString().split('T')[0];
   var printDate = new Date().toLocaleDateString('ar-OM',{year:'numeric',month:'long',day:'numeric'});
@@ -10774,7 +10774,8 @@ export default function Dashboard() {
             <div style={{display:"flex",justifyContent:"center",paddingTop:4}}>
               {(() => {
                 const _s1p=gPd+dPd+hPd, _s1a=gAd+dAd+hAd, _s1m=data.totalPortfolio?.amt||9414256.834;
-                const pct=_s1m>0?Math.min(100,Math.round((_s1p+_s1a)/_s1m*100)):0;
+                const pct=_s1m>0?Math.min(100,((_s1p+_s1a)/_s1m*100)):0;
+                const pctDisplay=pct.toFixed(1)+'%';
                 const r=52,cx=60,cy=60,circ=2*Math.PI*r,offset=circ-(pct/100)*circ;
                 return (
                   <div style={{display:"flex",flexDirection:"column",alignItems:"center",gap:4}}>
@@ -10783,7 +10784,7 @@ export default function Dashboard() {
                       <circle cx={cx} cy={cy} r={r} fill="#f0fdf4" stroke="#dcfce7" strokeWidth="1"/>
                       <circle cx={cx} cy={cy} r={r} fill="none" stroke="#e8f5e9" strokeWidth="12"/>
                       <circle cx={cx} cy={cy} r={r} fill="none" stroke="url(#pgGrad)" strokeWidth="12" strokeDasharray={circ} strokeDashoffset={offset} strokeLinecap="round" transform={`rotate(-90 ${cx} ${cy})`}/>
-                      <text x={cx} y={cy-6} textAnchor="middle" fontSize="24" fontWeight="900" fill="#1e3a5f" fontFamily="Cairo">{pct}%</text>
+                      <text x={cx} y={cy-6} textAnchor="middle" fontSize="20" fontWeight="900" fill="#1e3a5f" fontFamily="Cairo">{pctDisplay}</text>
                       <text x={cx} y={cy+14} textAnchor="middle" fontSize="11" fontWeight="700" fill="#16a34a" fontFamily="Cairo">إنجاز</text>
                     </svg>
                     <div style={{fontSize:11,color:"#888",fontWeight:700}}>نسبة الإنجاز الكلي</div>
