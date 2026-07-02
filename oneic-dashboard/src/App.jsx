@@ -6699,7 +6699,7 @@ function SummaryCard({label,paid,adj,cnt,cntPaid,cntAdj,cntTotal,portAmt,color,i
           <span style={{fontSize:fs.title,fontWeight:900,color:"#fff",lineHeight:1.2,wordBreak:"keep-all"}}>{label}</span>
         </div>
         <div style={{textAlign:"center",flexShrink:0}}>
-          <div style={{fontSize:small?9:10,color:"rgba(255,255,255,0.75)",fontWeight:700,marginBottom:2}}>نسبة مساهمة</div>
+          <div style={{fontSize:small?9:10,color:"rgba(255,255,255,0.75)",fontWeight:700,marginBottom:2}}>نسبة المساهمة في الانجاز الكلي</div>
           <div style={{background:"rgba(255,255,255,0.25)",borderRadius:20,padding:"2px 12px",fontSize:small?13:15,fontWeight:900,color:"#fff"}}>{pct}%</div>
         </div>
       </div>
