@@ -6654,10 +6654,6 @@ function EntityCard({name,paid,adj,color,rank,small,cnt,cBranch,portAmt,portCnt,
           </div>
         )}
 
-        <div style={{display:"flex",gap:6,flexWrap:"wrap"}}>
-          </div>
-        )}
-
         {/* صف 2: المدفوع + التسويات + الإجمالي */}
         <div style={{display:"flex",border:"1.5px solid #f0ece8",borderRadius:10,overflow:"hidden",background:"#fafafa"}}>
           {[["المدفوع",cPaid,"#16a34a"],["التسويات",cAdj,"#d97706"],["الإجمالي",total,color]].map(([lbl,val,clr],i)=>(
