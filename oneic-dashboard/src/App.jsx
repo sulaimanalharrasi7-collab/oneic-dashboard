@@ -6512,7 +6512,7 @@ function SectionHeader({title,paid,adj,color,small,portAmt,portCnt}) {
 }
 
 // ── EntityCard ─────────────────────────────────────────────────────────────
-function EntityCard({name,paid,adj,color,rank,small,cnt,cBranch,portAmt,portCnt,principalAmt,osAmt,closed,active}) {
+function EntityCard({name,paid,adj,color,rank,small,cnt,cBranch,portAmt,portCnt,principalAmt,osAmt,closed,active,refundAmt}) {
   var effClosed=closed||0;var effActive=(active)||Math.max(0,(portCnt||0)-(closed||0));
   const bKey = Object.keys(cBranch||{}).find(k => k.trim()===name?.trim() || name?.includes(k) || k.includes(name||'__'));
   const bD = bKey ? (cBranch||{})[bKey] : null;
@@ -6632,6 +6632,29 @@ function EntityCard({name,paid,adj,color,rank,small,cnt,cBranch,portAmt,portCnt,
             )}
             {(name==="Legal -Oneic"||name==="Documentation- Omantel"||name==="Legal - DR. Sarhaan"||name==="Refund - before legal"||name==="Refund - after legal")&&<div style={{flex:1,background:"#fee2e2",borderRadius:10,padding:small?"5px 6px":"7px 10px",border:"1px solid #fca5a5",textAlign:"center"}}><div style={{fontSize:small?8:10,color:"#dc2626",fontWeight:800,marginBottom:2}}>{"🔴 مغلقة"}</div><div style={{fontSize:small?12:15,fontWeight:900,color:"#dc2626"}}>{effClosed.toLocaleString()}</div></div>}
             {(name==="Legal -Oneic"||name==="Documentation- Omantel"||name==="Legal - DR. Sarhaan"||name==="Refund - before legal"||name==="Refund - after legal")&&<div style={{flex:1,background:"#dcfce7",borderRadius:10,padding:small?"5px 6px":"7px 10px",border:"1px solid #86efac",textAlign:"center"}}><div style={{fontSize:small?8:10,color:"#16a34a",fontWeight:800,marginBottom:2}}>{"🟢 نشطة"}</div><div style={{fontSize:small?12:15,fontWeight:900,color:"#16a34a"}}>{effActive.toLocaleString()}</div></div>}
+          </div>
+        )}
+
+        {/* صندوق الاسترجاع 26% — Refund before legal فقط */}
+        {name==="Refund - before legal" && (refundAmt||0)>0 && (
+          <div style={{background:"linear-gradient(135deg,#1e40af11,#3b82f611)",border:"1.5px solid #3b82f6",borderRadius:12,padding:small?"8px 12px":"10px 16px"}}>
+            <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:4}}>
+              <div style={{fontSize:small?9:11,fontWeight:800,color:"#1e40af"}}>🔄 مبلغ الاسترجاع المقدّر</div>
+              <div style={{background:"#1e40af",color:"#fff",fontSize:small?8:9,fontWeight:700,borderRadius:20,padding:"2px 8px"}}>26% من المتبقي</div>
+            </div>
+            <div style={{fontSize:small?16:22,fontWeight:900,color:"#1e40af"}}>{(refundAmt||0).toLocaleString('en',{minimumFractionDigits:3,maximumFractionDigits:3})} <span style={{fontSize:small?9:11,fontWeight:600}}>ر.ع</span></div>
+            <div style={{fontSize:small?8:9,color:"#3b82f6",marginTop:2}}>= المتبقي (O/S) × 26% لكل حساب نشط</div>
+          </div>
+        )}
+        {name==="Refund - before legal" && (refundAmt||0)===0 && (
+          <div style={{background:"#f8fafc",border:"1.5px dashed #93c5fd",borderRadius:12,padding:small?"8px 12px":"10px 16px",textAlign:"center"}}>
+            <div style={{fontSize:small?9:10,color:"#3b82f6",fontWeight:700}}>🔄 مبلغ الاسترجاع (26% من المتبقي)</div>
+            <div style={{fontSize:small?11:13,fontWeight:900,color:"#94a3b8",marginTop:2}}>0.000 ر.ع</div>
+            <div style={{fontSize:small?8:9,color:"#94a3b8",marginTop:2}}>لا يوجد حسابات نشطة حالياً</div>
+          </div>
+        )}
+
+        <div style={{display:"flex",gap:6,flexWrap:"wrap"}}>
           </div>
         )}
 
@@ -9022,11 +9045,14 @@ async function parseComplaints(file) {
               else if (cLow.indexOf('refund')>=0&&cLow.indexOf('after')>=0) hoColKey='Refund - after legal';
               else if (cLow.indexOf('refund')>=0) hoColKey='Refund - before legal';
               else hoColKey='Legal -Oneic';
-              if (!branchMap[hoColKey]) branchMap[hoColKey]={count:0,amt:0,paid:0,adj:0,closed:0,active:0};
+              if (!branchMap[hoColKey]) branchMap[hoColKey]={count:0,amt:0,paid:0,adj:0,closed:0,active:0,refundAmt:0};
               branchMap[hoColKey].count++;
               branchMap[hoColKey].amt  += amt;
               branchMap[hoColKey].paid += paidAmt;
               branchMap[hoColKey].adj += adjAmt;
+              if (hoColKey==='Refund - before legal') {
+                branchMap[hoColKey].refundAmt += (osAmt>0 ? osAmt*0.26 : 0);
+              }
               if (hoColKey==='Legal -Oneic'||hoColKey==='Documentation- Omantel'||hoColKey==='Legal - DR. Sarhaan'||hoColKey==='Non-due accounts'||hoColKey==='Refund - before legal'||hoColKey==='Refund - after legal') {
                 if (osAmt<=0) branchMap[hoColKey].closed++; else branchMap[hoColKey].active++;
               }
@@ -10031,6 +10057,7 @@ export default function Dashboard() {
                 count:bm.count||c.count||0,
                 principalAmt:bm.amt||c.principalAmt||0,
                 portAmt:bm.amt||c.portAmt||0,
+                refundAmt: (c.name==='Refund - before legal') ? (bm.refundAmt||0) : (c.refundAmt||0),
                 closed: hasClosedData ? (bm.closed||0) : (c.closed||0),
                 active: hasClosedData ? (bm.active||0) : (c.active||0)
               });
@@ -10959,7 +10986,7 @@ export default function Dashboard() {
             <SectionHeader title="🏛 المكتب الرئيسي" paid={hPd} adj={hAd} color="#6c3fa0" small={small} portAmt={hPortAmt||0} portCnt={hPortCnt||hCnt||complaintsCounts.ho||0}/>
             <div style={{ padding: small?"10px":"14px 16px", display:"flex", flexDirection:"column", gap: small?8:10 }}>
               {[...(data.headOffice||[])].filter(c=>c.name&&c.name!=='HO'&&c.name!=='Blanks').sort((a,b)=>{return ((b.paid||0)+(b.adj||0))-((a.paid||0)+(a.adj||0));}).map((c,i) => (
-                <EntityCard key={c.name} name={c.name} paid={c.paid} adj={c.adj} cBranch={complaintsBranchMap} color="#6c3fa0" rank={i+1} closed={c.closed||0} active={c.active||0} small={small} portAmt={c.portAmt||0} portCnt={c.portCnt||0} principalAmt={c.principalAmt||0}/>
+                <EntityCard key={c.name} name={c.name} paid={c.paid} adj={c.adj} cBranch={complaintsBranchMap} color="#6c3fa0" rank={i+1} closed={c.closed||0} active={c.active||0} small={small} portAmt={c.portAmt||0} portCnt={c.portCnt||0} principalAmt={c.principalAmt||0} refundAmt={c.refundAmt||0}/>
               ))}
             </div>
           </div>
