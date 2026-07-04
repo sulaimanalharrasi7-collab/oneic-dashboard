@@ -140,9 +140,7 @@ const SEED = {
     { name: "Legal - DR. Sarhaan", paid: 46866.090, adj: 14781.368, portAmt: 3229651.681, portCnt: 3691, closed:67, active:3624, principalAmt: 3301711.348 },
     { name: "Documentation- Omantel",  paid: 1915.939,  adj: 3468.859,  portAmt: 471756.070,  portCnt: 1099, closed:8, active:1091 },
     { name: "Non-due accounts",                   paid: 0.000,     adj: 0.000,     portAmt: 0,           portCnt: 340  },
-    { name: "Legal -Oneic",           paid:0, adj:0, portAmt:64528.164, portCnt:144, closed:3, active:141  },
-    { name: "Refund - before legal",  paid:0, adj:0, portAmt:0, portCnt:0, count:0, closed:0, active:0 },
-    { name: "Refund - after legal",   paid:0, adj:0, portAmt:0, portCnt:0, count:0, closed:0, active:0 }
+    { name: "Legal -Oneic",           paid:0, adj:0, portAmt:64528.164, portCnt:144, closed:3, active:141  }
   ],
   totalPortfolio: { amt: 9414256.834, cnt: 47963, outstanding: 8394362.802 },
   totalCollection: { paid: 863165.364, adj: 128508.848 }
@@ -6131,7 +6129,7 @@ async function parseXLS(file) {
     ho: {
       "Legal - DR. Sarhaan": { portAmt: 3229651.681, portCnt: 3691, closed:67, active:3624, principalAmt: 3301711.348 },
       "Documentation- Omantel": { portAmt: 471756.070,  portCnt: 1099, closed:8, active:1091 },
-      "Legal -Oneic":{portAmt:64528.164,portCnt:144,principalAmt:64528.164,closed:3,active:141},"Refund - before legal":{portAmt:0,portCnt:0,closed:0,active:0},"Refund - after legal":{portAmt:0,portCnt:0,closed:0,active:0},
+      "Legal -Oneic":{portAmt:64528.164,portCnt:144,principalAmt:64528.164,closed:3,active:141},
       "HO":                  { portAmt: 0,           portCnt: 340  },
       "Non-due accounts":    { portAmt: 0,           portCnt: 340  }
     }
@@ -6162,15 +6160,12 @@ async function parseXLS(file) {
       else if (colL.includes('doc'))  key = 'Documentation- Omantel';
       else if (colL.includes('non-due') || colL.includes('nondue')) key = 'HO';
       else if (col.trim().toUpperCase() === 'HO') key = 'HO';
-      else if (colL.includes('refund') && colL.includes('before')) key = 'Refund - before legal';
-      else if (colL.includes('refund') && colL.includes('after'))  key = 'Refund - after legal';
-      else if (colL.includes('refund')) key = 'Refund - before legal';
       else if (colL.includes('saif')) key = 'Legal -Oneic';
       else if (col.trim() === '')     key = 'Legal -Oneic';
       else                            key = 'Legal -Oneic';
       if (!hoMap[key]) hoMap[key] = { paid:0, adj:0, count:0, closed:0, active:0, principalAmt:0 };
       hoMap[key].paid += paid; hoMap[key].adj += adj; hoMap[key].count++; hoMap[key].principalAmt += n(row['Principal Amount']||0);
-      if (key==='Legal -Oneic'||key==='Documentation- Omantel'||key==='Legal - DR. Sarhaan'||key==='HO'||key==='Refund - before legal'||key==='Refund - after legal') { if (osAmt<=0) hoMap[key].closed++; else hoMap[key].active++; }
+      if (key==='Legal -Oneic'||key==='Documentation- Omantel'||key==='Legal - DR. Sarhaan') { if (osAmt<=0) hoMap[key].closed++; else hoMap[key].active++; }
 
     } else if (REG_AR[region]) {
       if (!regMap[region]) regMap[region] = { paid:0, adj:0, count:0, paidCount:0, adjCount:0, cMap:{}, principalAmt:0 };
@@ -6208,7 +6203,7 @@ async function parseXLS(file) {
     adjCount:  regMap[k].adjCount||0,
     portAmt: regMap[k].principalAmt||(PORT.regions[k]||{portAmt:0}).portAmt,
     principalAmt: regMap[k].principalAmt||0,
-    portCnt: regMap[k].count || (PORT.regions[k]||{portCnt:0}).portCnt,
+    portCnt: (PORT.regions[k]||{portCnt:0}).portCnt,
     collectors: Object.entries(regMap[k].cMap)
       .map(([nm,d]) => ({
         name:nm, paid:d.paid, adj:d.adj,
@@ -6229,7 +6224,7 @@ async function parseXLS(file) {
       portAmt:computedPortAmt, portCnt:d.count||p.portCnt, osAmt:d.osAmt||0 };
   });
   DC_REQUIRED.forEach(nm => {
-    if (!dcList.find(c=>c.name.toLowerCase()===nm.toLowerCase())) {
+    if (!dcList.find(c=>c.name===nm)) {
       const p = PORT.dc[nm]||{portAmt:0,portCnt:0};
       dcList.push({name:nm,paid:0,adj:0,count:0,paidCount:0,adjCount:0,portAmt:p.portAmt,portCnt:p.portCnt});
     }
@@ -6237,7 +6232,7 @@ async function parseXLS(file) {
   const debtCompanies = dcList.sort((a,b)=>((b.paid||0)+(b.adj||0))-((a.paid||0)+(a.adj||0)));
 
   // ── المكتب الرئيسي ────────────────────────────────────────────────────
-  const HO_KEYS = ["Legal - DR. Sarhaan","Documentation- Omantel","HO","Legal -Oneic"];
+  const HO_KEYS = ["Legal - DR. Sarhaan","Documentation- Omantel","HO","Non-due accounts","Legal -Oneic"];
   const headOffice = HO_KEYS.map(nm => {
     const d = hoMap[nm]||{paid:0,adj:0,count:0};
     const p = PORT.ho[nm]||{portAmt:0,portCnt:0};
@@ -6256,11 +6251,7 @@ async function parseXLS(file) {
     uploadDate: new Date().toISOString().split('T')[0],
     totalRecords: rows.length,
     regions, debtCompanies, headOffice,
-    totalPortfolio: {
-      amt: rows.reduce((s,r)=>s+n(r['Principal Amount']||0),0),
-      cnt: rows.length,
-      outstanding: rows.reduce((s,r)=>s+n(r['O/S Amount']||0),0)
-    }
+    totalPortfolio: { amt: 9414256.834, cnt: 47963, outstanding: 8394362.802 }
   };
 }
 
@@ -6512,7 +6503,7 @@ function SectionHeader({title,paid,adj,color,small,portAmt,portCnt}) {
 }
 
 // ── EntityCard ─────────────────────────────────────────────────────────────
-function EntityCard({name,paid,adj,color,rank,small,cnt,cBranch,portAmt,portCnt,principalAmt,osAmt,closed,active,refundAmt}) {
+function EntityCard({name,paid,adj,color,rank,small,cnt,cBranch,portAmt,portCnt,principalAmt,osAmt,closed,active}) {
   var effClosed=closed||0;var effActive=(active)||Math.max(0,(portCnt||0)-(closed||0));
   const bKey = Object.keys(cBranch||{}).find(k => k.trim()===name?.trim() || name?.includes(k) || k.includes(name||'__'));
   const bD = bKey ? (cBranch||{})[bKey] : null;
@@ -6523,49 +6514,35 @@ function EntityCard({name,paid,adj,color,rank,small,cnt,cBranch,portAmt,portCnt,
   const cAdj    = adj||0;
   const total   = cPaid + cAdj; // الإجمالي = Paid + Adj من Complaints
   const allZero = total === 0 && name !== "Legal -Oneic" && name !== "Non-due accounts" && !["Ejada","Tahseel United","High Speed Company","High Speed company"].includes(name);
-  // Non-due accounts: عرض كامل (عدد الحسابات + مغلقة/نشطة + مدفوع/تسويات/إجمالي)
+  // Non-due accounts: عرض الإجمالي فقط
   if (name === "Non-due accounts") {
-    return (<div style={{background:"#fff",borderRadius:13,border:`1.5px solid ${color}33`,
-      boxShadow:"0 2px 10px rgba(0,0,0,0.05)",overflow:"hidden",borderRight:`5px solid ${color}`}}>
-      <div style={{display:"flex",alignItems:"center",gap:10,padding:small?"10px 12px":"12px 16px",
-        background:`${color}06`,borderBottom:`1px solid ${color}18`}}>
-        <div style={{width:small?28:34,height:small?28:34,borderRadius:8,background:color,flexShrink:0,display:"flex",alignItems:"center",justifyContent:"center",fontSize:small?13:15,fontWeight:900,color:"#fff"}}>{rank||3}</div>
-        <div style={{fontSize:small?13:16,fontWeight:900,color:"#000",flex:1}}>{"Non-due accounts"}</div>
+    return (<div style={{background:"#fff",borderRadius:13,border:"1.5px solid #e5e7eb",padding:small?"10px 12px":"14px 16px",direction:"rtl"}}>
+      <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",marginBottom:8}}>
+        <div style={{display:"flex",alignItems:"center",gap:6}}>
+          <div style={{width:small?28:34,height:small?28:34,borderRadius:8,background:"#6c3fa0",flexShrink:0,display:"flex",alignItems:"center",justifyContent:"center",fontSize:small?13:15,fontWeight:900,color:"#fff"}}>{rank||3}</div>
+          <div style={{fontWeight:800,fontSize:small?12:14,color:"#374151"}}>{"Non-due accounts"}</div>
+        </div>
+        <div style={{background:"#f3f4f6",borderRadius:8,padding:"2px 8px",fontSize:small?9:11,color:"#6b7280",fontWeight:600}}>{(portCnt||cnt||340).toLocaleString()} {"حساب"}</div>
       </div>
-      <div style={{padding:small?"10px 12px":"12px 16px",display:"flex",flexDirection:"column",gap:8}}>
-        <div style={{display:"flex",gap:6}}>
-          <div style={{flex:1,background:`${color}08`,borderRadius:10,padding:small?"6px 8px":"8px 12px",border:`1px solid ${color}22`,textAlign:"center"}}>
-            <div style={{fontSize:small?9:11,color:color,fontWeight:800,marginBottom:3}}>عدد الحسابات</div>
-            <div style={{fontSize:small?13:16,fontWeight:900,color:color}}>{(portCnt||cnt||340).toLocaleString()}</div>
-            <div style={{fontSize:small?8:9,color:"#aaa",fontWeight:600}}>حساب</div>
-          </div>
-          <div style={{flex:1,background:"#fee2e2",borderRadius:10,padding:small?"5px 6px":"7px 10px",border:"1px solid #fca5a5",textAlign:"center"}}>
-            <div style={{fontSize:small?8:10,color:"#dc2626",fontWeight:800,marginBottom:2}}>{"🔴 مغلقة"}</div>
-            <div style={{fontSize:small?12:15,fontWeight:900,color:"#dc2626"}}>{effClosed.toLocaleString()}</div>
-          </div>
-          <div style={{flex:1,background:"#dcfce7",borderRadius:10,padding:small?"5px 6px":"7px 10px",border:"1px solid #86efac",textAlign:"center"}}>
-            <div style={{fontSize:small?8:10,color:"#16a34a",fontWeight:800,marginBottom:2}}>{"🟢 نشطة"}</div>
-            <div style={{fontSize:small?12:15,fontWeight:900,color:"#16a34a"}}>{effActive.toLocaleString()}</div>
-          </div>
+      <div style={{display:"flex",gap:8,flexWrap:"wrap"}}>
+        <div style={{flex:1,minWidth:60,textAlign:"center",background:"#f9fafb",borderRadius:8,padding:"6px 4px"}}>
+          <div style={{fontSize:small?8:9,color:"#6b7280",marginBottom:2}}>{"المدفوع"}</div>
+          <div style={{fontSize:small?11:13,fontWeight:800,color:"#111827"}}>{omr(cPaid)}</div>
         </div>
-        <div style={{display:"flex",border:"1.5px solid #f0ece8",borderRadius:10,overflow:"hidden",background:"#fafafa"}}>
-          {[["المدفوع",cPaid,"#16a34a"],["التسويات",cAdj,"#d97706"],["الإجمالي",total,color]].map(([lbl,val,clr],i)=>(
-            <div key={lbl} style={{flex:1,textAlign:"center",padding:small?"7px 4px":"10px 6px",
-              borderRight:i<2?"1px solid #f0ece8":"none",
-              background:i===2?`${clr}06`:"transparent"}}>
-              <div style={{fontSize:small?10:12,color:clr,fontWeight:900,marginBottom:3,
-                background:`${clr}10`,borderRadius:6,padding:"1px 5px",display:"inline-block"}}>{lbl}</div>
-              <div style={{fontSize:small?13:17,fontWeight:900,color:clr}}>{omr(val)}</div>
-            </div>
-          ))}
+        <div style={{flex:1,minWidth:60,textAlign:"center",background:"#f9fafb",borderRadius:8,padding:"6px 4px"}}>
+          <div style={{fontSize:small?8:9,color:"#6b7280",marginBottom:2}}>{"التسويات"}</div>
+          <div style={{fontSize:small?11:13,fontWeight:800,color:"#111827"}}>{omr(cAdj)}</div>
         </div>
-        <div style={{padding:"6px 10px",background:"#f3f4f6",borderRadius:8,textAlign:"center"}}>
-          <div style={{fontSize:small?9:11,color:"#6b7280",fontStyle:"italic"}}>{"لا توجد عليها مستحقات منذ بداية المشروع"}</div>
+        <div style={{flex:1,minWidth:60,textAlign:"center",background:"#111827",borderRadius:8,padding:"6px 4px"}}>
+          <div style={{fontSize:small?8:9,color:"#9ca3af",marginBottom:2}}>{"الإجمالي"}</div>
+          <div style={{fontSize:small?11:13,fontWeight:900,color:"#fff"}}>{omr(total)}</div>
         </div>
+      <div style={{marginTop:8,padding:"6px 10px",background:"#f3f4f6",borderRadius:8,textAlign:"center"}}>
+        <div style={{fontSize:small?9:11,color:"#6b7280",fontStyle:"italic"}}>{"لا توجد عليها مستحقات منذ بداية المشروع"}</div>
+      </div>
       </div>
     </div>);
   }
-
   const hasPort  = principal4card > 0;
   const hasCnt   = (portCnt||0) > 0;
   const effPort  = principal4card > 0 ? principal4card : 0;
@@ -6575,6 +6552,29 @@ function EntityCard({name,paid,adj,color,rank,small,cnt,cBranch,portAmt,portCnt,
   const remaining = effPort > 0 ? effPort - total : 0;
   const pct      = effPort > 0 ? Math.min(100,(total/effPort)*100) : (total>0?100:0);
   const pctVal   = displayPort > 0 ? Math.min(100,(total/displayPort)*100) : 0; // OS/P*100
+
+  // Non-due accounts — يعرض فقط عدد الحسابات
+  if (name === "Non-due accounts") {
+    return (
+      <div style={{background:"#fff",borderRadius:13,border:`1.5px solid ${color}33`,
+        boxShadow:"0 2px 10px rgba(0,0,0,0.05)",overflow:"hidden",borderRight:`5px solid ${color}`}}>
+        <div style={{display:"flex",alignItems:"center",gap:10,padding:small?"10px 12px":"12px 16px",
+          background:`${color}06`,borderBottom:`1px solid ${color}18`}}>
+          <div style={{width:small?28:34,height:small?28:34,borderRadius:8,background:color,flexShrink:0,
+            display:"flex",alignItems:"center",justifyContent:"center",fontSize:small?13:15,fontWeight:900,color:"#fff"}}>{rank}</div>
+          <div style={{fontSize:small?13:16,fontWeight:900,color:"#000",flex:1}}>{name}</div>
+        </div>
+        <div style={{padding:small?"12px":"16px",display:"flex",flexDirection:"column",alignItems:"center",gap:4}}>
+          <div style={{fontSize:small?11:13,color:"#888",fontWeight:700}}>عدد الحسابات</div>
+          <div style={{fontSize:small?22:30,fontWeight:900,color:color}}>{(cnt||effCnt||0).toLocaleString()}</div>
+          <div style={{fontSize:small?10:12,color:"#aaa",fontWeight:600}}>حساب</div>
+          <div style={{marginTop:6,fontSize:small?10:11,color:"#bbb",fontStyle:"italic",textAlign:"center"}}>
+            حسابات غير مستحقة — لا توجد حركات مالية
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   if (allZero) {
     return (
@@ -6630,27 +6630,8 @@ function EntityCard({name,paid,adj,color,rank,small,cnt,cBranch,portAmt,portCnt,
                 <div style={{fontSize:small?8:9,color:"#aaa",fontWeight:600}}>حساب</div>
               </div>
             )}
-            {(name==="Legal -Oneic"||name==="Documentation- Omantel"||name==="Legal - DR. Sarhaan"||name==="Refund - before legal"||name==="Refund - after legal")&&<div style={{flex:1,background:"#fee2e2",borderRadius:10,padding:small?"5px 6px":"7px 10px",border:"1px solid #fca5a5",textAlign:"center"}}><div style={{fontSize:small?8:10,color:"#dc2626",fontWeight:800,marginBottom:2}}>{"🔴 مغلقة"}</div><div style={{fontSize:small?12:15,fontWeight:900,color:"#dc2626"}}>{effClosed.toLocaleString()}</div></div>}
-            {(name==="Legal -Oneic"||name==="Documentation- Omantel"||name==="Legal - DR. Sarhaan"||name==="Refund - before legal"||name==="Refund - after legal")&&<div style={{flex:1,background:"#dcfce7",borderRadius:10,padding:small?"5px 6px":"7px 10px",border:"1px solid #86efac",textAlign:"center"}}><div style={{fontSize:small?8:10,color:"#16a34a",fontWeight:800,marginBottom:2}}>{"🟢 نشطة"}</div><div style={{fontSize:small?12:15,fontWeight:900,color:"#16a34a"}}>{effActive.toLocaleString()}</div></div>}
-          </div>
-        )}
-
-        {/* صندوق الاسترجاع 26% — Refund before legal فقط */}
-        {name==="Refund - before legal" && (refundAmt||0)>0 && (
-          <div style={{background:"linear-gradient(135deg,#1e40af11,#3b82f611)",border:"1.5px solid #3b82f6",borderRadius:12,padding:small?"8px 12px":"10px 16px"}}>
-            <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:4}}>
-              <div style={{fontSize:small?9:11,fontWeight:800,color:"#1e40af"}}>🔄 مبلغ الاسترجاع المقدّر</div>
-              <div style={{background:"#1e40af",color:"#fff",fontSize:small?8:9,fontWeight:700,borderRadius:20,padding:"2px 8px"}}>26% من المتبقي</div>
-            </div>
-            <div style={{fontSize:small?16:22,fontWeight:900,color:"#1e40af"}}>{(refundAmt||0).toLocaleString('en',{minimumFractionDigits:3,maximumFractionDigits:3})} <span style={{fontSize:small?9:11,fontWeight:600}}>ر.ع</span></div>
-            <div style={{fontSize:small?8:9,color:"#3b82f6",marginTop:2}}>= المتبقي (O/S) × 26% لكل حساب نشط</div>
-          </div>
-        )}
-        {name==="Refund - before legal" && (refundAmt||0)===0 && (
-          <div style={{background:"#f8fafc",border:"1.5px dashed #93c5fd",borderRadius:12,padding:small?"8px 12px":"10px 16px",textAlign:"center"}}>
-            <div style={{fontSize:small?9:10,color:"#3b82f6",fontWeight:700}}>🔄 مبلغ الاسترجاع (26% من المتبقي)</div>
-            <div style={{fontSize:small?11:13,fontWeight:900,color:"#94a3b8",marginTop:2}}>0.000 ر.ع</div>
-            <div style={{fontSize:small?8:9,color:"#94a3b8",marginTop:2}}>لا يوجد حسابات نشطة حالياً</div>
+            {(name==="Legal -Oneic"||name==="Documentation- Omantel"||name==="Legal - DR. Sarhaan")&&<div style={{flex:1,background:"#fee2e2",borderRadius:10,padding:small?"5px 6px":"7px 10px",border:"1px solid #fca5a5",textAlign:"center"}}><div style={{fontSize:small?8:10,color:"#dc2626",fontWeight:800,marginBottom:2}}>{"🔴 مغلقة"}</div><div style={{fontSize:small?12:15,fontWeight:900,color:"#dc2626"}}>{effClosed.toLocaleString()}</div></div>}
+            {(name==="Legal -Oneic"||name==="Documentation- Omantel"||name==="Legal - DR. Sarhaan")&&<div style={{flex:1,background:"#dcfce7",borderRadius:10,padding:small?"5px 6px":"7px 10px",border:"1px solid #86efac",textAlign:"center"}}><div style={{fontSize:small?8:10,color:"#16a34a",fontWeight:800,marginBottom:2}}>{"🟢 نشطة"}</div><div style={{fontSize:small?12:15,fontWeight:900,color:"#16a34a"}}>{effActive.toLocaleString()}</div></div>}
           </div>
         )}
 
@@ -6689,6 +6670,18 @@ function EntityCard({name,paid,adj,color,rank,small,cnt,cBranch,portAmt,portCnt,
             </div>
           </div>
         )}
+
+        {/* Principal Amount */}
+        {(principalAmt||0) > 0 && (
+          <div style={{background:"#f0f9ff",borderRadius:8,padding:small?"4px 8px":"5px 10px",
+            display:"flex",justifyContent:"space-between",alignItems:"center",border:"1px solid #bae6fd"}}>
+            <div style={{display:"flex",alignItems:"center",gap:6}}>
+              <span style={{fontSize:small?9:10,color:"#0369a1",fontWeight:700}}>Principal Amount</span>
+              <span style={{fontSize:small?8:9,background:"#0369a1",color:"#fff",borderRadius:10,padding:"1px 6px",fontWeight:800}}>{(portCnt||0).toLocaleString()} حساب</span>
+            </div>
+            <span style={{fontSize:small?11:13,fontWeight:900,color:"#0369a1"}}>{omr(principalAmt)}</span>
+          </div>
+        )}
       </div>
     </div>
   );
@@ -6718,7 +6711,7 @@ function SummaryCard({label,paid,adj,cnt,cntPaid,cntAdj,cntTotal,portAmt,color,i
           <span style={{fontSize:fs.title,fontWeight:900,color:"#fff",lineHeight:1.2,wordBreak:"keep-all"}}>{label}</span>
         </div>
         <div style={{textAlign:"center",flexShrink:0}}>
-          <div style={{fontSize:small?11:13,color:"rgba(255,255,255,0.75)",fontWeight:700,marginBottom:2}}>نسبة المساهمة في الانجاز الكلي</div>
+          <div style={{fontSize:small?9:10,color:"rgba(255,255,255,0.75)",fontWeight:700,marginBottom:2}}>نسبة مساهمة</div>
           <div style={{background:"rgba(255,255,255,0.25)",borderRadius:20,padding:"2px 12px",fontSize:small?13:15,fontWeight:900,color:"#fff"}}>{pct}%</div>
         </div>
       </div>
@@ -8978,7 +8971,6 @@ async function parseComplaints(file) {
         const branchIdx   = headers.findIndex(h => h === 'Branch');
         const collectorIdx= headers.findIndex(h => h === 'Collector');
         const principalIdx= headers.findIndex(h => h === 'Principal Amount');
-        const osIdx       = headers.findIndex(h => h === 'O/S Amount');
         const paidIdx     = headers.findIndex(h => h === 'Paid Amount');
         const adjIdx      = headers.findIndex(h => h === 'Adjustment');
         const overPaidIdx = headers.findIndex(h => h === 'OverPaid');
@@ -8996,7 +8988,6 @@ async function parseComplaints(file) {
         let dcAmt=0, hoAmt=0, govAmt=0;
         let dcPaid=0, hoPaid=0, govPaid=0;
         let dcAdj=0, hoAdj=0, govAdj=0;
-        let totalOS=0;
         
         // تجميع حسب Region للمحافظات وحسب Branch لشركات التحصيل
         const regionMap = {}; // للمحافظات الخمس (Region)
@@ -9012,8 +9003,6 @@ async function parseComplaints(file) {
           const paidAmt   = paidIdx>=0    ? (parseFloat(row[paidIdx])||0)    : 0;
           const adjAmt    = adjIdx>=0     ? (parseFloat(row[adjIdx])||0)     : 0;
           const overPaidAmt = overPaidIdx>=0 ? (parseFloat(row[overPaidIdx])||0) : 0;
-          const osAmt = osIdx>=0 ? (parseFloat(row[osIdx])||0) : (amt - paidAmt - adjAmt);
-          totalOS += osAmt;
           totalOverRecovery += overPaidAmt;
           if (overPaidAmt > 0) totalOverRecoveryCount++;
           totalDiscount += discIdx>=0 ? (parseFloat(row[discIdx])||0) : 0;
@@ -9037,21 +9026,12 @@ async function parseComplaints(file) {
               if (cLow.indexOf('sarhaan')>=0||cLow.indexOf('sarhan')>=0||cLow.indexOf('dr.')>=0||cLow.indexOf(' dr')>=0) hoColKey='Legal - DR. Sarhaan';
               else if (cLow.indexOf('doc')>=0) hoColKey='Documentation- Omantel';
               else if (cLow.indexOf('non-due')>=0||collector2.toUpperCase()==='HO') hoColKey='Non-due accounts';
-              else if (cLow.indexOf('refund')>=0&&cLow.indexOf('before')>=0) hoColKey='Refund - before legal';
-              else if (cLow.indexOf('refund')>=0&&cLow.indexOf('after')>=0) hoColKey='Refund - after legal';
-              else if (cLow.indexOf('refund')>=0) hoColKey='Refund - before legal';
               else hoColKey='Legal -Oneic';
-              if (!branchMap[hoColKey]) branchMap[hoColKey]={count:0,amt:0,paid:0,adj:0,closed:0,active:0,refundAmt:0};
+              if (!branchMap[hoColKey]) branchMap[hoColKey]={count:0,amt:0,paid:0,adj:0};
               branchMap[hoColKey].count++;
               branchMap[hoColKey].amt  += amt;
               branchMap[hoColKey].paid += paidAmt;
               branchMap[hoColKey].adj += adjAmt;
-              if (hoColKey==='Refund - before legal') {
-                branchMap[hoColKey].refundAmt += (osAmt>0 ? osAmt*0.26 : 0);
-              }
-              if (hoColKey==='Legal -Oneic'||hoColKey==='Documentation- Omantel'||hoColKey==='Legal - DR. Sarhaan'||hoColKey==='Non-due accounts'||hoColKey==='Refund - before legal'||hoColKey==='Refund - after legal') {
-                if (osAmt<=0) branchMap[hoColKey].closed++; else branchMap[hoColKey].active++;
-              }
             }
             const hoKey = 'HEAD_OFFICE_TOTAL';
             if (!branchMap[hoKey]) branchMap[hoKey] = {count:0, amt:0};
@@ -9072,7 +9052,7 @@ async function parseComplaints(file) {
             }
           }
         }
-        resolve({ total, dcCount, hoCount, govCount, dcAmt, hoAmt, govAmt, dcPaid, hoPaid, govPaid, dcAdj, hoAdj, govAdj, regionMap, branchMap, totalDiscount, totalOverRecovery, totalOverRecoveryCount, totalOS });
+        resolve({ total, dcCount, hoCount, govCount, dcAmt, hoAmt, govAmt, dcPaid, hoPaid, govPaid, dcAdj, hoAdj, govAdj, regionMap, branchMap, totalDiscount, totalOverRecovery, totalOverRecoveryCount });
       } catch(e) { reject(e); }
     };
     reader.onerror = () => reject(new Error('فشل قراءة الملف'));
@@ -9222,11 +9202,11 @@ function handlePrint(data) {
   var grandPaid = govPaid+dcPaid+hoPaid;
   var grandAdj  = govAdj+dcAdj+hoAdj;
   var grandTotal = grandPaid + grandAdj;
-  var portAmt    = (data.totalPortfolio&&data.totalPortfolio.amt) ? data.totalPortfolio.amt : 9414256.834;
+  var portAmt    = 9414256.834;
   var portCnt    = (data.totalPortfolio&&data.totalPortfolio.cnt) ? data.totalPortfolio.cnt : 47963;
   var ONEIC_DISC = data.totalDiscount||1544.191;
-  var pctDone    = portAmt>0 ? Math.min(100,(grandTotal/portAmt*100)).toFixed(1) : '0';
-  var remaining  = (data.totalPortfolio&&data.totalPortfolio.outstanding!=null) ? data.totalPortfolio.outstanding : (portAmt - grandTotal - ONEIC_DISC);
+  var pctDone    = portAmt>0 ? Math.min(100,Math.round(grandTotal/portAmt*100)) : 0;
+  var remaining  = portAmt - grandTotal - ONEIC_DISC;
   var date      = data.uploadDate||new Date().toISOString().split('T')[0];
   var printDate = new Date().toLocaleDateString('ar-OM',{year:'numeric',month:'long',day:'numeric'});
   var LOGO_SRC  = typeof LOGO!=='undefined'?LOGO:'';
@@ -9252,7 +9232,7 @@ function handlePrint(data) {
   ];
   var sumHTML = summaries.map(function(s){
     var tot = s.paid+s.adj;
-    var pct = grandTotal>0?((tot/grandTotal)*100).toFixed(1):'0';
+    var pct = GRAND_TOTAL_FIXED>0?((tot/GRAND_TOTAL_FIXED)*100).toFixed(1):'0';
     return '<div class="sum-card" style="border-top:4px solid '+s.color+'">'
       +'<div class="sum-header" style="background:'+s.color+'"><span class="sum-icon">'+s.icon+'</span><span class="sum-title">'+s.label+'</span><span class="sum-pct">'+pct+'%</span></div>'
       +'<div class="sum-body">'
@@ -9725,15 +9705,16 @@ export default function Dashboard() {
       }
 
       if (row?.regions?.length > 0) {
-        const HO_REQ = ["Legal - DR. Sarhaan","Documentation- Omantel","Non-due accounts","Legal -Oneic","Refund - before legal","Refund - after legal"];
+        const HO_REQ = ["Legal - DR. Sarhaan","Documentation- Omantel","HO","Non-due accounts","Legal -Oneic"];
         const HO_P = {
           "Legal - DR. Sarhaan":{portAmt:3229651.681,portCnt:3691,closed:67,active:3624,principalAmt:3301711.348},
           "Documentation- Omantel":{portAmt:471756.070,portCnt:1099,closed:8,active:1091},
+          "HO":{portAmt:0,portCnt:340},
           "Non-due accounts":{portAmt:0,portCnt:340},
-          "Legal -Oneic":{portAmt:64528.164,portCnt:144,principalAmt:64528.164,closed:3,active:141},"Refund - before legal":{portAmt:0,portCnt:0,closed:0,active:0},"Refund - after legal":{portAmt:0,portCnt:0,closed:0,active:0}
+          "Legal -Oneic":{portAmt:64528.164,portCnt:144,principalAmt:64528.164,closed:3,active:141}
         };
         const existingHO = row.headOffice || [];
-        const fullHO = HO_REQ.map(function(nm){var f=existingHO.find(function(x){return x.name===nm;})||(nm==='Non-due accounts'?existingHO.find(function(x){return x.name==='HO';}):null);var p=HO_P[nm]||{};if(f)return Object.assign({},p,f,{name:nm,closed:(f.closed!==undefined&&f.closed!==null)?f.closed:(p.closed||0),active:(f.active!==undefined&&f.active!==null)?f.active:(p.active||0)});return Object.assign({name:nm,paid:0,adj:0,count:0,closed:0,active:0},p);});
+        const fullHO = HO_REQ.map(function(nm){var f=existingHO.find(function(x){return x.name===nm;});var p=HO_P[nm]||{};if(f)return Object.assign({},p,f,{closed:f.closed>0?f.closed:(p.closed||0),active:f.active>0?f.active:(p.active||0)});return Object.assign({name:nm,paid:0,adj:0,count:0,closed:0,active:0},p);});
         let d = Object.assign({},row,{headOffice:fullHO,_updatedAt:row._updatedAt||row.lastUpdated||''});
         lastSyncRef.current = d._updatedAt||'';
         if (row.complaintsBranchMap) setComplaintsBranchMap(row.complaintsBranchMap);
@@ -9761,13 +9742,13 @@ export default function Dashboard() {
         var fbTime = new Date(row._updatedAt||row.lastUpdated||0).getTime();
         var myTime = lastSyncRef.current ? new Date(lastSyncRef.current).getTime() : 0;
         if (fbTime > 0 && myTime > 0 && fbTime <= myTime) return;
-        var HO_KEYS3 = ["Legal - DR. Sarhaan","Documentation- Omantel","Non-due accounts","Legal -Oneic","Refund - before legal","Refund - after legal"];
-        var HO_DEF3 = {"Legal - DR. Sarhaan":{portAmt:3229651.681,portCnt:3691,closed:67,active:3624},"Documentation- Omantel":{portAmt:471756.070,portCnt:1099,closed:8,active:1091},"Non-due accounts":{portAmt:0,portCnt:340},"Legal -Oneic":{portAmt:64528.164,portCnt:144,closed:3,active:141},"Refund - before legal":{portAmt:0,portCnt:0,closed:0,active:0},"Refund - after legal":{portAmt:0,portCnt:0,closed:0,active:0}};
+        var HO_KEYS3 = ["Legal - DR. Sarhaan","Documentation- Omantel","HO","Non-due accounts","Legal -Oneic"];
+        var HO_DEF3 = {"Legal - DR. Sarhaan":{portAmt:3229651.681,portCnt:3691,closed:67,active:3624},"Documentation- Omantel":{portAmt:471756.070,portCnt:1099,closed:8,active:1091},"HO":{portAmt:0,portCnt:340},"Non-due accounts":{portAmt:0,portCnt:340},"Legal -Oneic":{portAmt:64528.164,portCnt:144,closed:3,active:141}};
         var eHO3 = row.headOffice||[];
         var fullHO3 = HO_KEYS3.map(function(nm){
-          var f=eHO3.find(function(c){return c.name===nm;})||(nm==='Non-due accounts'?eHO3.find(function(c){return c.name==='HO';}):null);
+          var f=eHO3.find(function(c){return c.name===nm;});
           var p=HO_DEF3[nm]||{};
-          if(f) return Object.assign({},p,f,{name:nm,closed:(f.closed!==undefined&&f.closed!==null)?f.closed:(p.closed||0),active:(f.active!==undefined&&f.active!==null)?f.active:(p.active||0)});
+          if(f) return Object.assign({},p,f,{closed:f.closed>0?f.closed:(p.closed||0),active:f.active>0?f.active:(p.active||0)});
           return {name:nm,paid:0,adj:0,count:0,portAmt:p.portAmt||0,portCnt:p.portCnt||0,closed:0,active:0};
         });
         // ══ Firebase يحتوي البيانات الكاملة والنهائية الصحيحة - لا حاجة لأي دمج إضافي من localStorage ══
@@ -9791,10 +9772,10 @@ export default function Dashboard() {
         var fbTime = new Date(row._updatedAt||row.lastUpdated||0).getTime();
         var myTime = lastSyncRef.current ? new Date(lastSyncRef.current).getTime() : 0;
         if (fbTime > 0 && myTime > 0 && fbTime <= myTime) return;
-        var HO_KEYS4=["Legal - DR. Sarhaan","Documentation- Omantel","Non-due accounts","Legal -Oneic","Refund - before legal","Refund - after legal"];
-        var HO_P4={"Legal - DR. Sarhaan":{portAmt:3229651.681,portCnt:3691,closed:67,active:3624},"Documentation- Omantel":{portAmt:471756.070,portCnt:1099,closed:8,active:1091},"Non-due accounts":{portAmt:0,portCnt:340},"Legal -Oneic":{portAmt:64528.164,portCnt:144,closed:3,active:141},"Refund - before legal":{portAmt:0,portCnt:0,closed:0,active:0},"Refund - after legal":{portAmt:0,portCnt:0,closed:0,active:0}};
+        var HO_KEYS4=["Legal - DR. Sarhaan","Documentation- Omantel","HO","Non-due accounts","Legal -Oneic"];
+        var HO_P4={"Legal - DR. Sarhaan":{portAmt:3229651.681,portCnt:3691,closed:67,active:3624},"Documentation- Omantel":{portAmt:471756.070,portCnt:1099,closed:8,active:1091},"HO":{portAmt:0,portCnt:340},"Non-due accounts":{portAmt:0,portCnt:340},"Legal -Oneic":{portAmt:64528.164,portCnt:144,closed:3,active:141}};
         var eHO4=row.headOffice||[];
-        var fullHO4=HO_KEYS4.map(function(nm){var f=eHO4.find(function(c){return c.name===nm;})||(nm==='Non-due accounts'?eHO4.find(function(c){return c.name==='HO';}):null);var p=HO_P4[nm]||{};if(f)return Object.assign({},p,f,{name:nm,closed:(f.closed!==undefined&&f.closed!==null)?f.closed:(p.closed||0),active:(f.active!==undefined&&f.active!==null)?f.active:(p.active||0)});return {name:nm,paid:0,adj:0,count:0,portAmt:p.portAmt||0,portCnt:p.portCnt||0,closed:0,active:0};});
+        var fullHO4=HO_KEYS4.map(function(nm){var f=eHO4.find(function(c){return c.name===nm;});var p=HO_P4[nm]||{};if(f)return Object.assign({},p,f,{closed:f.closed>0?f.closed:(p.closed||0),active:f.active>0?f.active:(p.active||0)});return {name:nm,paid:0,adj:0,count:0,portAmt:p.portAmt||0,portCnt:p.portCnt||0,closed:0,active:0};});
         // ══ Firebase يحتوي البيانات الكاملة والنهائية الصحيحة - لا حاجة لأي دمج إضافي من localStorage ══
         var dSync4={headOffice:fullHO4,_updatedAt:row._updatedAt||row.lastUpdated||''};
         var rk=Object.keys(row); for(var ki4=0;ki4<rk.length;ki4++){if(rk[ki4]!=='headOffice')dSync4[rk[ki4]]=row[rk[ki4]];}
@@ -9838,10 +9819,10 @@ export default function Dashboard() {
     sbGet('oneic_data').then(function(row) {
       if (!row || !row.regions || !row.regions.length) { setSyncing(false); return; }
       // ══ Firebase يحتوي البيانات الكاملة والنهائية الصحيحة - لا حاجة لأي دمج أو إعادة بناء إضافي ══
-      var HO_KEYS5=["Legal - DR. Sarhaan","Documentation- Omantel","Non-due accounts","Legal -Oneic","Refund - before legal","Refund - after legal"];
-      var HO_P5={"Legal - DR. Sarhaan":{portAmt:3229651.681,portCnt:3691,closed:67,active:3624},"Documentation- Omantel":{portAmt:471756.070,portCnt:1099,closed:8,active:1091},"Non-due accounts":{portAmt:0,portCnt:340},"Legal -Oneic":{portAmt:64528.164,portCnt:144,closed:3,active:141},"Refund - before legal":{portAmt:0,portCnt:0,closed:0,active:0},"Refund - after legal":{portAmt:0,portCnt:0,closed:0,active:0}};
+      var HO_KEYS5=["Legal - DR. Sarhaan","Documentation- Omantel","HO","Non-due accounts","Legal -Oneic"];
+      var HO_P5={"Legal - DR. Sarhaan":{portAmt:3229651.681,portCnt:3691,closed:67,active:3624},"Documentation- Omantel":{portAmt:471756.070,portCnt:1099,closed:8,active:1091},"HO":{portAmt:0,portCnt:340},"Non-due accounts":{portAmt:0,portCnt:340},"Legal -Oneic":{portAmt:64528.164,portCnt:144,closed:3,active:141}};
       var eHO5=row.headOffice||[];
-      var fullHO5=HO_KEYS5.map(function(nm){var f=eHO5.find(function(c){return c.name===nm;})||(nm==='Non-due accounts'?eHO5.find(function(c){return c.name==='HO';}):null);var p=HO_P5[nm]||{};if(f)return Object.assign({},p,f,{name:nm,closed:(f.closed!==undefined&&f.closed!==null)?f.closed:(p.closed||0),active:(f.active!==undefined&&f.active!==null)?f.active:(p.active||0)});return Object.assign({name:nm,paid:0,adj:0,count:0,closed:0,active:0},p);});
+      var fullHO5=HO_KEYS5.map(function(nm){var f=eHO5.find(function(c){return c.name===nm;});var p=HO_P5[nm]||{};if(f)return Object.assign({},p,f,{closed:f.closed>0?f.closed:(p.closed||0),active:f.active>0?f.active:(p.active||0)});return Object.assign({name:nm,paid:0,adj:0,count:0,closed:0,active:0},p);});
       var d5={}; var rk5=Object.keys(row); for(var ki5=0;ki5<rk5.length;ki5++){d5[rk5[ki5]]=row[rk5[ki5]];}
       d5.headOffice=fullHO5; d5._updatedAt=row._updatedAt||row.lastUpdated||'';
       lastSyncRef.current = d5._updatedAt || new Date().toISOString();
@@ -9906,7 +9887,7 @@ export default function Dashboard() {
       
       if (isComplaints) {
         // ملف complaints → يحدّث عدد الحسابات والمبالغ
-        const {total,dcCount,hoCount,govCount,dcAmt,hoAmt,govAmt,dcPaid,hoPaid,govPaid,dcAdj,hoAdj,govAdj,regionMap,branchMap,totalDiscount,totalOverRecovery,totalOverRecoveryCount,totalOS} = await parseComplaints(file);
+        const {total,dcCount,hoCount,govCount,dcAmt,hoAmt,govAmt,dcPaid,hoPaid,govPaid,dcAdj,hoAdj,govAdj,regionMap,branchMap,totalDiscount,totalOverRecovery,totalOverRecoveryCount} = await parseComplaints(file);
         setComplaintsCount(total);
         setComplaintsCounts({dc:dcCount,ho:hoCount,gov:govCount});
         setComplaintsAmts({dc:dcAmt,ho:hoAmt,gov:govAmt});
@@ -9931,7 +9912,7 @@ export default function Dashboard() {
                   paid: (dcMerged[existIdx].paid||0) + (dcItem.paid||0),
                   adj: (dcMerged[existIdx].adj||0) + (dcItem.adj||0),
                   count: (dcMerged[existIdx].count||0) + (dcItem.count||0),
-                  portCnt: Math.max(dcMerged[existIdx].portCnt||0, dcItem.portCnt||0),
+                  portCnt: (dcMerged[existIdx].portCnt||0) + (dcItem.portCnt||0),
                   principalAmt: Math.max(dcMerged[existIdx].principalAmt||0, dcItem.principalAmt||0),
                   portAmt: Math.max(dcMerged[existIdx].portAmt||0, dcItem.portAmt||0)
                 });
@@ -9941,37 +9922,6 @@ export default function Dashboard() {
               }
             });
             base = Object.assign({}, base, {debtCompanies: dcMerged});
-          }
-          // ══ تنظيف وتوحيد الأسماء المكررة (case-insensitive) في headOffice قبل أي شيء آخر ══
-          // (يصلح حالات قديمة محفوظة فيها بطاقة "Non-due accounts"/"HO" مكررة تُضخّم عدد الحسابات)
-          if (base.headOffice && base.headOffice.length) {
-            var hoSeen = {};
-            var hoMerged = [];
-            var hoCanon = function(nm){
-              var l = (nm||'').trim().toLowerCase();
-              if (l === 'ho' || l === 'non-due accounts') return 'non-due accounts';
-              return l;
-            };
-            base.headOffice.forEach(function(hoItem){
-              var hoKeyL = hoCanon(hoItem.name);
-              if (hoSeen[hoKeyL] !== undefined) {
-                var existIdx = hoSeen[hoKeyL];
-                hoMerged[existIdx] = Object.assign({}, hoMerged[existIdx], {
-                  name: hoKeyL === 'non-due accounts' ? 'Non-due accounts' : hoMerged[existIdx].name,
-                  paid: (hoMerged[existIdx].paid||0) + (hoItem.paid||0),
-                  adj: (hoMerged[existIdx].adj||0) + (hoItem.adj||0),
-                  count: (hoMerged[existIdx].count||0) + (hoItem.count||0),
-                  portCnt: Math.max(hoMerged[existIdx].portCnt||0, hoItem.portCnt||0),
-                  portAmt: Math.max(hoMerged[existIdx].portAmt||0, hoItem.portAmt||0),
-                  closed: (hoMerged[existIdx].closed||0) + (hoItem.closed||0),
-                  active: (hoMerged[existIdx].active||0) + (hoItem.active||0)
-                });
-              } else {
-                hoSeen[hoKeyL] = hoMerged.length;
-                hoMerged.push(Object.assign({}, hoItem, {name: hoKeyL==='non-due accounts' ? 'Non-due accounts' : hoItem.name}));
-              }
-            });
-            base = Object.assign({}, base, {headOffice: hoMerged});
           }
           var newRegions = (base.regions||[]).map(function(r) {
             var rKey = (r.nameEn||r.nameAr||'').trim();
@@ -9993,13 +9943,10 @@ export default function Dashboard() {
                   name: cname,
                   paid: cm.paid||0,
                   adj: cm.adj||0,
-                  count: cm.count||(existingCol&&existingCol.count)||0,
-                  portCnt: cm.count||(existingCol&&existingCol.portCnt)||0,
-                  principalAmt: (cm.principal||cm.amt||0) || (existingCol&&existingCol.principalAmt) || 0,
-                  portAmt: (cm.principal||cm.amt||0) || (existingCol&&existingCol.portAmt) || 0
+                  principalAmt: (existingCol&&existingCol.principalAmt>0) ? existingCol.principalAmt : (cm.principal||cm.amt||0)
                 });
               });
-              return Object.assign({},r,{paid:rm.paid||0, adj:rm.adj||0, count:rm.count||0, portCnt:rm.count||r.portCnt||0, principalAmt:rm.amt||r.principalAmt||0, collectors:newCollectors});
+              return Object.assign({},r,{paid:rm.paid||0, adj:rm.adj||0, collectors:newCollectors});
             }
             return r;
           });
@@ -10038,39 +9985,26 @@ export default function Dashboard() {
           // حدّث debtCompanies من branchMap (مطابقة ذكية)
           var newDC = (base.debtCompanies||[]).map(function(c) {
             var bm = findBMTrack(c.name);
-            if (bm) return Object.assign({},c,{paid:bm.paid||0,adj:bm.adj||0,portCnt:bm.count||c.portCnt||0,count:bm.count||c.count||0,principalAmt:bm.amt||c.principalAmt||0,portAmt:bm.amt||c.portAmt||0,closed:c.closed||0,active:c.active||0});
+            if (bm) return Object.assign({},c,{paid:bm.paid||0,adj:bm.adj||0,portCnt:bm.count||c.portCnt||0,count:bm.count||c.count||0,closed:c.closed||0,active:c.active||0});
             return c;
           });
-          // حدّث headOffice من branchMap (مطابقة ذكية) - closed/active تُحسب من Complaints مباشرة (O/S Amount لكل حساب)
+          // حدّث headOffice من branchMap (مطابقة ذكية)
           var newHO = (base.headOffice||[]).map(function(c) {
             var bm = findBMTrack(c.name);
-            if (bm) {
-              var hasClosedData = (c.name==='Legal -Oneic'||c.name==='Documentation- Omantel'||c.name==='Legal - DR. Sarhaan'||c.name==='Non-due accounts'||c.name==='Refund - before legal'||c.name==='Refund - after legal');
-              return Object.assign({},c,{
-                paid:bm.paid||0,
-                adj:bm.adj||0,
-                portCnt:bm.count||c.portCnt||0,
-                count:bm.count||c.count||0,
-                principalAmt:bm.amt||c.principalAmt||0,
-                portAmt:bm.amt||c.portAmt||0,
-                refundAmt: (c.name==='Refund - before legal') ? (bm.refundAmt||0) : (c.refundAmt||0),
-                closed: hasClosedData ? (bm.closed||0) : (c.closed||0),
-                active: hasClosedData ? (bm.active||0) : (c.active||0)
-              });
-            }
+            if (bm) return Object.assign({},c,{paid:bm.paid||0,adj:bm.adj||0,portCnt:bm.count||c.portCnt||0,count:bm.count||c.count||0,closed:c.closed||0,active:c.active||0});
             return c;
           });
           // أضف شركات في Complaints ليست في debtCompanies (مثل Tahseel، High Speed) - فقط إذا لم تُطابق بالفعل
           var bmKeys = Object.keys(branchMap);
           for (var bki=0; bki<bmKeys.length; bki++) {
             var bkn = bmKeys[bki];
-            var HO_SKIP=["Legal - DR. Sarhaan","Documentation- Omantel","HO","Non-due accounts","Legal -Oneic","Refund - before legal","Refund - after legal","Legal","Legal ","HEAD_OFFICE_TOTAL"];
-            if (!matchedBmKeys[bkn] && HO_SKIP.indexOf(bkn)<0 && (branchMap[bkn].count||0) > 0) {
+            var HO_SKIP=["Legal - DR. Sarhaan","Documentation- Omantel","HO","Non-due accounts","Legal -Oneic","Legal","Legal ","HEAD_OFFICE_TOTAL"];
+            if (!matchedBmKeys[bkn] && HO_SKIP.indexOf(bkn)<0 && (branchMap[bkn].paid+branchMap[bkn].adj) > 0) {
               var bkm = branchMap[bkn];
               newDC.push({name:bkn, paid:bkm.paid||0, adj:bkm.adj||0, principalAmt:0, portAmt:0, portCnt:bkm.count||0, count:bkm.count||0});
             }
           }
-          var _tF=new Date().toISOString();var _tFd=_tF.split("T")[0];var _gp2=newRegions.reduce(function(s,r){return s+(r.paid||0);},0)+newDC.reduce(function(s,r){return s+(r.paid||0);},0)+newHO.reduce(function(s,r){return s+(r.paid||0);},0);var _ga2=newRegions.reduce(function(s,r){return s+(r.adj||0);},0)+newDC.reduce(function(s,r){return s+(r.adj||0);},0)+newHO.reduce(function(s,r){return s+(r.adj||0);},0);var _he={date:_tFd,savedAt:_tF,totalRecords:base.totalRecords||0,grandPaid:_gp2,grandAdj:_ga2,grandTotal:_gp2+_ga2};var _prevHist=base.history||[];var _flHist=_prevHist.filter(function(h){return h.date!==_he.date;});var _nh=[_he].concat(_flHist).slice(0,90);var mg=Object.assign({},base,{regions:newRegions,debtCompanies:newDC,headOffice:newHO,totalPortfolio:{amt:dcAmt+hoAmt+govAmt,cnt:total,outstanding:totalOS},totalDiscount:totalDiscount||base.totalDiscount||0,overRecovery:totalOverRecovery||0,overRecoveryCount:totalOverRecoveryCount||0,_updatedAt:_tF,lastUpdated:_tF,uploadDate:_tFd,complaintsDate:_tFd,uploadCount:(base.uploadCount||0)+1,history:_nh});lastSyncRef.current=_tF;window._noSyncUntil=Date.now()+60000;try{localStorage.setItem('oneic_dashboard_data',JSON.stringify(mg));}catch(e){}try{localStorage.setItem('oneic_complaints_region_map',JSON.stringify(regionMap||{}));}catch(e){}try{localStorage.setItem('oneic_complaints_branch_map',JSON.stringify(branchMap||{}));}catch(e){}try{localStorage.setItem('oneic_history',JSON.stringify(_nh));}catch(e){}sbUpsert('oneic_data',{payload:mg}).then(function(){console.log('Complaints saved size='+JSON.stringify(mg).length);}).catch(function(e){console.error('Complaints save FAILED:',e&&e.message||e);try{fetch(FIREBASE_URL+'/main/uploadCount.json',{method:'PUT',headers:{'Content-Type':'application/json'},body:JSON.stringify(mg.uploadCount)});fetch(FIREBASE_URL+'/main/uploadDate.json',{method:'PUT',headers:{'Content-Type':'application/json'},body:JSON.stringify(mg.uploadDate)});fetch(FIREBASE_URL+'/main/history.json',{method:'PUT',headers:{'Content-Type':'application/json'},body:JSON.stringify(_nh)});}catch(e2){}});setHistory(function(prev){return (_nh.length>=(prev||[]).length)?_nh:prev;});return mg;
+          var _tF=new Date().toISOString();var _tFd=_tF.split("T")[0];var _gp2=newRegions.reduce(function(s,r){return s+(r.paid||0);},0)+newDC.reduce(function(s,r){return s+(r.paid||0);},0)+newHO.reduce(function(s,r){return s+(r.paid||0);},0);var _ga2=newRegions.reduce(function(s,r){return s+(r.adj||0);},0)+newDC.reduce(function(s,r){return s+(r.adj||0);},0)+newHO.reduce(function(s,r){return s+(r.adj||0);},0);var _he={date:_tFd,savedAt:_tF,totalRecords:base.totalRecords||0,grandPaid:_gp2,grandAdj:_ga2,grandTotal:_gp2+_ga2};var _prevHist=base.history||[];var _flHist=_prevHist.filter(function(h){return h.date!==_he.date;});var _nh=[_he].concat(_flHist).slice(0,90);var mg=Object.assign({},base,{regions:newRegions,debtCompanies:newDC,headOffice:newHO,totalDiscount:totalDiscount||base.totalDiscount||0,overRecovery:totalOverRecovery||0,overRecoveryCount:totalOverRecoveryCount||0,_updatedAt:_tF,lastUpdated:_tF,uploadDate:_tFd,complaintsDate:_tFd,uploadCount:(base.uploadCount||0)+1,history:_nh});lastSyncRef.current=_tF;window._noSyncUntil=Date.now()+60000;try{localStorage.setItem('oneic_dashboard_data',JSON.stringify(mg));}catch(e){}try{localStorage.setItem('oneic_complaints_region_map',JSON.stringify(regionMap||{}));}catch(e){}try{localStorage.setItem('oneic_complaints_branch_map',JSON.stringify(branchMap||{}));}catch(e){}try{localStorage.setItem('oneic_history',JSON.stringify(_nh));}catch(e){}sbUpsert('oneic_data',{payload:mg}).then(function(){console.log('Complaints saved size='+JSON.stringify(mg).length);}).catch(function(e){console.error('Complaints save FAILED:',e&&e.message||e);try{fetch(FIREBASE_URL+'/main/uploadCount.json',{method:'PUT',headers:{'Content-Type':'application/json'},body:JSON.stringify(mg.uploadCount)});fetch(FIREBASE_URL+'/main/uploadDate.json',{method:'PUT',headers:{'Content-Type':'application/json'},body:JSON.stringify(mg.uploadDate)});fetch(FIREBASE_URL+'/main/history.json',{method:'PUT',headers:{'Content-Type':'application/json'},body:JSON.stringify(_nh)});}catch(e2){}});setHistory(function(prev){return (_nh.length>=(prev||[]).length)?_nh:prev;});return mg;
         });
         // احفظ complaints في localStorage
         try {
@@ -10124,7 +10058,7 @@ export default function Dashboard() {
       "Documentation- Omantel":  { portAmt: 471756.070,  portCnt: 1099, closed:8, active:1091 },
       "HO":                   { portAmt: 0,           portCnt: 340  },
       "Non-due accounts":     { portAmt: 0,           portCnt: 340  },
-      "Legal -Oneic":{portAmt:64528.164,portCnt:144,principalAmt:64528.164,closed:3,active:141},"Refund - before legal":{portAmt:0,portCnt:0,closed:0,active:0},"Refund - after legal":{portAmt:0,portCnt:0,closed:0,active:0}
+      "Legal -Oneic":{portAmt:64528.164,portCnt:144,principalAmt:64528.164,closed:3,active:141}
     };
     const mergedHO = HO_REQUIRED.map(nm => {
       const displayNm = nm==='HO'?'Non-due accounts':nm;
@@ -10236,12 +10170,12 @@ export default function Dashboard() {
   const hPortCnt = data.headOffice.reduce((s,r)=>s+(r.portCnt||0),0);
   const totalPaid = gPd+dPd+hPd;
   const totalAdj  = gAd+dAd+hAd;
-  const totalPort = (data.totalPortfolio&&data.totalPortfolio.amt) ? data.totalPortfolio.amt : 9414256.834;
+  const totalPort = 9414256.834;
   const ONEIC_DISCOUNT = data.totalDiscount||1544.191;
   const gTotal = totalPaid+totalAdj;
-  const gRem = (data.totalPortfolio&&data.totalPortfolio.outstanding!=null) ? data.totalPortfolio.outstanding : (totalPort - gTotal - ONEIC_DISCOUNT);
+  const gRem = totalPort - gTotal - ONEIC_DISCOUNT;
   const GRAND_TOTAL_FIXED = 1020464.134;
-  const p = v => gTotal>0 ? ((v/gTotal)*100).toFixed(1) : "0";
+  const p = v => GRAND_TOTAL_FIXED>0 ? ((v/GRAND_TOTAL_FIXED)*100).toFixed(1) : "0";
 
   // ── Smart Notifications ───────────────────────────────────────────────────
   const hoPrincipalCurrent = (function(){var _f=(data.headOffice||[]).find(function(x){return x.name==='Legal - DR. Sarhaan';});return _f?(_f.principalAmt||0):0;})();
@@ -10695,7 +10629,7 @@ export default function Dashboard() {
               {isMobile ? "إدارة الديون" : "لوحة تحكم إدارة تحصيل الديون"}
             </div>
             {!isMobile && <div style={{ fontSize:12, color:"#e85d20", fontWeight:700, marginTop:3 }}>
-              Omantel Debt Collection Management Dashboard
+              Debt Collection Management Dashboard
             </div>}
             {!isMobile && <div style={{ fontSize:10, color:"#16a34a", fontWeight:700, marginTop:2, display:"flex", alignItems:"center", gap:4 }}>
               <span>{"💾"}</span>
@@ -10797,8 +10731,7 @@ export default function Dashboard() {
             <div style={{display:"flex",justifyContent:"center",paddingTop:4}}>
               {(() => {
                 const _s1p=gPd+dPd+hPd, _s1a=gAd+dAd+hAd, _s1m=data.totalPortfolio?.amt||9414256.834;
-                const pct=_s1m>0?Math.min(100,((_s1p+_s1a)/_s1m*100)):0;
-                const pctDisplay=pct.toFixed(1)+'%';
+                const pct=_s1m>0?Math.min(100,Math.round((_s1p+_s1a)/_s1m*100)):0;
                 const r=52,cx=60,cy=60,circ=2*Math.PI*r,offset=circ-(pct/100)*circ;
                 return (
                   <div style={{display:"flex",flexDirection:"column",alignItems:"center",gap:4}}>
@@ -10807,7 +10740,7 @@ export default function Dashboard() {
                       <circle cx={cx} cy={cy} r={r} fill="#f0fdf4" stroke="#dcfce7" strokeWidth="1"/>
                       <circle cx={cx} cy={cy} r={r} fill="none" stroke="#e8f5e9" strokeWidth="12"/>
                       <circle cx={cx} cy={cy} r={r} fill="none" stroke="url(#pgGrad)" strokeWidth="12" strokeDasharray={circ} strokeDashoffset={offset} strokeLinecap="round" transform={`rotate(-90 ${cx} ${cy})`}/>
-                      <text x={cx} y={cy-6} textAnchor="middle" fontSize="20" fontWeight="900" fill="#1e3a5f" fontFamily="Cairo">{pctDisplay}</text>
+                      <text x={cx} y={cy-6} textAnchor="middle" fontSize="24" fontWeight="900" fill="#1e3a5f" fontFamily="Cairo">{pct}%</text>
                       <text x={cx} y={cy+14} textAnchor="middle" fontSize="11" fontWeight="700" fill="#16a34a" fontFamily="Cairo">إنجاز</text>
                     </svg>
                     <div style={{fontSize:11,color:"#888",fontWeight:700}}>نسبة الإنجاز الكلي</div>
@@ -10828,14 +10761,14 @@ export default function Dashboard() {
                 const _hAd = (data.headOffice||[]).reduce((s,r)=>s+Math.max(0,r.adj||0),0);
                 const s1Paid = _gPd+_dPd+_hPd;
                 const s1Adj  = _gAd+_dAd+_hAd;
-                const s1Port = (data.totalPortfolio&&data.totalPortfolio.amt) ? data.totalPortfolio.amt : 9414256.834;
+                const s1Port = 9414256.834;
                 const s1OverRec = data.overRecovery||0;
                 const s1Tot  = s1Paid + s1Adj;
-                const s1Rem  = (data.totalPortfolio&&data.totalPortfolio.outstanding!=null) ? data.totalPortfolio.outstanding : (s1Port - s1Tot - ONEIC_DISCOUNT);
+                const s1Rem  = s1Port - s1Tot - ONEIC_DISCOUNT;
                 return [
                   ["المدفوع",            s1Paid,   "#16a34a"],
                   ["تسويات عُمانتل",     s1Adj,    "#d97706"],
-                  ["دفعات زائدة (Over Recovery)", s1OverRec, "#0891b2"],
+                  ["دفعات زائدة", s1OverRec, "#0891b2"],
                   ["خصومات أونك",        ONEIC_DISCOUNT, "#7c3aed"],
                   ["الإجمالي",           s1Tot,    "#1e3a5f"],
                   ["المتبقي من المحفظة", s1Rem,    "#e85d20"],
@@ -10981,8 +10914,8 @@ export default function Dashboard() {
           <div style={{ background:"#fff", borderRadius:16, boxShadow:"0 3px 18px rgba(0,0,0,0.07)", border:"1.5px solid #f0ece8", overflow:"hidden" }}>
             <SectionHeader title="🏛 المكتب الرئيسي" paid={hPd} adj={hAd} color="#6c3fa0" small={small} portAmt={hPortAmt||0} portCnt={hPortCnt||hCnt||complaintsCounts.ho||0}/>
             <div style={{ padding: small?"10px":"14px 16px", display:"flex", flexDirection:"column", gap: small?8:10 }}>
-              {[...(data.headOffice||[])].filter(c=>c.name&&c.name!=='HO'&&c.name!=='Blanks').sort((a,b)=>{return ((b.paid||0)+(b.adj||0))-((a.paid||0)+(a.adj||0));}).map((c,i) => (
-                <EntityCard key={c.name} name={c.name} paid={c.paid} adj={c.adj} cBranch={complaintsBranchMap} color="#6c3fa0" rank={i+1} closed={c.closed||0} active={c.active||0} small={small} portAmt={c.portAmt||0} portCnt={c.portCnt||0} principalAmt={c.principalAmt||0} refundAmt={c.refundAmt||0}/>
+              {[...(data.headOffice||[])].filter(c=>c.name&&c.name!=='HO'&&c.name!=='Blanks').sort((a,b)=>{var O={'Legal - DR. Sarhaan':1,'Legal -Oneic':2,'Non-due accounts':3,'Documentation- Omantel':4};var oa=O[a.name]||5,ob=O[b.name]||5;if(oa!==ob)return oa-ob;return ((b.paid||0)+(b.adj||0))-((a.paid||0)+(a.adj||0));}).map((c,i) => (
+                <EntityCard key={c.name} name={c.name} paid={c.paid} adj={c.adj} cBranch={complaintsBranchMap} color="#6c3fa0" rank={i+1} closed={c.closed||0} active={c.active||0} small={small} portAmt={c.portAmt||0} portCnt={c.portCnt||0} principalAmt={c.principalAmt||0}/>
               ))}
             </div>
           </div>
