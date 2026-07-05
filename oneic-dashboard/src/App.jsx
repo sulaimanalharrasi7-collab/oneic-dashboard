@@ -6635,25 +6635,6 @@ function EntityCard({name,paid,adj,color,rank,small,cnt,cBranch,portAmt,portCnt,
           </div>
         )}
 
-        {/* صندوق الاسترجاع 26% — Refund before legal فقط */}
-        {name==="Refund - before legal" && (refundAmt||0)>0 && (
-          <div style={{background:"linear-gradient(135deg,#1e40af11,#3b82f611)",border:"1.5px solid #3b82f6",borderRadius:12,padding:small?"8px 12px":"10px 16px"}}>
-            <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:4}}>
-              <div style={{fontSize:small?9:11,fontWeight:800,color:"#1e40af"}}>🔄 مبلغ الاسترجاع المقدّر</div>
-              <div style={{background:"#1e40af",color:"#fff",fontSize:small?8:9,fontWeight:700,borderRadius:20,padding:"2px 8px"}}>26% من المتبقي</div>
-            </div>
-            <div style={{fontSize:small?16:22,fontWeight:900,color:"#1e40af"}}>{(refundAmt||0).toLocaleString('en',{minimumFractionDigits:3,maximumFractionDigits:3})} <span style={{fontSize:small?9:11,fontWeight:600}}>ر.ع</span></div>
-            <div style={{fontSize:small?8:9,color:"#3b82f6",marginTop:2}}>= المتبقي (O/S) × 26% لكل حساب نشط</div>
-          </div>
-        )}
-        {name==="Refund - before legal" && (refundAmt||0)===0 && (
-          <div style={{background:"#f8fafc",border:"1.5px dashed #93c5fd",borderRadius:12,padding:small?"8px 12px":"10px 16px",textAlign:"center"}}>
-            <div style={{fontSize:small?9:10,color:"#3b82f6",fontWeight:700}}>🔄 مبلغ الاسترجاع (26% من المتبقي)</div>
-            <div style={{fontSize:small?11:13,fontWeight:900,color:"#94a3b8",marginTop:2}}>0.000 ر.ع</div>
-            <div style={{fontSize:small?8:9,color:"#94a3b8",marginTop:2}}>لا يوجد حسابات نشطة حالياً</div>
-          </div>
-        )}
-
         {/* صف 2: المدفوع + التسويات + الإجمالي */}
         <div style={{display:"flex",border:"1.5px solid #f0ece8",borderRadius:10,overflow:"hidden",background:"#fafafa"}}>
           {[["المدفوع",cPaid,"#16a34a"],["التسويات",cAdj,"#d97706"],["الإجمالي",total,color]].map(([lbl,val,clr],i)=>(
@@ -6691,7 +6672,7 @@ function EntityCard({name,paid,adj,color,rank,small,cnt,cBranch,portAmt,portCnt,
         )}
 
         {/* صف خاص: Refund before legal — المتبقي + مبلغ الاسترجاع 26% */}
-        {name==="Refund - before legal" && effPort > 0 && (
+        {name==="Refund - before legal" && (
           <div style={{display:"flex",gap:6,alignItems:"stretch"}}>
             <div style={{flex:1,background:"#fff3ee",borderRadius:10,padding:small?"6px 8px":"8px 12px",
               border:"1px solid #ffe4d4",textAlign:"center"}}>
