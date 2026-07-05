@@ -6667,8 +6667,8 @@ function EntityCard({name,paid,adj,color,rank,small,cnt,cBranch,portAmt,portCnt,
           ))}
         </div>
 
-        {/* صف 3: المتبقي + نسبة الإنجاز */}
-        {effPort > 0 && (
+        {/* صف 3: المتبقي + نسبة الإنجاز (غير Refund) */}
+        {effPort > 0 && name!=="Refund - before legal" && name!=="Refund - after legal" && (
           <div style={{display:"flex",gap:6,alignItems:"center"}}>
             <div style={{flex:1,background:"#fff3ee",borderRadius:10,padding:small?"6px 8px":"8px 12px",
               border:"1px solid #ffe4d4",textAlign:"center"}}>
@@ -6686,6 +6686,27 @@ function EntityCard({name,paid,adj,color,rank,small,cnt,cBranch,portAmt,portCnt,
                   background:`linear-gradient(90deg,${color}88,${color})`,
                   width:`${pctVal}%`}}/>
               </div>
+            </div>
+          </div>
+        )}
+
+        {/* صف خاص: Refund before legal — المتبقي + مبلغ الاسترجاع 26% */}
+        {name==="Refund - before legal" && effPort > 0 && (
+          <div style={{display:"flex",gap:6,alignItems:"stretch"}}>
+            <div style={{flex:1,background:"#fff3ee",borderRadius:10,padding:small?"6px 8px":"8px 12px",
+              border:"1px solid #ffe4d4",textAlign:"center"}}>
+              <div style={{fontSize:small?9:11,color:"#e85d20",fontWeight:800,marginBottom:3}}>المتبقي من المحفظة</div>
+              <div style={{fontSize:small?12:15,fontWeight:900,color:"#e85d20",direction:"ltr"}}>{omr(remaining)}</div>
+            </div>
+            <div style={{flex:1,background:(refundAmt||0)>0?"linear-gradient(135deg,#1e40af11,#3b82f611)":"#f8fafc",
+              borderRadius:10,padding:small?"6px 8px":"8px 12px",
+              border:(refundAmt||0)>0?"1.5px solid #3b82f6":"1.5px dashed #93c5fd",textAlign:"center"}}>
+              <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:3}}>
+                <div style={{fontSize:small?8:9,fontWeight:800,color:"#1e40af"}}>🔄 مبلغ الاسترجاع</div>
+                <div style={{background:"#1e40af",color:"#fff",fontSize:small?7:8,fontWeight:700,borderRadius:20,padding:"1px 6px"}}>26%</div>
+              </div>
+              <div style={{fontSize:small?12:15,fontWeight:900,color:(refundAmt||0)>0?"#1e40af":"#94a3b8",direction:"ltr"}}>{omr(refundAmt||0)}</div>
+              <div style={{fontSize:small?7:8,color:"#3b82f6",marginTop:1}}>O/S × 26%</div>
             </div>
           </div>
         )}
