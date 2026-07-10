@@ -6394,7 +6394,8 @@ async function parseXLS(file) {
     const region  = (row['Region']      || row['region']      || '').trim();
     const paid    = n(row['Paid Amount']|| row['paid_amount']  || row['Paid'] || 0);
     const adj     = n(row['Adjustment'] || row['adjustment']   || row['Adj']  || 0);
-    const osAmt   = n(row['O/S Amount'] || row['os_amount']    || row['Outstanding'] || row['O/S'] || 0);
+    const _osRaw  = row['O/S Amount'] != null && row['O/S Amount'] !== '' ? row['O/S Amount'] : (row['os_amount'] != null && row['os_amount'] !== '' ? row['os_amount'] : (row['Outstanding'] != null && row['Outstanding'] !== '' ? row['Outstanding'] : (row['O/S'] != null && row['O/S'] !== '' ? row['O/S'] : 0)));
+    const osAmt   = parseFloat(String(_osRaw).replace(/,/g,'')) || 0;
     const rowPort  = osAmt; // O/S Amount
     const col     = (row['Collector']   || row['collector']    || '').trim();
     const branch  = (row['Branch']      || row['branch']       || '').trim();
@@ -9281,7 +9282,7 @@ async function parseComplaints(file) {
           const paidAmt   = paidIdx>=0    ? (parseFloat(row[paidIdx])||0)    : 0;
           const adjAmt    = adjIdx>=0     ? (parseFloat(row[adjIdx])||0)     : 0;
           const overPaidAmt = overPaidIdx>=0 ? (parseFloat(row[overPaidIdx])||0) : 0;
-          const osAmt = osIdx>=0 ? (parseFloat(row[osIdx])||0) : (amt - paidAmt - adjAmt);
+          const osAmt = osIdx>=0 ? (row[osIdx] != null && row[osIdx] !== '' ? parseFloat(String(row[osIdx]).replace(/,/g,'')) || 0 : 0) : (amt - paidAmt - adjAmt);
           totalOS += osAmt;
           totalOverRecovery += overPaidAmt;
           if (overPaidAmt > 0) totalOverRecoveryCount++;
