@@ -7160,7 +7160,7 @@ function RegionRow({region, idx, open, onToggle, small, complaintsRegionMap}) {
             border:`1.5px solid ${col}`,borderRadius:9,
             padding:small?"6px 10px":"8px 14px",fontSize:small?11:13,
             fontWeight:800,transition:"all 0.2s",whiteSpace:"nowrap"}}>
-            {open?"▲":"▼"} {small?`(${region.collectors?.length||0})`:`المحصّلون (${region.collectors?.length||0})`}
+            {open?"▲":"▼"} {small?`(${region.collectors?.length||0})`:`${t("المحصّلون",lang)} (${region.collectors?.length||0})`}
           </div>
         </div>
       </div>
