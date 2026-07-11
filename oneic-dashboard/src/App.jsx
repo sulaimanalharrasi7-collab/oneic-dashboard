@@ -7912,14 +7912,22 @@ function AnalyticsModal({ bulk, onClose, small }) {
           {activeChart==='trend' && (
             <div>
               <div style={{fontSize:13,color:"#555",fontWeight:700,marginBottom:12}}>
-                {t("الدفعات اليومية — من",lang)} {d.dateRange?.from} {t("إلى:",lang)} {d.dateRange?.to}
+                {lang==='en'?'Daily Payments':'الدفعات اليومية'} — {
+                  filterFrom||filterTo
+                    ? `${filterFrom||daily[0]?.date||''} → ${filterTo||daily[daily.length-1]?.date||''}`
+                    : filterMonth!=='all'
+                    ? `${MONTH_AR[filterMonth.slice(5)]} ${filterMonth.slice(0,4)}`
+                    : filterYear!=='all'
+                    ? (lang==='en'?`Year ${filterYear}`:`سنة ${filterYear}`)
+                    : `${d.dateRange?.from} → ${d.dateRange?.to}`
+                }
               </div>
 
               {/* ── Bulk SVG Chart ── */}
               {(() => {
                 const STEP=Math.max(44,Math.min(68,1200/Math.max(daily.length,1)));
                 const CW=Math.max(daily.length*STEP+140,800);
-                const CH=460, CPX=78, CPY=32, CPB=72;
+                const CH=540, CPX=78, CPY=36, CPB=80;
                 const cw=CW-CPX-24, ch=CH-CPY-CPB;
                 const maxVal=Math.max(...daily.map(d=>d.paid+d.adj),1);
 
@@ -7967,6 +7975,31 @@ function AnalyticsModal({ bulk, onClose, small }) {
                         {year:'numeric',month:'long',day:'numeric'});
                       const printTime = new Date().toLocaleTimeString(lang==='en'?'en-GB':'ar-OM',
                         {hour:'2-digit',minute:'2-digit'});
+                      // Period label based on active filter
+                      const pLabel = filterFrom||filterTo
+                        ? `${filterFrom||daily[0]?.date||''} - ${filterTo||daily[daily.length-1]?.date||''}`
+                        : filterMonth!=='all'
+                        ? `${MONTH_AR[filterMonth.slice(5)]} ${filterMonth.slice(0,4)}`
+                        : filterYear!=='all'
+                        ? (lang==='en'?`Year ${filterYear}`:`${filterYear}`)
+                        : `${d.dateRange?.from} - ${d.dateRange?.to}`;
+                      const chartTitleStr = lang==='en'?'Daily Payment Trend':'الاتجاه اليومي للدفعات';
+                      const reportTitleStr = lang==='en'?'Daily Trend Report':'تقرير الاتجاه اليومي';
+                      const peakDayStr = lang==='en'?'Peak Day':'أعلى يوم';
+                      const latestStr  = lang==='en'?'Latest Day':'آخر يوم';
+                      const lowestStr  = lang==='en'?'Lowest Day':'أدنى يوم';
+                      const regularStr = lang==='en'?'Regular Days':'أيام عادية';
+                      const intervalStr= lang==='en'?'Interval':'الفئة';
+                      const daysStr    = lang==='en'?'days':'يوم';
+                      const printDateLbl= lang==='en'?'Print Date':'تاريخ الطباعة';
+                      const timeStr    = lang==='en'?'Time':'الوقت';
+                      const activeDaysStr = lang==='en'?'Active Days':'أيام نشطة';
+                      const totalStr   = lang==='en'?'Period Total':'إجمالي الفترة';
+                      const avgStr     = lang==='en'?'Daily Average':'متوسط يومي';
+                      const printBtnStr= lang==='en'?'Print / Save as PDF':'طباعة / حفظ PDF';
+                      const confStr    = lang==='en'?'Confidential — For internal use only':'سري — للاستخدام الداخلي فقط';
+                      const genStr     = lang==='en'?'Generated':'صدر بتاريخ';
+                      const dataRangeStr= lang==='en'?'Data range':'نطاق البيانات';
 
                       const w = window.open('','_blank','width=1200,height=900');
                       w.document.write(`<!DOCTYPE html>
@@ -8028,61 +8061,61 @@ function AnalyticsModal({ bulk, onClose, small }) {
 <div class="header">
   <div class="logo">ONEIC<span>Omantel Debt Collection Portfolio 1</span></div>
   <div class="title">
-    📈 ${lang==='en'?'Daily Trend Report':'تقرير الاتجاه اليومي'}
-    <span>${d.dateRange?.from} &nbsp;→&nbsp; ${d.dateRange?.to}</span>
+    ${reportTitleStr}
+    <span>${pLabel}</span>
   </div>
   <div class="meta">
-    ${lang==='en'?'Print Date':'تاريخ الطباعة'}: ${printDate}<br>
-    ${lang==='en'?'Time':'الوقت'}: ${printTime}
+    ${printDateLbl}: ${printDate}<br>
+    ${timeStr}: ${printTime}
   </div>
 </div>
 
 <div class="stats">
   <div class="stat">
-    <div class="stat-lbl">${lang==='en'?'Active Days':'أيام نشطة'}</div>
+    <div class="stat-lbl">${activeDaysStr}</div>
     <div class="stat-val blue">${daily.length}</div>
   </div>
   <div class="stat">
-    <div class="stat-lbl">${lang==='en'?'Period Total':'إجمالي الفترة'}</div>
+    <div class="stat-lbl">${totalStr}</div>
     <div class="stat-val">${fmtK(daily.reduce((s,x)=>s+x.paid+x.adj,0))}</div>
   </div>
   <div class="stat">
-    <div class="stat-lbl">${lang==='en'?'Peak Day':'أعلى يوم'}</div>
+    <div class="stat-lbl">${peakDayStr}</div>
     <div class="stat-val green">${fmtK(Math.max(...daily.map(x=>x.paid+x.adj)))}</div>
   </div>
   <div class="stat">
-    <div class="stat-lbl">${lang==='en'?'Daily Average':'متوسط يومي'}</div>
+    <div class="stat-lbl">${avgStr}</div>
     <div class="stat-val gray">${fmtK(daily.reduce((s,x)=>s+x.paid+x.adj,0)/Math.max(daily.length,1))}</div>
   </div>
 </div>
 
 <div class="legend">
-  <div class="leg-item"><div class="leg-dot" style="background:#f97316"></div> ${lang==='en'?'Peak Day':'أعلى يوم'} 🏆</div>
-  <div class="leg-item"><div class="leg-dot" style="background:#60a5fa"></div> ${lang==='en'?'Latest Day':'آخر يوم'}</div>
-  <div class="leg-item"><div class="leg-dot" style="background:#64748b"></div> ${lang==='en'?'Lowest Day':'أدنى يوم'}</div>
-  <div class="leg-item"><div class="leg-dot" style="background:#e2e8f0"></div> ${lang==='en'?'Regular Days':'أيام عادية'}</div>
+  <div class="leg-item"><div class="leg-dot" style="background:#f97316"></div> ${peakDayStr}</div>
+  <div class="leg-item"><div class="leg-dot" style="background:#60a5fa"></div> ${latestStr}</div>
+  <div class="leg-item"><div class="leg-dot" style="background:#64748b"></div> ${lowestStr}</div>
+  <div class="leg-item"><div class="leg-dot" style="background:#e2e8f0"></div> ${regularStr}</div>
 </div>
 
 <div class="chart-wrap">
   <div class="chart-title">
-    <span>📈 ${lang==='en'?'Daily Payment Trend':'الاتجاه اليومي للدفعات'}</span>
-    <span>${daily.length} ${lang==='en'?'days':'يوم'} &nbsp;·&nbsp; ${lang==='en'?'Interval':'الفئة'}: ${fmtK(interval)} OMR</span>
+    <span>${chartTitleStr}</span>
+    <span>${daily.length} ${daysStr} &nbsp;&#183;&nbsp; ${intervalStr}: ${fmtK(interval)} OMR</span>
   </div>
   ${svgData}
 </div>
 
 <div class="btn-wrap">
-  <button class="print-btn" onclick="window.print()">🖨️ ${lang==='en'?'Print / Save as PDF':'طباعة / حفظ PDF'}</button>
+  <button class="print-btn" onclick="window.print()">${printBtnStr}</button>
 </div>
 
 <div class="footer">
   <div class="footer-left">
-    ONEIC &copy; 2026 &nbsp;·&nbsp; Omantel Debt Collection Dashboard<br>
-    ${lang==='en'?'Confidential — For internal use only':'سري — للاستخدام الداخلي فقط'}
+    ONEIC &copy; 2026 &nbsp;&#183;&nbsp; Omantel Debt Collection Dashboard<br>
+    ${confStr}
   </div>
   <div class="footer-right">
-    ${lang==='en'?'Generated':'صدر بتاريخ'}: ${printDate} ${printTime}<br>
-    ${lang==='en'?'Data range':'نطاق البيانات'}: ${d.dateRange?.from} → ${d.dateRange?.to}
+    ${genStr}: ${printDate} ${printTime}<br>
+    ${dataRangeStr}: ${pLabel}
   </div>
 </div>
 
