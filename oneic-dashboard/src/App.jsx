@@ -7953,9 +7953,14 @@ function AnalyticsModal({ bulk, onClose, small }) {
                     <button onClick={()=>{
                       const svgEl = document.getElementById(chartId);
                       if(!svgEl) return;
-                      // Clone SVG with white background for print
+                      // Clone SVG and make it fully scalable
                       const clone = svgEl.cloneNode(true);
-                      clone.style.background = 'transparent';
+                      const svgW = svgEl.getAttribute('width') || svgEl.width?.baseVal?.value || 800;
+                      const svgH = svgEl.getAttribute('height') || svgEl.height?.baseVal?.value || 460;
+                      clone.setAttribute('viewBox', `0 0 ${svgW} ${svgH}`);
+                      clone.setAttribute('width', '100%');
+                      clone.setAttribute('height', 'auto');
+                      clone.setAttribute('preserveAspectRatio', 'xMidYMid meet');
                       const svgData = new XMLSerializer().serializeToString(clone);
 
                       const printDate = new Date().toLocaleDateString(lang==='en'?'en-GB':'ar-OM',
@@ -7981,9 +7986,10 @@ function AnalyticsModal({ bulk, onClose, small }) {
   .title span{font-size:11px;color:#94a3b8;display:block;margin-top:3px}
   .meta{text-align:right;font-size:11px;color:#64748b}
   .chart-wrap{background:linear-gradient(135deg,#0f172a,#1e293b);
-    border-radius:16px;padding:16px;overflow-x:auto;
+    border-radius:16px;padding:16px;
     border:1px solid rgba(255,255,255,0.08);margin-bottom:20px;
-    box-shadow:0 8px 32px rgba(0,0,0,0.4)}
+    box-shadow:0 8px 32px rgba(0,0,0,0.4);overflow:hidden}
+  .chart-wrap svg{width:100%;height:auto;display:block}
   .chart-title{font-size:14px;font-weight:800;color:rgba(255,255,255,0.9);
     margin-bottom:12px;display:flex;justify-content:space-between;align-items:center}
   .chart-title span{font-size:11px;color:rgba(255,255,255,0.4);font-weight:400}
@@ -8006,10 +8012,15 @@ function AnalyticsModal({ bulk, onClose, small }) {
     padding:10px 28px;font-size:13px;font-weight:700;cursor:pointer;
     display:flex;align-items:center;gap:6px}
   .btn-wrap{display:flex;justify-content:center;margin-bottom:20px}
+  @page { size: A4 landscape; margin: 8mm 10mm; }
   @media print{
-    .btn-wrap{display:none}
-    body{background:#0f172a!important;padding:10px}
-    .chart-wrap,.header,.stat{background:#1e293b!important;border:1px solid #334155!important}
+    .btn-wrap{display:none!important}
+    body{background:#0f172a!important;padding:6px!important;-webkit-print-color-adjust:exact;print-color-adjust:exact}
+    .chart-wrap{overflow:visible!important;background:linear-gradient(135deg,#0f172a,#1e293b)!important;border:1px solid #334155!important;page-break-inside:avoid}
+    .header,.stat{background:#1e293b!important;border:1px solid #334155!important}
+    .chart-wrap svg{width:100%!important;height:auto!important}
+    .stats{grid-template-columns:repeat(4,1fr)!important}
+    .header{page-break-after:avoid}
   }
 </style>
 </head><body>
