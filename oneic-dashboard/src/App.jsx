@@ -7953,26 +7953,137 @@ function AnalyticsModal({ bulk, onClose, small }) {
                     <button onClick={()=>{
                       const svgEl = document.getElementById(chartId);
                       if(!svgEl) return;
-                      const svgData = new XMLSerializer().serializeToString(svgEl);
-                      const blob = new Blob([`
-                        <html><head><title>Daily Trend Chart</title><style>
-                          body{margin:20px;background:#0f172a;display:flex;flex-direction:column;align-items:center;}
-                          h2{color:#e85d20;font-family:Arial;margin-bottom:12px;}
-                          p{color:#aaa;font-family:Arial;font-size:12px;}
-                          @media print{button{display:none}}
-                        </style></head><body>
-                        <h2>📈 Daily Trend — ${d.dateRange?.from} to ${d.dateRange?.to}</h2>
-                        ${svgData}
-                        <p>ONEIC Debt Collection Dashboard · ${new Date().toLocaleDateString()}</p>
-                        <button onclick="window.print()" style="margin-top:16px;padding:10px 28px;background:#e85d20;color:#fff;border:none;border-radius:8px;font-size:14px;cursor:pointer">🖨️ Print</button>
-                        </body></html>`], {type:'text/html'});
-                      const url = URL.createObjectURL(blob);
-                      window.open(url,'_blank');
+                      // Clone SVG with white background for print
+                      const clone = svgEl.cloneNode(true);
+                      clone.style.background = 'transparent';
+                      const svgData = new XMLSerializer().serializeToString(clone);
+
+                      const printDate = new Date().toLocaleDateString(lang==='en'?'en-GB':'ar-OM',
+                        {year:'numeric',month:'long',day:'numeric'});
+                      const printTime = new Date().toLocaleTimeString(lang==='en'?'en-GB':'ar-OM',
+                        {hour:'2-digit',minute:'2-digit'});
+
+                      const w = window.open('','_blank','width=1200,height=900');
+                      w.document.write(`<!DOCTYPE html>
+<html><head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>ONEIC - Daily Trend Chart</title>
+<style>
+  *{box-sizing:border-box;margin:0;padding:0;font-family:Arial,sans-serif}
+  body{background:#0f172a;color:#fff;padding:24px;min-height:100vh}
+  .header{display:flex;justify-content:space-between;align-items:center;
+    background:#1e293b;border-radius:12px;padding:16px 24px;margin-bottom:20px;
+    border:1px solid rgba(255,255,255,0.1)}
+  .logo{font-size:22px;font-weight:900;color:#e85d20;letter-spacing:1px}
+  .logo span{font-size:12px;color:#94a3b8;display:block;font-weight:400;margin-top:2px}
+  .title{font-size:16px;font-weight:800;color:#fff;text-align:center}
+  .title span{font-size:11px;color:#94a3b8;display:block;margin-top:3px}
+  .meta{text-align:right;font-size:11px;color:#64748b}
+  .chart-wrap{background:linear-gradient(135deg,#0f172a,#1e293b);
+    border-radius:16px;padding:16px;overflow-x:auto;
+    border:1px solid rgba(255,255,255,0.08);margin-bottom:20px;
+    box-shadow:0 8px 32px rgba(0,0,0,0.4)}
+  .chart-title{font-size:14px;font-weight:800;color:rgba(255,255,255,0.9);
+    margin-bottom:12px;display:flex;justify-content:space-between;align-items:center}
+  .chart-title span{font-size:11px;color:rgba(255,255,255,0.4);font-weight:400}
+  .stats{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-bottom:20px}
+  .stat{background:#1e293b;border-radius:10px;padding:12px 16px;
+    border:1px solid rgba(255,255,255,0.08);text-align:center}
+  .stat-lbl{font-size:9px;color:#64748b;font-weight:700;margin-bottom:4px;text-transform:uppercase}
+  .stat-val{font-size:16px;font-weight:900;color:#e85d20}
+  .stat-val.green{color:#16a34a}
+  .stat-val.blue{color:#60a5fa}
+  .stat-val.gray{color:#94a3b8}
+  .legend{display:flex;gap:20px;align-items:center;margin-bottom:14px;flex-wrap:wrap}
+  .leg-item{display:flex;align-items:center;gap:6px;font-size:11px;color:rgba(255,255,255,0.6)}
+  .leg-dot{width:10px;height:10px;border-radius:50%}
+  .footer{border-top:1px solid rgba(255,255,255,0.08);padding-top:14px;
+    display:flex;justify-content:space-between;align-items:center}
+  .footer-left{font-size:10px;color:#475569}
+  .footer-right{font-size:10px;color:#475569;text-align:right}
+  .print-btn{background:#e85d20;color:#fff;border:none;border-radius:8px;
+    padding:10px 28px;font-size:13px;font-weight:700;cursor:pointer;
+    display:flex;align-items:center;gap:6px}
+  .btn-wrap{display:flex;justify-content:center;margin-bottom:20px}
+  @media print{
+    .btn-wrap{display:none}
+    body{background:#0f172a!important;padding:10px}
+    .chart-wrap,.header,.stat{background:#1e293b!important;border:1px solid #334155!important}
+  }
+</style>
+</head><body>
+
+<div class="header">
+  <div class="logo">ONEIC<span>Omantel Debt Collection Portfolio 1</span></div>
+  <div class="title">
+    📈 ${lang==='en'?'Daily Trend Report':'تقرير الاتجاه اليومي'}
+    <span>${d.dateRange?.from} &nbsp;→&nbsp; ${d.dateRange?.to}</span>
+  </div>
+  <div class="meta">
+    ${lang==='en'?'Print Date':'تاريخ الطباعة'}: ${printDate}<br>
+    ${lang==='en'?'Time':'الوقت'}: ${printTime}
+  </div>
+</div>
+
+<div class="stats">
+  <div class="stat">
+    <div class="stat-lbl">${lang==='en'?'Active Days':'أيام نشطة'}</div>
+    <div class="stat-val blue">${daily.length}</div>
+  </div>
+  <div class="stat">
+    <div class="stat-lbl">${lang==='en'?'Period Total':'إجمالي الفترة'}</div>
+    <div class="stat-val">${fmtK(daily.reduce((s,x)=>s+x.paid+x.adj,0))}</div>
+  </div>
+  <div class="stat">
+    <div class="stat-lbl">${lang==='en'?'Peak Day':'أعلى يوم'}</div>
+    <div class="stat-val green">${fmtK(Math.max(...daily.map(x=>x.paid+x.adj)))}</div>
+  </div>
+  <div class="stat">
+    <div class="stat-lbl">${lang==='en'?'Daily Average':'متوسط يومي'}</div>
+    <div class="stat-val gray">${fmtK(daily.reduce((s,x)=>s+x.paid+x.adj,0)/Math.max(daily.length,1))}</div>
+  </div>
+</div>
+
+<div class="legend">
+  <div class="leg-item"><div class="leg-dot" style="background:#f97316"></div> ${lang==='en'?'Peak Day':'أعلى يوم'} 🏆</div>
+  <div class="leg-item"><div class="leg-dot" style="background:#60a5fa"></div> ${lang==='en'?'Latest Day':'آخر يوم'}</div>
+  <div class="leg-item"><div class="leg-dot" style="background:#64748b"></div> ${lang==='en'?'Lowest Day':'أدنى يوم'}</div>
+  <div class="leg-item"><div class="leg-dot" style="background:#e2e8f0"></div> ${lang==='en'?'Regular Days':'أيام عادية'}</div>
+</div>
+
+<div class="chart-wrap">
+  <div class="chart-title">
+    <span>📈 ${lang==='en'?'Daily Payment Trend':'الاتجاه اليومي للدفعات'}</span>
+    <span>${daily.length} ${lang==='en'?'days':'يوم'} &nbsp;·&nbsp; ${lang==='en'?'Interval':'الفئة'}: ${fmtK(interval)} OMR</span>
+  </div>
+  ${svgData}
+</div>
+
+<div class="btn-wrap">
+  <button class="print-btn" onclick="window.print()">🖨️ ${lang==='en'?'Print / Save as PDF':'طباعة / حفظ PDF'}</button>
+</div>
+
+<div class="footer">
+  <div class="footer-left">
+    ONEIC &copy; 2026 &nbsp;·&nbsp; Omantel Debt Collection Dashboard<br>
+    ${lang==='en'?'Confidential — For internal use only':'سري — للاستخدام الداخلي فقط'}
+  </div>
+  <div class="footer-right">
+    ${lang==='en'?'Generated':'صدر بتاريخ'}: ${printDate} ${printTime}<br>
+    ${lang==='en'?'Data range':'نطاق البيانات'}: ${d.dateRange?.from} → ${d.dateRange?.to}
+  </div>
+</div>
+
+</body></html>`);
+                      w.document.close();
                     }} style={{
                       display:"flex",alignItems:"center",gap:6,
-                      background:"#1e3a5f",color:"#fff",border:"none",
-                      borderRadius:10,padding:"8px 18px",fontSize:12,
-                      fontWeight:700,cursor:"pointer"
+                      background:"linear-gradient(135deg,#1e3a5f,#1e40af)",
+                      color:"#fff",border:"none",
+                      borderRadius:10,padding:"9px 20px",fontSize:12,
+                      fontWeight:700,cursor:"pointer",
+                      boxShadow:"0 2px 8px rgba(0,0,0,0.3)"
                     }}>
                       🖨️ {lang==='en'?'Print Chart':'طباعة الرسم البياني'}
                     </button>
