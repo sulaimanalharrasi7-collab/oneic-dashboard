@@ -8001,124 +8001,107 @@ function AnalyticsModal({ bulk, onClose, small }) {
                       const genStr     = lang==='en'?'Generated':'صدر بتاريخ';
                       const dataRangeStr= lang==='en'?'Data range':'نطاق البيانات';
 
-                      const w = window.open('','_blank','width=1200,height=900');
+                      const w = window.open('','_blank','width=1400,height=950');
                       w.document.write(`<!DOCTYPE html>
 <html><head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width,initial-scale=1">
 <title>ONEIC - Daily Trend Chart</title>
 <style>
   *{box-sizing:border-box;margin:0;padding:0;font-family:Arial,sans-serif}
-  body{background:#0f172a;color:#fff;padding:24px;min-height:100vh}
-  .header{display:flex;justify-content:space-between;align-items:center;
-    background:#1e293b;border-radius:12px;padding:16px 24px;margin-bottom:20px;
-    border:1px solid rgba(255,255,255,0.1)}
-  .logo{font-size:22px;font-weight:900;color:#e85d20;letter-spacing:1px}
-  .logo span{font-size:12px;color:#94a3b8;display:block;font-weight:400;margin-top:2px}
-  .title{font-size:16px;font-weight:800;color:#fff;text-align:center}
-  .title span{font-size:11px;color:#94a3b8;display:block;margin-top:3px}
-  .meta{text-align:right;font-size:11px;color:#64748b}
-  .chart-wrap{background:linear-gradient(135deg,#0f172a,#1e293b);
-    border-radius:16px;padding:16px;
-    border:1px solid rgba(255,255,255,0.08);margin-bottom:20px;
-    box-shadow:0 8px 32px rgba(0,0,0,0.4);overflow:hidden}
-  .chart-wrap svg{width:100%;height:auto;display:block}
-  .chart-title{font-size:14px;font-weight:800;color:rgba(255,255,255,0.9);
-    margin-bottom:12px;display:flex;justify-content:space-between;align-items:center}
-  .chart-title span{font-size:11px;color:rgba(255,255,255,0.4);font-weight:400}
-  .stats{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-bottom:20px}
-  .stat{background:#1e293b;border-radius:10px;padding:12px 16px;
-    border:1px solid rgba(255,255,255,0.08);text-align:center}
-  .stat-lbl{font-size:9px;color:#64748b;font-weight:700;margin-bottom:4px;text-transform:uppercase}
-  .stat-val{font-size:16px;font-weight:900;color:#e85d20}
-  .stat-val.green{color:#16a34a}
-  .stat-val.blue{color:#60a5fa}
-  .stat-val.gray{color:#94a3b8}
-  .legend{display:flex;gap:20px;align-items:center;margin-bottom:14px;flex-wrap:wrap}
-  .leg-item{display:flex;align-items:center;gap:6px;font-size:11px;color:rgba(255,255,255,0.6)}
-  .leg-dot{width:10px;height:10px;border-radius:50%}
-  .footer{border-top:1px solid rgba(255,255,255,0.08);padding-top:14px;
-    display:flex;justify-content:space-between;align-items:center}
-  .footer-left{font-size:10px;color:#475569}
-  .footer-right{font-size:10px;color:#475569;text-align:right}
-  .print-btn{background:#e85d20;color:#fff;border:none;border-radius:8px;
-    padding:10px 28px;font-size:13px;font-weight:700;cursor:pointer;
-    display:flex;align-items:center;gap:6px}
-  .btn-wrap{display:flex;justify-content:center;margin-bottom:20px}
-  @page { size: A4 landscape; margin: 6mm 8mm; }
+  html,body{height:100%;background:#0f172a;color:#fff}
+  body{display:flex;flex-direction:column;padding:10px 14px;gap:8px;min-height:100vh}
+
+  /* ── Top strip ── */
+  .top{display:flex;justify-content:space-between;align-items:center;
+    background:#1e293b;border-radius:10px;padding:8px 16px;flex-shrink:0;
+    border:1px solid rgba(255,255,255,0.08)}
+  .logo{font-size:18px;font-weight:900;color:#e85d20}
+  .logo span{font-size:10px;color:#64748b;margin-left:8px;font-weight:400}
+  .period{font-size:13px;font-weight:800;color:#fff}
+  .period span{font-size:10px;color:#94a3b8;margin-left:6px}
+  .meta-txt{font-size:10px;color:#475569;text-align:right}
+
+  /* ── KPI strip ── */
+  .kpis{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;flex-shrink:0}
+  .kpi{background:#1e293b;border-radius:8px;padding:8px 12px;text-align:center;
+    border:1px solid rgba(255,255,255,0.06)}
+  .kpi-lbl{font-size:8px;color:#64748b;font-weight:700;text-transform:uppercase;margin-bottom:3px}
+  .kpi-val{font-size:18px;font-weight:900}
+
+  /* ── Chart — fills all remaining space ── */
+  .chart-wrap{flex:1;background:linear-gradient(135deg,#0f172a,#1e293b);
+    border-radius:14px;padding:12px;border:1px solid rgba(255,255,255,0.07);
+    display:flex;flex-direction:column;min-height:0;overflow:hidden}
+  .chart-hdr{display:flex;justify-content:space-between;align-items:center;
+    margin-bottom:8px;flex-shrink:0}
+  .chart-hdr-t{font-size:13px;font-weight:800;color:rgba(255,255,255,0.9)}
+  .chart-hdr-s{font-size:10px;color:rgba(255,255,255,0.35)}
+  .svg-wrap{flex:1;min-height:0;display:flex;align-items:stretch}
+  .svg-wrap svg{width:100%;height:100%;display:block}
+
+  /* ── Legend + footer ── */
+  .bottom{display:flex;justify-content:space-between;align-items:center;
+    flex-shrink:0;padding-top:4px}
+  .legend{display:flex;gap:14px}
+  .leg{display:flex;align-items:center;gap:4px;font-size:9px;color:rgba(255,255,255,0.5)}
+  .dot{width:8px;height:8px;border-radius:50%;flex-shrink:0}
+  .footer-txt{font-size:9px;color:#334155;text-align:right}
+
+  /* ── Print ── */
+  @page{size:A4 landscape;margin:5mm 8mm}
   @media print{
-    .btn-wrap{display:none!important}
-    body{background:#0f172a!important;padding:4px!important;-webkit-print-color-adjust:exact;print-color-adjust:exact}
-    .chart-wrap{overflow:visible!important;background:linear-gradient(135deg,#0f172a,#1e293b)!important;border:1px solid #334155!important;page-break-inside:avoid}
-    .header,.stat{background:#1e293b!important;border:1px solid #334155!important}
-    .chart-wrap svg{width:100%!important;height:auto!important}
-    .stats{grid-template-columns:repeat(4,1fr)!important}
-    .header{page-break-after:avoid}
-    .chart-title{font-size:13px!important}
-    .stat-val{font-size:18px!important}
+    html,body{height:100vh!important}
+    body{padding:6px 10px!important;-webkit-print-color-adjust:exact!important;print-color-adjust:exact!important}
+    .print-btn{display:none!important}
+    .chart-wrap{flex:1!important;background:linear-gradient(135deg,#0f172a,#1e293b)!important}
+    .svg-wrap svg{width:100%!important;height:100%!important}
+    .top,.kpi{background:#1e293b!important;border-color:#334155!important}
   }
 </style>
 </head><body>
 
-<div class="header">
-  <div class="logo">ONEIC<span>Omantel Debt Collection Portfolio 1</span></div>
-  <div class="title">
-    ${reportTitleStr}
-    <span>${pLabel}</span>
-  </div>
-  <div class="meta">
-    ${printDateLbl}: ${printDate}<br>
-    ${timeStr}: ${printTime}
-  </div>
+<!-- Top strip -->
+<div class="top">
+  <div><span class="logo">ONEIC<span>Omantel Portfolio 1</span></span></div>
+  <div class="period">${reportTitleStr} <span>${pLabel}</span></div>
+  <div class="meta-txt">${printDateLbl}: ${printDate} ${printTime}</div>
 </div>
 
-<div class="stats">
-  <div class="stat">
-    <div class="stat-lbl">${activeDaysStr}</div>
-    <div class="stat-val blue">${daily.length}</div>
-  </div>
-  <div class="stat">
-    <div class="stat-lbl">${totalStr}</div>
-    <div class="stat-val">${fmtK(daily.reduce((s,x)=>s+x.paid+x.adj,0))}</div>
-  </div>
-  <div class="stat">
-    <div class="stat-lbl">${peakDayStr}</div>
-    <div class="stat-val green">${fmtK(Math.max(...daily.map(x=>x.paid+x.adj)))}</div>
-  </div>
-  <div class="stat">
-    <div class="stat-lbl">${avgStr}</div>
-    <div class="stat-val gray">${fmtK(daily.reduce((s,x)=>s+x.paid+x.adj,0)/Math.max(daily.length,1))}</div>
-  </div>
+<!-- KPI strip -->
+<div class="kpis">
+  <div class="kpi"><div class="kpi-lbl">${activeDaysStr}</div><div class="kpi-val" style="color:#60a5fa">${daily.length}</div></div>
+  <div class="kpi"><div class="kpi-lbl">${totalStr}</div><div class="kpi-val" style="color:#e85d20">${fmtK(daily.reduce((s,x)=>s+x.paid+x.adj,0))} OMR</div></div>
+  <div class="kpi"><div class="kpi-lbl">${peakDayStr}</div><div class="kpi-val" style="color:#16a34a">${fmtK(Math.max(...daily.map(x=>x.paid+x.adj)))} OMR</div></div>
+  <div class="kpi"><div class="kpi-lbl">${avgStr}</div><div class="kpi-val" style="color:#94a3b8">${fmtK(daily.reduce((s,x)=>s+x.paid+x.adj,0)/Math.max(daily.length,1))} OMR</div></div>
 </div>
 
-<div class="legend">
-  <div class="leg-item"><div class="leg-dot" style="background:#f97316"></div> ${peakDayStr}</div>
-  <div class="leg-item"><div class="leg-dot" style="background:#60a5fa"></div> ${latestStr}</div>
-  <div class="leg-item"><div class="leg-dot" style="background:#64748b"></div> ${lowestStr}</div>
-  <div class="leg-item"><div class="leg-dot" style="background:#e2e8f0"></div> ${regularStr}</div>
-</div>
-
+<!-- Chart — fills remaining space -->
 <div class="chart-wrap">
-  <div class="chart-title">
-    <span>${chartTitleStr}</span>
-    <span>${daily.length} ${daysStr} &nbsp;&#183;&nbsp; ${intervalStr}: ${fmtK(interval)} OMR</span>
+  <div class="chart-hdr">
+    <span class="chart-hdr-t">${chartTitleStr}</span>
+    <span class="chart-hdr-s">${daily.length} ${daysStr} &nbsp;&#183;&nbsp; ${intervalStr}: ${fmtK(interval)} OMR</span>
   </div>
-  ${svgData}
+  <div class="svg-wrap">
+    ${svgData}
+  </div>
 </div>
 
-<div class="btn-wrap">
-  <button class="print-btn" onclick="window.print()">${printBtnStr}</button>
+<!-- Legend + footer -->
+<div class="bottom">
+  <div class="legend">
+    <div class="leg"><div class="dot" style="background:#f97316"></div> ${peakDayStr}</div>
+    <div class="leg"><div class="dot" style="background:#60a5fa"></div> ${latestStr}</div>
+    <div class="leg"><div class="dot" style="background:#64748b"></div> ${lowestStr}</div>
+    <div class="leg"><div class="dot" style="background:#e2e8f0"></div> ${regularStr}</div>
+  </div>
+  <div class="footer-txt">ONEIC &copy; 2026 &nbsp;&#183;&nbsp; ${confStr}</div>
 </div>
 
-<div class="footer">
-  <div class="footer-left">
-    ONEIC &copy; 2026 &nbsp;&#183;&nbsp; Omantel Debt Collection Dashboard<br>
-    ${confStr}
-  </div>
-  <div class="footer-right">
-    ${genStr}: ${printDate} ${printTime}<br>
-    ${dataRangeStr}: ${pLabel}
-  </div>
+<div style="text-align:center;margin-top:8px" class="print-btn">
+  <button onclick="window.print()" style="background:#e85d20;color:#fff;border:none;border-radius:8px;
+    padding:10px 32px;font-size:13px;font-weight:700;cursor:pointer">
+    ${printBtnStr}
+  </button>
 </div>
 
 </body></html>`);
