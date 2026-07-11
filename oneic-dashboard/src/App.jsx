@@ -7925,9 +7925,9 @@ function AnalyticsModal({ bulk, onClose, small }) {
 
               {/* ── Bulk SVG Chart ── */}
               {(() => {
-                const STEP=Math.max(44,Math.min(68,1200/Math.max(daily.length,1)));
-                const CW=Math.max(daily.length*STEP+140,800);
-                const CH=540, CPX=78, CPY=36, CPB=80;
+                const STEP=Math.max(48,Math.min(72,1400/Math.max(daily.length,1)));
+                const CW=Math.max(daily.length*STEP+160,900);
+                const CH=700, CPX=88, CPY=40, CPB=90;
                 const cw=CW-CPX-24, ch=CH-CPY-CPB;
                 const maxVal=Math.max(...daily.map(d=>d.paid+d.adj),1);
 
@@ -8045,15 +8045,17 @@ function AnalyticsModal({ bulk, onClose, small }) {
     padding:10px 28px;font-size:13px;font-weight:700;cursor:pointer;
     display:flex;align-items:center;gap:6px}
   .btn-wrap{display:flex;justify-content:center;margin-bottom:20px}
-  @page { size: A4 landscape; margin: 8mm 10mm; }
+  @page { size: A4 landscape; margin: 6mm 8mm; }
   @media print{
     .btn-wrap{display:none!important}
-    body{background:#0f172a!important;padding:6px!important;-webkit-print-color-adjust:exact;print-color-adjust:exact}
+    body{background:#0f172a!important;padding:4px!important;-webkit-print-color-adjust:exact;print-color-adjust:exact}
     .chart-wrap{overflow:visible!important;background:linear-gradient(135deg,#0f172a,#1e293b)!important;border:1px solid #334155!important;page-break-inside:avoid}
     .header,.stat{background:#1e293b!important;border:1px solid #334155!important}
     .chart-wrap svg{width:100%!important;height:auto!important}
     .stats{grid-template-columns:repeat(4,1fr)!important}
     .header{page-break-after:avoid}
+    .chart-title{font-size:13px!important}
+    .stat-val{font-size:18px!important}
   }
 </style>
 </head><body>
@@ -8163,9 +8165,9 @@ function AnalyticsModal({ bulk, onClose, small }) {
                           <line x1={CPX} y1={yOf(v)} x2={CW-24} y2={yOf(v)}
                             stroke={v===0?"rgba(255,255,255,0.15)":"rgba(255,255,255,0.07)"}
                             strokeWidth={v===0?1.5:1} strokeDasharray={v===0?"":"4,6"}/>
-                          <text x={CPX-10} y={yOf(v)+4} textAnchor="end" fontSize="10"
-                            fill={v===0?"rgba(255,255,255,0.6)":"rgba(255,255,255,0.45)"}
-                            fontWeight="700" fontFamily="Arial">
+                          <text x={CPX-12} y={yOf(v)+5} textAnchor="end" fontSize="11"
+                            fill={v===0?"rgba(255,255,255,0.7)":"rgba(255,255,255,0.5)"}
+                            fontWeight="800" fontFamily="Arial">
                             {v>=1000000?(v/1000000).toFixed(1)+'M':v>=1000?(v/1000).toFixed(v%1000===0?0:1)+'K':v}
                           </text>
                           {/* Range label on right */}
@@ -8191,29 +8193,29 @@ function AnalyticsModal({ bulk, onClose, small }) {
                         const lblW=Math.max(lbl.length*7+14,40);
                         const lblAbove=pt.y>CPY+ch*0.75;
                         const lblY=lblAbove?pt.y-36:pt.y-24;
-                        const dotR=isBest?8:isLast?7:isWorst?5:5;
+                        const dotR=isBest?10:isLast?9:isWorst?6:6;
                         const dotCol=isBest?"#f97316":isLast?"#60a5fa":isWorst?"#64748b":"#e2e8f0";
-                        const showDate=daily.length<=25||i%Math.ceil(daily.length/25)===0||isBest||isLast;
+                        const showDate=daily.length<=30||i%Math.ceil(daily.length/30)===0||isBest||isLast;
                         return (
                           <g key={i} filter={isBest?"url(#dotGlowB)":undefined}>
                             <line x1={pt.x} y1={CPY+ch} x2={pt.x} y2={pt.y+dotR+2} stroke="rgba(255,255,255,0.04)" strokeWidth="1"/>
-                            <rect x={pt.x-lblW/2} y={lblY-12} width={lblW} height={17} rx="8"
+                            <rect x={pt.x-lblW/2} y={lblY-14} width={lblW} height={19} rx="9"
                               fill={isBest?"#f97316":isLast?"#1d4ed8":isWorst?"#334155":"#1e3a5f"}
                               stroke={isBest?"rgba(255,255,255,0.7)":"rgba(255,255,255,0.2)"} strokeWidth="0.8"/>
-                            <text x={pt.x} y={lblY+1} textAnchor="middle" fontSize="9" fill="#fff" fontWeight="800" fontFamily="Arial">{lbl}</text>
-                            {isBest&&<text x={pt.x} y={lblY-17} textAnchor="middle" fontSize="13">🏆</text>}
-                            <circle cx={pt.x} cy={pt.y} r={dotR+5} fill="rgba(255,255,255,0.05)"/>
-                            <circle cx={pt.x} cy={pt.y} r={dotR} fill={dotCol} stroke="rgba(255,255,255,0.8)" strokeWidth={isBest?2.5:1.5}/>
+                            <text x={pt.x} y={lblY+1} textAnchor="middle" fontSize="10" fill="#fff" fontWeight="800" fontFamily="Arial">{lbl}</text>
+                            {isBest&&<text x={pt.x} y={lblY-20} textAnchor="middle" fontSize="15">🏆</text>}
+                            <circle cx={pt.x} cy={pt.y} r={dotR+6} fill="rgba(255,255,255,0.05)"/>
+                            <circle cx={pt.x} cy={pt.y} r={dotR} fill={dotCol} stroke="rgba(255,255,255,0.8)" strokeWidth={isBest?3:2}/>
                             <circle cx={pt.x-dotR*0.3} cy={pt.y-dotR*0.3} r={dotR*0.28} fill="rgba(255,255,255,0.4)"/>
                             {showDate&&(
                               <g>
-                                <line x1={pt.x} y1={CPY+ch+3} x2={pt.x} y2={CPY+ch+10} stroke="rgba(255,255,255,0.2)" strokeWidth="1"/>
-                                <text x={pt.x} y={CPY+ch+22} textAnchor="middle" fontSize="10"
-                                  fill={isBest?"#f97316":isLast?"#60a5fa":"rgba(255,255,255,0.55)"}
+                                <line x1={pt.x} y1={CPY+ch+3} x2={pt.x} y2={CPY+ch+12} stroke="rgba(255,255,255,0.2)" strokeWidth="1"/>
+                                <text x={pt.x} y={CPY+ch+26} textAnchor="middle" fontSize="11"
+                                  fill={isBest?"#f97316":isLast?"#60a5fa":"rgba(255,255,255,0.6)"}
                                   fontWeight={isBest||isLast?"800":"600"} fontFamily="Arial">
                                   {pt.d.date.slice(5,7)+'-'+pt.d.date.slice(8)}
                                 </text>
-                                <text x={pt.x} y={CPY+ch+36} textAnchor="middle" fontSize="8.5" fill="rgba(255,255,255,0.22)" fontFamily="Arial">{pt.d.date.slice(0,4)}</text>
+                                <text x={pt.x} y={CPY+ch+42} textAnchor="middle" fontSize="9" fill="rgba(255,255,255,0.25)" fontFamily="Arial">{pt.d.date.slice(0,4)}</text>
                               </g>
                             )}
                           </g>
