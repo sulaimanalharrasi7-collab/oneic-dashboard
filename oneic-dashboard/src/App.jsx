@@ -11248,7 +11248,9 @@ export default function Dashboard() {
               💳 Bulk Payment
             </button>
           </div>
-          
+
+          {/* Print + Language buttons stacked vertically */}
+          <div style={{display:"flex",flexDirection:"column",gap:4,alignItems:"stretch",flexShrink:0}}>
           <button
             onClick={() => handlePrint(data, lang)}
             style={{
@@ -11266,7 +11268,7 @@ export default function Dashboard() {
             🖨️ {isMobile ? "PDF" : t("طباعة / PDF",lang)}
           </button>
 
-          {/* زر تغيير اللغة */}
+          {/* زر تغيير اللغة — أسفل زر الطباعة */}
           <button
             onClick={() => {
               const next = lang==='ar' ? 'en' : 'ar';
@@ -11279,17 +11281,20 @@ export default function Dashboard() {
               display:"flex", alignItems:"center", gap:6,
               background: lang==='ar' ? "#1a7a6b" : "#6c3fa0",
               color:"#fff", border:"none", borderRadius:12,
-              padding: isMobile ? "8px 12px" : "10px 18px",
-              fontSize: isMobile ? 12 : 13,
+              padding: isMobile ? "6px 10px" : "8px 16px",
+              fontSize: isMobile ? 11 : 12,
               fontWeight:800, cursor:"pointer",
               fontFamily:"'Cairo',sans-serif",
               boxShadow:"0 2px 8px rgba(0,0,0,0.2)",
-              whiteSpace:"nowrap", flexShrink:0
+              whiteSpace:"nowrap", flexShrink:0,
+              marginTop: isMobile ? 2 : 3,
+              alignSelf:"center"
             }}
             title={lang==='ar' ? "Switch to English" : "التبديل للعربية"}
           >
             {lang==='ar' ? "🌐 English" : "🌐 عربي"}
           </button>
+          </div>{/* end print+lang column */}
 
           <div id="clock-section"><Clock small={isMobile} /></div>
         </div>
