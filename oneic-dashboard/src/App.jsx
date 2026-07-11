@@ -7912,95 +7912,160 @@ function AnalyticsModal({ bulk, onClose, small }) {
           {activeChart==='trend' && (
             <div>
               <div style={{fontSize:13,color:"#555",fontWeight:700,marginBottom:12}}>
-                الدفعات اليومية — من {d.dateRange?.from} إلى {d.dateRange?.to}
+                {t("الدفعات اليومية — من",lang)} {d.dateRange?.from} {t("إلى:",lang)} {d.dateRange?.to}
               </div>
 
               {/* ── Bulk SVG Chart ── */}
               {(() => {
-                const STEP=Math.max(36,Math.min(56,1100/Math.max(daily.length,1)));
-                const CW=Math.max(daily.length*STEP+120,700);
-                const CH=300,CPX=68,CPY=42,CPB=64;
-                const cw=CW-CPX-20,ch=CH-CPY-CPB;
-                const minVal=Math.min(...daily.map(d=>d.paid+d.adj));
+                const STEP=Math.max(44,Math.min(68,1200/Math.max(daily.length,1)));
+                const CW=Math.max(daily.length*STEP+140,800);
+                const CH=460, CPX=78, CPY=32, CPB=72;
+                const cw=CW-CPX-24, ch=CH-CPY-CPB;
                 const maxVal=Math.max(...daily.map(d=>d.paid+d.adj),1);
-                const range=maxVal-minVal||1;
-                const xOf=i=>CPX+(daily.length>1?(i/(daily.length-1))*cw:cw/2);
-                const yOf=v=>CPY+ch-((v-minVal)/range)*ch;
-                const cpts=daily.map((d,i)=>({x:xOf(i),y:yOf(d.paid+d.adj),d}));
-                const smooth=cpts.map((p,i,a)=>{
+
+                // ── Fixed intervals (0→100, 100→200, …) ───────────────
+                const interval = (() => {
+                  const raw = maxVal/5;
+                  const mag = Math.pow(10, Math.floor(Math.log10(raw)));
+                  const nice = [1,2,2.5,5,10].map(f=>f*mag).find(f=>f>=raw)||mag*10;
+                  return nice;
+                })();
+                const topVal = Math.ceil(maxVal/interval)*interval;
+                const gridLines = [];
+                for(let v=0; v<=topVal; v+=interval) gridLines.push(v);
+
+                const xOf = i => CPX+(daily.length>1?(i/(daily.length-1))*cw:cw/2);
+                const yOf = v => CPY + ch - (v/topVal)*ch;
+                const cpts = daily.map((d,i)=>({x:xOf(i),y:yOf(d.paid+d.adj),d}));
+                const smooth = cpts.map((p,i,a)=>{
                   if(i===0) return `M${p.x},${p.y}`;
                   const pv=a[i-1],c1x=pv.x+(p.x-pv.x)*0.4,c2x=pv.x+(p.x-pv.x)*0.6;
                   return `C${c1x},${pv.y} ${c2x},${p.y} ${p.x},${p.y}`;
                 }).join(' ');
-                const area=cpts.length?smooth+` L${cpts[cpts.length-1].x},${CPY+ch} L${cpts[0].x},${CPY+ch} Z`:'';
+                const area = cpts.length ? smooth+` L${cpts[cpts.length-1].x},${CPY+ch} L${cpts[0].x},${CPY+ch} Z` : '';
+
+                const chartId = 'trend-chart-print';
+
                 return (
-                <div style={{background:"linear-gradient(135deg,#0f172a,#1e293b)",borderRadius:16,
-                  padding:"14px 0 0",marginBottom:20,overflowX:"auto",boxShadow:"0 8px 32px rgba(0,0,0,0.3)"}}>
-                  <div style={{padding:"0 16px 10px",display:"flex",justifyContent:"space-between",alignItems:"center"}}>
-                    <div style={{fontSize:13,color:"rgba(255,255,255,0.9)",fontWeight:800}}>
-                      📈 الدفعات اليومية — {d.dateRange?.from} إلى {d.dateRange?.to}
-                    </div>
-                    <div style={{fontSize:11,color:"rgba(255,255,255,0.4)"}}>{daily.length} يوم · أعلى: {fmtK(maxVal)}</div>
+                <div>
+                  {/* Print button */}
+                  <div style={{display:"flex",justifyContent:"flex-end",marginBottom:8}}>
+                    <button onClick={()=>{
+                      const svgEl = document.getElementById(chartId);
+                      if(!svgEl) return;
+                      const svgData = new XMLSerializer().serializeToString(svgEl);
+                      const blob = new Blob([`
+                        <html><head><title>Daily Trend Chart</title><style>
+                          body{margin:20px;background:#0f172a;display:flex;flex-direction:column;align-items:center;}
+                          h2{color:#e85d20;font-family:Arial;margin-bottom:12px;}
+                          p{color:#aaa;font-family:Arial;font-size:12px;}
+                          @media print{button{display:none}}
+                        </style></head><body>
+                        <h2>📈 Daily Trend — ${d.dateRange?.from} to ${d.dateRange?.to}</h2>
+                        ${svgData}
+                        <p>ONEIC Debt Collection Dashboard · ${new Date().toLocaleDateString()}</p>
+                        <button onclick="window.print()" style="margin-top:16px;padding:10px 28px;background:#e85d20;color:#fff;border:none;border-radius:8px;font-size:14px;cursor:pointer">🖨️ Print</button>
+                        </body></html>`], {type:'text/html'});
+                      const url = URL.createObjectURL(blob);
+                      window.open(url,'_blank');
+                    }} style={{
+                      display:"flex",alignItems:"center",gap:6,
+                      background:"#1e3a5f",color:"#fff",border:"none",
+                      borderRadius:10,padding:"8px 18px",fontSize:12,
+                      fontWeight:700,cursor:"pointer"
+                    }}>
+                      🖨️ {lang==='en'?'Print Chart':'طباعة الرسم البياني'}
+                    </button>
                   </div>
-                  <svg width={CW} height={CH} style={{display:"block",overflow:"visible"}}>
-                    <defs>
-                      <linearGradient id="aGradB" x1="0" y1="0" x2="0" y2="1">
-                        <stop offset="0%" stopColor="#e85d20" stopOpacity="0.4"/>
-                        <stop offset="100%" stopColor="#e85d20" stopOpacity="0"/>
-                      </linearGradient>
-                      <linearGradient id="lineGB" x1="0" y1="0" x2="1" y2="0">
-                        <stop offset="0%" stopColor="#60a5fa"/>
-                        <stop offset="50%" stopColor="#e85d20"/>
-                        <stop offset="100%" stopColor="#f97316"/>
-                      </linearGradient>
-                      <filter id="dotGlowB"><feDropShadow dx="0" dy="0" stdDeviation="3" floodColor="#e85d20" floodOpacity="0.7"/></filter>
-                    </defs>
-                    {[0,0.25,0.5,0.75,1].map((r,gi)=>(
-                      <g key={gi}>
-                        <line x1={CPX} y1={CPY+ch*(1-r)} x2={CW-20} y2={CPY+ch*(1-r)}
-                          stroke="rgba(255,255,255,0.07)" strokeWidth={r===0?1.5:1} strokeDasharray={r===0?"":"5,5"}/>
-                        <text x={CPX-8} y={CPY+ch*(1-r)+4} textAnchor="end" fontSize="10" fill="rgba(255,255,255,0.45)" fontWeight="600" fontFamily="Cairo">{fmtK(minVal+range*r)}</text>
-                      </g>
-                    ))}
-                    {area&&<path d={area} fill="url(#aGradB)"/>}
-                    {smooth&&<path d={smooth} fill="none" stroke="#e85d2044" strokeWidth="7" strokeLinejoin="round" strokeLinecap="round"/>}
-                    {smooth&&<path d={smooth} fill="none" stroke="url(#lineGB)" strokeWidth="2.5" strokeLinejoin="round" strokeLinecap="round"/>}
-                    {cpts.map((pt,i)=>{
-                      const total=pt.d.paid+pt.d.adj;
-                      const isBest=total===maxVal,isWorst=total===Math.min(...daily.map(x=>x.paid+x.adj)),isLast=i===cpts.length-1;
-                      const lbl=total>=1000000?(total/1000000).toFixed(2)+'M':total>=1000?(total/1000).toFixed(1)+'K':total.toFixed(0);
-                      const lblW=Math.max(lbl.length*6.5+14,36);
-                      const lblAbove=pt.y>CPY+ch*0.78;
-                      const lblY=lblAbove?pt.y-32:pt.y-22;
-                      const dotR=isBest?7:isLast?6:isWorst?5:4;
-                      const dotCol=isBest?"#f97316":isLast?"#60a5fa":isWorst?"#64748b":"#e2e8f0";
-                      const showDate=daily.length<=20||i%Math.ceil(daily.length/20)===0||isBest||isLast;
-                      return (
-                        <g key={i} filter={isBest?"url(#dotGlowB)":undefined}>
-                          <line x1={pt.x} y1={CPY+ch} x2={pt.x} y2={pt.y+dotR+2} stroke="rgba(255,255,255,0.04)" strokeWidth="1"/>
-                          <rect x={pt.x-lblW/2} y={lblY-11} width={lblW} height={15} rx="7.5"
-                            fill={isBest?"#f97316":isLast?"#1d4ed8":isWorst?"#334155":"#1e3a5f"}
-                            stroke={isBest?"rgba(255,255,255,0.6)":"rgba(255,255,255,0.2)"} strokeWidth="0.8"/>
-                          <text x={pt.x} y={lblY} textAnchor="middle" fontSize="8.5" fill="#fff" fontWeight="800" fontFamily="Cairo">{lbl}</text>
-                          {isBest&&<text x={pt.x} y={lblY-15} textAnchor="middle" fontSize="11">🏆</text>}
-                          <circle cx={pt.x} cy={pt.y} r={dotR+4} fill="rgba(255,255,255,0.05)"/>
-                          <circle cx={pt.x} cy={pt.y} r={dotR} fill={dotCol} stroke="rgba(255,255,255,0.7)" strokeWidth={isBest?2.5:1.5}/>
-                          <circle cx={pt.x-dotR*0.3} cy={pt.y-dotR*0.3} r={dotR*0.28} fill="rgba(255,255,255,0.4)"/>
-                          {showDate&&(
-                            <g>
-                              <line x1={pt.x} y1={CPY+ch+3} x2={pt.x} y2={CPY+ch+9} stroke="rgba(255,255,255,0.2)" strokeWidth="1"/>
-                              <text x={pt.x} y={CPY+ch+20} textAnchor="middle" fontSize="9.5"
-                                fill={isBest?"#f97316":isLast?"#60a5fa":"rgba(255,255,255,0.5)"}
-                                fontWeight={isBest||isLast?"800":"600"} fontFamily="Cairo">
-                                {pt.d.date.slice(5,7)+'-'+pt.d.date.slice(8)}
-                              </text>
-                              <text x={pt.x} y={CPY+ch+33} textAnchor="middle" fontSize="8" fill="rgba(255,255,255,0.22)" fontFamily="Cairo">{pt.d.date.slice(0,4)}</text>
-                            </g>
+
+                  <div style={{background:"linear-gradient(135deg,#0f172a,#1e293b)",borderRadius:16,
+                    padding:"14px 0 0",marginBottom:20,overflowX:"auto",boxShadow:"0 8px 32px rgba(0,0,0,0.3)"}}>
+                    <div style={{padding:"0 16px 12px",display:"flex",justifyContent:"space-between",alignItems:"center"}}>
+                      <div style={{fontSize:14,color:"rgba(255,255,255,0.9)",fontWeight:800}}>
+                        📈 {lang==='en'?'Daily Payments':'الدفعات اليومية'} — {d.dateRange?.from} {lang==='en'?'to':'إلى'} {d.dateRange?.to}
+                      </div>
+                      <div style={{fontSize:11,color:"rgba(255,255,255,0.4)"}}>
+                        {daily.length} {t("يوم",lang)} · {lang==='en'?'Peak':'أعلى'}: {fmtK(maxVal)} · {lang==='en'?'Interval':'الفئة'}: {fmtK(interval)}
+                      </div>
+                    </div>
+                    <svg id={chartId} width={CW} height={CH} style={{display:"block",overflow:"visible"}}>
+                      <defs>
+                        <linearGradient id="aGradB" x1="0" y1="0" x2="0" y2="1">
+                          <stop offset="0%" stopColor="#e85d20" stopOpacity="0.4"/>
+                          <stop offset="100%" stopColor="#e85d20" stopOpacity="0"/>
+                        </linearGradient>
+                        <linearGradient id="lineGB" x1="0" y1="0" x2="1" y2="0">
+                          <stop offset="0%" stopColor="#60a5fa"/>
+                          <stop offset="50%" stopColor="#e85d20"/>
+                          <stop offset="100%" stopColor="#f97316"/>
+                        </linearGradient>
+                        <filter id="dotGlowB"><feDropShadow dx="0" dy="0" stdDeviation="3" floodColor="#e85d20" floodOpacity="0.7"/></filter>
+                      </defs>
+
+                      {/* ── Fixed Y-axis grid lines ── */}
+                      {gridLines.map((v,gi)=>(
+                        <g key={gi}>
+                          <line x1={CPX} y1={yOf(v)} x2={CW-24} y2={yOf(v)}
+                            stroke={v===0?"rgba(255,255,255,0.15)":"rgba(255,255,255,0.07)"}
+                            strokeWidth={v===0?1.5:1} strokeDasharray={v===0?"":"4,6"}/>
+                          <text x={CPX-10} y={yOf(v)+4} textAnchor="end" fontSize="10"
+                            fill={v===0?"rgba(255,255,255,0.6)":"rgba(255,255,255,0.45)"}
+                            fontWeight="700" fontFamily="Arial">
+                            {v>=1000000?(v/1000000).toFixed(1)+'M':v>=1000?(v/1000).toFixed(v%1000===0?0:1)+'K':v}
+                          </text>
+                          {/* Range label on right */}
+                          {gi<gridLines.length-1&&(
+                            <text x={CW-18} y={yOf(v+interval/2)+4} textAnchor="end" fontSize="8.5"
+                              fill="rgba(255,255,255,0.2)" fontFamily="Arial">
+                              {v>=1000?(v/1000).toFixed(0)+'K':v}–{(v+interval)>=1000?((v+interval)/1000).toFixed(0)+'K':(v+interval)}
+                            </text>
                           )}
                         </g>
-                      );
-                    })}
-                  </svg>
+                      ))}
+
+                      {area&&<path d={area} fill="url(#aGradB)"/>}
+                      {smooth&&<path d={smooth} fill="none" stroke="#e85d2044" strokeWidth="8" strokeLinejoin="round" strokeLinecap="round"/>}
+                      {smooth&&<path d={smooth} fill="none" stroke="url(#lineGB)" strokeWidth="3" strokeLinejoin="round" strokeLinecap="round"/>}
+
+                      {cpts.map((pt,i)=>{
+                        const total=pt.d.paid+pt.d.adj;
+                        const isBest=total===maxVal;
+                        const isWorst=total===Math.min(...daily.map(x=>x.paid+x.adj));
+                        const isLast=i===cpts.length-1;
+                        const lbl=total>=1000000?(total/1000000).toFixed(2)+'M':total>=1000?(total/1000).toFixed(1)+'K':total.toFixed(0);
+                        const lblW=Math.max(lbl.length*7+14,40);
+                        const lblAbove=pt.y>CPY+ch*0.75;
+                        const lblY=lblAbove?pt.y-36:pt.y-24;
+                        const dotR=isBest?8:isLast?7:isWorst?5:5;
+                        const dotCol=isBest?"#f97316":isLast?"#60a5fa":isWorst?"#64748b":"#e2e8f0";
+                        const showDate=daily.length<=25||i%Math.ceil(daily.length/25)===0||isBest||isLast;
+                        return (
+                          <g key={i} filter={isBest?"url(#dotGlowB)":undefined}>
+                            <line x1={pt.x} y1={CPY+ch} x2={pt.x} y2={pt.y+dotR+2} stroke="rgba(255,255,255,0.04)" strokeWidth="1"/>
+                            <rect x={pt.x-lblW/2} y={lblY-12} width={lblW} height={17} rx="8"
+                              fill={isBest?"#f97316":isLast?"#1d4ed8":isWorst?"#334155":"#1e3a5f"}
+                              stroke={isBest?"rgba(255,255,255,0.7)":"rgba(255,255,255,0.2)"} strokeWidth="0.8"/>
+                            <text x={pt.x} y={lblY+1} textAnchor="middle" fontSize="9" fill="#fff" fontWeight="800" fontFamily="Arial">{lbl}</text>
+                            {isBest&&<text x={pt.x} y={lblY-17} textAnchor="middle" fontSize="13">🏆</text>}
+                            <circle cx={pt.x} cy={pt.y} r={dotR+5} fill="rgba(255,255,255,0.05)"/>
+                            <circle cx={pt.x} cy={pt.y} r={dotR} fill={dotCol} stroke="rgba(255,255,255,0.8)" strokeWidth={isBest?2.5:1.5}/>
+                            <circle cx={pt.x-dotR*0.3} cy={pt.y-dotR*0.3} r={dotR*0.28} fill="rgba(255,255,255,0.4)"/>
+                            {showDate&&(
+                              <g>
+                                <line x1={pt.x} y1={CPY+ch+3} x2={pt.x} y2={CPY+ch+10} stroke="rgba(255,255,255,0.2)" strokeWidth="1"/>
+                                <text x={pt.x} y={CPY+ch+22} textAnchor="middle" fontSize="10"
+                                  fill={isBest?"#f97316":isLast?"#60a5fa":"rgba(255,255,255,0.55)"}
+                                  fontWeight={isBest||isLast?"800":"600"} fontFamily="Arial">
+                                  {pt.d.date.slice(5,7)+'-'+pt.d.date.slice(8)}
+                                </text>
+                                <text x={pt.x} y={CPY+ch+36} textAnchor="middle" fontSize="8.5" fill="rgba(255,255,255,0.22)" fontFamily="Arial">{pt.d.date.slice(0,4)}</text>
+                              </g>
+                            )}
+                          </g>
+                        );
+                      })}
+                    </svg>
+                  </div>
                 </div>);
               })()}
 
