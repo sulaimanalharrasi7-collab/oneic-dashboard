@@ -11228,75 +11228,83 @@ export default function Dashboard() {
         <div style={{ display:"flex", alignItems:"center", gap: isMobile?10:20 }}>
           <UploadBtn onFile={handleFile} onAuth={requireUploadAuth} uploading={uploading} success={success} error={error} small={isMobile} />
 
-          <div style={{display:"flex",flexDirection:"column",gap:5,alignItems:"stretch"}}>
-            {/* مؤشر المزامنة */}
-            <div style={{fontSize:10,color:syncing?"#fbbf24":"#4ade80",fontWeight:700,textAlign:"center",
-              background:"rgba(255,255,255,0.1)",borderRadius:6,padding:"2px 8px",display:"flex",alignItems:"center",gap:4,justifyContent:"center"}}>
-              <span style={{cursor:'pointer'}} onClick={forceRefresh} title="اضغط للتحديث الفوري">
-              {syncing
-                ? <><span>🔄</span> جاري المزامنة...</>
-                : lastSync
-                  ? <>🟢 {lastSync.toLocaleTimeString(lang==='en'?'en-GB':'ar-OM',{hour:'2-digit',minute:'2-digit'})} ↻</>
-                  : <>{t("⏳ اضغط للتحديث",lang)}</>
-              }
-            </span>
-            </div>
-            <button onClick={() => setShowHistory(s=>!s)} style={{background:"#1e3a5f",color:"#fff",border:"none",borderRadius:10,padding:"8px 14px",fontSize:13,fontWeight:800,cursor:"pointer",fontFamily:"'Cairo',sans-serif",display:"flex",alignItems:"center",gap:5}}>
+          {/* ── كل الأزرار في grid 2×2 موحّد ── */}
+          <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:6,alignItems:"stretch"}}>
+
+            {/* صف 1 — طباعة | File Count */}
+            <button
+              onClick={() => handlePrint(data, lang)}
+              style={{
+                display:"flex",alignItems:"center",justifyContent:"center",gap:5,
+                background:"#1e3a5f",color:"#fff",border:"none",borderRadius:10,
+                padding:"9px 14px",fontSize:13,fontWeight:800,cursor:"pointer",
+                fontFamily:"'Cairo',sans-serif",whiteSpace:"nowrap",
+                boxShadow:"0 2px 8px rgba(30,58,95,0.3)"
+              }}
+            >
+              🖨️ {isMobile ? "PDF" : t("طباعة / PDF",lang)}
+            </button>
+
+            <button onClick={() => setShowHistory(s=>!s)}
+              style={{
+                display:"flex",alignItems:"center",justifyContent:"center",gap:5,
+                background:"#1e3a5f",color:"#fff",border:"none",borderRadius:10,
+                padding:"9px 14px",fontSize:13,fontWeight:800,cursor:"pointer",
+                fontFamily:"'Cairo',sans-serif",whiteSpace:"nowrap"
+              }}>
               📁 {history.length > 0 ? `${t('عدد الملفات',lang)} (${history.length})` : t("عدد الملفات",lang)}
             </button>
-            <button onClick={() => { if(showBulkReport) setShowBulkReport(false); else requireUploadAuth(()=>setShowBulkReport(true)); }} style={{background:showBulkReport?"#e85d20":"#2d5a8e",color:"#fff",border:"none",borderRadius:10,padding:"5px 14px",fontSize:12,fontWeight:800,cursor:"pointer",fontFamily:"'Cairo',sans-serif",display:"flex",alignItems:"center",justifyContent:"center",gap:4}}>
+
+            {/* صف 2 — لغة | Bulk Payment */}
+            <button
+              onClick={() => {
+                const next = lang==='ar' ? 'en' : 'ar';
+                setLang(next);
+                try { localStorage.setItem('oneic_lang', next); } catch(e){}
+                document.documentElement.dir = next==='ar' ? 'rtl' : 'ltr';
+                document.documentElement.lang = next;
+              }}
+              style={{
+                display:"flex",alignItems:"center",justifyContent:"center",gap:5,
+                background: lang==='ar' ? "#1a7a6b" : "#6c3fa0",
+                color:"#fff",border:"none",borderRadius:10,
+                padding:"9px 14px",fontSize:13,fontWeight:800,cursor:"pointer",
+                fontFamily:"'Cairo',sans-serif",whiteSpace:"nowrap",
+                boxShadow:"0 2px 8px rgba(0,0,0,0.15)"
+              }}
+              title={lang==='ar' ? "Switch to English" : "التبديل للعربية"}
+            >
+              🌐 {lang==='ar' ? "English" : "عربي"}
+            </button>
+
+            <button
+              onClick={() => { if(showBulkReport) setShowBulkReport(false); else requireUploadAuth(()=>setShowBulkReport(true)); }}
+              style={{
+                display:"flex",alignItems:"center",justifyContent:"center",gap:5,
+                background:showBulkReport?"#e85d20":"#2d5a8e",color:"#fff",
+                border:"none",borderRadius:10,
+                padding:"9px 14px",fontSize:13,fontWeight:800,cursor:"pointer",
+                fontFamily:"'Cairo',sans-serif",whiteSpace:"nowrap"
+              }}>
               💳 Bulk Payment
             </button>
           </div>
 
-          {/* Print + Language buttons stacked vertically */}
-          <div style={{display:"flex",flexDirection:"column",gap:4,alignItems:"stretch",flexShrink:0}}>
-          <button
-            onClick={() => handlePrint(data, lang)}
-            style={{
-              display:"flex", alignItems:"center", gap:6,
-              background:"#1e3a5f", color:"#fff",
-              border:"none", borderRadius:12,
-              padding: isMobile ? "8px 14px" : "10px 20px",
-              fontSize: isMobile ? 12 : 14,
-              fontWeight:800, cursor:"pointer",
-              fontFamily:"'Cairo',sans-serif",
-              boxShadow:"0 2px 8px rgba(30,58,95,0.3)",
-              whiteSpace:"nowrap", flexShrink:0
-            }}
-          >
-            🖨️ {isMobile ? "PDF" : t("طباعة / PDF",lang)}
-          </button>
-
-          {/* زر تغيير اللغة — أسفل زر الطباعة */}
-          <button
-            onClick={() => {
-              const next = lang==='ar' ? 'en' : 'ar';
-              setLang(next);
-              try { localStorage.setItem('oneic_lang', next); } catch(e){}
-              document.documentElement.dir = next==='ar' ? 'rtl' : 'ltr';
-              document.documentElement.lang = next;
-            }}
-            style={{
-              display:"flex", alignItems:"center", gap:6,
-              background: lang==='ar' ? "#1a7a6b" : "#6c3fa0",
-              color:"#fff", border:"none", borderRadius:12,
-              padding: isMobile ? "6px 10px" : "8px 16px",
-              fontSize: isMobile ? 11 : 12,
-              fontWeight:800, cursor:"pointer",
-              fontFamily:"'Cairo',sans-serif",
-              boxShadow:"0 2px 8px rgba(0,0,0,0.2)",
-              whiteSpace:"nowrap", flexShrink:0,
-              marginTop: isMobile ? 2 : 3,
-              alignSelf:"center"
-            }}
-            title={lang==='ar' ? "Switch to English" : "التبديل للعربية"}
-          >
-            {lang==='ar' ? "🌐 English" : "🌐 عربي"}
-          </button>
-          </div>{/* end print+lang column */}
-
-          <div id="clock-section"><Clock small={isMobile} /></div>
+          {/* مؤشر المزامنة */}
+          <div style={{display:"flex",flexDirection:"column",alignItems:"center",gap:4}}>
+            <div style={{fontSize:10,color:syncing?"#fbbf24":"#4ade80",fontWeight:700,
+              background:"rgba(255,255,255,0.1)",borderRadius:6,padding:"3px 8px",
+              display:"flex",alignItems:"center",gap:4,cursor:"pointer",whiteSpace:"nowrap"}}
+              onClick={forceRefresh} title="اضغط للتحديث الفوري">
+              {syncing
+                ? <><span>🔄</span>{t("جاري المزامنة...",lang)}</>
+                : lastSync
+                  ? <>🟢 {lastSync.toLocaleTimeString(lang==='en'?'en-GB':'ar-OM',{hour:'2-digit',minute:'2-digit'})} ↻</>
+                  : <>{t("⏳ اضغط للتحديث",lang)}</>
+              }
+            </div>
+            <div id="clock-section"><Clock small={isMobile} /></div>
+          </div>
         </div>
       </div>
 
