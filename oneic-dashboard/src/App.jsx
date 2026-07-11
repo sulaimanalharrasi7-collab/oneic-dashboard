@@ -7442,13 +7442,25 @@ function DayDetail({ date, day, collectors, regions, fmt, small, onClose, REG_CO
                 const col=REG_COLORS_MAP[c.region]||'#888';
                 return(
                 <div key={`${i}-${j}`} style={{
-                  display:"grid",gridTemplateColumns:"1fr 1fr 110px 120px",
-                  gap:6,alignItems:"center",padding:"8px 10px",
+                  display:"grid",gridTemplateColumns:"1.4fr 0.8fr 100px 110px",
+                  gap:6,alignItems:"center",padding:"10px 12px",
                   background:i%2===0?"#fff":"#fff7f3",
-                  borderRadius:8,marginBottom:3,border:"1px solid #fde8d8"}}>
+                  borderRadius:8,marginBottom:4,border:"1px solid #fde8d8",
+                  boxShadow:"0 1px 3px rgba(0,0,0,0.06)"}}>
                   <div>
-                    <div style={{fontSize:12,fontWeight:800,color:"#000"}}>{c.collector}</div>
-                    <div style={{fontSize:10,color:"#888",overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{deb.name}</div>
+                    {/* اسم المحصّل */}
+                    <div style={{fontSize:11,fontWeight:700,color:"#6b7280",marginBottom:2,letterSpacing:0.2}}>{c.collector}</div>
+                    {/* اسم المدين — أسود غامق كبير */}
+                    <div style={{fontSize:13,fontWeight:900,color:"#000000",lineHeight:1.3}}>{deb.name}</div>
+                    {/* رقم الحساب */}
+                    {deb.agreementNo&&(
+                      <div style={{display:"inline-flex",alignItems:"center",gap:3,
+                        marginTop:3,background:"#1e3a5f",borderRadius:5,
+                        padding:"2px 7px"}}>
+                        <span style={{fontSize:9,color:"#93c5fd",fontWeight:600}}>Account</span>
+                        <span style={{fontSize:11,fontWeight:900,color:"#fff",letterSpacing:0.5}}>#{deb.agreementNo}</span>
+                      </div>
+                    )}
                   </div>
                   <div>
                     <div style={{fontSize:11,color:col,fontWeight:700}}>{lang==='en'?(c.region||REG_AR_MAP[c.region]):(REG_AR_MAP[c.region]||c.region)}</div>
