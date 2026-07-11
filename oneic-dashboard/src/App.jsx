@@ -7463,11 +7463,28 @@ function DayDetail({ date, day, collectors, regions, fmt, small, onClose, REG_CO
                     )}
                   </div>
                   <div>
-                    <div style={{fontSize:11,color:col,fontWeight:700}}>{lang==='en'?(c.region||REG_AR_MAP[c.region]):(REG_AR_MAP[c.region]||c.region)}</div>
-                    {c.branch&&<div style={{fontSize:10,color:"#aaa"}}>{c.branch}</div>}
+                    {/* المنطقة */}
+                    <div style={{fontSize:13,fontWeight:900,color:"#111827",marginBottom:2}}>
+                      {lang==='en'?(c.region||REG_AR_MAP[c.region]):(REG_AR_MAP[c.region]||c.region)}
+                    </div>
+                    {/* الفرع */}
+                    {c.branch&&<div style={{fontSize:11,fontWeight:700,color:"#374151"}}>{c.branch}</div>}
                   </div>
                   <div style={{fontSize:13,fontWeight:800,color:"#16a34a"}}>{fmt(deb.paid)}</div>
-                  <div style={{fontSize:14,fontWeight:900,color:"#e85d20"}}>{fmt(deb.paid+deb.adj)}</div>
+                  <div style={{position:"relative"}}>
+                    <div style={{fontSize:14,fontWeight:900,color:"#e85d20"}}>{fmt(deb.paid+deb.adj)}</div>
+                    {/* ✅ أيقونة الدفع الكامل — عندما O/S = 0 */}
+                    {(deb.os===0||(deb.os!=null&&deb.os<=0))&&(deb.paid>0)&&(
+                      <div style={{display:"inline-flex",alignItems:"center",gap:3,
+                        marginTop:2,background:"#dcfce7",border:"1px solid #86efac",
+                        borderRadius:20,padding:"2px 8px"}}>
+                        <span style={{fontSize:11}}>✅</span>
+                        <span style={{fontSize:9,fontWeight:800,color:"#16a34a"}}>
+                          {lang==='en'?'Fully Paid':'سُدّد كاملاً'}
+                        </span>
+                      </div>
+                    )}
+                  </div>
                 </div>);
               })
             )}
@@ -9413,6 +9430,7 @@ function parseBulkPayment(file) {
           const branch    = String(row['Branch']||'').trim();
           const debtor    = String(row['Debtor']||'').trim();
           const agreementNo = String(row['Agreement No']||'');
+          const osAmt2  = g(row['O/S Amount']||row['Outstanding']||0);
           let dateStr = '';
           if (row['Date']) {
             const d = new Date(row['Date']);
@@ -9436,7 +9454,7 @@ function parseBulkPayment(file) {
             dailyDetail[dateStr][key].adj+=adj;
             dailyDetail[dateStr][key].count++;
             if (debtor && dailyDetail[dateStr][key].debtors.length<5)
-              dailyDetail[dateStr][key].debtors.push({name:debtor,agreementNo,paid,adj});
+              dailyDetail[dateStr][key].debtors.push({name:debtor,agreementNo:String(row['Agreement No']||''),paid,adj,os:osAmt2});
           }
 
           // ── منطقة ──
