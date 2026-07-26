@@ -10914,7 +10914,7 @@ export default function Dashboard() {
     const ar=lang==='ar';
     return (
       <LangContext.Provider value={langCtx}>
-      <div style={{minHeight:"100vh",background:"#0d1117",color:"#fff",fontFamily:"'Cairo','Tajawal',Arial,sans-serif",direction:ar?"rtl":"ltr"}}>
+      <div style={{minHeight:"100vh",background:"#f5f7fa",color:"#111",fontFamily:"'Cairo','Tajawal',Arial,sans-serif",direction:ar?"rtl":"ltr",overflowY:"auto"}}>
         {/* Header */}
         <div style={{background:"linear-gradient(120deg,#1e3a5f,#2d5a8e)",padding:"12px 24px",display:"flex",justifyContent:"space-between",alignItems:"center",position:"sticky",top:0,zIndex:100,boxShadow:"0 4px 20px rgba(0,0,0,0.3)"}}>
           <div style={{display:"flex",alignItems:"center",gap:14}}>
@@ -10925,10 +10925,10 @@ export default function Dashboard() {
             </div>
           </div>
           <div style={{display:"flex",gap:8,alignItems:"center"}}>
-            <span style={{background:"#d97706",color:"#fff",borderRadius:20,padding:"4px 14px",fontSize:11,fontWeight:700}}>⏳ {ar?"قيد التحضير":"Pending"}</span>
-            <button onClick={()=>setProjectChoice(null)} style={{background:"rgba(255,255,255,0.1)",color:"#fff",border:"1px solid rgba(255,255,255,0.2)",borderRadius:10,padding:"7px 16px",fontSize:12,fontWeight:700,cursor:"pointer"}}>← {ar?"اختيار المشروع":"Projects"}</button>
-            <button onClick={()=>{const n=lang==='ar'?'en':'ar';setLang(n);try{localStorage.setItem('oneic_lang',n);}catch(e){}; document.documentElement.dir=n==='ar'?'rtl':'ltr';}} style={{background:ar?"#1a7a6b":"#6c3fa0",color:"#fff",border:"none",borderRadius:10,padding:"7px 16px",fontSize:12,fontWeight:700,cursor:"pointer"}}>🌐 {ar?"English":"عربي"}</button>
-            <button onClick={()=>window.print()} style={{background:"#1e3a5f",color:"#fff",border:"none",borderRadius:10,padding:"7px 16px",fontSize:12,fontWeight:700,cursor:"pointer"}}>🖨️ {ar?"طباعة":"Print"}</button>
+            <span style={{background:"#d97706",color:"#111",borderRadius:20,padding:"4px 14px",fontSize:11,fontWeight:700}}>⏳ {ar?"قيد التحضير":"Pending"}</span>
+            <button onClick={()=>setProjectChoice(null)} style={{background:"rgba(255,255,255,0.1)",color:"#111",border:"1px solid rgba(255,255,255,0.2)",borderRadius:10,padding:"7px 16px",fontSize:12,fontWeight:700,cursor:"pointer"}}>← {ar?"اختيار المشروع":"Projects"}</button>
+            <button onClick={()=>{const n=lang==='ar'?'en':'ar';setLang(n);try{localStorage.setItem('oneic_lang',n);}catch(e){}; document.documentElement.dir=n==='ar'?'rtl':'ltr';}} style={{background:ar?"#1a7a6b":"#6c3fa0",color:"#111",border:"none",borderRadius:10,padding:"7px 16px",fontSize:12,fontWeight:700,cursor:"pointer"}}>🌐 {ar?"English":"عربي"}</button>
+            <button onClick={()=>window.print()} style={{background:"#1e3a5f",color:"#111",border:"none",borderRadius:10,padding:"7px 16px",fontSize:12,fontWeight:700,cursor:"pointer"}}>🖨️ {ar?"طباعة":"Print"}</button>
           </div>
         </div>
         <div style={{padding:"20px 24px",maxWidth:1400,margin:"0 auto"}}>
@@ -10939,11 +10939,11 @@ export default function Dashboard() {
               {icon:"📋",val:n2(P2.bills),lbl:ar?"إجمالي الفواتير":"Total Bills",sub:"Nov 2025",col:"#16a34a"},
               {icon:"📊",val:f2(P2.avg),lbl:ar?"متوسط الرصيد / حساب":"Avg Balance / Account",sub:"OMR",col:"#d97706"},
             ].map((k,i)=>(
-              <div key={i} style={{background:"#161b22",borderRadius:14,padding:"18px 20px",border:"1px solid rgba(255,255,255,0.06)",textAlign:"center"}}>
+              <div key={i} style={{background:"#fff",borderRadius:14,padding:"18px 20px",border:"1px solid #e2e8f0",textAlign:"center"}}>
                 <div style={{fontSize:28,marginBottom:6}}>{k.icon}</div>
                 <div style={{fontSize:19,fontWeight:900,color:k.col,marginBottom:3}}>{k.val}</div>
                 <div style={{fontSize:9,color:"#64748b",fontWeight:700,textTransform:"uppercase",letterSpacing:1}}>{k.lbl}</div>
-                <div style={{fontSize:10,color:"#334155",marginTop:3}}>{k.sub}</div>
+                <div style={{fontSize:10,color:"#64748b",marginTop:3}}>{k.sub}</div>
               </div>
             ))}
           </div>
@@ -10953,15 +10953,15 @@ export default function Dashboard() {
               {title:ar?"👤 توزيع الجنسية":"👤 Nationality",rows:[{lbl:ar?"عُماني":"Omani",v:P2.omani,col:"#16a34a"},{lbl:ar?"وافد":"Expatriate",v:P2.expat,col:"#e85d20"}]},
               {title:ar?"📱 نوع الخدمة":"📱 Service Type",rows:[{lbl:"Postpaid Mobile",v:P2.postpaid,col:"#1a7a6b"},{lbl:"Fixed Line",v:P2.fixed,col:"#6c3fa0"}]},
             ].map((sec,si)=>(
-              <div key={si} style={{background:"#161b22",borderRadius:14,padding:"18px 20px",border:"1px solid rgba(255,255,255,0.06)"}}>
-                <div style={{fontSize:11,fontWeight:800,color:"#60a5fa",textTransform:"uppercase",letterSpacing:1,marginBottom:14,paddingBottom:8,borderBottom:"1px solid rgba(255,255,255,0.06)"}}>{sec.title}</div>
+              <div key={si} style={{background:"#fff",borderRadius:14,padding:"18px 20px",border:"1px solid #e2e8f0"}}>
+                <div style={{fontSize:11,fontWeight:800,color:"#1e3a5f",textTransform:"uppercase",letterSpacing:1,marginBottom:14,paddingBottom:8,borderBottom:"1px solid rgba(255,255,255,0.06)"}}>{sec.title}</div>
                 {sec.rows.map((r,i)=>(
                   <div key={i} style={{marginBottom:14}}>
                     <div style={{display:"flex",justifyContent:"space-between",marginBottom:5}}>
                       <span style={{fontSize:13,fontWeight:700,color:r.col}}>{r.lbl}</span>
-                      <span style={{fontSize:13,fontWeight:900,color:"#fff"}}>{n2(r.v)} <span style={{fontSize:10,color:"#475569"}}>({p2(r.v,P2.total)})</span></span>
+                      <span style={{fontSize:13,fontWeight:900,color:"#111"}}>{n2(r.v)} <span style={{fontSize:10,color:"#6b7280"}}>({p2(r.v,P2.total)})</span></span>
                     </div>
-                    <div style={{background:"#1e293b",borderRadius:8,height:12,overflow:"hidden"}}>
+                    <div style={{background:"#e8edf3",borderRadius:8,height:12,overflow:"hidden"}}>
                       <div style={{width:p2(r.v,P2.total),background:r.col,height:"100%",borderRadius:8}}/>
                     </div>
                   </div>
@@ -10970,8 +10970,8 @@ export default function Dashboard() {
             ))}
           </div>
           {/* Balance Distribution */}
-          <div style={{background:"#161b22",borderRadius:14,padding:"18px 20px",border:"1px solid rgba(255,255,255,0.06)",marginBottom:20}}>
-            <div style={{fontSize:11,fontWeight:800,color:"#60a5fa",textTransform:"uppercase",letterSpacing:1,marginBottom:14,paddingBottom:8,borderBottom:"1px solid rgba(255,255,255,0.06)"}}>💰 {ar?"توزيع الأرصدة (OMR)":"Balance Distribution (OMR)"}</div>
+          <div style={{background:"#fff",borderRadius:14,padding:"18px 20px",border:"1px solid #e2e8f0",marginBottom:20}}>
+            <div style={{fontSize:11,fontWeight:800,color:"#1e3a5f",textTransform:"uppercase",letterSpacing:1,marginBottom:14,paddingBottom:8,borderBottom:"1px solid rgba(255,255,255,0.06)"}}>💰 {ar?"توزيع الأرصدة (OMR)":"Balance Distribution (OMR)"}</div>
             <div style={{display:"flex",height:14,borderRadius:8,overflow:"hidden",marginBottom:14}}>
               {[["#1e40af",P2.lt100],["#16a34a",P2.r100_500],["#d97706",P2.r500_1k],["#e85d20",P2.r1k_5k],["#dc2626",P2.gt5k]].map(([col,v],i)=>(
                 <div key={i} style={{width:p2(v,P2.total),background:col,height:"100%"}}/>
@@ -10981,64 +10981,64 @@ export default function Dashboard() {
               {[["#1e40af",ar?"أقل من 100":"<100 OMR",P2.lt100],["#16a34a","100–500",P2.r100_500],["#d97706","500–1K",P2.r500_1k],["#e85d20","1K–5K",P2.r1k_5k],["#dc2626",ar?"أكثر من 5K":">5K",P2.gt5k]].map(([col,lbl,v],i)=>(
                 <div key={i} style={{display:"flex",alignItems:"center",gap:6}}>
                   <div style={{width:11,height:11,borderRadius:3,background:col}}/>
-                  <span style={{fontSize:11,color:"#94a3b8"}}>{lbl}:</span>
-                  <strong style={{fontSize:12,color:"#fff"}}>{n2(v)} <span style={{color:"#475569",fontWeight:400}}>({p2(v,P2.total)})</span></strong>
+                  <span style={{fontSize:11,color:"#6b7280"}}>{lbl}:</span>
+                  <strong style={{fontSize:12,color:"#111"}}>{n2(v)} <span style={{color:"#6b7280",fontWeight:400}}>({p2(v,P2.total)})</span></strong>
                 </div>
               ))}
             </div>
           </div>
           {/* Bills + Inactive */}
           <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:16,marginBottom:20}}>
-            <div style={{background:"#161b22",borderRadius:14,padding:"18px 20px",border:"1px solid rgba(255,255,255,0.06)"}}>
-              <div style={{fontSize:11,fontWeight:800,color:"#60a5fa",textTransform:"uppercase",letterSpacing:1,marginBottom:14,paddingBottom:8,borderBottom:"1px solid rgba(255,255,255,0.06)"}}>📋 {ar?"توزيع عدد الفواتير":"Bills per Account"}</div>
+            <div style={{background:"#fff",borderRadius:14,padding:"18px 20px",border:"1px solid #e2e8f0"}}>
+              <div style={{fontSize:11,fontWeight:800,color:"#1e3a5f",textTransform:"uppercase",letterSpacing:1,marginBottom:14,paddingBottom:8,borderBottom:"1px solid rgba(255,255,255,0.06)"}}>📋 {ar?"توزيع عدد الفواتير":"Bills per Account"}</div>
               <div style={{display:"flex",alignItems:"flex-end",gap:5,height:100,marginBottom:8}}>
                 {billsD.map((x,i)=>(
                   <div key={i} style={{flex:1,display:"flex",flexDirection:"column",alignItems:"center",gap:3}}>
-                    <span style={{fontSize:7,color:"#475569"}}>{x.n>=1000?(x.n/1000).toFixed(0)+"K":x.n}</span>
+                    <span style={{fontSize:7,color:"#6b7280"}}>{x.n>=1000?(x.n/1000).toFixed(0)+"K":x.n}</span>
                     <div style={{width:"100%",background:"#e85d20",borderRadius:"3px 3px 0 0",height:Math.round(x.n/maxBill*80)+"px"}}/>
                     <span style={{fontSize:9,color:"#64748b"}}>{x.b}</span>
                   </div>
                 ))}
               </div>
-              <div style={{display:"flex",justifyContent:"space-around",background:"#0d1117",borderRadius:8,padding:10}}>
+              <div style={{display:"flex",justifyContent:"space-around",background:"#f0f4f8",borderRadius:8,padding:10}}>
                 {[{l:"PEAK",v:"5 "+( ar?"فواتير":"bills"),s:"31,232 "+(ar?"حساب":"accts"),c:"#e85d20"},
                   {l:ar?"المتوسط":"AVG",v:"4.5",s:ar?"فاتورة/حساب":"bills/acc",c:"#60a5fa"},
                   {l:ar?"الإجمالي":"TOTAL",v:"470K",s:ar?"فاتورة":"bills",c:"#16a34a"}].map((x,i)=>(
                   <div key={i} style={{textAlign:"center"}}>
                     <div style={{fontSize:8,color:"#64748b",fontWeight:700}}>{x.l}</div>
                     <div style={{fontSize:15,fontWeight:900,color:x.c}}>{x.v}</div>
-                    <div style={{fontSize:9,color:"#94a3b8"}}>{x.s}</div>
+                    <div style={{fontSize:9,color:"#6b7280"}}>{x.s}</div>
                   </div>
                 ))}
               </div>
             </div>
-            <div style={{background:"#161b22",borderRadius:14,padding:"18px 20px",border:"1px solid rgba(255,255,255,0.06)"}}>
-              <div style={{fontSize:11,fontWeight:800,color:"#60a5fa",textTransform:"uppercase",letterSpacing:1,marginBottom:14,paddingBottom:8,borderBottom:"1px solid rgba(255,255,255,0.06)"}}>📅 {ar?"سنة إيقاف الخدمة":"Inactive Year"}</div>
+            <div style={{background:"#fff",borderRadius:14,padding:"18px 20px",border:"1px solid #e2e8f0"}}>
+              <div style={{fontSize:11,fontWeight:800,color:"#1e3a5f",textTransform:"uppercase",letterSpacing:1,marginBottom:14,paddingBottom:8,borderBottom:"1px solid rgba(255,255,255,0.06)"}}>📅 {ar?"سنة إيقاف الخدمة":"Inactive Year"}</div>
               {[["2021",P2.y2021,"#60a5fa"],["2022",P2.y2022,"#e85d20"],["2023",P2.y2023,"#16a34a"]].map(([yr,v,col])=>(
                 <div key={yr} style={{marginBottom:14}}>
                   <div style={{display:"flex",justifyContent:"space-between",marginBottom:4}}>
                     <span style={{fontSize:14,fontWeight:900,color:col}}>{yr}</span>
-                    <span style={{fontSize:12,color:"#fff"}}>{n2(v)} <span style={{color:"#475569",fontSize:10}}>({p2(v,P2.total)})</span></span>
+                    <span style={{fontSize:12,color:"#111"}}>{n2(v)} <span style={{color:"#6b7280",fontSize:10}}>({p2(v,P2.total)})</span></span>
                   </div>
-                  <div style={{background:"#1e293b",borderRadius:6,height:14,overflow:"hidden"}}>
+                  <div style={{background:"#e8edf3",borderRadius:6,height:14,overflow:"hidden"}}>
                     <div style={{width:p2(v,P2.total),background:col,height:"100%",borderRadius:6,display:"flex",alignItems:"center",paddingLeft:8}}>
-                      <span style={{fontSize:8,color:"#fff",fontWeight:700,whiteSpace:"nowrap"}}>{p2(v,P2.total)}</span>
+                      <span style={{fontSize:8,color:"#111",fontWeight:700,whiteSpace:"nowrap"}}>{p2(v,P2.total)}</span>
                     </div>
                   </div>
                 </div>
               ))}
-              <div style={{background:"#0d1117",borderRadius:8,padding:"10px 14px",marginTop:8,fontSize:11,color:"#94a3b8",lineHeight:1.7}}>
+              <div style={{background:"#f0f4f8",borderRadius:8,padding:"10px 14px",marginTop:8,fontSize:11,color:"#6b7280",lineHeight:1.7}}>
                 <span style={{color:"#16a34a",fontWeight:800}}>57.7%</span> {ar?"أوقفت في":"inactive in"} <strong style={{color:"#16a34a"}}>2023</strong> ·{" "}
                 <span style={{color:"#e85d20",fontWeight:800}}>41.4%</span> {ar?"في":"in"} <strong style={{color:"#e85d20"}}>2022</strong>
               </div>
             </div>
           </div>
           {/* Top 10 */}
-          <div style={{background:"#161b22",borderRadius:14,padding:"18px 20px",border:"1px solid rgba(255,255,255,0.06)",marginBottom:20}}>
-            <div style={{fontSize:11,fontWeight:800,color:"#60a5fa",textTransform:"uppercase",letterSpacing:1,marginBottom:14,paddingBottom:8,borderBottom:"1px solid rgba(255,255,255,0.06)"}}>🏆 {ar?"أعلى 10 حسابات برصيد":"Top 10 Accounts by Balance"}</div>
+          <div style={{background:"#fff",borderRadius:14,padding:"18px 20px",border:"1px solid #e2e8f0",marginBottom:20}}>
+            <div style={{fontSize:11,fontWeight:800,color:"#1e3a5f",textTransform:"uppercase",letterSpacing:1,marginBottom:14,paddingBottom:8,borderBottom:"1px solid rgba(255,255,255,0.06)"}}>🏆 {ar?"أعلى 10 حسابات برصيد":"Top 10 Accounts by Balance"}</div>
             <table style={{width:"100%",borderCollapse:"collapse"}}>
               <thead>
-                <tr style={{background:"#1e293b"}}>
+                <tr style={{background:"#e8edf3"}}>
                   {["#",ar?"اسم العميل":"Customer Name",ar?"الجنسية":"Nationality",ar?"الخدمة":"Service","Balance (OMR)"].map((h,i)=>(
                     <th key={i} style={{padding:"9px 10px",fontSize:10,fontWeight:800,color:"#64748b",textAlign:i===0||i===4?"center":"left",textTransform:"uppercase"}}>{h}</th>
                   ))}
@@ -11046,11 +11046,11 @@ export default function Dashboard() {
               </thead>
               <tbody>
                 {P2.top.map((acc,i)=>(
-                  <tr key={i} style={{borderBottom:"1px solid rgba(255,255,255,0.04)",background:i%2===0?"transparent":"rgba(255,255,255,0.01)"}}>
+                  <tr key={i} style={{borderBottom:"1px solid rgba(255,255,255,0.04)",background:i%2===0?"#fff":"#f9fafb"}}>
                     <td style={{padding:"8px 10px",fontSize:13,fontWeight:900,color:"#e85d20",textAlign:"center"}}>{i+1}</td>
-                    <td style={{padding:"8px 10px",fontSize:12,fontWeight:700,color:"#fff"}}>{acc.name}</td>
+                    <td style={{padding:"8px 10px",fontSize:12,fontWeight:700,color:"#111"}}>{acc.name}</td>
                     <td style={{padding:"8px 10px",fontSize:11,color:acc.nat==="Omani"?"#16a34a":"#e85d20",fontWeight:700}}>{acc.nat==="Omani"?(ar?"عُماني":"Omani"):(ar?"وافد":"Expat")}</td>
-                    <td style={{padding:"8px 10px",fontSize:10,color:"#94a3b8"}}>{acc.svc}</td>
+                    <td style={{padding:"8px 10px",fontSize:10,color:"#6b7280"}}>{acc.svc}</td>
                     <td style={{padding:"8px 10px",fontSize:13,fontWeight:900,color:"#16a34a",textAlign:"center"}}>{f2(acc.bal)}</td>
                   </tr>
                 ))}
@@ -11058,9 +11058,9 @@ export default function Dashboard() {
             </table>
           </div>
           {/* Footer */}
-          <div style={{background:"#161b22",borderRadius:14,padding:"12px 20px",display:"flex",justifyContent:"space-between",alignItems:"center",border:"1px solid rgba(255,255,255,0.04)"}}>
-            <div style={{fontSize:10,color:"#334155"}}>ONEIC © 2026 · Omantel Portfolio 2<br/><span style={{color:"#d97706"}}>⚠️ {ar?"للمراجعة الداخلية فقط":"For internal review only"}</span></div>
-            <div style={{fontSize:10,color:"#334155",textAlign:"right"}}>{ar?"مصدر البيانات":"Data source"}: Master Data Nov 2025<br/>{ar?"تاريخ التقرير":"Report date"}: 2026-04-02</div>
+          <div style={{background:"#fff",borderRadius:14,padding:"12px 20px",display:"flex",justifyContent:"space-between",alignItems:"center",border:"1px solid #e2e8f0"}}>
+            <div style={{fontSize:10,color:"#64748b"}}>ONEIC © 2026 · Omantel Portfolio 2<br/><span style={{color:"#d97706"}}>⚠️ {ar?"للمراجعة الداخلية فقط":"For internal review only"}</span></div>
+            <div style={{fontSize:10,color:"#64748b",textAlign:"right"}}>{ar?"مصدر البيانات":"Data source"}: Master Data Nov 2025<br/>{ar?"تاريخ التقرير":"Report date"}: 2026-04-02</div>
           </div>
         </div>
       </div>
