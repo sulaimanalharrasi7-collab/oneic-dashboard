@@ -10959,14 +10959,29 @@ export default function Dashboard() {
               <div key={si} style={{background:"#fff",borderRadius:14,padding:"18px 20px",border:"1px solid #e2e8f0"}}>
                 <div style={{fontSize:11,fontWeight:800,color:"#1e3a5f",textTransform:"uppercase",letterSpacing:1,marginBottom:14,paddingBottom:8,borderBottom:"1px solid rgba(255,255,255,0.06)"}}>{sec.title}</div>
                 {sec.rows.map((r,i)=>(
-                  <div key={i} style={{marginBottom:14}}>
-                    <div style={{display:"flex",justifyContent:"space-between",marginBottom:5}}>
-                      <span style={{fontSize:14,fontWeight:900,color:r.col}}>{r.lbl}</span>
-                      <span style={{fontSize:13,fontWeight:900,color:"#111"}}>{n2(r.v)} <span style={{fontSize:10,color:"#6b7280"}}>({p2(r.v,P2.total)})</span></span>
+                  <div key={i} style={{marginBottom:16}}>
+                    <div style={{display:"flex",justifyContent:"space-between",alignItems:"flex-start",marginBottom:5}}>
+                      <div>
+                        <div style={{fontSize:15,fontWeight:900,color:r.col}}>{r.lbl}</div>
+                        {r.bal!=null&&<div style={{fontSize:11,color:"#6b7280",marginTop:2}}>
+                          {ar?"قيمة المديونية":"Debt Value"}: <strong style={{color:"#111827",fontWeight:800}}>{f2(r.bal)} OMR</strong>
+                        </div>}
+                      </div>
+                      <div style={{textAlign:"right"}}>
+                        <div style={{fontSize:18,fontWeight:900,color:"#111827"}}>{n2(r.v)}</div>
+                        <div style={{fontSize:11,color:"#374151",fontWeight:700}}>({p2(r.v,P2.total)})</div>
+                      </div>
                     </div>
-                    <div style={{background:"#e8edf3",borderRadius:8,height:16,overflow:"hidden"}}>
+                    <div style={{background:"#e8edf3",borderRadius:8,height:16,overflow:"hidden",marginBottom:6}}>
                       <div style={{width:p2(r.v,P2.total),background:r.col,height:"100%",borderRadius:8}}/>
                     </div>
+                    {r.bal!=null&&<div style={{
+                      background:r.col+"18",borderRadius:8,padding:"6px 12px",
+                      display:"flex",justifyContent:"space-between",alignItems:"center",
+                      border:"1px solid "+r.col+"33"}}>
+                      <span style={{fontSize:10,color:r.col,fontWeight:700}}>{ar?"نسبة المديونية":"Debt Share"}</span>
+                      <span style={{fontSize:13,fontWeight:900,color:r.col}}>{(r.bal/P2.balance*100).toFixed(1)}%</span>
+                    </div>}
                   </div>
                 ))}
               </div>
