@@ -10914,7 +10914,9 @@ export default function Dashboard() {
     const ar=lang==='ar';
     return (
       <LangContext.Provider value={langCtx}>
-      <div style={{minHeight:"100vh",background:"#f5f7fa",color:"#111",fontFamily:"'Cairo','Tajawal',Arial,sans-serif",direction:ar?"rtl":"ltr",overflowY:"auto"}}>
+      <div style={{position:"fixed",inset:0,zIndex:9999,overflowY:"auto",overflowX:"hidden",
+        background:"#f5f7fa",color:"#111",fontFamily:"'Cairo','Tajawal',Arial,sans-serif",
+        direction:ar?"rtl":"ltr"}}>
         {/* Header */}
         <div style={{background:"linear-gradient(120deg,#1e3a5f,#2d5a8e)",padding:"12px 24px",display:"flex",justifyContent:"space-between",alignItems:"center",position:"sticky",top:0,zIndex:100,boxShadow:"0 4px 20px rgba(0,0,0,0.3)"}}>
           <div style={{display:"flex",alignItems:"center",gap:14}}>
@@ -10941,7 +10943,7 @@ export default function Dashboard() {
             ].map((k,i)=>(
               <div key={i} style={{background:"#fff",borderRadius:14,padding:"18px 20px",border:"1px solid #e2e8f0",textAlign:"center"}}>
                 <div style={{fontSize:28,marginBottom:6}}>{k.icon}</div>
-                <div style={{fontSize:19,fontWeight:900,color:k.col,marginBottom:3}}>{k.val}</div>
+                <div style={{fontSize:24,fontWeight:900,color:k.col,marginBottom:4}}>{k.val}</div>
                 <div style={{fontSize:9,color:"#64748b",fontWeight:700,textTransform:"uppercase",letterSpacing:1}}>{k.lbl}</div>
                 <div style={{fontSize:10,color:"#64748b",marginTop:3}}>{k.sub}</div>
               </div>
@@ -10958,10 +10960,10 @@ export default function Dashboard() {
                 {sec.rows.map((r,i)=>(
                   <div key={i} style={{marginBottom:14}}>
                     <div style={{display:"flex",justifyContent:"space-between",marginBottom:5}}>
-                      <span style={{fontSize:13,fontWeight:700,color:r.col}}>{r.lbl}</span>
+                      <span style={{fontSize:14,fontWeight:900,color:r.col}}>{r.lbl}</span>
                       <span style={{fontSize:13,fontWeight:900,color:"#111"}}>{n2(r.v)} <span style={{fontSize:10,color:"#6b7280"}}>({p2(r.v,P2.total)})</span></span>
                     </div>
-                    <div style={{background:"#e8edf3",borderRadius:8,height:12,overflow:"hidden"}}>
+                    <div style={{background:"#e8edf3",borderRadius:8,height:16,overflow:"hidden"}}>
                       <div style={{width:p2(r.v,P2.total),background:r.col,height:"100%",borderRadius:8}}/>
                     </div>
                   </div>
@@ -11020,7 +11022,7 @@ export default function Dashboard() {
                     <span style={{fontSize:14,fontWeight:900,color:col}}>{yr}</span>
                     <span style={{fontSize:12,color:"#111"}}>{n2(v)} <span style={{color:"#6b7280",fontSize:10}}>({p2(v,P2.total)})</span></span>
                   </div>
-                  <div style={{background:"#e8edf3",borderRadius:6,height:14,overflow:"hidden"}}>
+                  <div style={{background:"#e8edf3",borderRadius:6,height:18,overflow:"hidden"}}>
                     <div style={{width:p2(v,P2.total),background:col,height:"100%",borderRadius:6,display:"flex",alignItems:"center",paddingLeft:8}}>
                       <span style={{fontSize:8,color:"#111",fontWeight:700,whiteSpace:"nowrap"}}>{p2(v,P2.total)}</span>
                     </div>
@@ -11051,7 +11053,7 @@ export default function Dashboard() {
                     <td style={{padding:"8px 10px",fontSize:12,fontWeight:700,color:"#111"}}>{acc.name}</td>
                     <td style={{padding:"8px 10px",fontSize:11,color:acc.nat==="Omani"?"#16a34a":"#e85d20",fontWeight:700}}>{acc.nat==="Omani"?(ar?"عُماني":"Omani"):(ar?"وافد":"Expat")}</td>
                     <td style={{padding:"8px 10px",fontSize:10,color:"#6b7280"}}>{acc.svc}</td>
-                    <td style={{padding:"8px 10px",fontSize:13,fontWeight:900,color:"#16a34a",textAlign:"center"}}>{f2(acc.bal)}</td>
+                    <td style={{padding:"8px 10px",fontSize:15,fontWeight:900,color:"#16a34a",textAlign:"center"}}>{f2(acc.bal)} <span style={{fontSize:10,fontWeight:600,color:"#6b7280"}}>OMR</span></td>
                   </tr>
                 ))}
               </tbody>
