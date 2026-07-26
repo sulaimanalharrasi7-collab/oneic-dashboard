@@ -1,10 +1,10 @@
 import { useState, useRef, useCallback, useEffect, createContext, useContext } from "react";
 
-// ══════════════════════════════════════════════════════
-// TRANSLATIONS — Arabic ↔ English
-// ══════════════════════════════════════════════════════
+// ======================================================
+// TRANSLATIONS -- Arabic ↔ English
+// ======================================================
 const TRANS = {
-  // ── KPI / metrics ──────────────────────────────────
+  // -- KPI / metrics ----------------------------------
   "المدفوع":                   { en: "Paid" },
   "التسويات":                  { en: "Settlements" },
   "الإجمالي":                  { en: "Grand Total" },
@@ -25,12 +25,12 @@ const TRANS = {
   "الإجمالي الكلي":             { en: "Grand Total" },
   "إجمالي التسويات":            { en: "Total Settlements" },
   "متوسط يومي":                { en: "Daily Average" },
-  // ── Sections ───────────────────────────────────────
+  // -- Sections ---------------------------------------
   "مكاتب أونك":                { en: "ONEIC Offices" },
   "شركات التحصيل":             { en: "Debt Collection Companies" },
   "المكتب الرئيسي":            { en: "Head Office" },
   "المحفظة":                   { en: "Portfolio" },
-  // ── Entity status ──────────────────────────────────
+  // -- Entity status ----------------------------------
   "🔴 مغلقة":                  { en: "🔴 Closed" },
   "🟢 نشطة":                  { en: "🟢 Active" },
   "مغلقة":                     { en: "Closed" },
@@ -41,7 +41,7 @@ const TRANS = {
   "مبلغ الاسترجاع (26% من المتبقي)": { en: "Refund Amount (26% of Outstanding)" },
   "المتبقي (O/S)":             { en: "Outstanding (O/S)" },
   "لا يوجد حسابات نشطة حالياً": { en: "No active accounts currently" },
-  // ── Collector/region labels ────────────────────────
+  // -- Collector/region labels ------------------------
   "المحصّل":                   { en: "Collector" },
   "المحصّلون":                 { en: "Collectors" },
   "المنطقة":                   { en: "Region" },
@@ -49,7 +49,7 @@ const TRANS = {
   "نسبة إنجاز":                { en: "Achievement" },
   "محصّل":                     { en: "collector" },
   "متبقي":                     { en: "outstanding" },
-  // ── Buttons ────────────────────────────────────────
+  // -- Buttons ----------------------------------------
   "طباعة / PDF":               { en: "Print / PDF" },
   "طباعة PDF":                 { en: "Print PDF" },
   "PDF":                       { en: "PDF" },
@@ -57,10 +57,10 @@ const TRANS = {
   "تحليل":                     { en: "Analytics" },
   "التحليل البياني":            { en: "Analytics" },
   "عدد الملفات":               { en: "File Count" },
-  // ── Header ─────────────────────────────────────────
+  // -- Header -----------------------------------------
   "آخر تحديث للملف":           { en: "Last file update" },
   "تاريخ الطباعة":             { en: "Print date" },
-  // ── Table headers ──────────────────────────────────
+  // -- Table headers ----------------------------------
   "التاريخ":                   { en: "Date" },
   "التقدم":                    { en: "Progress" },
   "المبلغ":                    { en: "Amount" },
@@ -71,7 +71,7 @@ const TRANS = {
   "توزيع المدفوعات حسب المنطقة": { en: "Payment Distribution by Region" },
   "توزيع المدفوعات بالنسبة المئوية": { en: "Payment Distribution %" },
   "سيُحفظ كل يوم ترفع فيه ملفاً في السجل التاريخي تلقائياً": { en: "Each uploaded file will be saved in the history log automatically" },
-  // ── Print section titles ───────────────────────────
+  // -- Print section titles ---------------------------
   "💰 المدفوع":                { en: "💰 Paid" },
   "📊 التسويات":               { en: "📊 Settlements" },
   "🏆 الإجمالي":               { en: "🏆 Grand Total" },
@@ -81,9 +81,9 @@ const TRANS = {
   "🏆 الإجمالي الكلي":         { en: "🏆 Grand Total" },
   "📅 أيام نشطة":              { en: "📅 Active Days" },
   "🔄 مبلغ الاسترجاع المقدّر":  { en: "🔄 Estimated Refund Amount" },
-  // ── Region/section headers inline ─────────────────
+  // -- Region/section headers inline -----------------
   "إجمالي":                    { en: "Total" },
-  // ── Additional ─────────────────────────────────────
+  // -- Additional -------------------------------------
 "التحصيل":                   { en: "Collection" },
   "📋 المحفظة":                { en: "📋 Portfolio" },
   "💰 التحصيل":                { en: "💰 Collection" },
@@ -113,7 +113,7 @@ const TRANS = {
   "أعلى:":                     { en: "Peak:" },
   "دفعة":                      { en: "payment" },
   "🎊 تهانينا لفريق ONEIC بأكمله! 🎊": { en: "🎊 Congratulations to the entire ONEIC team! 🎊" },
-  // ── inline ────────────────────────────────────────
+  // -- inline ----------------------------------------
   "🗓 الفترة:": { en: "🗓 Period:" },
   "📅 من يوم:": { en: "📅 From:" },
   "من:": { en: "From:" },
@@ -128,7 +128,7 @@ const TRANS = {
   "رفع ملف يومي": { en: "Upload Daily File" },
   "يستبدل البيانات تلقائياً": { en: "Replaces data automatically" },
   "السجل التاريخي": { en: "Historical Records" },
-  // ── comprehensive ──────────────────────────────
+  // -- comprehensive ------------------------------
   "لا توجد حركات": { en: "No activity" },
   "من المحفظة": { en: "of Portfolio" },
   "🎯 نسبة الإنجاز من المحفظة": { en: "🎯 Achievement Rate from Portfolio" },
@@ -247,7 +247,7 @@ const TRANS = {
 // Language Context
 const LangContext = createContext({ lang: 'ar', setLang: () => {} });
 const useLang = () => useContext(LangContext);
-// t(key, lang) — returns Arabic text in AR mode, English translation in EN mode
+// t(key, lang) -- returns Arabic text in AR mode, English translation in EN mode
 const t = (key, lang) => (lang === 'en' && TRANS[key]) ? TRANS[key].en : key;
 
 
@@ -399,7 +399,7 @@ const SEED = {
   totalCollection: { paid: 863165.364, adj: 128508.848 }
 };
 
-// ── Bulk Payment Seed Data ────────────────────────────────────────────────────
+// -- Bulk Payment Seed Data ----------------------------------------------------
 const BULK_SEED = {
   fileName: "bulk_payment_report_2026-05.xlsx",
   dateRange: { from: "2026-05-01", to: "2026-05-24" },
@@ -6159,7 +6159,7 @@ const BULK_SEED = {
 function detectAndDecode(buffer) {
   const bytes = new Uint8Array(buffer);
 
-  // ── ابحث عن BOM (FF FE) في أول 10 بايتات ─────────────────────────────
+  // -- ابحث عن BOM (FF FE) في أول 10 بايتات -----------------------------
   let bomPos = -1;
   for (let i = 0; i < Math.min(10, bytes.length - 1); i++) {
     if (bytes[i] === 0xFF && bytes[i+1] === 0xFE) { bomPos = i; break; }
@@ -6181,7 +6181,7 @@ function detectAndDecode(buffer) {
     }
   }
 
-  // ── فحص UTF-16-LE بدون BOM ──────────────────────────────────────────────
+  // -- فحص UTF-16-LE بدون BOM ----------------------------------------------
   let scanStart = 0;
   while (scanStart < 10 && bytes[scanStart] === 0x20) scanStart++;
   let nullCount = 0;
@@ -6205,7 +6205,7 @@ function detectAndDecode(buffer) {
     }
   }
 
-  // ── UTF-8 / Latin-1 ────────────────────────────────────────────────────
+  // -- UTF-8 / Latin-1 ----------------------------------------------------
   try {
     const decoder = new TextDecoder("utf-8");
     let start = 0;
@@ -6220,9 +6220,9 @@ function detectAndDecode(buffer) {
   }
 }
 
-// ── parseXLS: يقرأ ملف Excel بـ SheetJS ويدعم .xlsx/.xls/.tsv ────────────
+// -- parseXLS: يقرأ ملف Excel بـ SheetJS ويدعم .xlsx/.xls/.tsv ------------
 async function parseXLS(file) {
-  // ── استراتيجية الإقراء: نجرب 3 طرق بالترتيب ─────────────────────────
+  // -- استراتيجية الإقراء: نجرب 3 طرق بالترتيب -------------------------
 
   const readAsText = (f, enc) => new Promise((res, rej) => {
     const r = new FileReader();
@@ -6238,7 +6238,7 @@ async function parseXLS(file) {
     r.readAsArrayBuffer(f);
   });
 
-  // ── تحليل النص إلى صفوف ─────────────────────────────────────────────
+  // -- تحليل النص إلى صفوف ---------------------------------------------
   const parseText = (raw) => {
     // إزالة BOM وأي رموز غريبة
     const text = raw
@@ -6274,7 +6274,7 @@ async function parseXLS(file) {
     return rows;
   };
 
-  // ── محاولة SheetJS (إذا كان محملاً) ─────────────────────────────────
+  // -- محاولة SheetJS (إذا كان محملاً) ---------------------------------
   const tryXLSX = async () => {
     try {
       const XLSX = window.XLSX;
@@ -6294,7 +6294,7 @@ async function parseXLS(file) {
     } catch(e) { console.warn('[parseXLS] SheetJS failed:', e.message); return null; }
   };
 
-  // ── ترتيب المحاولات ──────────────────────────────────────────────────
+  // -- ترتيب المحاولات --------------------------------------------------
   let rows = null;
 
   // 1. SheetJS
@@ -6343,9 +6343,9 @@ async function parseXLS(file) {
     );
   }
 
-  // ══════════════════════════════════════════════════════════════════════
+  // ======================================================================
   // تحليل البيانات بدقة
-  // ══════════════════════════════════════════════════════════════════════
+  // ======================================================================
   const n = v => {
     if (v == null || v === '') return 0;
     return parseFloat(String(v).replace(/,/g,'').replace(/[^0-9.-]/g,'')) || 0;
@@ -6360,7 +6360,7 @@ async function parseXLS(file) {
     "South and North Al Batinah":                    "الباطنة الشمالية والجنوبية"
   };
 
-  // ── بيانات المحافظ الحقيقية من ملف complaints ────────────────────────
+  // -- بيانات المحافظ الحقيقية من ملف complaints ------------------------
   const PORT = {
     regions: {
       "Dhofar":                                      { portAmt: 1946.119,    portCnt: 25   },
@@ -6443,7 +6443,7 @@ async function parseXLS(file) {
     }
   });
 
-  // ── بناء المناطق ──────────────────────────────────────────────────────
+  // -- بناء المناطق ------------------------------------------------------
   const REG_ORDER = [
     "Dhofar ","Dhofar",
     "Musandam, Al Burimai and Al Dahirah",
@@ -6470,7 +6470,7 @@ async function parseXLS(file) {
       .sort((a,b) => { var pa=a.principalAmt>0?a.principalAmt:(a.portAmt||0); var pb=b.principalAmt>0?b.principalAmt:(b.portAmt||0); var pctA=pa>0?((a.paid||0)+(a.adj||0))/pa:0; var pctB=pb>0?((b.paid||0)+(b.adj||0))/pb:0; return pctB-pctA; })
   }));
 
-  // ── شركات التحصيل ─────────────────────────────────────────────────────
+  // -- شركات التحصيل -----------------------------------------------------
   const DC_REQUIRED = ["Matrix Debt Collection","National Center","Compass Risk Support Services","Ejada","Tahseel United","High Speed Company"];
   const dcList = Object.entries(dcMap).map(([nm,d]) => {
     const p = PORT.dc[nm.trim()] || {portAmt:0,portCnt:0};
@@ -6488,7 +6488,7 @@ async function parseXLS(file) {
   });
   const debtCompanies = dcList.sort((a,b)=>((b.paid||0)+(b.adj||0))-((a.paid||0)+(a.adj||0)));
 
-  // ── المكتب الرئيسي ────────────────────────────────────────────────────
+  // -- المكتب الرئيسي ----------------------------------------------------
   const HO_KEYS = ["Legal - DR. Sarhaan","Documentation- Omantel","HO","Legal -Oneic"];
   const headOffice = HO_KEYS.map(nm => {
     const d = hoMap[nm]||{paid:0,adj:0,count:0};
@@ -6520,7 +6520,7 @@ async function parseXLS(file) {
 
 const FIREBASE_URL = "https://oneic-dashboard-default-rtdb.firebaseio.com";
 
-// ── Firebase Realtime Database helpers ───────────────────────────────────────
+// -- Firebase Realtime Database helpers ---------------------------------------
 async function sbGet(table) {
   const key = table === 'oneic_data' ? 'main' : 'bulk';
   const res = await fetch(FIREBASE_URL + '/' + key + '.json');
@@ -6545,10 +6545,10 @@ const omr = n => new Intl.NumberFormat("en-US",{minimumFractionDigits:3,maximumF
 
 
 
-// ── BulkPaymentSection ────────────────────────────────────────────────────────
+// -- BulkPaymentSection --------------------------------------------------------
 
 
-// ── Bulk Payment Print ────────────────────────────────────────────────────────
+// -- Bulk Payment Print --------------------------------------------------------
 
 function handleBulkPrint(d, filterFrom, filterTo) {
   // طباعة Bulk Payment Report
@@ -6597,7 +6597,7 @@ function handleBulkPrint(d, filterFrom, filterTo) {
 }
 
 
-// ── VerifyModal ────────────────────────────────────────────────────────────
+// -- VerifyModal ------------------------------------------------------------
 function VerifyModal({pending, onConfirm, onReject}) {
   const { lang } = useLang();
   if (!pending) return null;
@@ -6633,7 +6633,7 @@ function VerifyModal({pending, onConfirm, onReject}) {
   );
 }
 
-// ── useWindowSize ──────────────────────────────────────────────────────────
+// -- useWindowSize ----------------------------------------------------------
 function useWindowSize() {
   const [size, setSize] = useState({ w: window.innerWidth, h: window.innerHeight });
   useEffect(() => {
@@ -6644,7 +6644,7 @@ function useWindowSize() {
   return size;
 }
 
-// ── Clock ──────────────────────────────────────────────────────────────────
+// -- Clock ------------------------------------------------------------------
 function Clock({ small }) {
   const { lang } = useLang();
   const [t, setT] = useState(new Date());
@@ -6670,7 +6670,7 @@ function Clock({ small }) {
   );
 }
 
-// ── UploadBtn ─────────────────────────────────────────────────────────────
+// -- UploadBtn -------------------------------------------------------------
 function UploadBtn({onFile,uploading,success,error,small,onAuth}) {
   const { lang } = useLang();
   const _auth = onAuth || ((cb)=>cb());
@@ -6696,7 +6696,7 @@ function UploadBtn({onFile,uploading,success,error,small,onAuth}) {
   );
 }
 
-// ── AmountCell ─────────────────────────────────────────────────────────────
+// -- AmountCell -------------------------------------------------------------
 function AmountCell({label,value,color,isTotal,small}) {
   return (
     <div className="amount-cell" style={{textAlign:"center",flex:1,padding:small?"4px 6px":"6px 10px"}}>
@@ -6706,7 +6706,7 @@ function AmountCell({label,value,color,isTotal,small}) {
   );
 }
 
-// ── AmountRow ──────────────────────────────────────────────────────────────
+// -- AmountRow --------------------------------------------------------------
 function AmountRow({paid,adj,color,small}) {
   const { lang } = useLang();
   return (
@@ -6720,7 +6720,7 @@ function AmountRow({paid,adj,color,small}) {
   );
 }
 
-// ── SectionHeader ──────────────────────────────────────────────────────────
+// -- SectionHeader ----------------------------------------------------------
 function SectionHeader({title,paid,adj,color,small,portAmt,portCnt}) {
   const { lang } = useLang();
   const total = paid + adj;
@@ -6772,7 +6772,7 @@ function SectionHeader({title,paid,adj,color,small,portAmt,portCnt}) {
   );
 }
 
-// ── EntityCard ─────────────────────────────────────────────────────────────
+// -- EntityCard -------------------------------------------------------------
 function EntityCard({name,paid,adj,color,rank,small,cnt,cBranch,portAmt,portCnt,principalAmt,osAmt,closed,active,refundAmt}) {
   const { lang } = useLang();
   var effClosed=closed||0;var effActive=(active)||Math.max(0,(portCnt||0)-(closed||0));
@@ -6959,7 +6959,7 @@ function EntityCard({name,paid,adj,color,rank,small,cnt,cBranch,portAmt,portCnt,
 }
 
 
-// ── SummaryCard ────────────────────────────────────────────────────────────
+// -- SummaryCard ------------------------------------------------------------
 function SummaryCard({label,paid,adj,cnt,cntPaid,cntAdj,cntTotal,portAmt,color,icon,pct,small,isMobile,isTablet,principalAmt}) {
   const { lang } = useLang();
   // الإجمالي = Paid + Adj | قيمة المحفظة = Principal
@@ -7073,10 +7073,10 @@ function SummaryCard({label,paid,adj,cnt,cntPaid,cntAdj,cntTotal,portAmt,color,i
   );
 }
 
-// ── RegionRow ──────────────────────────────────────────────────────────────
+// -- RegionRow --------------------------------------------------------------
 const RCOLS = ["#e85d20","#c44b10","#d4601a","#b03808","#f07030"];
 
-// ── RegionRow ─────────────────────────────────────────────────────────────
+// -- RegionRow -------------------------------------------------------------
 // يعرض كل محافظة مع: المدفوع + عدد الحسابات / التسويات + عدد الحسابات / الإجمالي + عدد الحسابات
 // عند الضغط على "المحصّلون" تنفتح قائمة بنفس التنسيق لكل محصّل
 function RegionInfoBox({label, value, color, bg, small}) {
@@ -7497,7 +7497,7 @@ function DayDetail({ date, day, collectors, regions, fmt, small, onClose, REG_CO
 }
 
 
-// ── AnalyticsModal — لوحة التحليل البياني ────────────────────────────────────
+// -- AnalyticsModal -- لوحة التحليل البياني ------------------------------------
 function AnalyticsModal({ bulk, onClose, small }) {
   const { lang } = useLang();
   const [activeChart, setActiveChart] = useState('trend');
@@ -7508,7 +7508,7 @@ function AnalyticsModal({ bulk, onClose, small }) {
   const d = bulk;
   if (!d) return null;
 
-  // ─── استخراج السنوات والأشهر المتاحة ──────────────────────────────────────
+  // --- استخراج السنوات والأشهر المتاحة --------------------------------------
   const allDailyRaw = [...(d.daily||[])].sort((a,b)=>a.date.localeCompare(b.date));
   const years  = [...new Set(allDailyRaw.map(x=>x.date.slice(0,4)))].sort();
   const months = filterYear==='all'
@@ -7525,7 +7525,7 @@ function AnalyticsModal({ bulk, onClose, small }) {
   const fmt = n => new Intl.NumberFormat("en-US",{minimumFractionDigits:3,maximumFractionDigits:3}).format(n||0);
   const fmtK = n => n >= 1000 ? (n/1000).toFixed(1)+'K' : n.toFixed(0);
 
-  // ─ تصفية البيانات حسب الفلتر ───────────────────────────────────────────────
+  // - تصفية البيانات حسب الفلتر -----------------------------------------------
   const daily = allDailyRaw.filter(x=>{
     if (filterYear!=='all' && !x.date.startsWith(filterYear)) return false;
     if (filterMonth!=='all' && !x.date.startsWith(filterMonth)) return false;
@@ -7577,7 +7577,7 @@ function AnalyticsModal({ bulk, onClose, small }) {
   const firstHalfTotal = firstHalf.reduce((s,x)=>s+x.paid+x.adj,0);
   const growthRate = firstHalfTotal > 0 ? ((lastHalfTotal-firstHalfTotal)/firstHalfTotal*100) : 0;
 
-  // ─ ألوان المناطق ────────────────────────────────────────────────────────────
+  // - ألوان المناطق ------------------------------------------------------------
   const REG_COLORS = {
     'شركات التحصيل':'#1a7a6b','المكتب الرئيسي':'#6c3fa0',
     'مسقط والداخلية':'#e85d20','الباطنة الشمالية والجنوبية':'#c44b10',
@@ -7595,7 +7595,7 @@ function AnalyticsModal({ bulk, onClose, small }) {
   const FALLBACK_COLS = ['#e85d20','#1a7a6b','#6c3fa0','#c44b10','#d4601a','#b03808','#f07030','#9333ea','#0891b2','#059669'];
   const getRegColor = (r,idx=0) => REG_COLORS[r.nameAr] || REG_COLORS[r.nameEn] || r.color || FALLBACK_COLS[idx%FALLBACK_COLS.length] || '#888';
 
-  // ─ SVG Charts ───────────────────────────────────────────────────────────────
+  // - SVG Charts ---------------------------------------------------------------
   const maxDaily = daily.length ? Math.max(...daily.map(x=>x.paid+x.adj), 1) : 1;
   const maxReg   = regions.length ? Math.max(...regions.map(x=>x.paid+x.adj), 1) : 1;
   const maxCol   = collectors.length ? Math.max(...collectors.map(x=>x.paid+x.adj), 1) : 1;
@@ -7611,7 +7611,7 @@ function AnalyticsModal({ bulk, onClose, small }) {
   const linePath = pts.map((p,i)=>i===0?`M${p[0]},${p[1]}`:`L${p[0]},${p[1]}`).join(' ');
   const areaPath = pts.length ? `${linePath} L${pts[pts.length-1][0]},${PY+chartH} L${pts[0][0]},${PY+chartH} Z` : '';
 
-  // طباعة اللوحة الكاملة — جميع التبويبات
+  // طباعة اللوحة الكاملة -- جميع التبويبات
   const handlePrintChart = () => {
     const omrP = n => new Intl.NumberFormat("en-US",{minimumFractionDigits:3,maximumFractionDigits:3}).format(n||0);
     const fmtKP = n => n>=1000?(n/1000).toFixed(1)+'K':n.toFixed(1);
@@ -7931,7 +7931,7 @@ function AnalyticsModal({ bulk, onClose, small }) {
                 const cw=CW-CPX-24, ch=CH-CPY-CPB;
                 const maxVal=Math.max(...daily.map(d=>d.paid+d.adj),1);
 
-                // ── Fixed intervals (0→100, 100→200, …) ───────────────
+                // -- Fixed intervals (0→100, 100→200, …) ---------------
                 const interval = (() => {
                   const raw = maxVal/5;
                   const mag = Math.pow(10, Math.floor(Math.log10(raw)));
@@ -8533,7 +8533,7 @@ function BulkPaymentSection({ bulk, small, onBulkUpdate, requireUploadAuth }) {
     try {
       const parsed = await parseBulkPayment(file);
 
-      // ── قراءة البيانات المحفوظة (Firebase أولاً ← localStorage ← state) ────
+      // -- قراءة البيانات المحفوظة (Firebase أولاً ← localStorage ← state) ----
       let existing = null;
       // 1) Firebase (المصدر الحقيقي - يحتوي كل التاريخ)
       try {
@@ -8611,10 +8611,10 @@ function BulkPaymentSection({ bulk, small, onBulkUpdate, requireUploadAuth }) {
         };
       }
 
-      // ── حفظ محلي ─────────────────────────────────────────────────────────
+      // -- حفظ محلي ---------------------------------------------------------
       try { localStorage.setItem('oneic_bulk_data', JSON.stringify(final)); } catch(e){}
 
-      // ── رفع لـ Firebase ─────────────────────────────────────────────────────────
+      // -- رفع لـ Firebase ---------------------------------------------------------
       try {
         await sbUpsert('oneic_bulk', { payload: final });
       } catch(e) { console.warn('Firebase bulk upload failed:', e); }
@@ -9091,7 +9091,7 @@ function BulkPaymentSection({ bulk, small, onBulkUpdate, requireUploadAuth }) {
 
 
 
-// ── HistoryModal — السجل التاريخي والمقارنة ──────────────────────────────────
+// -- HistoryModal -- السجل التاريخي والمقارنة ----------------------------------
 function HistoryModal({ history, onClose, small }) {
   const { lang } = useLang();
   const [view, setView]       = useState('list');
@@ -9101,7 +9101,7 @@ function HistoryModal({ history, onClose, small }) {
   const omr = n => new Intl.NumberFormat("en-US",{minimumFractionDigits:3,maximumFractionDigits:3}).format(n||0);
   const sorted = [...(history||[])].sort((a,b)=>new Date(b.date)-new Date(a.date));
 
-  // ─── عرض رسالة إذا لا يوجد سجل كافٍ ────────────────────────────────────────
+  // --- عرض رسالة إذا لا يوجد سجل كافٍ ----------------------------------------
   const hasData = sorted.length > 0;
   const hasMultiple = sorted.length > 1;
 
@@ -9460,8 +9460,8 @@ function HistoryModal({ history, onClose, small }) {
 }
 
 
-// ── Bulk Payment Parser (Smart 100%) ─────────────────────────────────────────
-// ── parseComplaints ─────────────────────────────────────────────────────────
+// -- Bulk Payment Parser (Smart 100%) -----------------------------------------
+// -- parseComplaints ---------------------------------------------------------
 async function parseComplaints(file) {
   return new Promise((resolve, reject) => {
     const reader = new FileReader();
@@ -9645,7 +9645,7 @@ function parseBulkPayment(file) {
 
           totalPaid += paid; totalAdj += adj;
 
-          // ── يومي ──
+          // -- يومي --
           if (dateStr) {
             if (!dailyMap[dateStr]) dailyMap[dateStr]={date:dateStr,paid:0,adj:0,count:0};
             dailyMap[dateStr].paid+=paid; dailyMap[dateStr].adj+=adj; dailyMap[dateStr].count++;
@@ -9662,12 +9662,12 @@ function parseBulkPayment(file) {
               dailyDetail[dateStr][key].debtors.push({name:debtor,agreementNo:String(row['Agreement No']||''),paid,adj,os:osAmt2});
           }
 
-          // ── منطقة ──
+          // -- منطقة --
           const ar = REG_AR[region]||region;
           if (!regionMap[ar]) regionMap[ar]={nameAr:ar,nameEn:region,paid:0,adj:0,count:0,color:REG_COLORS[ar]||'#888'};
           regionMap[ar].paid+=paid; regionMap[ar].adj+=adj; regionMap[ar].count++;
 
-          // ── محصّل ──
+          // -- محصّل --
           if (collector) {
             const ck = collector+'||'+region;
             if (!collectorMap[ck]) collectorMap[ck]={name:collector,region:ar,regionEn:region,branch,paid:0,adj:0,count:0};
@@ -9686,7 +9686,7 @@ function parseBulkPayment(file) {
           dailyDetailArr[date]=Object.values(cols).sort((a,b)=>(b.paid+b.adj)-(a.paid+a.adj));
         });
 
-        // ── إحصاءات ذكية ──
+        // -- إحصاءات ذكية --
         const avgDaily = daily.length ? totalPaid/daily.length : 0;
         const bestDay  = daily.reduce((a,b)=>(a.paid+a.adj)>(b.paid+b.adj)?a:b, daily[0]||{});
         const worstDay = daily.reduce((a,b)=>(a.paid+a.adj)<(b.paid+b.adj)?a:b, daily[0]||{});
@@ -9711,13 +9711,13 @@ function parseBulkPayment(file) {
 }
 
 
-// ── handlePrint ──────────────────────────────────────────────────────────────
+// -- handlePrint --------------------------------------------------------------
 function handlePrint(data, lang='ar') {
   var w = window.open('','_blank','width=1200,height=900');
   if (!w) return;
   var omrN = function(n) { return new Intl.NumberFormat('en-US',{minimumFractionDigits:3,maximumFractionDigits:3}).format(n||0); };
 
-  // ── حساب الإجماليات — نفس منطق الداشبورد (gPd+dPd+hPd من data.regions/debtCompanies/headOffice) ──
+  // -- حساب الإجماليات -- نفس منطق الداشبورد (gPd+dPd+hPd من data.regions/debtCompanies/headOffice) --
   var govPaid = (data.regions||[]).reduce(function(s,r){return s+r.paid;},0);
   var govAdj  = (data.regions||[]).reduce(function(s,r){return s+r.adj;},0);
   var dcPaid  = (data.debtCompanies||[]).reduce(function(s,r){return s+r.paid;},0);
@@ -9736,7 +9736,7 @@ function handlePrint(data, lang='ar') {
   var printDate = new Date().toLocaleDateString('ar-OM',{year:'numeric',month:'long',day:'numeric'});
   var LOGO_SRC  = typeof LOGO!=='undefined'?LOGO:'';
 
-  // ── Section 1 rows ──
+  // -- Section 1 rows --
   var s1rows = [
     ['المدفوع',            grandPaid,  '#16a34a'],
     ['تسويات عُمانتل',     grandAdj,   '#d97706'],
@@ -9748,7 +9748,7 @@ function handlePrint(data, lang='ar') {
     return '<div class="s1-row"><span class="s1-lbl" style="color:'+r[2]+'">'+r[0]+'</span><span class="s1-val" style="color:'+r[2]+'">'+omrN(r[1])+' OMR</span></div>';
   }).join('');
 
-  // ── Summary Cards ──
+  // -- Summary Cards --
   var summaries = [
     {label:'المكتب الرئيسي', paid:hoPaid, adj:hoAdj, color:'#6c3fa0', icon:'🏛'},
     {label:'شركات التحصيل',  paid:dcPaid, adj:dcAdj, color:'#1a7a6b', icon:'🏢'},
@@ -9766,7 +9766,7 @@ function handlePrint(data, lang='ar') {
       +'</div></div>';
   }).join('');
 
-  // ── مكاتب أونك ──
+  // -- مكاتب أونك --
   var regsHTML = '';
   (data.regions||[]).forEach(function(r,ri){
     var rTotal=r.paid+r.adj;
@@ -9786,7 +9786,7 @@ function handlePrint(data, lang='ar') {
       +'<td class="green">'+omrN(r.paid)+'</td><td class="amber">'+omrN(r.adj)+'</td><td class="total">'+omrN(rTotal)+'</td></tr>';
   });
 
-  // ── شركات التحصيل ──
+  // -- شركات التحصيل --
   var dcHTML = (data.debtCompanies||[]).map(function(c,i){
     var tot=(c.paid||0)+(c.adj||0);
     var inactive=['Ejada','Tahseel United','High Speed Company','High Speed company'].includes(c.name)?'<span class="badge-inactive">غير نشطة</span>':'';
@@ -9794,7 +9794,7 @@ function handlePrint(data, lang='ar') {
       +'<td class="amt green">'+omrN(c.paid)+'</td><td class="amt amber">'+omrN(c.adj)+'</td><td class="amt total">'+omrN(tot)+'</td></tr>';
   }).join('');
 
-  // ── المكتب الرئيسي ──
+  // -- المكتب الرئيسي --
   var hoHTML = (data.headOffice||[]).map(function(c,i){
     if (c.name==='Non-due accounts'||c.name==='HO') {
       return '<tr class="'+(i%2===0?'even':'odd')+'"><td class="rank">'+String(i+1)+'</td><td class="col-name">'+c.name+' <span class="badge-sm">'+((c.portCnt||0).toLocaleString())+' حساب فقط</span></td>'
@@ -10121,7 +10121,7 @@ export default function Dashboard() {
   const isDesktop = w >= 1024;
   const small = w < 768;
 
-  // ── تحميل البيانات من API عند البداية ───────────────────────────────────
+  // -- تحميل البيانات من API عند البداية -----------------------------------
   const [data, setData] = useState(() => {
     try {
       const saved = localStorage.getItem('oneic_dashboard_data');
@@ -10160,6 +10160,7 @@ export default function Dashboard() {
   const [unlocked, setUnlocked] = useState(false);
   const [pwInput, setPwInput] = useState('');
   const [pwError, setPwError] = useState(false);
+  const [projectChoice, setProjectChoice] = useState(null); // null | 'p1' | 'p2'
   const [showBulkReport, setShowBulkReport] = useState(false);
   const [lastSync, setLastSync] = useState(null);
   const [lang, setLang] = useState(() => { try { return localStorage.getItem('oneic_lang')||'ar'; } catch(e){return 'ar';} });
@@ -10182,7 +10183,7 @@ export default function Dashboard() {
     try { return JSON.parse(localStorage.getItem('oneic_history')||'[]'); } catch(e){return [];}
   });
 
-  // ── تحميل السجل التاريخي من Firebase على كل الأجهزة ─────────────────────
+  // -- تحميل السجل التاريخي من Firebase على كل الأجهزة ---------------------
   useEffect(() => { dataRef.current = data; }, [data]);
 
     useEffect(() => {
@@ -10215,10 +10216,10 @@ export default function Dashboard() {
     return BULK_SEED;
   });
 
-  // ── تحميل من Supabase عند فتح الصفحة ──────────────────────────────────────
+  // -- تحميل من Supabase عند فتح الصفحة --------------------------------------
   useEffect(() => {
     async function load() {
-      // ══ منطق مبسّط وموحّد ومضمون: Firebase هو مصدر الحقيقة الوحيد (single source of truth) ══
+      // == منطق مبسّط وموحّد ومضمون: Firebase هو مصدر الحقيقة الوحيد (single source of truth) ==
       // أثبتنا أن sbUpsert يحفظ بنجاح 100% بعد كل Complaints/XLS، لذا Firebase دائماً يُفضَّل إذا توفر ومحتواه صالح
       let row = null;
       try {
@@ -10266,7 +10267,7 @@ export default function Dashboard() {
     }
     load();
 
-    // ══ مزامنة كل 8 ثوانٍ ══
+    // == مزامنة كل 8 ثوانٍ ==
     var _syncInterval = setInterval(function() {
       if (window._noSyncUntil && Date.now() < window._noSyncUntil) return;
       sbGet('oneic_data').then(function(row) {
@@ -10283,7 +10284,7 @@ export default function Dashboard() {
           if(f) return Object.assign({},p,f,{name:nm,closed:(f.closed!==undefined&&f.closed!==null)?f.closed:(p.closed||0),active:(f.active!==undefined&&f.active!==null)?f.active:(p.active||0)});
           return {name:nm,paid:0,adj:0,count:0,portAmt:p.portAmt||0,portCnt:p.portCnt||0,closed:0,active:0};
         });
-        // ══ Firebase يحتوي البيانات الكاملة والنهائية الصحيحة - لا حاجة لأي دمج إضافي من localStorage ══
+        // == Firebase يحتوي البيانات الكاملة والنهائية الصحيحة - لا حاجة لأي دمج إضافي من localStorage ==
         var dSync = {};
         var rKeys = Object.keys(row);
         for(var ki=0;ki<rKeys.length;ki++){dSync[rKeys[ki]]=row[rKeys[ki]];}
@@ -10308,7 +10309,7 @@ export default function Dashboard() {
         var HO_P4={"Legal - DR. Sarhaan":{portAmt:3229651.681,portCnt:3691,closed:67,active:3624},"Documentation- Omantel":{portAmt:471756.070,portCnt:1099,closed:8,active:1091},"Non-due accounts":{portAmt:0,portCnt:340},"Legal -Oneic":{portAmt:64528.164,portCnt:144,closed:3,active:141},"Refund - before legal":{portAmt:0,portCnt:0,closed:0,active:0},"Refund - after legal":{portAmt:0,portCnt:0,closed:0,active:0}};
         var eHO4=row.headOffice||[];
         var fullHO4=HO_KEYS4.map(function(nm){var f=eHO4.find(function(c){return c.name===nm;})||(nm==='Non-due accounts'?eHO4.find(function(c){return c.name==='HO';}):null);var p=HO_P4[nm]||{};if(f)return Object.assign({},p,f,{name:nm,closed:(f.closed!==undefined&&f.closed!==null)?f.closed:(p.closed||0),active:(f.active!==undefined&&f.active!==null)?f.active:(p.active||0)});return {name:nm,paid:0,adj:0,count:0,portAmt:p.portAmt||0,portCnt:p.portCnt||0,closed:0,active:0};});
-        // ══ Firebase يحتوي البيانات الكاملة والنهائية الصحيحة - لا حاجة لأي دمج إضافي من localStorage ══
+        // == Firebase يحتوي البيانات الكاملة والنهائية الصحيحة - لا حاجة لأي دمج إضافي من localStorage ==
         var dSync4={headOffice:fullHO4,_updatedAt:row._updatedAt||row.lastUpdated||''};
         var rk=Object.keys(row); for(var ki4=0;ki4<rk.length;ki4++){if(rk[ki4]!=='headOffice')dSync4[rk[ki4]]=row[rk[ki4]];}
         lastSyncRef.current = dSync4._updatedAt || new Date().toISOString();
@@ -10343,14 +10344,14 @@ export default function Dashboard() {
 
   const UPLOAD_PW = 'Sulaiman1992';
 
-  // ══ تحديث فوري من Firebase ══
+  // == تحديث فوري من Firebase ==
   const forceRefresh = () => {
     // إجراء متعمد من المستخدم - يعمل دائماً، ويثق بـ Firebase 100% كمصدر الحقيقة الوحيد
     window._noSyncUntil = 0;
     setSyncing(true);
     sbGet('oneic_data').then(function(row) {
       if (!row || !row.regions || !row.regions.length) { setSyncing(false); return; }
-      // ══ Firebase يحتوي البيانات الكاملة والنهائية الصحيحة - لا حاجة لأي دمج أو إعادة بناء إضافي ══
+      // == Firebase يحتوي البيانات الكاملة والنهائية الصحيحة - لا حاجة لأي دمج أو إعادة بناء إضافي ==
       var HO_KEYS5=["Legal - DR. Sarhaan","Documentation- Omantel","Non-due accounts","Legal -Oneic","Refund - before legal","Refund - after legal"];
       var HO_P5={"Legal - DR. Sarhaan":{portAmt:3229651.681,portCnt:3691,closed:67,active:3624},"Documentation- Omantel":{portAmt:471756.070,portCnt:1099,closed:8,active:1091},"Non-due accounts":{portAmt:0,portCnt:340},"Legal -Oneic":{portAmt:64528.164,portCnt:144,closed:3,active:141},"Refund - before legal":{portAmt:0,portCnt:0,closed:0,active:0},"Refund - after legal":{portAmt:0,portCnt:0,closed:0,active:0}};
       var eHO5=row.headOffice||[];
@@ -10386,7 +10387,7 @@ export default function Dashboard() {
   const handleFile = useCallback(async (file) => {
     setUploading(true); setError(null); setSuccess(false); setPending(null);
     try {
-      // ── تحديد نوع الملف تلقائياً بالمحتوى لا الاسم ─────────────────
+      // -- تحديد نوع الملف تلقائياً بالمحتوى لا الاسم -----------------
       // نقرأ أول 2KB لمعرفة نوع الملف
       const sniffBuffer = await file.slice(0, 4096).arrayBuffer();
       const sniffText = (() => {
@@ -10428,11 +10429,11 @@ export default function Dashboard() {
         setComplaintsAdjState({dc:dcAdj,ho:hoAdj,gov:govAdj});
         setComplaintsRegionMap(regionMap||{});
         setComplaintsBranchMap(branchMap||{});
-        // ══ حماية فورية ضد interval قبل أي شيء آخر (لا تعتمد على توقيت setData) ══
+        // == حماية فورية ضد interval قبل أي شيء آخر (لا تعتمد على توقيت setData) ==
         window._noSyncUntil = Date.now() + 60000;
-        // ══ حدّث data مباشرة من Complaints ══
+        // == حدّث data مباشرة من Complaints ==
         setData(function(prev) { var base = prev; if(!base||!base.regions||!base.regions.length){console.warn('[EMPTY]');return prev;}
-          // ══ تنظيف وتوحيد الأسماء المكررة (case-insensitive) في debtCompanies قبل أي شيء آخر ══
+          // == تنظيف وتوحيد الأسماء المكررة (case-insensitive) في debtCompanies قبل أي شيء آخر ==
           if (base.debtCompanies && base.debtCompanies.length) {
             var dcSeen = {};
             var dcMerged = [];
@@ -10455,7 +10456,7 @@ export default function Dashboard() {
             });
             base = Object.assign({}, base, {debtCompanies: dcMerged});
           }
-          // ══ تنظيف وتوحيد الأسماء المكررة (case-insensitive) في headOffice قبل أي شيء آخر ══
+          // == تنظيف وتوحيد الأسماء المكررة (case-insensitive) في headOffice قبل أي شيء آخر ==
           // (يصلح حالات قديمة محفوظة فيها بطاقة "Non-due accounts"/"HO" مكررة تُضخّم عدد الحسابات)
           if (base.headOffice && base.headOffice.length) {
             var hoSeen = {};
@@ -10609,7 +10610,7 @@ export default function Dashboard() {
     finally { setUploading(false); }
   }, []);
 
-  // ── تأكيد البيانات ورفعها للسيرفر ──────────────────────────────────────
+  // -- تأكيد البيانات ورفعها للسيرفر --------------------------------------
   const confirmData = useCallback(async () => {
     if (!pending) return;
     const newData = pending.data;
@@ -10667,7 +10668,7 @@ export default function Dashboard() {
       complaintsAdjState: complaintsAdjState||{}
     };
 
-    // ── رفع لـ JSONbin + localStorage ───────────────────────────────────
+    // -- رفع لـ JSONbin + localStorage -----------------------------------
     setUploading(true);
     try {
       try{localStorage.setItem('oneic_dashboard_data',JSON.stringify(dataToSave));}catch(e){}
@@ -10683,7 +10684,7 @@ export default function Dashboard() {
       localStorage.setItem('oneic_last_update', new Date().toISOString());
     } catch(e) {}
 
-    // ── حفظ في السجل التاريخي ────────────────────────────────────────────
+    // -- حفظ في السجل التاريخي --------------------------------------------
     const historyEntry = {
       date: dataToSave.uploadDate || new Date().toISOString().split('T')[0],
       savedAt: new Date().toISOString(),
@@ -10725,7 +10726,7 @@ export default function Dashboard() {
     setTimeout(()=>setSuccess(false), 5000);
   }, [pending]);
 
-  // ── رفض البيانات ──
+  // -- رفض البيانات --
   const rejectData = useCallback(() => {
     setPending(null);
     setError("تم إلغاء الرفع — البيانات القديمة لا تزال نشطة");
@@ -10755,7 +10756,7 @@ export default function Dashboard() {
   const gRem = (data.totalPortfolio&&data.totalPortfolio.outstanding!=null) ? data.totalPortfolio.outstanding : (totalPort - gTotal - ONEIC_DISCOUNT);
   const p = v => gTotal>0 ? ((v/gTotal)*100).toFixed(1) : "0";
 
-  // ── Smart Notifications ───────────────────────────────────────────────────
+  // -- Smart Notifications ---------------------------------------------------
   const hoPrincipalCurrent = (function(){var _f=(data.headOffice||[]).find(function(x){return x.name==='Legal - DR. Sarhaan';});return _f?(_f.principalAmt||0):0;})();
   const currentBestDay = (() => {
     try { const s=localStorage.getItem('oneic_bulk_data'); if(s){const b=JSON.parse(s); if(b?.daily?.length) return Math.max(...b.daily.map(d=>d.paid+(d.adj||0)));} } catch(e){} return 0;
@@ -10765,8 +10766,63 @@ export default function Dashboard() {
 
   const pad = isMobile ? "12px" : isTablet ? "16px" : "20px 24px";
 
-  // ══ شاشة كلمة السر ══
+  // == PROJECT SELECTION SCREEN (قبل كلمة المرور) ======================
+  if (!projectChoice) {
+    return (
+      <LangContext.Provider value={langCtx}>
+      <div style={{height:"100vh",display:"flex",flexDirection:"column",alignItems:"center",
+        justifyContent:"center",
+        background:"linear-gradient(135deg,#1e3a5f 0%,#2d5a8e 50%,#1e3a5f 100%)",
+        fontFamily:"'Cairo','Tajawal',sans-serif",direction:lang==='ar'?"rtl":"ltr"}}>
+        <div style={{textAlign:"center",marginBottom:28}}>
+          <img src={LOGO} alt="ONEIC" style={{height:68,objectFit:"contain",marginBottom:12}}/>
+          <div style={{fontSize:13,color:"#93c5fd",fontWeight:700,letterSpacing:1,marginBottom:6}}>
+            ONEIC -- OMANTEL DEBT COLLECTION
+          </div>
+          <div style={{fontSize:22,fontWeight:900,color:"#fff"}}>
+            {lang==='ar'?"اختر المشروع":"Select Project"}
+          </div>
+        </div>
+        <div style={{display:"flex",gap:16,justifyContent:"center",flexWrap:"wrap",marginBottom:24}}>
+          <button onClick={()=>setProjectChoice('p1')} style={{
+            background:"rgba(255,255,255,0.12)",backdropFilter:"blur(12px)",
+            border:"2px solid rgba(255,255,255,0.25)",borderRadius:18,
+            padding:"24px 32px",cursor:"pointer",width:240,
+            display:"flex",flexDirection:"column",alignItems:"center",gap:10}}
+            onMouseEnter={e=>{e.currentTarget.style.background="rgba(255,255,255,0.2)";e.currentTarget.style.transform="translateY(-3px)"}}
+            onMouseLeave={e=>{e.currentTarget.style.background="rgba(255,255,255,0.12)";e.currentTarget.style.transform="translateY(0)"}}>
+            <div style={{fontSize:36}}>🏢</div>
+            <div style={{fontSize:17,fontWeight:900,color:"#fff"}}>{lang==='ar'?"محفظة عُمانتل 1":"Omantel Portfolio 1"}</div>
+            <div style={{fontSize:10,color:"#93c5fd"}}>{lang==='ar'?"تحصيل نشط -- بيانات حية":"Active Collection -- Live Data"}</div>
+            <div style={{background:"#16a34a",color:"#fff",borderRadius:20,padding:"3px 12px",fontSize:10,fontWeight:700}}>● {lang==='ar'?"نشط":"Active"}</div>
+          </button>
+          <button onClick={()=>setProjectChoice('p2')} style={{
+            background:"rgba(255,255,255,0.08)",backdropFilter:"blur(12px)",
+            border:"2px solid rgba(232,93,32,0.4)",borderRadius:18,
+            padding:"24px 32px",cursor:"pointer",width:240,
+            display:"flex",flexDirection:"column",alignItems:"center",gap:10}}
+            onMouseEnter={e=>{e.currentTarget.style.background="rgba(232,93,32,0.15)";e.currentTarget.style.transform="translateY(-3px)"}}
+            onMouseLeave={e=>{e.currentTarget.style.background="rgba(255,255,255,0.08)";e.currentTarget.style.transform="translateY(0)"}}>
+            <div style={{fontSize:36}}>📊</div>
+            <div style={{fontSize:17,fontWeight:900,color:"#fff"}}>{lang==='ar'?"محفظة عُمانتل 2":"Omantel Portfolio 2"}</div>
+            <div style={{fontSize:10,color:"#fca5a5"}}>{lang==='ar'?"تحليل ما قبل الإطلاق":"Pre-Launch Analysis"}</div>
+            <div style={{background:"#d97706",color:"#fff",borderRadius:20,padding:"3px 12px",fontSize:10,fontWeight:700}}>⏳ {lang==='ar'?"قيد التحضير":"Pending"}</div>
+          </button>
+        </div>
+        <button onClick={()=>{const n=lang==='ar'?'en':'ar';setLang(n);try{localStorage.setItem('oneic_lang',n);}catch(e){}}} style={{
+          background:"rgba(255,255,255,0.1)",color:"#fff",border:"1px solid rgba(255,255,255,0.2)",
+          borderRadius:20,padding:"6px 16px",fontSize:11,fontWeight:700,cursor:"pointer"}}>
+          🌐 {lang==='ar'?"English":"عربي"}
+        </button>
+        <div style={{marginTop:16,fontSize:10,color:"rgba(255,255,255,0.3)"}}>ONEIC © 2026</div>
+      </div>
+      </LangContext.Provider>
+    );
+  }
+
+  // == شاشة كلمة المرور (بعد اختيار المشروع) ============================
   if (!unlocked) {
+    const isP2 = projectChoice==='p2';
     return (
       <div style={{
         height:"100vh", display:"flex", flexDirection:"column",
@@ -10774,25 +10830,26 @@ export default function Dashboard() {
         background:"linear-gradient(135deg,#1e3a5f 0%,#2d5a8e 50%,#1e3a5f 100%)",
         fontFamily:"'Cairo','Tajawal',sans-serif", direction:"rtl"
       }}>
-        {/* بطاقة الدخول */}
         <div style={{
-          background:"#fff", borderRadius:24, padding:"40px 36px",
+          background:"#fff", borderRadius:24, padding:"36px 32px",
           boxShadow:"0 20px 60px rgba(0,0,0,0.3)",
           width:"100%", maxWidth:400, textAlign:"center"
         }}>
-          {/* شعار */}
-          <img src={LOGO} alt="ONEIC" style={{height:64,objectFit:"contain",marginBottom:16}}/>
-          <div style={{fontSize:22,fontWeight:900,color:"#1e3a5f",marginBottom:4}}>{t("محفظة عُمانتل 1",lang)}</div>
-          <div style={{fontSize:13,color:"#888",fontWeight:600,marginBottom:28}}>
-            Omantel Debt Collection Dashboard
+          <img src={LOGO} alt="ONEIC" style={{height:60,objectFit:"contain",marginBottom:14}}/>
+          <div style={{fontSize:20,fontWeight:900,color:"#1e3a5f",marginBottom:3}}>
+            {isP2 ? (lang==='ar'?"محفظة عُمانتل 2":"Omantel Portfolio 2") : t("محفظة عُمانتل 1",lang)}
           </div>
-
-          {/* حقل كلمة السر */}
+          <div style={{fontSize:11,color:isP2?"#d97706":"#888",fontWeight:600,marginBottom:16}}>
+            {isP2 ? (lang==='ar'?"تحليل ما قبل الإطلاق":"Pre-Launch Analysis") : "Omantel Debt Collection Dashboard"}
+          </div>
+          <button onClick={()=>{setProjectChoice(null);setPwInput('');setPwError(false);}} style={{
+            background:"#f3f4f6",color:"#6b7280",border:"none",borderRadius:8,
+            padding:"5px 14px",fontSize:11,fontWeight:700,cursor:"pointer",marginBottom:20}}>
+            ← {lang==='ar'?"تغيير المشروع":"Change Project"}
+          </button>
           <div style={{marginBottom:16,textAlign:"right"}}>
             <div style={{fontSize:13,fontWeight:800,color:"#444",marginBottom:8}}>{t("🔒 كلمة المرور",lang)}</div>
-            <input
-              type="password"
-              value={pwInput}
+            <input type="password" value={pwInput}
               onChange={e => { setPwInput(e.target.value); setPwError(false); }}
               onKeyDown={e => {
                 if (e.key === 'Enter') {
@@ -10801,49 +10858,216 @@ export default function Dashboard() {
                 }
               }}
               placeholder="أدخل كلمة المرور..."
-              style={{
-                width:"100%", padding:"12px 16px",
-                border: pwError ? "2px solid #ef4444" : "2px solid #e5e7eb",
-                borderRadius:12, fontSize:15, fontFamily:"'Cairo',sans-serif",
-                outline:"none", boxSizing:"border-box",
-                background: pwError ? "#fef2f2" : "#f9fafb",
-                textAlign:"right", direction:"rtl",
-                transition:"border 0.2s"
-              }}
+              style={{width:"100%",padding:"12px 16px",
+                border:pwError?"2px solid #ef4444":"2px solid #e5e7eb",
+                borderRadius:12,fontSize:15,fontFamily:"'Cairo',sans-serif",
+                outline:"none",boxSizing:"border-box",
+                background:pwError?"#fef2f2":"#f9fafb",
+                textAlign:"right",direction:"rtl"}}
             />
-            {pwError && (
-              <div style={{color:"#ef4444",fontSize:12,fontWeight:700,marginTop:6,textAlign:"right"}}>
-                ❌ كلمة المرور غير صحيحة، حاول مرة أخرى
-              </div>
-            )}
+            {pwError&&<div style={{color:"#ef4444",fontSize:12,fontWeight:700,marginTop:6,textAlign:"right"}}>
+              ❌ كلمة المرور غير صحيحة، حاول مرة أخرى
+            </div>}
           </div>
-
-          {/* زر الدخول */}
-          <button
-            onClick={() => {
-              if (pwInput === 'Welcome@93360229##') { setUnlocked(true); }
-              else { setPwError(true); setPwInput(''); }
-            }}
-            style={{
-              width:"100%", padding:"13px",
-              background:"linear-gradient(120deg,#1e3a5f,#2d5a8e)",
-              color:"#fff", border:"none", borderRadius:12,
-              fontSize:15, fontWeight:900, cursor:"pointer",
-              fontFamily:"'Cairo',sans-serif",
-              boxShadow:"0 4px 15px rgba(30,58,95,0.4)"
-            }}
-          >
-            🔓 دخول
+          <button onClick={()=>{
+            if (pwInput==='Welcome@93360229##'){setUnlocked(true);}
+            else{setPwError(true);setPwInput('');}
+          }} style={{width:"100%",padding:"13px",
+            background:isP2?"linear-gradient(120deg,#92400e,#d97706)":"linear-gradient(120deg,#1e3a5f,#2d5a8e)",
+            color:"#fff",border:"none",borderRadius:12,fontSize:15,fontWeight:900,cursor:"pointer",
+            fontFamily:"'Cairo',sans-serif",
+            boxShadow:isP2?"0 4px 15px rgba(217,119,6,0.4)":"0 4px 15px rgba(30,58,95,0.4)"}}>
+            🔓 {lang==='ar'?"دخول":"Login"}
           </button>
-
           <div style={{marginTop:20,fontSize:11,color:"#bbb",fontWeight:600}}>
-            ONEIC — نظام إدارة تحصيل الديون © 2026
+            ONEIC -- نظام إدارة تحصيل الديون © 2026
           </div>
         </div>
       </div>
     );
   }
 
+  // == OMANTEL 2 -- READ-ONLY ANALYSIS ==================================
+  if (projectChoice==='p2') {
+    const P2={total:105287,balance:13595235.153,bills:470079,avg:129.125,
+      omani:44151,expat:61136,postpaid:58902,fixed:46385,
+      lt100:55291,r100_500:47491,r500_1k:2130,r1k_5k:371,gt5k:3,
+      y2021:941,y2022:43592,y2023:60754,
+      top:[
+        {name:"YAHYA YOUSUF NASSER AL YAHYAI",bal:6170.176,nat:"Omani",svc:"Postpaid"},
+        {name:"MOOSA ESSA KHALAF AL ABRI",bal:5757.026,nat:"Omani",svc:"Postpaid"},
+        {name:"MAMMAR ABDUL KHALIQ AMER AL RAWAS",bal:5183.592,nat:"Omani",svc:"Postpaid"},
+        {name:"ABDUL MUNEM SALEH SAID AL RAISI",bal:4380.527,nat:"Omani",svc:"Postpaid"},
+        {name:"RAJAVEL RAJAVEL JEEVA JEEVA",bal:4239.800,nat:"Expat",svc:"Postpaid"},
+        {name:"MUHAMMAD RAMZAN NAWAZ",bal:4208.770,nat:"Expat",svc:"Postpaid"},
+        {name:"DALIL AHAMED NON NON AHAMED",bal:4020.210,nat:"Expat",svc:"Postpaid"},
+        {name:"MUHAMMAD FARAZ ABBAS",bal:3980.245,nat:"Expat",svc:"Postpaid"},
+        {name:"IBRAHIM ABDULLAH SAUD AL BALUSHI",bal:3796.534,nat:"Omani",svc:"Postpaid"},
+        {name:"KHALID SAOIM RASHID AL",bal:3743.910,nat:"Omani",svc:"Postpaid"},
+      ]};
+    const f2=v=>v.toLocaleString('en',{minimumFractionDigits:3,maximumFractionDigits:3});
+    const n2=v=>Math.round(v).toLocaleString('en');
+    const p2=(a,b)=>b?(a/b*100).toFixed(1)+'%':'0%';
+    const billsD=[{b:"1",n:8218},{b:"2",n:5384},{b:"3",n:11234},{b:"4",n:29570},{b:"5",n:31232},{b:"6",n:11710},{b:"7",n:4258},{b:"8",n:1889},{b:"9+",n:1851}];
+    const maxBill=31232;
+    const ar=lang==='ar';
+    return (
+      <LangContext.Provider value={langCtx}>
+      <div style={{minHeight:"100vh",background:"#0d1117",color:"#fff",fontFamily:"'Cairo','Tajawal',Arial,sans-serif",direction:ar?"rtl":"ltr"}}>
+        {/* Header */}
+        <div style={{background:"linear-gradient(120deg,#1e3a5f,#2d5a8e)",padding:"12px 24px",display:"flex",justifyContent:"space-between",alignItems:"center",position:"sticky",top:0,zIndex:100,boxShadow:"0 4px 20px rgba(0,0,0,0.3)"}}>
+          <div style={{display:"flex",alignItems:"center",gap:14}}>
+            <img src={LOGO} alt="ONEIC" style={{height:44,objectFit:"contain"}}/>
+            <div>
+              <div style={{fontSize:17,fontWeight:900,color:"#e85d20"}}>{ar?"محفظة عُمانتل 2 — تحليل ما قبل الإطلاق":"Omantel Portfolio 2 — Pre-Launch Analysis"}</div>
+              <div style={{fontSize:11,color:"#93c5fd"}}>{ar?"بيانات نوفمبر 2025 · للمراجعة الداخلية فقط":"Data: Nov 2025 · For internal review only"}</div>
+            </div>
+          </div>
+          <div style={{display:"flex",gap:8,alignItems:"center"}}>
+            <span style={{background:"#d97706",color:"#fff",borderRadius:20,padding:"4px 14px",fontSize:11,fontWeight:700}}>⏳ {ar?"قيد التحضير":"Pending"}</span>
+            <button onClick={()=>setProjectChoice(null)} style={{background:"rgba(255,255,255,0.1)",color:"#fff",border:"1px solid rgba(255,255,255,0.2)",borderRadius:10,padding:"7px 16px",fontSize:12,fontWeight:700,cursor:"pointer"}}>← {ar?"اختيار المشروع":"Projects"}</button>
+            <button onClick={()=>{const n=lang==='ar'?'en':'ar';setLang(n);try{localStorage.setItem('oneic_lang',n);}catch(e){}; document.documentElement.dir=n==='ar'?'rtl':'ltr';}} style={{background:ar?"#1a7a6b":"#6c3fa0",color:"#fff",border:"none",borderRadius:10,padding:"7px 16px",fontSize:12,fontWeight:700,cursor:"pointer"}}>🌐 {ar?"English":"عربي"}</button>
+            <button onClick={()=>window.print()} style={{background:"#1e3a5f",color:"#fff",border:"none",borderRadius:10,padding:"7px 16px",fontSize:12,fontWeight:700,cursor:"pointer"}}>🖨️ {ar?"طباعة":"Print"}</button>
+          </div>
+        </div>
+        <div style={{padding:"20px 24px",maxWidth:1400,margin:"0 auto"}}>
+          {/* KPIs */}
+          <div style={{display:"grid",gridTemplateColumns:"repeat(4,1fr)",gap:14,marginBottom:20}}>
+            {[{icon:"👥",val:n2(P2.total),lbl:ar?"إجمالي الحسابات":"Total Accounts",sub:ar?"بانتظار التحصيل":"Awaiting Collection",col:"#60a5fa"},
+              {icon:"💰",val:f2(P2.balance),lbl:ar?"إجمالي المحفظة (OMR)":"Total Portfolio (OMR)",sub:ar?"الرصيد المتأخر":"Outstanding",col:"#e85d20"},
+              {icon:"📋",val:n2(P2.bills),lbl:ar?"إجمالي الفواتير":"Total Bills",sub:"Nov 2025",col:"#16a34a"},
+              {icon:"📊",val:f2(P2.avg),lbl:ar?"متوسط الرصيد / حساب":"Avg Balance / Account",sub:"OMR",col:"#d97706"},
+            ].map((k,i)=>(
+              <div key={i} style={{background:"#161b22",borderRadius:14,padding:"18px 20px",border:"1px solid rgba(255,255,255,0.06)",textAlign:"center"}}>
+                <div style={{fontSize:28,marginBottom:6}}>{k.icon}</div>
+                <div style={{fontSize:19,fontWeight:900,color:k.col,marginBottom:3}}>{k.val}</div>
+                <div style={{fontSize:9,color:"#64748b",fontWeight:700,textTransform:"uppercase",letterSpacing:1}}>{k.lbl}</div>
+                <div style={{fontSize:10,color:"#334155",marginTop:3}}>{k.sub}</div>
+              </div>
+            ))}
+          </div>
+          {/* Nationality + Service */}
+          <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:16,marginBottom:20}}>
+            {[
+              {title:ar?"👤 توزيع الجنسية":"👤 Nationality",rows:[{lbl:ar?"عُماني":"Omani",v:P2.omani,col:"#16a34a"},{lbl:ar?"وافد":"Expatriate",v:P2.expat,col:"#e85d20"}]},
+              {title:ar?"📱 نوع الخدمة":"📱 Service Type",rows:[{lbl:"Postpaid Mobile",v:P2.postpaid,col:"#1a7a6b"},{lbl:"Fixed Line",v:P2.fixed,col:"#6c3fa0"}]},
+            ].map((sec,si)=>(
+              <div key={si} style={{background:"#161b22",borderRadius:14,padding:"18px 20px",border:"1px solid rgba(255,255,255,0.06)"}}>
+                <div style={{fontSize:11,fontWeight:800,color:"#60a5fa",textTransform:"uppercase",letterSpacing:1,marginBottom:14,paddingBottom:8,borderBottom:"1px solid rgba(255,255,255,0.06)"}}>{sec.title}</div>
+                {sec.rows.map((r,i)=>(
+                  <div key={i} style={{marginBottom:14}}>
+                    <div style={{display:"flex",justifyContent:"space-between",marginBottom:5}}>
+                      <span style={{fontSize:13,fontWeight:700,color:r.col}}>{r.lbl}</span>
+                      <span style={{fontSize:13,fontWeight:900,color:"#fff"}}>{n2(r.v)} <span style={{fontSize:10,color:"#475569"}}>({p2(r.v,P2.total)})</span></span>
+                    </div>
+                    <div style={{background:"#1e293b",borderRadius:8,height:12,overflow:"hidden"}}>
+                      <div style={{width:p2(r.v,P2.total),background:r.col,height:"100%",borderRadius:8}}/>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            ))}
+          </div>
+          {/* Balance Distribution */}
+          <div style={{background:"#161b22",borderRadius:14,padding:"18px 20px",border:"1px solid rgba(255,255,255,0.06)",marginBottom:20}}>
+            <div style={{fontSize:11,fontWeight:800,color:"#60a5fa",textTransform:"uppercase",letterSpacing:1,marginBottom:14,paddingBottom:8,borderBottom:"1px solid rgba(255,255,255,0.06)"}}>💰 {ar?"توزيع الأرصدة (OMR)":"Balance Distribution (OMR)"}</div>
+            <div style={{display:"flex",height:14,borderRadius:8,overflow:"hidden",marginBottom:14}}>
+              {[["#1e40af",P2.lt100],["#16a34a",P2.r100_500],["#d97706",P2.r500_1k],["#e85d20",P2.r1k_5k],["#dc2626",P2.gt5k]].map(([col,v],i)=>(
+                <div key={i} style={{width:p2(v,P2.total),background:col,height:"100%"}}/>
+              ))}
+            </div>
+            <div style={{display:"flex",flexWrap:"wrap",gap:14}}>
+              {[["#1e40af",ar?"أقل من 100":"<100 OMR",P2.lt100],["#16a34a","100–500",P2.r100_500],["#d97706","500–1K",P2.r500_1k],["#e85d20","1K–5K",P2.r1k_5k],["#dc2626",ar?"أكثر من 5K":">5K",P2.gt5k]].map(([col,lbl,v],i)=>(
+                <div key={i} style={{display:"flex",alignItems:"center",gap:6}}>
+                  <div style={{width:11,height:11,borderRadius:3,background:col}}/>
+                  <span style={{fontSize:11,color:"#94a3b8"}}>{lbl}:</span>
+                  <strong style={{fontSize:12,color:"#fff"}}>{n2(v)} <span style={{color:"#475569",fontWeight:400}}>({p2(v,P2.total)})</span></strong>
+                </div>
+              ))}
+            </div>
+          </div>
+          {/* Bills + Inactive */}
+          <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:16,marginBottom:20}}>
+            <div style={{background:"#161b22",borderRadius:14,padding:"18px 20px",border:"1px solid rgba(255,255,255,0.06)"}}>
+              <div style={{fontSize:11,fontWeight:800,color:"#60a5fa",textTransform:"uppercase",letterSpacing:1,marginBottom:14,paddingBottom:8,borderBottom:"1px solid rgba(255,255,255,0.06)"}}>📋 {ar?"توزيع عدد الفواتير":"Bills per Account"}</div>
+              <div style={{display:"flex",alignItems:"flex-end",gap:5,height:100,marginBottom:8}}>
+                {billsD.map((x,i)=>(
+                  <div key={i} style={{flex:1,display:"flex",flexDirection:"column",alignItems:"center",gap:3}}>
+                    <span style={{fontSize:7,color:"#475569"}}>{x.n>=1000?(x.n/1000).toFixed(0)+"K":x.n}</span>
+                    <div style={{width:"100%",background:"#e85d20",borderRadius:"3px 3px 0 0",height:Math.round(x.n/maxBill*80)+"px"}}/>
+                    <span style={{fontSize:9,color:"#64748b"}}>{x.b}</span>
+                  </div>
+                ))}
+              </div>
+              <div style={{display:"flex",justifyContent:"space-around",background:"#0d1117",borderRadius:8,padding:10}}>
+                {[{l:"PEAK",v:"5 "+( ar?"فواتير":"bills"),s:"31,232 "+(ar?"حساب":"accts"),c:"#e85d20"},
+                  {l:ar?"المتوسط":"AVG",v:"4.5",s:ar?"فاتورة/حساب":"bills/acc",c:"#60a5fa"},
+                  {l:ar?"الإجمالي":"TOTAL",v:"470K",s:ar?"فاتورة":"bills",c:"#16a34a"}].map((x,i)=>(
+                  <div key={i} style={{textAlign:"center"}}>
+                    <div style={{fontSize:8,color:"#64748b",fontWeight:700}}>{x.l}</div>
+                    <div style={{fontSize:15,fontWeight:900,color:x.c}}>{x.v}</div>
+                    <div style={{fontSize:9,color:"#94a3b8"}}>{x.s}</div>
+                  </div>
+                ))}
+              </div>
+            </div>
+            <div style={{background:"#161b22",borderRadius:14,padding:"18px 20px",border:"1px solid rgba(255,255,255,0.06)"}}>
+              <div style={{fontSize:11,fontWeight:800,color:"#60a5fa",textTransform:"uppercase",letterSpacing:1,marginBottom:14,paddingBottom:8,borderBottom:"1px solid rgba(255,255,255,0.06)"}}>📅 {ar?"سنة إيقاف الخدمة":"Inactive Year"}</div>
+              {[["2021",P2.y2021,"#60a5fa"],["2022",P2.y2022,"#e85d20"],["2023",P2.y2023,"#16a34a"]].map(([yr,v,col])=>(
+                <div key={yr} style={{marginBottom:14}}>
+                  <div style={{display:"flex",justifyContent:"space-between",marginBottom:4}}>
+                    <span style={{fontSize:14,fontWeight:900,color:col}}>{yr}</span>
+                    <span style={{fontSize:12,color:"#fff"}}>{n2(v)} <span style={{color:"#475569",fontSize:10}}>({p2(v,P2.total)})</span></span>
+                  </div>
+                  <div style={{background:"#1e293b",borderRadius:6,height:14,overflow:"hidden"}}>
+                    <div style={{width:p2(v,P2.total),background:col,height:"100%",borderRadius:6,display:"flex",alignItems:"center",paddingLeft:8}}>
+                      <span style={{fontSize:8,color:"#fff",fontWeight:700,whiteSpace:"nowrap"}}>{p2(v,P2.total)}</span>
+                    </div>
+                  </div>
+                </div>
+              ))}
+              <div style={{background:"#0d1117",borderRadius:8,padding:"10px 14px",marginTop:8,fontSize:11,color:"#94a3b8",lineHeight:1.7}}>
+                <span style={{color:"#16a34a",fontWeight:800}}>57.7%</span> {ar?"أوقفت في":"inactive in"} <strong style={{color:"#16a34a"}}>2023</strong> ·{" "}
+                <span style={{color:"#e85d20",fontWeight:800}}>41.4%</span> {ar?"في":"in"} <strong style={{color:"#e85d20"}}>2022</strong>
+              </div>
+            </div>
+          </div>
+          {/* Top 10 */}
+          <div style={{background:"#161b22",borderRadius:14,padding:"18px 20px",border:"1px solid rgba(255,255,255,0.06)",marginBottom:20}}>
+            <div style={{fontSize:11,fontWeight:800,color:"#60a5fa",textTransform:"uppercase",letterSpacing:1,marginBottom:14,paddingBottom:8,borderBottom:"1px solid rgba(255,255,255,0.06)"}}>🏆 {ar?"أعلى 10 حسابات برصيد":"Top 10 Accounts by Balance"}</div>
+            <table style={{width:"100%",borderCollapse:"collapse"}}>
+              <thead>
+                <tr style={{background:"#1e293b"}}>
+                  {["#",ar?"اسم العميل":"Customer Name",ar?"الجنسية":"Nationality",ar?"الخدمة":"Service","Balance (OMR)"].map((h,i)=>(
+                    <th key={i} style={{padding:"9px 10px",fontSize:10,fontWeight:800,color:"#64748b",textAlign:i===0||i===4?"center":"left",textTransform:"uppercase"}}>{h}</th>
+                  ))}
+                </tr>
+              </thead>
+              <tbody>
+                {P2.top.map((acc,i)=>(
+                  <tr key={i} style={{borderBottom:"1px solid rgba(255,255,255,0.04)",background:i%2===0?"transparent":"rgba(255,255,255,0.01)"}}>
+                    <td style={{padding:"8px 10px",fontSize:13,fontWeight:900,color:"#e85d20",textAlign:"center"}}>{i+1}</td>
+                    <td style={{padding:"8px 10px",fontSize:12,fontWeight:700,color:"#fff"}}>{acc.name}</td>
+                    <td style={{padding:"8px 10px",fontSize:11,color:acc.nat==="Omani"?"#16a34a":"#e85d20",fontWeight:700}}>{acc.nat==="Omani"?(ar?"عُماني":"Omani"):(ar?"وافد":"Expat")}</td>
+                    <td style={{padding:"8px 10px",fontSize:10,color:"#94a3b8"}}>{acc.svc}</td>
+                    <td style={{padding:"8px 10px",fontSize:13,fontWeight:900,color:"#16a34a",textAlign:"center"}}>{f2(acc.bal)}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+          {/* Footer */}
+          <div style={{background:"#161b22",borderRadius:14,padding:"12px 20px",display:"flex",justifyContent:"space-between",alignItems:"center",border:"1px solid rgba(255,255,255,0.04)"}}>
+            <div style={{fontSize:10,color:"#334155"}}>ONEIC © 2026 · Omantel Portfolio 2<br/><span style={{color:"#d97706"}}>⚠️ {ar?"للمراجعة الداخلية فقط":"For internal review only"}</span></div>
+            <div style={{fontSize:10,color:"#334155",textAlign:"right"}}>{ar?"مصدر البيانات":"Data source"}: Master Data Nov 2025<br/>{ar?"تاريخ التقرير":"Report date"}: 2026-04-02</div>
+          </div>
+        </div>
+      </div>
+      </LangContext.Provider>
+    );
+  }
+
+  // == OMANTEL 1 -- MAIN DASHBOARD ======================================
   return (
     <LangContext.Provider value={langCtx}>
     <div style={{
