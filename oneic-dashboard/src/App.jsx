@@ -11543,17 +11543,17 @@ export default function Dashboard() {
           <UploadBtn onFile={handleFile} onAuth={requireUploadAuth} uploading={uploading} success={success} error={error} small={isMobile} />
 
           {/* ── كل الأزرار في grid ── */}
-          <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:6,alignItems:"stretch"}}>
+          <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:5,alignItems:"stretch"}}>
 
             {/* صف 1 — طباعة | File Count */}
             <button
               onClick={() => handlePrint(data, lang)}
               style={{
-                display:"flex",alignItems:"center",justifyContent:"center",gap:5,
-                background:"#1e3a5f",color:"#fff",border:"none",borderRadius:10,
-                padding:"9px 14px",fontSize:13,fontWeight:800,cursor:"pointer",
+                display:"flex",alignItems:"center",justifyContent:"center",gap:4,
+                background:"#1e3a5f",color:"#fff",border:"none",borderRadius:8,
+                padding:"7px 10px",fontSize:11,fontWeight:800,cursor:"pointer",
                 fontFamily:"'Cairo',sans-serif",whiteSpace:"nowrap",
-                boxShadow:"0 2px 8px rgba(30,58,95,0.3)"
+                boxShadow:"0 2px 6px rgba(30,58,95,0.3)"
               }}
             >
               🖨️ {isMobile ? "PDF" : t("طباعة / PDF",lang)}
@@ -11561,9 +11561,9 @@ export default function Dashboard() {
 
             <button onClick={() => setShowHistory(s=>!s)}
               style={{
-                display:"flex",alignItems:"center",justifyContent:"center",gap:5,
-                background:"#1e3a5f",color:"#fff",border:"none",borderRadius:10,
-                padding:"9px 14px",fontSize:13,fontWeight:800,cursor:"pointer",
+                display:"flex",alignItems:"center",justifyContent:"center",gap:4,
+                background:"#1e3a5f",color:"#fff",border:"none",borderRadius:8,
+                padding:"7px 10px",fontSize:11,fontWeight:800,cursor:"pointer",
                 fontFamily:"'Cairo',sans-serif",whiteSpace:"nowrap"
               }}>
               📁 {history.length > 0 ? `${t('عدد الملفات',lang)} (${history.length})` : t("عدد الملفات",lang)}
@@ -11611,7 +11611,7 @@ export default function Dashboard() {
                 display:"flex",alignItems:"center",justifyContent:"center",gap:6,
                 background:"linear-gradient(120deg,#1a1a2e,#2d2d5e)",
                 color:"#fff",border:"1px solid rgba(255,255,255,0.15)",borderRadius:10,
-                padding:"8px 14px",fontSize:12,fontWeight:800,cursor:"pointer",
+                padding:"6px 10px",fontSize:11,fontWeight:800,cursor:"pointer",
                 fontFamily:"'Cairo',sans-serif",whiteSpace:"nowrap",
                 boxShadow:"0 2px 8px rgba(0,0,0,0.3)"
               }}>
