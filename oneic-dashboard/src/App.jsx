@@ -10943,9 +10943,9 @@ export default function Dashboard() {
             ].map((k,i)=>(
               <div key={i} style={{background:"#fff",borderRadius:14,padding:"18px 20px",border:"1px solid #e2e8f0",textAlign:"center"}}>
                 <div style={{fontSize:28,marginBottom:6}}>{k.icon}</div>
-                <div style={{fontSize:24,fontWeight:900,color:k.col,marginBottom:4}}>{k.val}</div>
-                <div style={{fontSize:9,color:"#64748b",fontWeight:700,textTransform:"uppercase",letterSpacing:1}}>{k.lbl}</div>
-                <div style={{fontSize:10,color:"#64748b",marginTop:3}}>{k.sub}</div>
+                <div style={{fontSize:24,fontWeight:900,color:k.col,marginBottom:6}}>{k.val}</div>
+                <div style={{fontSize:12,color:"#1a1a2e",fontWeight:800,marginBottom:3}}>{k.lbl}</div>
+                <div style={{fontSize:12,color:"#374151",fontWeight:700,marginTop:2}}>{k.sub}</div>
               </div>
             ))}
           </div>
@@ -10998,7 +10998,7 @@ export default function Dashboard() {
                   <div key={i} style={{flex:1,display:"flex",flexDirection:"column",alignItems:"center",gap:3}}>
                     <span style={{fontSize:7,color:"#6b7280"}}>{x.n>=1000?(x.n/1000).toFixed(0)+"K":x.n}</span>
                     <div style={{width:"100%",background:"#e85d20",borderRadius:"3px 3px 0 0",height:Math.round(x.n/maxBill*80)+"px"}}/>
-                    <span style={{fontSize:9,color:"#64748b"}}>{x.b}</span>
+                    <span style={{fontSize:10,color:"#374151",fontWeight:700}}>{x.b}</span>
                   </div>
                 ))}
               </div>
@@ -11008,7 +11008,7 @@ export default function Dashboard() {
                   {l:ar?"الإجمالي":"TOTAL",v:"470K",s:ar?"فاتورة":"bills",c:"#16a34a"}].map((x,i)=>(
                   <div key={i} style={{textAlign:"center"}}>
                     <div style={{fontSize:8,color:"#64748b",fontWeight:700}}>{x.l}</div>
-                    <div style={{fontSize:15,fontWeight:900,color:x.c}}>{x.v}</div>
+                    <div style={{fontSize:18,fontWeight:900,color:x.c}}>{x.v}</div>
                     <div style={{fontSize:9,color:"#6b7280"}}>{x.s}</div>
                   </div>
                 ))}
@@ -11020,7 +11020,7 @@ export default function Dashboard() {
                 <div key={yr} style={{marginBottom:14}}>
                   <div style={{display:"flex",justifyContent:"space-between",marginBottom:4}}>
                     <span style={{fontSize:14,fontWeight:900,color:col}}>{yr}</span>
-                    <span style={{fontSize:12,color:"#111"}}>{n2(v)} <span style={{color:"#6b7280",fontSize:10}}>({p2(v,P2.total)})</span></span>
+                    <span style={{fontSize:12,color:"#111"}}>{n2(v)} <span style={{color:"#374151",fontSize:11,fontWeight:700}}>({p2(v,P2.total)})</span></span>
                   </div>
                   <div style={{background:"#e8edf3",borderRadius:6,height:18,overflow:"hidden"}}>
                     <div style={{width:p2(v,P2.total),background:col,height:"100%",borderRadius:6,display:"flex",alignItems:"center",paddingLeft:8}}>
@@ -11042,16 +11042,16 @@ export default function Dashboard() {
               <thead>
                 <tr style={{background:"#e8edf3"}}>
                   {["#",ar?"اسم العميل":"Customer Name",ar?"الجنسية":"Nationality",ar?"الخدمة":"Service","Balance (OMR)"].map((h,i)=>(
-                    <th key={i} style={{padding:"9px 10px",fontSize:10,fontWeight:800,color:"#64748b",textAlign:i===0||i===4?"center":"left",textTransform:"uppercase"}}>{h}</th>
+                    <th key={i} style={{padding:"9px 10px",fontSize:11,fontWeight:800,color:"#374151",textAlign:i===0||i===4?"center":"left",textTransform:"uppercase"}}>{h}</th>
                   ))}
                 </tr>
               </thead>
               <tbody>
                 {P2.top.map((acc,i)=>(
                   <tr key={i} style={{borderBottom:"1px solid rgba(255,255,255,0.04)",background:i%2===0?"#fff":"#f9fafb"}}>
-                    <td style={{padding:"8px 10px",fontSize:13,fontWeight:900,color:"#e85d20",textAlign:"center"}}>{i+1}</td>
+                    <td style={{padding:"8px 10px",fontSize:14,fontWeight:900,color:"#e85d20",textAlign:"center"}}>{i+1}</td>
                     <td style={{padding:"8px 10px",fontSize:12,fontWeight:700,color:"#111"}}>{acc.name}</td>
-                    <td style={{padding:"8px 10px",fontSize:11,color:acc.nat==="Omani"?"#16a34a":"#e85d20",fontWeight:700}}>{acc.nat==="Omani"?(ar?"عُماني":"Omani"):(ar?"وافد":"Expat")}</td>
+                    <td style={{padding:"8px 10px",fontSize:12,color:acc.nat==="Omani"?"#16a34a":"#e85d20",fontWeight:800}}>{acc.nat==="Omani"?(ar?"عُماني":"Omani"):(ar?"وافد":"Expat")}</td>
                     <td style={{padding:"8px 10px",fontSize:10,color:"#6b7280"}}>{acc.svc}</td>
                     <td style={{padding:"8px 10px",fontSize:15,fontWeight:900,color:"#16a34a",textAlign:"center"}}>{f2(acc.bal)} <span style={{fontSize:10,fontWeight:600,color:"#6b7280"}}>OMR</span></td>
                   </tr>
