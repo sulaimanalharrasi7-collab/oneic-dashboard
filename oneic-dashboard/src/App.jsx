@@ -10891,7 +10891,8 @@ export default function Dashboard() {
   // == OMANTEL 2 -- READ-ONLY ANALYSIS ==================================
   if (projectChoice==='p2') {
     const P2={total:105287,balance:13595235.153,bills:470079,avg:129.125,
-      omani:44151,expat:61136,postpaid:58902,fixed:46385,
+      omani:44151,expat:61136,omaniBalance:5883810.714,expatBalance:7711424.439,
+      postpaid:58902,fixed:46385,postpaidBalance:8289175.550,fixedBalance:5306059.603,
       lt100:55291,r100_500:47491,r500_1k:2130,r1k_5k:371,gt5k:3,
       y2021:941,y2022:43592,y2023:60754,
       top:[
@@ -10952,8 +10953,8 @@ export default function Dashboard() {
           {/* Nationality + Service */}
           <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:16,marginBottom:20}}>
             {[
-              {title:ar?"👤 توزيع الجنسية":"👤 Nationality",rows:[{lbl:ar?"عُماني":"Omani",v:P2.omani,col:"#16a34a"},{lbl:ar?"وافد":"Expatriate",v:P2.expat,col:"#e85d20"}]},
-              {title:ar?"📱 نوع الخدمة":"📱 Service Type",rows:[{lbl:"Postpaid Mobile",v:P2.postpaid,col:"#1a7a6b"},{lbl:"Fixed Line",v:P2.fixed,col:"#6c3fa0"}]},
+              {title:ar?"👤 توزيع الجنسية":"👤 Nationality",rows:[{lbl:ar?"عُماني":"Omani",v:P2.omani,col:"#16a34a",bal:P2.omaniBalance},{lbl:ar?"وافد":"Expatriate",v:P2.expat,col:"#e85d20",bal:P2.expatBalance}]},
+              {title:ar?"📱 نوع الخدمة":"📱 Service Type",rows:[{lbl:"Postpaid Mobile",v:P2.postpaid,col:"#1a7a6b",bal:P2.postpaidBalance},{lbl:"Fixed Line",v:P2.fixed,col:"#6c3fa0",bal:P2.fixedBalance}]},
             ].map((sec,si)=>(
               <div key={si} style={{background:"#fff",borderRadius:14,padding:"18px 20px",border:"1px solid #e2e8f0"}}>
                 <div style={{fontSize:11,fontWeight:800,color:"#1e3a5f",textTransform:"uppercase",letterSpacing:1,marginBottom:14,paddingBottom:8,borderBottom:"1px solid rgba(255,255,255,0.06)"}}>{sec.title}</div>
