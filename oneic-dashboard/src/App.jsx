@@ -11854,8 +11854,11 @@ export default function Dashboard() {
           </div>
         </div>
 
-        <div id="print-footer" style={{ textAlign:"center", fontSize:11, color:"#bbb", paddingTop:16, paddingBottom:8 }}>
+        <div id="print-footer" style={{ textAlign:"center", fontSize:11, color:"#bbb", paddingTop:16, paddingBottom:4 }}>
           ONEIC — لوحة تحكم إدارة تحصيل الديون © 2026 · {data.uploadDate}
+        </div>
+        <div style={{textAlign:"center",fontSize:11,color:"#9ca3af",fontWeight:500,paddingBottom:10}}>
+          Programming and design by Sulaiman Al-Harrasi — 16296
         </div>
       </div>
     </div>
