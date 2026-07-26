@@ -10989,18 +10989,18 @@ export default function Dashboard() {
                       {/* 2 KPI boxes */}
                       <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:10,marginBottom:10}}>
                         <div style={{background:"#f8fafc",borderRadius:10,padding:"10px 14px",border:"1px solid #e8edf3",textAlign:"center"}}>
-                          <div style={{fontSize:9,color:"#6b7280",fontWeight:700,textTransform:"uppercase",letterSpacing:0.5,marginBottom:4}}>
+                          <div style={{fontSize:12,color:"#111827",fontWeight:800,marginBottom:5}}>
                             {ar?"عدد الحسابات":"Accounts"}
                           </div>
-                          <div style={{fontSize:20,fontWeight:900,color:"#111827"}}>{n2(r.v)}</div>
-                          <div style={{fontSize:10,color:r.col,fontWeight:700}}>{ar?"حساب":"accounts"}</div>
+                          <div style={{fontSize:22,fontWeight:900,color:"#111827"}}>{n2(r.v)}</div>
+                          <div style={{fontSize:10,color:r.col,fontWeight:700,marginTop:2}}>{ar?"حساب":"accounts"}</div>
                         </div>
                         <div style={{background:r.col+"0D",borderRadius:10,padding:"10px 14px",border:"1.5px solid "+r.col+"30",textAlign:"center"}}>
-                          <div style={{fontSize:9,color:"#6b7280",fontWeight:700,textTransform:"uppercase",letterSpacing:0.5,marginBottom:4}}>
+                          <div style={{fontSize:12,color:"#111827",fontWeight:800,marginBottom:5}}>
                             {ar?"قيمة المديونية":"Debt Value"}
                           </div>
-                          <div style={{fontSize:15,fontWeight:900,color:r.col,lineHeight:1.2}}>{f2(r.bal)}</div>
-                          <div style={{fontSize:10,color:r.col,fontWeight:700}}>OMR</div>
+                          <div style={{fontSize:16,fontWeight:900,color:r.col,lineHeight:1.2}}>{f2(r.bal)}</div>
+                          <div style={{fontSize:10,color:r.col,fontWeight:700,marginTop:2}}>OMR</div>
                         </div>
                       </div>
                       {/* Progress bar + debt share */}
@@ -11008,8 +11008,8 @@ export default function Dashboard() {
                         <div style={{flex:1,background:"#e8edf3",borderRadius:6,height:10,overflow:"hidden"}}>
                           <div style={{width:p2(r.v,P2.total),background:"linear-gradient(90deg,"+r.col+"99,"+r.col+")",height:"100%",borderRadius:6}}/>
                         </div>
-                        <div style={{fontSize:10,color:"#6b7280",fontWeight:600,whiteSpace:"nowrap",minWidth:80,textAlign:"right"}}>
-                          {ar?"نسبة المديونية":"Debt"}: <strong style={{color:r.col}}>{(r.bal/P2.balance*100).toFixed(1)}%</strong>
+                        <div style={{fontSize:12,color:"#111827",fontWeight:800,whiteSpace:"nowrap",minWidth:110,textAlign:"right"}}>
+                          {ar?"نسبة المديونية":"Debt Share"}: <span style={{color:r.col,fontWeight:900}}>{(r.bal/P2.balance*100).toFixed(1)}%</span>
                         </div>
                       </div>
                     </div>
