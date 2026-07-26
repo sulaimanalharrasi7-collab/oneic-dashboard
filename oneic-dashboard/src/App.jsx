@@ -11542,7 +11542,7 @@ export default function Dashboard() {
         <div style={{ display:"flex", alignItems:"center", gap: isMobile?10:20 }}>
           <UploadBtn onFile={handleFile} onAuth={requireUploadAuth} uploading={uploading} success={success} error={error} small={isMobile} />
 
-          {/* ── كل الأزرار في grid 2×2 موحّد ── */}
+          {/* ── كل الأزرار في grid ── */}
           <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:6,alignItems:"stretch"}}>
 
             {/* صف 1 — طباعة | File Count */}
@@ -11601,6 +11601,21 @@ export default function Dashboard() {
                 fontFamily:"'Cairo',sans-serif",whiteSpace:"nowrap"
               }}>
               💳 Bulk Payment
+            </button>
+
+            {/* صف 3 — اختيار المشروع (عرض كامل) */}
+            <button
+              onClick={() => { setProjectChoice(null); setUnlocked(false); setPwInput(''); }}
+              style={{
+                gridColumn:"1 / -1",
+                display:"flex",alignItems:"center",justifyContent:"center",gap:6,
+                background:"linear-gradient(120deg,#1a1a2e,#2d2d5e)",
+                color:"#fff",border:"1px solid rgba(255,255,255,0.15)",borderRadius:10,
+                padding:"8px 14px",fontSize:12,fontWeight:800,cursor:"pointer",
+                fontFamily:"'Cairo',sans-serif",whiteSpace:"nowrap",
+                boxShadow:"0 2px 8px rgba(0,0,0,0.3)"
+              }}>
+              🏠 {lang==='ar'?"اختيار المشروع":"Select Project"}
             </button>
           </div>
 
