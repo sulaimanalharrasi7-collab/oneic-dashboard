@@ -10950,40 +10950,71 @@ export default function Dashboard() {
               </div>
             ))}
           </div>
-          {/* Nationality + Service */}
+          {/* Nationality + Service — redesigned */}
           <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:16,marginBottom:20}}>
             {[
-              {title:ar?"👤 توزيع الجنسية":"👤 Nationality",rows:[{lbl:ar?"عُماني":"Omani",v:P2.omani,col:"#16a34a",bal:P2.omaniBalance},{lbl:ar?"وافد":"Expatriate",v:P2.expat,col:"#e85d20",bal:P2.expatBalance}]},
-              {title:ar?"📱 نوع الخدمة":"📱 Service Type",rows:[{lbl:"Postpaid Mobile",v:P2.postpaid,col:"#1a7a6b",bal:P2.postpaidBalance},{lbl:"Fixed Line",v:P2.fixed,col:"#6c3fa0",bal:P2.fixedBalance}]},
+              {title:ar?"توزيع الجنسية":"Nationality Distribution",icon:"👤",totalLabel:ar?"إجمالي الحسابات":"Total Accounts",rows:[
+                {lbl:ar?"عُماني":"Omani",v:P2.omani,col:"#16a34a",bal:P2.omaniBalance,icon:"🟢"},
+                {lbl:ar?"وافد":"Expatriate",v:P2.expat,col:"#e85d20",bal:P2.expatBalance,icon:"🟠"},
+              ]},
+              {title:ar?"نوع الخدمة":"Service Type Distribution",icon:"📱",totalLabel:ar?"إجمالي الحسابات":"Total Accounts",rows:[
+                {lbl:"Postpaid Mobile",v:P2.postpaid,col:"#1a7a6b",bal:P2.postpaidBalance,icon:"📶"},
+                {lbl:"Fixed Line",v:P2.fixed,col:"#6c3fa0",bal:P2.fixedBalance,icon:"🔌"},
+              ]},
             ].map((sec,si)=>(
-              <div key={si} style={{background:"#fff",borderRadius:14,padding:"18px 20px",border:"1px solid #e2e8f0"}}>
-                <div style={{fontSize:11,fontWeight:800,color:"#1e3a5f",textTransform:"uppercase",letterSpacing:1,marginBottom:14,paddingBottom:8,borderBottom:"1px solid rgba(255,255,255,0.06)"}}>{sec.title}</div>
-                {sec.rows.map((r,i)=>(
-                  <div key={i} style={{marginBottom:16}}>
-                    <div style={{display:"flex",justifyContent:"space-between",alignItems:"flex-start",marginBottom:5}}>
-                      <div>
-                        <div style={{fontSize:15,fontWeight:900,color:r.col}}>{r.lbl}</div>
-                        {r.bal!=null&&<div style={{fontSize:11,color:"#6b7280",marginTop:2}}>
-                          {ar?"قيمة المديونية":"Debt Value"}: <strong style={{color:"#111827",fontWeight:800}}>{f2(r.bal)} OMR</strong>
-                        </div>}
+              <div key={si} style={{background:"#fff",borderRadius:16,border:"1px solid #e2e8f0",overflow:"hidden",boxShadow:"0 2px 12px rgba(0,0,0,0.06)"}}>
+                {/* Card Header */}
+                <div style={{background:"#f8fafc",borderBottom:"2px solid #e2e8f0",padding:"14px 20px",display:"flex",alignItems:"center",gap:8}}>
+                  <span style={{fontSize:18}}>{sec.icon}</span>
+                  <span style={{fontSize:14,fontWeight:900,color:"#111827",letterSpacing:0.3}}>{sec.title}</span>
+                </div>
+                <div style={{padding:"16px 20px"}}>
+                  {sec.rows.map((r,i)=>(
+                    <div key={i} style={{
+                      marginBottom: i<sec.rows.length-1 ? 20 : 0,
+                      paddingBottom: i<sec.rows.length-1 ? 20 : 0,
+                      borderBottom: i<sec.rows.length-1 ? "1px solid #f0f4f8" : "none"
+                    }}>
+                      {/* Row Header */}
+                      <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:10}}>
+                        <div style={{display:"flex",alignItems:"center",gap:8}}>
+                          <span style={{fontSize:16}}>{r.icon}</span>
+                          <span style={{fontSize:15,fontWeight:900,color:"#111827"}}>{r.lbl}</span>
+                        </div>
+                        <div style={{background:r.col+"15",borderRadius:20,padding:"3px 12px",
+                          border:"1.5px solid "+r.col+"40"}}>
+                          <span style={{fontSize:12,fontWeight:800,color:r.col}}>{p2(r.v,P2.total)}</span>
+                        </div>
                       </div>
-                      <div style={{textAlign:"right"}}>
-                        <div style={{fontSize:18,fontWeight:900,color:"#111827"}}>{n2(r.v)}</div>
-                        <div style={{fontSize:11,color:"#374151",fontWeight:700}}>({p2(r.v,P2.total)})</div>
+                      {/* 2 KPI boxes */}
+                      <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:10,marginBottom:10}}>
+                        <div style={{background:"#f8fafc",borderRadius:10,padding:"10px 14px",border:"1px solid #e8edf3",textAlign:"center"}}>
+                          <div style={{fontSize:9,color:"#6b7280",fontWeight:700,textTransform:"uppercase",letterSpacing:0.5,marginBottom:4}}>
+                            {ar?"عدد الحسابات":"Accounts"}
+                          </div>
+                          <div style={{fontSize:20,fontWeight:900,color:"#111827"}}>{n2(r.v)}</div>
+                          <div style={{fontSize:10,color:r.col,fontWeight:700}}>{ar?"حساب":"accounts"}</div>
+                        </div>
+                        <div style={{background:r.col+"0D",borderRadius:10,padding:"10px 14px",border:"1.5px solid "+r.col+"30",textAlign:"center"}}>
+                          <div style={{fontSize:9,color:"#6b7280",fontWeight:700,textTransform:"uppercase",letterSpacing:0.5,marginBottom:4}}>
+                            {ar?"قيمة المديونية":"Debt Value"}
+                          </div>
+                          <div style={{fontSize:15,fontWeight:900,color:r.col,lineHeight:1.2}}>{f2(r.bal)}</div>
+                          <div style={{fontSize:10,color:r.col,fontWeight:700}}>OMR</div>
+                        </div>
+                      </div>
+                      {/* Progress bar + debt share */}
+                      <div style={{display:"flex",alignItems:"center",gap:10}}>
+                        <div style={{flex:1,background:"#e8edf3",borderRadius:6,height:10,overflow:"hidden"}}>
+                          <div style={{width:p2(r.v,P2.total),background:"linear-gradient(90deg,"+r.col+"99,"+r.col+")",height:"100%",borderRadius:6}}/>
+                        </div>
+                        <div style={{fontSize:10,color:"#6b7280",fontWeight:600,whiteSpace:"nowrap",minWidth:80,textAlign:"right"}}>
+                          {ar?"نسبة المديونية":"Debt"}: <strong style={{color:r.col}}>{(r.bal/P2.balance*100).toFixed(1)}%</strong>
+                        </div>
                       </div>
                     </div>
-                    <div style={{background:"#e8edf3",borderRadius:8,height:16,overflow:"hidden",marginBottom:6}}>
-                      <div style={{width:p2(r.v,P2.total),background:r.col,height:"100%",borderRadius:8}}/>
-                    </div>
-                    {r.bal!=null&&<div style={{
-                      background:r.col+"18",borderRadius:8,padding:"6px 12px",
-                      display:"flex",justifyContent:"space-between",alignItems:"center",
-                      border:"1px solid "+r.col+"33"}}>
-                      <span style={{fontSize:10,color:r.col,fontWeight:700}}>{ar?"نسبة المديونية":"Debt Share"}</span>
-                      <span style={{fontSize:13,fontWeight:900,color:r.col}}>{(r.bal/P2.balance*100).toFixed(1)}%</span>
-                    </div>}
-                  </div>
-                ))}
+                  ))}
+                </div>
               </div>
             ))}
           </div>
