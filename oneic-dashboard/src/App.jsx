@@ -10953,20 +10953,20 @@ export default function Dashboard() {
           {/* Nationality + Service — redesigned */}
           <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:16,marginBottom:20}}>
             {[
-              {title:ar?"توزيع الجنسية":"Nationality Distribution",icon:"👤",totalLabel:ar?"إجمالي الحسابات":"Total Accounts",rows:[
+              {title:ar?"توزيع الجنسية":"Nationality Distribution",icon:"👤",grad:"linear-gradient(135deg,#1e3a5f,#1a7a6b)",rows:[
                 {lbl:ar?"عُماني":"Omani",v:P2.omani,col:"#16a34a",bal:P2.omaniBalance,icon:"🟢"},
                 {lbl:ar?"وافد":"Expatriate",v:P2.expat,col:"#e85d20",bal:P2.expatBalance,icon:"🟠"},
               ]},
-              {title:ar?"نوع الخدمة":"Service Type Distribution",icon:"📱",totalLabel:ar?"إجمالي الحسابات":"Total Accounts",rows:[
+              {title:ar?"نوع الخدمة":"Service Type Distribution",icon:"📱",grad:"linear-gradient(135deg,#3b0764,#6c3fa0)",rows:[
                 {lbl:"Postpaid Mobile",v:P2.postpaid,col:"#1a7a6b",bal:P2.postpaidBalance,icon:"📶"},
                 {lbl:"Fixed Line",v:P2.fixed,col:"#6c3fa0",bal:P2.fixedBalance,icon:"🔌"},
               ]},
             ].map((sec,si)=>(
               <div key={si} style={{background:"#fff",borderRadius:16,border:"1px solid #e2e8f0",overflow:"hidden",boxShadow:"0 2px 12px rgba(0,0,0,0.06)"}}>
                 {/* Card Header */}
-                <div style={{background:"#f8fafc",borderBottom:"2px solid #e2e8f0",padding:"14px 20px",display:"flex",alignItems:"center",gap:8}}>
+                <div style={{background:sec.grad||"#f8fafc",borderBottom:"none",padding:"14px 20px",display:"flex",alignItems:"center",gap:8}}>
                   <span style={{fontSize:18}}>{sec.icon}</span>
-                  <span style={{fontSize:14,fontWeight:900,color:"#111827",letterSpacing:0.3}}>{sec.title}</span>
+                  <span style={{fontSize:14,fontWeight:900,color:"#fff",letterSpacing:0.3}}>{sec.title}</span>
                 </div>
                 <div style={{padding:"16px 20px"}}>
                   {sec.rows.map((r,i)=>(
@@ -11020,9 +11020,9 @@ export default function Dashboard() {
           </div>
                     {/* Balance Distribution */}
           <div style={{background:"#fff",borderRadius:16,border:"1px solid #e2e8f0",overflow:"hidden",marginBottom:20,boxShadow:"0 2px 12px rgba(0,0,0,0.06)"}}>
-            <div style={{background:"#f8fafc",borderBottom:"2px solid #e2e8f0",padding:"14px 20px",display:"flex",alignItems:"center",gap:8}}>
+            <div style={{background:"linear-gradient(135deg,#1e3a5f,#2d5a8e)",borderBottom:"none",padding:"14px 20px",display:"flex",alignItems:"center",gap:8}}>
               <span style={{fontSize:20}}>💰</span>
-              <span style={{fontSize:15,fontWeight:900,color:"#111827"}}>{ar?"توزيع الأرصدة (OMR)":"Balance Distribution (OMR)"}</span>
+              <span style={{fontSize:15,fontWeight:900,color:"#fff"}}>{ar?"توزيع الأرصدة (OMR)":"Balance Distribution (OMR)"}</span>
             </div>
             <div style={{padding:"20px"}}>
               <div style={{display:"flex",height:22,borderRadius:10,overflow:"hidden",marginBottom:18,boxShadow:"0 2px 6px rgba(0,0,0,0.1)"}}>
@@ -11046,12 +11046,12 @@ export default function Dashboard() {
           {/* Bills + Inactive */}
           <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:16,marginBottom:20}}>
             <div style={{background:"#fff",borderRadius:16,border:"1px solid #e2e8f0",overflow:"hidden",boxShadow:"0 2px 12px rgba(0,0,0,0.06)"}}>
-              <div style={{background:"#f8fafc",borderBottom:"2px solid #e2e8f0",padding:"14px 20px",display:"flex",alignItems:"center",gap:8}}>
+              <div style={{background:"linear-gradient(135deg,#7c2d12,#ea580c)",borderBottom:"none",padding:"14px 20px",display:"flex",alignItems:"center",gap:8}}>
                 <span style={{fontSize:20}}>📋</span>
-                <span style={{fontSize:15,fontWeight:900,color:"#111827"}}>{ar?"توزيع عدد الفواتير":"Bills per Account"}</span>
+                <span style={{fontSize:15,fontWeight:900,color:"#fff"}}>{ar?"توزيع عدد الفواتير":"Bills per Account"}</span>
               </div>
               <div style={{padding:"16px 20px"}}>
-                <div style={{display:"flex",alignItems:"flex-end",gap:4,height:110,marginBottom:10}}>
+                <div style={{display:"flex",alignItems:"flex-end",gap:4,height:110,marginBottom:10,marginTop:16,marginTop:14,marginTop:16}}>
                   {billsD.map((x,i)=>(
                     <div key={i} style={{flex:1,display:"flex",flexDirection:"column",alignItems:"center",gap:3}}>
                       <span style={{fontSize:9,color:"#111827",fontWeight:800}}>{x.n>=1000?(x.n/1000).toFixed(0)+"K":x.n}</span>
@@ -11076,9 +11076,9 @@ export default function Dashboard() {
             </div>
 
             <div style={{background:"#fff",borderRadius:16,border:"1px solid #e2e8f0",overflow:"hidden",boxShadow:"0 2px 12px rgba(0,0,0,0.06)"}}>
-              <div style={{background:"#f8fafc",borderBottom:"2px solid #e2e8f0",padding:"14px 20px",display:"flex",alignItems:"center",gap:8}}>
+              <div style={{background:"linear-gradient(135deg,#14532d,#16a34a)",borderBottom:"none",padding:"14px 20px",display:"flex",alignItems:"center",gap:8}}>
                 <span style={{fontSize:20}}>📅</span>
-                <span style={{fontSize:15,fontWeight:900,color:"#111827"}}>{ar?"سنة إيقاف الخدمة":"Inactive Year"}</span>
+                <span style={{fontSize:15,fontWeight:900,color:"#fff"}}>{ar?"سنة إيقاف الخدمة":"Inactive Year"}</span>
               </div>
               <div style={{padding:"16px 20px"}}>
                 {[["2021",P2.y2021,"#3b82f6"],["2022",P2.y2022,"#e85d20"],["2023",P2.y2023,"#16a34a"]].map(([yr,v,col])=>(
@@ -11108,9 +11108,9 @@ export default function Dashboard() {
 
           {/* Top 10 */}
           <div style={{background:"#fff",borderRadius:16,border:"1px solid #e2e8f0",overflow:"hidden",marginBottom:20,boxShadow:"0 2px 12px rgba(0,0,0,0.06)"}}>
-            <div style={{background:"#f8fafc",borderBottom:"2px solid #e2e8f0",padding:"14px 20px",display:"flex",alignItems:"center",gap:8}}>
+            <div style={{background:"linear-gradient(135deg,#78350f,#d97706)",borderBottom:"none",padding:"14px 20px",display:"flex",alignItems:"center",gap:8}}>
               <span style={{fontSize:20}}>🏆</span>
-              <span style={{fontSize:15,fontWeight:900,color:"#111827"}}>{ar?"أعلى 10 حسابات برصيد":"Top 10 Accounts by Outstanding Balance"}</span>
+              <span style={{fontSize:15,fontWeight:900,color:"#fff"}}>{ar?"أعلى 10 حسابات برصيد":"Top 10 Accounts by Outstanding Balance"}</span>
             </div>
             <table style={{width:"100%",borderCollapse:"collapse"}}>
               <thead>
