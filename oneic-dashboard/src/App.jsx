@@ -11146,6 +11146,9 @@ export default function Dashboard() {
 {/* Footer */}
           <div style={{background:"#fff",borderRadius:14,padding:"12px 20px",display:"flex",justifyContent:"space-between",alignItems:"center",border:"1px solid #e2e8f0"}}>
             <div style={{fontSize:10,color:"#64748b"}}>ONEIC © 2026 · Omantel Portfolio 2<br/><span style={{color:"#d97706"}}>⚠️ {ar?"للمراجعة الداخلية فقط":"For internal review only"}</span></div>
+            <div style={{fontSize:11,color:"#9ca3af",fontWeight:500,textAlign:"center"}}>
+              Programming and design by Sulaiman Al-Harrasi — 16296
+            </div>
             <div style={{fontSize:10,color:"#64748b",textAlign:"right"}}>{ar?"مصدر البيانات":"Data source"}: Master Data Nov 2025<br/>{ar?"تاريخ التقرير":"Report date"}: 2026-04-02</div>
           </div>
         </div>
