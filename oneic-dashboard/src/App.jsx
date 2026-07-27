@@ -10997,33 +10997,33 @@ export default function Dashboard() {
                         </span>
                       </div>
                       {/* Row 1: عدد الحسابات */}
-                      <div style={{background:"#f8fafc",padding:"10px 16px",borderBottom:"1px solid #e8edf3"}}>
+                      <div style={{background:"#f8fafc",padding:"12px 16px",borderBottom:"1px solid #e8edf3"}}>
                         <div style={{display:"flex",justifyContent:"space-between",alignItems:"baseline",marginBottom:6}}>
-                          <span style={{fontSize:13,fontWeight:800,color:"#111827"}}>{ar?"عدد الحسابات":"Accounts"}</span>
-                          <span style={{fontSize:20,fontWeight:900,color:"#111827"}}>{n2(r.v)}</span>
+                          <span style={{fontSize:14,fontWeight:900,color:"#111827"}}>{ar?"عدد الحسابات":"Accounts"}</span>
+                          <span style={{fontSize:22,fontWeight:900,color:"#111827"}}>{n2(r.v)}</span>
                         </div>
-                        <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:4}}>
-                          <span style={{fontSize:12,color:"#111827",fontWeight:900}}>{ar?"النسبة":"Share"}</span>
-                          <span style={{fontSize:13,fontWeight:900,color:r.col}}>{p2(r.v,P2.total)}</span>
+                        <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:5}}>
+                          <span style={{fontSize:13,fontWeight:900,color:"#111827"}}>{ar?"النسبة":"Share"}</span>
+                          <span style={{fontSize:15,fontWeight:900,color:r.col}}>{p2(r.v,P2.total)}</span>
                         </div>
-                        <div style={{background:"#e8edf3",borderRadius:6,height:6,overflow:"hidden"}}>
+                        <div style={{background:"#e8edf3",borderRadius:6,height:7,overflow:"hidden"}}>
                           <div style={{width:p2(r.v,P2.total),background:"linear-gradient(90deg,"+r.col+"99,"+r.col+")",height:"100%",borderRadius:6}}/>
                         </div>
                       </div>
                       {/* Row 2: قيمة المديونية */}
-                      <div style={{background:"#fff",padding:"10px 16px"}}>
+                      <div style={{background:"#fff",padding:"12px 16px"}}>
                         <div style={{display:"flex",justifyContent:"space-between",alignItems:"baseline",marginBottom:6}}>
-                          <span style={{fontSize:13,fontWeight:800,color:"#111827"}}>{ar?"قيمة المديونية":"Debt Value"}</span>
+                          <span style={{fontSize:14,fontWeight:900,color:"#111827"}}>{ar?"قيمة المديونية":"Debt Value"}</span>
                           <div style={{textAlign:"right"}}>
-                            <div style={{fontSize:16,fontWeight:900,color:"#111827"}}>{f2(r.bal)}</div>
-                            <div style={{fontSize:9,color:"#6b7280",fontWeight:600}}>OMR</div>
+                            <div style={{fontSize:17,fontWeight:900,color:"#111827"}}>{f2(r.bal)}</div>
+                            <div style={{fontSize:10,color:"#6b7280",fontWeight:700}}>OMR</div>
                           </div>
                         </div>
-                        <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:4}}>
-                          <span style={{fontSize:9,color:"#6b7280",fontWeight:700}}>{ar?"نسبة المديونية":"Debt Share"}</span>
-                          <span style={{fontSize:13,fontWeight:900,color:r.col}}>{(r.bal/P2.balance*100).toFixed(1)}%</span>
+                        <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:5}}>
+                          <span style={{fontSize:13,fontWeight:900,color:"#111827"}}>{ar?"نسبة المديونية":"Debt Share"}</span>
+                          <span style={{fontSize:15,fontWeight:900,color:r.col}}>{(r.bal/P2.balance*100).toFixed(1)}%</span>
                         </div>
-                        <div style={{background:"#e8edf3",borderRadius:6,height:6,overflow:"hidden"}}>
+                        <div style={{background:"#e8edf3",borderRadius:6,height:7,overflow:"hidden"}}>
                           <div style={{width:(r.bal/P2.balance*100).toFixed(1)+"%",background:"linear-gradient(90deg,"+r.col+"99,"+r.col+")",height:"100%",borderRadius:6}}/>
                         </div>
                       </div>
@@ -11049,35 +11049,35 @@ export default function Dashboard() {
               {/* Detail cards with nationality breakdown */}
               <div style={{display:"grid",gridTemplateColumns:"repeat(5,1fr)",gap:12}}>
                 {P2.rangeDetail.map((rd,i)=>(
-                  <div key={i} style={{borderRadius:12,overflow:"hidden",border:"2px solid "+rd.col+"35",boxShadow:"0 2px 10px rgba(0,0,0,0.06)"}}>
+                  <div key={i} style={{borderRadius:14,overflow:"hidden",border:"2px solid "+rd.col+"35",boxShadow:"0 2px 10px rgba(0,0,0,0.06)"}}>
                     {/* Header */}
-                    <div style={{background:rd.col,padding:"8px 10px",textAlign:"center"}}>
-                      <div style={{fontSize:13,fontWeight:900,color:"#fff"}}>{ar?rd.lblAr:rd.lblEn}</div>
+                    <div style={{background:rd.col,padding:"10px 12px",textAlign:"center"}}>
+                      <div style={{fontSize:14,fontWeight:900,color:"#fff"}}>{ar?rd.lblAr:rd.lblEn}</div>
                     </div>
                     {/* Total */}
-                    <div style={{background:"#f8fafc",padding:"10px 12px",borderBottom:"1px solid "+rd.col+"20"}}>
-                      <div style={{display:"flex",justifyContent:"space-between",alignItems:"baseline",marginBottom:5}}>
+                    <div style={{background:"#f8fafc",padding:"14px 14px",borderBottom:"1px solid "+rd.col+"20"}}>
+                      <div style={{display:"flex",justifyContent:"space-between",alignItems:"baseline",marginBottom:6}}>
                         <span style={{fontSize:12,color:"#111827",fontWeight:900}}>{ar?"عدد الحسابات":"Accounts"}</span>
-                        <span style={{fontSize:20,fontWeight:900,color:"#111827"}}>{n2(rd.total)}</span>
+                        <span style={{fontSize:22,fontWeight:900,color:"#111827"}}>{n2(rd.total)}</span>
                       </div>
-                      <div style={{display:"flex",justifyContent:"space-between",alignItems:"baseline",marginBottom:5}}>
+                      <div style={{display:"flex",justifyContent:"space-between",alignItems:"baseline",marginBottom:6}}>
                         <span style={{fontSize:12,color:"#111827",fontWeight:900}}>{ar?"قيمة المديونية":"Debt"}</span>
                         <span style={{fontSize:12,fontWeight:900,color:"#111827"}}>{f2(rd.totalBal)} <span style={{fontSize:9,color:rd.col,fontWeight:700}}>OMR</span></span>
                       </div>
-                      <div style={{marginTop:6}}>
-                        <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:4}}>
+                      <div style={{marginTop:8}}>
+                        <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:5}}>
                           <span style={{fontSize:12,color:"#111827",fontWeight:900}}>{ar?"النسبة":"Share"}</span>
-                          <span style={{fontSize:14,fontWeight:900,color:rd.col}}>{p2(rd.total,P2.total)}</span>
+                          <span style={{fontSize:15,fontWeight:900,color:rd.col}}>{p2(rd.total,P2.total)}</span>
                         </div>
-                        <div style={{background:"#e8edf3",borderRadius:6,height:6,overflow:"hidden"}}>
+                        <div style={{background:"#e8edf3",borderRadius:6,height:7,overflow:"hidden"}}>
                           <div style={{width:p2(rd.total,P2.total),background:"linear-gradient(90deg,"+rd.col+"99,"+rd.col+")",height:"100%",borderRadius:6}}/>
                         </div>
                       </div>
                     </div>
                     {/* Omani */}
-                    <div style={{padding:"10px 12px",borderBottom:"1px solid #e8edf3",background:"#f0fdf4"}}>
-                      <div style={{fontSize:11,color:"#16a34a",fontWeight:900,marginBottom:6}}>🟢 {ar?"عُماني":"Omani"}</div>
-                      <div style={{display:"flex",justifyContent:"space-between",alignItems:"baseline",marginBottom:4}}>
+                    <div style={{padding:"12px 14px",borderBottom:"1px solid #e8edf3",background:"#f0fdf4"}}>
+                      <div style={{fontSize:12,color:"#16a34a",fontWeight:900,marginBottom:8}}>🟢 {ar?"عُماني":"Omani"}</div>
+                      <div style={{display:"flex",justifyContent:"space-between",alignItems:"baseline",marginBottom:5}}>
                         <span style={{fontSize:12,color:"#111827",fontWeight:900}}>{ar?"عدد الحسابات":"Accounts"}</span>
                         <span style={{fontSize:16,fontWeight:900,color:"#111827"}}>{n2(rd.omCnt)}</span>
                       </div>
@@ -11087,9 +11087,9 @@ export default function Dashboard() {
                       </div>
                     </div>
                     {/* Expat */}
-                    <div style={{padding:"10px 12px",background:"#fff7f3"}}>
-                      <div style={{fontSize:11,color:"#e85d20",fontWeight:900,marginBottom:6}}>🟠 {ar?"وافد":"Expat"}</div>
-                      <div style={{display:"flex",justifyContent:"space-between",alignItems:"baseline",marginBottom:4}}>
+                    <div style={{padding:"12px 14px",background:"#fff7f3"}}>
+                      <div style={{fontSize:12,color:"#e85d20",fontWeight:900,marginBottom:8}}>🟠 {ar?"وافد":"Expat"}</div>
+                      <div style={{display:"flex",justifyContent:"space-between",alignItems:"baseline",marginBottom:5}}>
                         <span style={{fontSize:12,color:"#111827",fontWeight:900}}>{ar?"عدد الحسابات":"Accounts"}</span>
                         <span style={{fontSize:16,fontWeight:900,color:"#111827"}}>{n2(rd.exCnt)}</span>
                       </div>
