@@ -11055,14 +11055,14 @@ export default function Dashboard() {
                       <div style={{fontSize:14,fontWeight:900,color:"#fff"}}>{ar?rd.lblAr:rd.lblEn}</div>
                     </div>
                     {/* Total */}
-                    <div style={{background:"#f8fafc",padding:"14px 14px",borderBottom:"1px solid "+rd.col+"20"}}>
+                    <div style={{background:"#f8fafc",padding:"16px 16px",borderBottom:"1px solid "+rd.col+"20"}}>
                       <div style={{display:"flex",justifyContent:"space-between",alignItems:"baseline",marginBottom:6}}>
                         <span style={{fontSize:12,color:"#111827",fontWeight:900}}>{ar?"عدد الحسابات":"Accounts"}</span>
-                        <span style={{fontSize:22,fontWeight:900,color:"#111827"}}>{n2(rd.total)}</span>
+                        <span style={{fontSize:24,fontWeight:900,color:"#111827"}}>{n2(rd.total)}</span>
                       </div>
                       <div style={{display:"flex",justifyContent:"space-between",alignItems:"baseline",marginBottom:6}}>
                         <span style={{fontSize:12,color:"#111827",fontWeight:900}}>{ar?"قيمة المديونية":"Debt"}</span>
-                        <span style={{fontSize:12,fontWeight:900,color:"#111827"}}>{f2(rd.totalBal)} <span style={{fontSize:9,color:rd.col,fontWeight:700}}>OMR</span></span>
+                        <span style={{fontSize:14,fontWeight:900,color:"#111827"}}>{f2(rd.totalBal)} <span style={{fontSize:10,color:rd.col,fontWeight:700}}>OMR</span></span>
                       </div>
                       <div style={{marginTop:8}}>
                         <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:5}}>
@@ -11075,7 +11075,7 @@ export default function Dashboard() {
                       </div>
                     </div>
                     {/* Omani */}
-                    <div style={{padding:"12px 14px",borderBottom:"1px solid #e8edf3",background:"#f0fdf4"}}>
+                    <div style={{padding:"14px 16px",borderBottom:"1px solid #e8edf3",background:"#f0fdf4"}}>
                       <div style={{fontSize:12,color:"#16a34a",fontWeight:900,marginBottom:8}}>🟢 {ar?"عُماني":"Omani"}</div>
                       <div style={{display:"flex",justifyContent:"space-between",alignItems:"baseline",marginBottom:5}}>
                         <span style={{fontSize:12,color:"#111827",fontWeight:900}}>{ar?"عدد الحسابات":"Accounts"}</span>
@@ -11083,11 +11083,11 @@ export default function Dashboard() {
                       </div>
                       <div style={{display:"flex",justifyContent:"space-between",alignItems:"baseline"}}>
                         <span style={{fontSize:12,color:"#111827",fontWeight:900}}>{ar?"قيمة المديونية":"Debt"}</span>
-                        <span style={{fontSize:12,fontWeight:900,color:"#111827"}}>{f2(rd.omBal)} <span style={{fontSize:9,color:"#16a34a",fontWeight:700}}>OMR</span></span>
+                        <span style={{fontSize:14,fontWeight:900,color:"#111827"}}>{f2(rd.omBal)} <span style={{fontSize:10,color:"#16a34a",fontWeight:700}}>OMR</span></span>
                       </div>
                     </div>
                     {/* Expat */}
-                    <div style={{padding:"12px 14px",background:"#fff7f3"}}>
+                    <div style={{padding:"14px 16px",background:"#fff7f3"}}>
                       <div style={{fontSize:12,color:"#e85d20",fontWeight:900,marginBottom:8}}>🟠 {ar?"وافد":"Expat"}</div>
                       <div style={{display:"flex",justifyContent:"space-between",alignItems:"baseline",marginBottom:5}}>
                         <span style={{fontSize:12,color:"#111827",fontWeight:900}}>{ar?"عدد الحسابات":"Accounts"}</span>
@@ -11095,7 +11095,7 @@ export default function Dashboard() {
                       </div>
                       <div style={{display:"flex",justifyContent:"space-between",alignItems:"baseline"}}>
                         <span style={{fontSize:12,color:"#111827",fontWeight:900}}>{ar?"قيمة المديونية":"Debt"}</span>
-                        <span style={{fontSize:12,fontWeight:900,color:"#111827"}}>{f2(rd.exBal)} <span style={{fontSize:9,color:"#e85d20",fontWeight:700}}>OMR</span></span>
+                        <span style={{fontSize:14,fontWeight:900,color:"#111827"}}>{f2(rd.exBal)} <span style={{fontSize:10,color:"#e85d20",fontWeight:700}}>OMR</span></span>
                       </div>
                     </div>
                   </div>
