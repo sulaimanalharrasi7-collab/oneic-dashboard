@@ -10894,6 +10894,13 @@ export default function Dashboard() {
       omani:44151,expat:61136,omaniBalance:5883810.714,expatBalance:7711424.439,
       postpaid:58902,fixed:46385,postpaidBalance:8289175.550,fixedBalance:5306059.603,
       lt100:55291,r100_500:47491,r500_1k:2130,r1k_5k:371,gt5k:3,
+      rangeDetail:[
+        {lblAr:"أقل من 100",  lblEn:"< 100 OMR",  col:"#1e40af", total:55291, totalBal:3202768.952,  omCnt:22591, omBal:1193187.017,  exCnt:32700, exBal:2009581.935},
+        {lblAr:"100 – 500",   lblEn:"100 – 500",   col:"#16a34a", total:47491, totalBal:8466229.245,  omCnt:20300, omBal:3740512.485,  exCnt:27191, exBal:4725716.760},
+        {lblAr:"500 – 1K",    lblEn:"500 – 1K",    col:"#d97706", total:2131,  totalBal:1358807.428,  omCnt:1113,  omBal:706825.398,   exCnt:1018,  exBal:651982.029},
+        {lblAr:"1K – 5K",     lblEn:"1K – 5K",     col:"#e85d20", total:371,   totalBal:550318.734,   omCnt:144,   omBal:226175.021,   exCnt:227,   exBal:324143.713},
+        {lblAr:"أكثر من 5K", lblEn:"> 5K OMR",    col:"#dc2626", total:3,     totalBal:17110.794,    omCnt:3,     omBal:17110.794,    exCnt:0,     exBal:0},
+      ],
       uniqueTotal:99199,omaniUnique:41246,expatUnique:58052,
       omaniSingle:38606,omaniSingleBal:4965879.745,omaniMulti:2640,omaniMultiBal:917354.879,
       expatSingle:55245,expatSingleBal:6817122.929,expatMulti:2807,expatMultiBal:894877.600,
@@ -11025,18 +11032,38 @@ export default function Dashboard() {
               <span style={{fontSize:15,fontWeight:900,color:"#fff"}}>{ar?"توزيع الأرصدة (OMR)":"Balance Distribution (OMR)"}</span>
             </div>
             <div style={{padding:"20px"}}>
-              <div style={{display:"flex",height:22,borderRadius:10,overflow:"hidden",marginBottom:18,boxShadow:"0 2px 6px rgba(0,0,0,0.1)"}}>
-                {[["#1e40af",P2.lt100],["#16a34a",P2.r100_500],["#d97706",P2.r500_1k],["#e85d20",P2.r1k_5k],["#dc2626",P2.gt5k]].map(([col,v],i)=>(
-                  <div key={i} style={{width:p2(v,P2.total),background:col,height:"100%"}}/>
+              {/* Stacked bar */}
+              <div style={{display:"flex",height:22,borderRadius:10,overflow:"hidden",marginBottom:20,boxShadow:"0 2px 6px rgba(0,0,0,0.1)"}}>
+                {P2.rangeDetail.map((rd,i)=>(
+                  <div key={i} style={{width:p2(rd.total,P2.total),background:rd.col,height:"100%"}}/>
                 ))}
               </div>
+              {/* Detail cards with nationality breakdown */}
               <div style={{display:"grid",gridTemplateColumns:"repeat(5,1fr)",gap:10}}>
-                {[["#1e40af",ar?"أقل من 100":"< 100 OMR",P2.lt100],["#16a34a","100 – 500",P2.r100_500],["#d97706","500 – 1K",P2.r500_1k],["#e85d20","1K – 5K",P2.r1k_5k],["#dc2626",ar?"أكثر من 5K":"> 5K",P2.gt5k]].map(([col,lbl,v],i)=>(
-                  <div key={i} style={{background:"#f8fafc",borderRadius:10,padding:"12px 8px",border:"2px solid "+col+"30",textAlign:"center"}}>
-                    <div style={{width:14,height:14,borderRadius:4,background:col,margin:"0 auto 6px"}}/>
-                    <div style={{fontSize:12,color:"#111827",fontWeight:800,marginBottom:4}}>{lbl}</div>
-                    <div style={{fontSize:18,fontWeight:900,color:col}}>{n2(v)}</div>
-                    <div style={{fontSize:11,color:"#374151",fontWeight:700,marginTop:2}}>{p2(v,P2.total)}</div>
+                {P2.rangeDetail.map((rd,i)=>(
+                  <div key={i} style={{borderRadius:12,overflow:"hidden",border:"2px solid "+rd.col+"35",boxShadow:"0 1px 6px rgba(0,0,0,0.05)"}}>
+                    {/* Header */}
+                    <div style={{background:rd.col,padding:"8px 10px",textAlign:"center"}}>
+                      <div style={{fontSize:13,fontWeight:900,color:"#fff"}}>{ar?rd.lblAr:rd.lblEn}</div>
+                    </div>
+                    {/* Total */}
+                    <div style={{background:"#f8fafc",padding:"10px 12px",borderBottom:"1px solid "+rd.col+"20",textAlign:"center"}}>
+                      <div style={{fontSize:11,color:"#374151",fontWeight:800,marginBottom:3}}>{ar?"إجمالي":"Total"}</div>
+                      <div style={{fontSize:22,fontWeight:900,color:"#111827"}}>{n2(rd.total)}</div>
+                      <div style={{fontSize:12,fontWeight:900,color:rd.col}}>{p2(rd.total,P2.total)}</div>
+                    </div>
+                    {/* Omani */}
+                    <div style={{padding:"10px 12px",borderBottom:"1px solid #e8edf3",background:"#f0fdf4"}}>
+                      <div style={{fontSize:11,color:"#16a34a",fontWeight:900,marginBottom:3}}>🟢 {ar?"عُماني":"Omani"}</div>
+                      <div style={{fontSize:13,fontWeight:900,color:"#111827"}}>{n2(rd.omCnt)}</div>
+                      <div style={{fontSize:9,color:"#374151",fontWeight:700}}>{f2(rd.omBal)} OMR</div>
+                    </div>
+                    {/* Expat */}
+                    <div style={{padding:"10px 12px",background:"#fff7f3"}}>
+                      <div style={{fontSize:11,color:"#e85d20",fontWeight:900,marginBottom:3}}>🟠 {ar?"وافد":"Expat"}</div>
+                      <div style={{fontSize:13,fontWeight:900,color:"#111827"}}>{n2(rd.exCnt)}</div>
+                      <div style={{fontSize:9,color:"#374151",fontWeight:700}}>{f2(rd.exBal)} OMR</div>
+                    </div>
                   </div>
                 ))}
               </div>
