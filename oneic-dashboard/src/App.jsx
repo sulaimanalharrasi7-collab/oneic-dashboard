@@ -11015,7 +11015,7 @@ export default function Dashboard() {
                         <div style={{display:"flex",justifyContent:"space-between",alignItems:"baseline",marginBottom:6}}>
                           <span style={{fontSize:14,fontWeight:900,color:"#111827"}}>{ar?"قيمة المديونية":"Debt Value"}</span>
                           <div style={{textAlign:"right"}}>
-                            <div style={{fontSize:17,fontWeight:900,color:"#111827"}}>{f2(r.bal)}</div>
+                            <div style={{fontSize:20,fontWeight:900,color:"#111827"}}>{f2(r.bal)}</div>
                             <div style={{fontSize:10,color:"#6b7280",fontWeight:700}}>OMR</div>
                           </div>
                         </div>
@@ -11128,10 +11128,20 @@ export default function Dashboard() {
                 </div>
 
                 {/* عُماني */}
-                <div style={{borderRadius:12,overflow:"hidden",border:"2px solid #16a34a30",marginBottom:12}}>
-                  <div style={{background:"#16a34a",padding:"8px 14px",display:"flex",justifyContent:"space-between",alignItems:"center"}}>
-                    <span style={{fontSize:14,fontWeight:900,color:"#fff"}}>🟢 {ar?"عُماني":"Omani"}</span>
-                    <span style={{fontSize:11,color:"rgba(255,255,255,0.85)",fontWeight:700}}>{n2(P2.omaniUnique)} {ar?"مشترك":"subscribers"}</span>
+                <div style={{borderRadius:14,overflow:"hidden",border:"2px solid #16a34a30",marginBottom:14}}>
+                  <div style={{background:"linear-gradient(135deg,#15803d,#16a34a)",padding:"12px 16px"}}>
+                    <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:8}}>
+                      <span style={{fontSize:15,fontWeight:900,color:"#fff"}}>🟢 {ar?"عُماني":"Omani"}</span>
+                      <span style={{background:"rgba(255,255,255,0.2)",borderRadius:20,padding:"3px 12px",fontSize:11,color:"#fff",fontWeight:700}}>{ar?"مشترك فريد":"unique"}</span>
+                    </div>
+                    <div style={{display:"flex",alignItems:"baseline",gap:6}}>
+                      <span style={{fontSize:36,fontWeight:900,color:"#fff",lineHeight:1}}>{n2(P2.omaniUnique)}</span>
+                      <span style={{fontSize:12,color:"rgba(255,255,255,0.7)",fontWeight:600}}>{ar?"مشترك":"subscribers"}</span>
+                    </div>
+                    <div style={{background:"rgba(255,255,255,0.15)",borderRadius:4,height:4,marginTop:8}}>
+                      <div style={{width:p2(P2.omaniUnique,P2.uniqueTotal),background:"#fff",height:"100%",borderRadius:4}}/>
+                    </div>
+                    <div style={{fontSize:10,color:"rgba(255,255,255,0.7)",marginTop:3,textAlign:"right"}}>{p2(P2.omaniUnique,P2.uniqueTotal)} {ar?"من الإجمالي":"of total"}</div>
                   </div>
                   <div style={{background:"#f0fdf4"}}>
                     {[
@@ -11141,7 +11151,7 @@ export default function Dashboard() {
                       <div key={ri} style={{borderBottom:"1px solid #dcfce7",padding:"14px 16px",display:"flex",justifyContent:"space-between",alignItems:"center",gap:12}}>
                         <div>
                           <div style={{fontSize:13,color:"#111827",fontWeight:900,marginBottom:4}}>{row.lbl}</div>
-                          <div style={{fontSize:12,color:"#111827",fontWeight:800}}>{ar?"قيمة المديونية":"Debt Value"}: <strong style={{fontSize:14,color:"#111827",fontWeight:900}}>{f2(row.bal)} <span style={{fontSize:10,color:"#16a34a"}}>OMR</span></strong></div>
+                          <div style={{fontSize:12,color:"#111827",fontWeight:800}}>{ar?"قيمة المديونية":"Debt Value"}: <strong style={{fontSize:16,color:"#111827",fontWeight:900}}>{f2(row.bal)} <span style={{fontSize:10,color:"#16a34a"}}>OMR</span></strong></div>
                         </div>
                         <div style={{textAlign:"right"}}>
                           <div style={{fontSize:22,fontWeight:900,color:"#111827"}}>{n2(row.cnt)}</div>
@@ -11156,17 +11166,27 @@ export default function Dashboard() {
                       </div>
                       <div style={{padding:"8px 14px"}}>
                         <div style={{fontSize:11,color:"#374151",fontWeight:800,marginBottom:4}}>{ar?"متوسط المديونية":"Avg debt"}</div>
-                        <div style={{fontSize:16,fontWeight:900,color:"#111827"}}>{f2(P2.omaniAvgBal)} <span style={{fontSize:10,color:"#16a34a"}}>OMR</span></div>
+                        <div style={{fontSize:18,fontWeight:900,color:"#111827"}}>{f2(P2.omaniAvgBal)} <span style={{fontSize:10,color:"#16a34a"}}>OMR</span></div>
                       </div>
                     </div>
                   </div>
                 </div>
 
                 {/* وافد */}
-                <div style={{borderRadius:12,overflow:"hidden",border:"2px solid #e85d2030"}}>
-                  <div style={{background:"#e85d20",padding:"8px 14px",display:"flex",justifyContent:"space-between",alignItems:"center"}}>
-                    <span style={{fontSize:14,fontWeight:900,color:"#fff"}}>🟠 {ar?"وافد":"Expatriate"}</span>
-                    <span style={{fontSize:11,color:"rgba(255,255,255,0.85)",fontWeight:700}}>{n2(P2.expatUnique)} {ar?"مشترك":"subscribers"}</span>
+                <div style={{borderRadius:14,overflow:"hidden",border:"2px solid #e85d2030"}}>
+                  <div style={{background:"linear-gradient(135deg,#c2410c,#e85d20)",padding:"12px 16px"}}>
+                    <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:8}}>
+                      <span style={{fontSize:15,fontWeight:900,color:"#fff"}}>🟠 {ar?"وافد":"Expatriate"}</span>
+                      <span style={{background:"rgba(255,255,255,0.2)",borderRadius:20,padding:"3px 12px",fontSize:11,color:"#fff",fontWeight:700}}>{ar?"مشترك فريد":"unique"}</span>
+                    </div>
+                    <div style={{display:"flex",alignItems:"baseline",gap:6}}>
+                      <span style={{fontSize:36,fontWeight:900,color:"#fff",lineHeight:1}}>{n2(P2.expatUnique)}</span>
+                      <span style={{fontSize:12,color:"rgba(255,255,255,0.7)",fontWeight:600}}>{ar?"مشترك":"subscribers"}</span>
+                    </div>
+                    <div style={{background:"rgba(255,255,255,0.15)",borderRadius:4,height:4,marginTop:8}}>
+                      <div style={{width:p2(P2.expatUnique,P2.uniqueTotal),background:"#fff",height:"100%",borderRadius:4}}/>
+                    </div>
+                    <div style={{fontSize:10,color:"rgba(255,255,255,0.7)",marginTop:3,textAlign:"right"}}>{p2(P2.expatUnique,P2.uniqueTotal)} {ar?"من الإجمالي":"of total"}</div>
                   </div>
                   <div style={{background:"#fff7f3"}}>
                     {[
@@ -11176,7 +11196,7 @@ export default function Dashboard() {
                       <div key={ri} style={{borderBottom:"1px solid #ffedd5",padding:"14px 16px",display:"flex",justifyContent:"space-between",alignItems:"center",gap:12}}>
                         <div>
                           <div style={{fontSize:13,color:"#111827",fontWeight:900,marginBottom:4}}>{row.lbl}</div>
-                          <div style={{fontSize:12,color:"#111827",fontWeight:800}}>{ar?"قيمة المديونية":"Debt Value"}: <strong style={{fontSize:14,color:"#111827",fontWeight:900}}>{f2(row.bal)} <span style={{fontSize:10,color:"#e85d20"}}>OMR</span></strong></div>
+                          <div style={{fontSize:12,color:"#111827",fontWeight:800}}>{ar?"قيمة المديونية":"Debt Value"}: <strong style={{fontSize:16,color:"#111827",fontWeight:900}}>{f2(row.bal)} <span style={{fontSize:10,color:"#e85d20"}}>OMR</span></strong></div>
                         </div>
                         <div style={{textAlign:"right"}}>
                           <div style={{fontSize:22,fontWeight:900,color:"#111827"}}>{n2(row.cnt)}</div>
@@ -11191,7 +11211,7 @@ export default function Dashboard() {
                       </div>
                       <div style={{padding:"8px 14px"}}>
                         <div style={{fontSize:11,color:"#374151",fontWeight:800,marginBottom:4}}>{ar?"متوسط المديونية":"Avg debt"}</div>
-                        <div style={{fontSize:16,fontWeight:900,color:"#111827"}}>{f2(P2.expatAvgBal)} <span style={{fontSize:10,color:"#e85d20"}}>OMR</span></div>
+                        <div style={{fontSize:18,fontWeight:900,color:"#111827"}}>{f2(P2.expatAvgBal)} <span style={{fontSize:10,color:"#e85d20"}}>OMR</span></div>
                       </div>
                     </div>
                   </div>
