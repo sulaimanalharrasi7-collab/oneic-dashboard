@@ -9879,7 +9879,7 @@ function handlePrint(data, lang='ar') {
     +'.subtotal{background:#fff3ee;font-weight:900}'
     +'.center-cell{text-align:center}'
     +'.footer{text-align:center;padding:5mm;font-size:8pt;color:#aaa;border-top:2px solid #f0ece8}'
-    +'@media print{body{background:#fff}.no-print{display:none!important}.page{box-shadow:none}}';
+    +'@page{size:A4;margin:10mm 12mm}@media print{body{background:#fff}.no-print{display:none!important}.page{box-shadow:none}}';
 
   var html = '<!DOCTYPE html><html dir="rtl"><head><meta charset="UTF-8">'
     +'<link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;600;700;900&display=swap" rel="stylesheet">'
@@ -9913,6 +9913,9 @@ function handlePrint(data, lang='ar') {
     +'<div class="s1-port-title">'+(lang==='en'?'📋 Portfolio':'📋 المحفظة')+'</div>'
     +'<div class="s1-port-row blue"><span class="s1-port-label">عدد الحسابات</span><span class="s1-port-value">'+String(portCnt.toLocaleString())+' حساب</span></div>'
     +'<div class="s1-port-row orange"><span class="s1-port-label">قيمة المحفظة</span><span class="s1-port-value orange">'+omrN(portAmt)+' OMR</span></div>'
+    +'<div style="background:linear-gradient(135deg,#0369a1,#0ea5e9);border-radius:8px;padding:7px 12px;margin-top:6px;display:flex;justify-content:space-between;align-items:center">'
+    +'<span style="color:rgba(255,255,255,0.85);font-weight:700;font-size:9pt">'+(lang==='en'?'Purchase Value (×26%)':'قيمة شراء المديونية (×26%)')+'</span>'
+    +'<span style="color:#fff;font-weight:900;font-size:11pt">2,447,706.777 OMR</span></div>'
     +'</div>'
     +'<div class="s1-coll">'
     +'<div class="s1-coll-title">{t("💰 التحصيل",lang)}</div>'
@@ -9935,7 +9938,7 @@ function handlePrint(data, lang='ar') {
     +'<div class="section-title"><span>🏛 المكتب الرئيسي</span><span>المدفوع: '+omrN(hoPaid)+' | التسويات: '+omrN(hoAdj)+'</span></div>'
     +'<table class="data-table"><thead><tr><th>#</th><th>القسم</th><th>المدفوع</th><th>التسويات</th><th>الإجمالي</th></tr></thead><tbody>'+hoHTML+'</tbody></table>'
 
-    +'<div class="footer">{t("ONEIC — لوحة تحكم إدارة تحصيل الديون © 2026",lang)} · '+printDate+'<button class="no-print" onclick="window.print()" style="margin-right:10px;background:#1e3a5f;color:#fff;border:none;border-radius:8px;padding:6px 18px;cursor:pointer;font-family:Cairo,sans-serif;font-size:10pt">🖨 طباعة</button></div>'
+    +'<div class="footer">'+(lang==='en'?'ONEIC — Omantel Debt Collection Dashboard © 2026':'ONEIC — لوحة تحكم إدارة تحصيل الديون © 2026')+' · '+printDate+'<span style="margin-right:auto;font-size:8pt;color:#aaa">Programming and design by Sulaiman Al-Harrasi — 16296</span><button class="no-print" onclick="window.print()" style="margin-right:10px;background:#1e3a5f;color:#fff;border:none;border-radius:8px;padding:6px 18px;cursor:pointer;font-family:Cairo,sans-serif;font-size:10pt">🖨 طباعة</button></div>'
     +'</div></body></html>';
 
   w.document.write(html);
@@ -10943,7 +10946,103 @@ export default function Dashboard() {
             <span style={{background:"#d97706",color:"#fff",borderRadius:20,padding:"4px 14px",fontSize:11,fontWeight:700}}>⏳ {ar?"قيد التحضير":"Pending"}</span>
             <button onClick={()=>setProjectChoice(null)} style={{background:"rgba(255,255,255,0.1)",color:"#fff",border:"1px solid rgba(255,255,255,0.2)",borderRadius:10,padding:"7px 16px",fontSize:12,fontWeight:700,cursor:"pointer",color:"#fff"}}>← {ar?"اختيار المشروع":"Projects"}</button>
             <button onClick={()=>{const n=lang==='ar'?'en':'ar';setLang(n);try{localStorage.setItem('oneic_lang',n);}catch(e){}; document.documentElement.dir=n==='ar'?'rtl':'ltr';}} style={{background:ar?"#1a7a6b":"#6c3fa0",color:"#fff",border:"none",borderRadius:10,padding:"7px 16px",fontSize:12,fontWeight:700,cursor:"pointer"}}>🌐 {ar?"English":"عربي"}</button>
-            <button onClick={()=>window.print()} style={{background:"#1e3a5f",color:"#fff",border:"none",borderRadius:10,padding:"7px 16px",fontSize:12,fontWeight:700,cursor:"pointer"}}>🖨️ {ar?"طباعة":"Print"}</button>
+            <button onClick={()=>{
+              const printDate2 = new Date().toLocaleDateString(ar?'ar-OM':'en-GB',{year:'numeric',month:'long',day:'numeric'});
+              const w = window.open('','_blank','width=1200,height=900');
+              w.document.write(`<!DOCTYPE html><html lang="${ar?'ar':'en'}" dir="${ar?'rtl':'ltr'}"><head>
+<meta charset="UTF-8"><title>ONEIC — ${ar?'محفظة عُمانتل 2':'Omantel Portfolio 2'}</title>
+<style>
+  *{box-sizing:border-box;margin:0;padding:0;font-family:Arial,'Segoe UI',sans-serif;-webkit-print-color-adjust:exact;print-color-adjust:exact}
+  body{background:#f5f7fa;padding:20px;direction:${ar?'rtl':'ltr'}}
+  @page{size:A4;margin:10mm 12mm}
+  @media print{body{background:#f5f7fa!important;padding:8px}.no-print{display:none}}
+  .header{background:linear-gradient(135deg,#1e3a5f,#2d5a8e);border-radius:14px;padding:20px 24px;color:#fff;margin-bottom:18px;display:flex;justify-content:space-between;align-items:center}
+  .logo{font-size:24px;font-weight:900;color:#e85d20}.logo span{font-size:11px;color:#93c5fd;display:block;font-weight:400;margin-top:3px}
+  .header-meta{text-align:${ar?'left':'right'};font-size:10px;color:#93c5fd;line-height:1.8}
+  .header-meta strong{font-size:14px;color:#fff;display:block;margin-bottom:3px}
+  .kpi-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-bottom:14px}
+  .kpi{background:#fff;border-radius:10px;padding:14px 16px;text-align:center;border:1px solid #e2e8f0;box-shadow:0 1px 6px rgba(0,0,0,0.06)}
+  .kpi-icon{font-size:24px;margin-bottom:5px}.kpi-val{font-size:18px;font-weight:900;margin-bottom:2px}.kpi-lbl{font-size:9px;color:#6b7280;font-weight:700;text-transform:uppercase}
+  .purchase-bar{background:linear-gradient(135deg,#0369a1,#0ea5e9);border-radius:12px;padding:14px 20px;margin-bottom:14px;display:flex;justify-content:space-between;align-items:center}
+  .purchase-bar .lbl{font-size:12px;color:rgba(255,255,255,0.8);font-weight:700;margin-bottom:4px}
+  .purchase-bar .formula{font-size:10px;color:rgba(255,255,255,0.6);font-weight:600}
+  .purchase-bar .val{font-size:26px;font-weight:900;color:#fff;direction:ltr}.purchase-bar .omr{font-size:11px;color:rgba(255,255,255,0.75);font-weight:700}
+  .grid2{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:14px}
+  .card{background:#fff;border-radius:12px;overflow:hidden;border:1px solid #e2e8f0;box-shadow:0 1px 6px rgba(0,0,0,0.05)}
+  .card-hdr{padding:10px 14px;display:flex;align-items:center;gap:6px}
+  .card-hdr span{font-size:13px;font-weight:900;color:#fff}
+  .card-body{padding:12px 14px}
+  .row-item{display:flex;justify-content:space-between;align-items:center;padding:7px 0;border-bottom:1px solid #f0f4f8;font-size:11px}
+  .row-item:last-child{border-bottom:none}
+  .row-lbl{font-weight:800;color:#374151}.row-val{font-weight:900;color:#111827;font-size:13px}
+  .badge-om{background:#dcfce7;color:#16a34a;border-radius:20px;padding:2px 10px;font-size:9px;font-weight:800}
+  .badge-ex{background:#ffedd5;color:#e85d20;border-radius:20px;padding:2px 10px;font-size:9px;font-weight:800}
+  .footer{border-top:1px solid #e2e8f0;padding-top:12px;margin-top:14px;display:flex;justify-content:space-between;font-size:9px;color:#9ca3af}
+  .print-btn{background:#1e3a5f;color:#fff;border:none;border-radius:8px;padding:8px 24px;font-size:12px;font-weight:700;cursor:pointer;display:block;margin:12px auto}
+  table{width:100%;border-collapse:collapse}th{background:#f0f4f8;padding:7px 10px;font-size:9px;font-weight:900;color:#374151;text-align:${ar?'right':'left'};border-bottom:1px solid #e2e8f0}
+  td{padding:7px 10px;font-size:10px;border-bottom:1px solid #f5f7fa;color:#111}
+</style></head><body>
+<button class="no-print print-btn" onclick="window.print()">🖨️ ${ar?'طباعة / PDF':'Print / PDF'}</button>
+<div class="header">
+  <div><div class="logo">ONEIC<span>${ar?'محفظة عُمانتل 2 — تحليل ما قبل الإطلاق':'Omantel Portfolio 2 — Pre-Launch Analysis'}</span></div></div>
+  <div class="header-meta"><strong>${ar?'تقرير المحفظة':'Portfolio Report'}</strong>${ar?'بيانات نوفمبر 2025':'Data: Nov 2025'}<br>${ar?'تاريخ الطباعة':'Print Date'}: ${printDate2}<br>${ar?'للمراجعة الداخلية فقط':'For internal review only'}</div>
+</div>
+<div class="kpi-grid">
+  <div class="kpi"><div class="kpi-icon">👥</div><div class="kpi-val" style="color:#60a5fa">105,287</div><div class="kpi-lbl">${ar?'إجمالي الحسابات':'Total Accounts'}</div></div>
+  <div class="kpi"><div class="kpi-icon">💰</div><div class="kpi-val" style="color:#e85d20">13,595,235.153</div><div class="kpi-lbl">${ar?'إجمالي المحفظة (OMR)':'Total Portfolio (OMR)'}</div></div>
+  <div class="kpi"><div class="kpi-icon">📋</div><div class="kpi-val" style="color:#16a34a">470,079</div><div class="kpi-lbl">${ar?'إجمالي الفواتير':'Total Bills'} — Nov 2025</div></div>
+  <div class="kpi"><div class="kpi-icon">📊</div><div class="kpi-val" style="color:#d97706">129.125</div><div class="kpi-lbl">${ar?'متوسط الرصيد / حساب':'Avg Balance / Account'} OMR</div></div>
+</div>
+<div class="purchase-bar">
+  <div><div class="lbl">💡 ${ar?'قيمة شراء المديونية':'Debt Purchase Value'}</div><div class="formula">13,595,235.153 OMR × 16%</div></div>
+  <div style="text-align:${ar?'left':'right'}"><div class="val">2,175,237.624</div><div class="omr">OMR</div></div>
+</div>
+<div class="grid2">
+  <div class="card">
+    <div class="card-hdr" style="background:linear-gradient(135deg,#1e3a5f,#1a7a6b)"><span>👤 ${ar?'توزيع الجنسية':'Nationality Distribution'}</span></div>
+    <div class="card-body">
+      <div class="row-item"><span class="row-lbl"><span class="badge-om">🟢 ${ar?'عُماني':'Omani'}</span> ${ar?'عدد الحسابات':'Accounts'}</span><span class="row-val">44,151</span></div>
+      <div class="row-item"><span class="row-lbl">${ar?'قيمة المديونية':'Debt Value'}</span><span class="row-val" style="color:#16a34a">5,883,810.714 OMR</span></div>
+      <div class="row-item"><span class="row-lbl"><span class="badge-ex">🟠 ${ar?'وافد':'Expat'}</span> ${ar?'عدد الحسابات':'Accounts'}</span><span class="row-val">61,136</span></div>
+      <div class="row-item"><span class="row-lbl">${ar?'قيمة المديونية':'Debt Value'}</span><span class="row-val" style="color:#e85d20">7,711,424.439 OMR</span></div>
+    </div>
+  </div>
+  <div class="card">
+    <div class="card-hdr" style="background:linear-gradient(135deg,#3b0764,#6c3fa0)"><span>📱 ${ar?'نوع الخدمة':'Service Type'}</span></div>
+    <div class="card-body">
+      <div class="row-item"><span class="row-lbl">📶 Postpaid Mobile — ${ar?'عدد الحسابات':'Accounts'}</span><span class="row-val">58,902</span></div>
+      <div class="row-item"><span class="row-lbl">${ar?'قيمة المديونية':'Debt Value'}</span><span class="row-val" style="color:#1a7a6b">8,289,175.550 OMR</span></div>
+      <div class="row-item"><span class="row-lbl">🔌 Fixed Line — ${ar?'عدد الحسابات':'Accounts'}</span><span class="row-val">46,385</span></div>
+      <div class="row-item"><span class="row-lbl">${ar?'قيمة المديونية':'Debt Value'}</span><span class="row-val" style="color:#6c3fa0">5,306,059.603 OMR</span></div>
+    </div>
+  </div>
+</div>
+<div class="card" style="margin-bottom:14px">
+  <div class="card-hdr" style="background:linear-gradient(135deg,#78350f,#d97706)"><span>🏆 ${ar?'أعلى 10 حسابات برصيد':'Top 10 Accounts by Balance'}</span></div>
+  <table>
+    <thead><tr><th>#</th><th>${ar?'اسم العميل':'Customer'}</th><th>${ar?'الجنسية':'Nat.'}</th><th>${ar?'الخدمة':'Service'}</th><th>${ar?'قيمة المديونية':'Balance (OMR)'}</th></tr></thead>
+    <tbody>
+      <tr><td>1</td><td>YAHYA YOUSUF NASSER AL YAHYAI</td><td><span class="badge-om">Omani</span></td><td>Postpaid</td><td style="color:#16a34a;font-weight:900">6,170.176</td></tr>
+      <tr><td>2</td><td>MOOSA ESSA KHALAF AL ABRI</td><td><span class="badge-om">Omani</span></td><td>Postpaid</td><td style="color:#16a34a;font-weight:900">5,757.026</td></tr>
+      <tr><td>3</td><td>MAMMAR ABDUL KHALIQ AMER AL RAWAS</td><td><span class="badge-om">Omani</span></td><td>Postpaid</td><td style="color:#16a34a;font-weight:900">5,183.592</td></tr>
+      <tr><td>4</td><td>ABDUL MUNEM SALEH SAID AL RAISI</td><td><span class="badge-om">Omani</span></td><td>Postpaid</td><td style="color:#16a34a;font-weight:900">4,380.527</td></tr>
+      <tr><td>5</td><td>RAJAVEL RAJAVEL JEEVA JEEVA</td><td><span class="badge-ex">Expat</span></td><td>Postpaid</td><td style="color:#16a34a;font-weight:900">4,239.800</td></tr>
+      <tr><td>6</td><td>MUHAMMAD RAMZAN NAWAZ</td><td><span class="badge-ex">Expat</span></td><td>Postpaid</td><td style="color:#16a34a;font-weight:900">4,208.770</td></tr>
+      <tr><td>7</td><td>DALIL AHAMED NON NON AHAMED</td><td><span class="badge-ex">Expat</span></td><td>Postpaid</td><td style="color:#16a34a;font-weight:900">4,020.210</td></tr>
+      <tr><td>8</td><td>MUHAMMAD FARAZ ABBAS</td><td><span class="badge-ex">Expat</span></td><td>Postpaid</td><td style="color:#16a34a;font-weight:900">3,980.245</td></tr>
+      <tr><td>9</td><td>IBRAHIM ABDULLAH SAUD AL BALUSHI</td><td><span class="badge-om">Omani</span></td><td>Postpaid</td><td style="color:#16a34a;font-weight:900">3,796.534</td></tr>
+      <tr><td>10</td><td>KHALID SAOIM RASHID AL</td><td><span class="badge-om">Omani</span></td><td>Postpaid</td><td style="color:#16a34a;font-weight:900">3,743.910</td></tr>
+    </tbody>
+  </table>
+</div>
+<div class="footer">
+  <div>ONEIC © 2026 · Omantel Portfolio 2 · ${ar?'للاستخدام الداخلي فقط':'For internal use only'}</div>
+  <div>Programming and design by Sulaiman Al-Harrasi — 16296</div>
+  <div>${ar?'مصدر البيانات':'Data'}: Master Data Nov 2025</div>
+</div>
+</body></html>`);
+              w.document.close();
+            }} style={{background:"#1e3a5f",color:"#fff",border:"none",borderRadius:10,padding:"7px 16px",fontSize:12,fontWeight:700,cursor:"pointer"}}>🖨️ {ar?"طباعة":"Print"}</button>
           </div>
         </div>
         <div style={{padding:"24px 28px",maxWidth:1400,margin:"0 auto"}}>
@@ -11918,26 +12017,23 @@ export default function Dashboard() {
               <div style={{fontSize:small?13:15,color:"#555",fontWeight:700}}>{t("قيمة المحفظة",lang)}</div>
               <div style={{fontSize:small?20:26,fontWeight:900,color:"#e85d20",direction:"ltr",textAlign:"right"}}>{omr(data.totalPortfolio?.amt||9414256.834)} <span style={{fontSize:small?11:13,color:"#888",fontWeight:600}}>OMR</span></div>
             </div>
-            <div style={{background:"linear-gradient(135deg,#0369a1,#0ea5e9)",borderRadius:12,padding:"16px 18px",border:"none",boxShadow:"0 4px 16px rgba(3,105,161,0.2)"}}>
-              <div style={{display:"flex",justifyContent:"space-between",alignItems:"flex-start",marginBottom:10}}>
+            <div style={{background:"#eef6ff",borderRadius:12,padding:"14px 18px",border:"1px solid #bfdbfe"}}>
+              <div style={{display:"flex",justifyContent:"space-between",alignItems:"flex-start"}}>
                 <div>
-                  <div style={{fontSize:small?10:12,color:"rgba(255,255,255,0.75)",fontWeight:700,marginBottom:3}}>
+                  <div style={{fontSize:small?11:13,color:"#1e3a5f",fontWeight:900,marginBottom:4}}>
                     {lang==='en'?"Purchase Value of Debt":"قيمة شراء المديونية"}
                   </div>
-                  <div style={{display:"flex",alignItems:"center",gap:6,background:"rgba(255,255,255,0.15)",borderRadius:20,padding:"3px 10px",width:"fit-content"}}>
-                    <span style={{fontSize:9,color:"rgba(255,255,255,0.9)",fontWeight:700}}>9,414,256.834 × 26%</span>
+                  <div style={{fontSize:9,color:"#60a5fa",fontWeight:700,background:"#dbeafe",borderRadius:20,padding:"2px 10px",display:"inline-block"}}>
+                    9,414,256.834 × 26%
                   </div>
                 </div>
-                <div style={{background:"rgba(255,255,255,0.15)",borderRadius:8,padding:"3px 10px"}}>
-                  <span style={{fontSize:9,color:"rgba(255,255,255,0.85)",fontWeight:700}}>💡</span>
+                <div style={{textAlign:"right"}}>
+                  <div style={{fontSize:small?20:26,fontWeight:900,color:"#1e3a5f",direction:"ltr",letterSpacing:0.3}}>2,447,706.777</div>
+                  <div style={{fontSize:small?10:11,color:"#60a5fa",fontWeight:700}}>OMR</div>
                 </div>
               </div>
-              <div style={{display:"flex",alignItems:"baseline",gap:6}}>
-                <div style={{fontSize:small?22:28,fontWeight:900,color:"#fff",direction:"ltr",letterSpacing:0.5}}>2,447,706.777</div>
-                <div style={{fontSize:11,color:"rgba(255,255,255,0.8)",fontWeight:700}}>OMR</div>
-              </div>
-              <div style={{background:"rgba(255,255,255,0.15)",borderRadius:4,height:3,marginTop:10}}>
-                <div style={{width:"26%",background:"rgba(255,255,255,0.8)",height:"100%",borderRadius:4}}/>
+              <div style={{background:"#bfdbfe",borderRadius:4,height:3,marginTop:10}}>
+                <div style={{width:"26%",background:"#1e3a5f",height:"100%",borderRadius:4}}/>
               </div>
             </div>
             <div style={{display:"flex",justifyContent:"center",paddingTop:4}}>
