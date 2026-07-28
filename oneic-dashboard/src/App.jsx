@@ -10962,7 +10962,18 @@ export default function Dashboard() {
               </div>
             ))}
           </div>
-          {/* Nationality + Service — redesigned */}
+
+          {/* قيمة شراء المديونية */}
+          <div style={{background:"#f0f9ff",borderRadius:16,padding:"16px 22px",border:"1.5px solid #bae6fd",marginBottom:24,display:"flex",justifyContent:"space-between",alignItems:"center",boxShadow:"0 2px 16px rgba(3,105,161,0.08)"}}>
+            <div>
+              <div style={{fontSize:14,color:"#0369a1",fontWeight:900,marginBottom:4}}>💡 {ar?"قيمة شراء المديونية":"Debt Purchase Value"}</div>
+              <div style={{fontSize:12,color:"#0ea5e9",fontWeight:700}}>{ar?"الحساب:":"Formula:"} 13,595,235.153 OMR × 16%</div>
+            </div>
+            <div style={{textAlign:"right"}}>
+              <div style={{fontSize:30,fontWeight:900,color:"#0369a1",direction:"ltr",letterSpacing:0.5}}>2,175,237.624</div>
+              <div style={{fontSize:11,color:"#0ea5e9",fontWeight:700}}>OMR</div>
+            </div>
+          </div>
           <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:20,marginBottom:24}}>
             {[
               {title:ar?"توزيع الجنسية":"Nationality Distribution",icon:"👤",grad:"linear-gradient(135deg,#1e3a5f,#1a7a6b)",rows:[
@@ -11896,6 +11907,18 @@ export default function Dashboard() {
             <div style={{background:"#fff3ee",borderRadius:12,padding:"14px 18px",display:"flex",justifyContent:"space-between",alignItems:"center",border:"1px solid #ffe4d4"}}>
               <div style={{fontSize:small?13:15,color:"#555",fontWeight:700}}>{t("قيمة المحفظة",lang)}</div>
               <div style={{fontSize:small?20:26,fontWeight:900,color:"#e85d20",direction:"ltr",textAlign:"right"}}>{omr(data.totalPortfolio?.amt||9414256.834)} <span style={{fontSize:small?11:13,color:"#888",fontWeight:600}}>OMR</span></div>
+            </div>
+            <div style={{background:"#f0f9ff",borderRadius:12,padding:"14px 18px",border:"1px solid #bae6fd"}}>
+              <div style={{display:"flex",justifyContent:"space-between",alignItems:"flex-start"}}>
+                <div>
+                  <div style={{fontSize:small?11:13,color:"#0369a1",fontWeight:800,marginBottom:2}}>{lang==='en'?"Purchase Value of Debt":"قيمة شراء المديونية"}</div>
+                  <div style={{fontSize:9,color:"#7dd3fc",fontWeight:600}}>{lang==='en'?"9,414,256.834 × 26%":"9,414,256.834 × 26%"}</div>
+                </div>
+                <div style={{textAlign:"right"}}>
+                  <div style={{fontSize:small?18:22,fontWeight:900,color:"#0369a1",direction:"ltr"}}>2,447,706.777</div>
+                  <div style={{fontSize:10,color:"#7dd3fc",fontWeight:600}}>OMR</div>
+                </div>
+              </div>
             </div>
             <div style={{display:"flex",justifyContent:"center",paddingTop:4}}>
               {(() => {
