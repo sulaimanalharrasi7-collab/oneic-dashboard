@@ -10964,14 +10964,24 @@ export default function Dashboard() {
           </div>
 
           {/* قيمة شراء المديونية */}
-          <div style={{background:"#f0f9ff",borderRadius:16,padding:"16px 22px",border:"1.5px solid #bae6fd",marginBottom:24,display:"flex",justifyContent:"space-between",alignItems:"center",boxShadow:"0 2px 16px rgba(3,105,161,0.08)"}}>
-            <div>
-              <div style={{fontSize:14,color:"#0369a1",fontWeight:900,marginBottom:4}}>💡 {ar?"قيمة شراء المديونية":"Debt Purchase Value"}</div>
-              <div style={{fontSize:12,color:"#0ea5e9",fontWeight:700}}>{ar?"الحساب:":"Formula:"} 13,595,235.153 OMR × 16%</div>
-            </div>
-            <div style={{textAlign:"right"}}>
-              <div style={{fontSize:30,fontWeight:900,color:"#0369a1",direction:"ltr",letterSpacing:0.5}}>2,175,237.624</div>
-              <div style={{fontSize:11,color:"#0ea5e9",fontWeight:700}}>OMR</div>
+          <div style={{background:"linear-gradient(135deg,#0369a1,#0ea5e9)",borderRadius:16,padding:"18px 24px",marginBottom:24,boxShadow:"0 4px 20px rgba(3,105,161,0.25)"}}>
+            <div style={{display:"flex",justifyContent:"space-between",alignItems:"center"}}>
+              <div>
+                <div style={{fontSize:13,color:"rgba(255,255,255,0.75)",fontWeight:700,marginBottom:6}}>
+                  💡 {ar?"قيمة شراء المديونية":"Debt Purchase Value"}
+                </div>
+                <div style={{display:"inline-flex",alignItems:"center",gap:6,background:"rgba(255,255,255,0.15)",borderRadius:20,padding:"4px 14px",marginBottom:10}}>
+                  <span style={{fontSize:11,color:"rgba(255,255,255,0.9)",fontWeight:700}}>13,595,235.153 OMR × 16%</span>
+                </div>
+                <div style={{background:"rgba(255,255,255,0.15)",borderRadius:4,height:4,width:200}}>
+                  <div style={{width:"16%",background:"rgba(255,255,255,0.8)",height:"100%",borderRadius:4}}/>
+                </div>
+              </div>
+              <div style={{textAlign:"right"}}>
+                <div style={{fontSize:34,fontWeight:900,color:"#fff",direction:"ltr",letterSpacing:0.5,lineHeight:1}}>2,175,237.624</div>
+                <div style={{fontSize:12,color:"rgba(255,255,255,0.8)",fontWeight:700,marginTop:4}}>OMR</div>
+
+              </div>
             </div>
           </div>
           <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:20,marginBottom:24}}>
@@ -11908,16 +11918,26 @@ export default function Dashboard() {
               <div style={{fontSize:small?13:15,color:"#555",fontWeight:700}}>{t("قيمة المحفظة",lang)}</div>
               <div style={{fontSize:small?20:26,fontWeight:900,color:"#e85d20",direction:"ltr",textAlign:"right"}}>{omr(data.totalPortfolio?.amt||9414256.834)} <span style={{fontSize:small?11:13,color:"#888",fontWeight:600}}>OMR</span></div>
             </div>
-            <div style={{background:"#f0f9ff",borderRadius:12,padding:"14px 18px",border:"1px solid #bae6fd"}}>
-              <div style={{display:"flex",justifyContent:"space-between",alignItems:"flex-start"}}>
+            <div style={{background:"linear-gradient(135deg,#0369a1,#0ea5e9)",borderRadius:12,padding:"16px 18px",border:"none",boxShadow:"0 4px 16px rgba(3,105,161,0.2)"}}>
+              <div style={{display:"flex",justifyContent:"space-between",alignItems:"flex-start",marginBottom:10}}>
                 <div>
-                  <div style={{fontSize:small?11:13,color:"#0369a1",fontWeight:800,marginBottom:2}}>{lang==='en'?"Purchase Value of Debt":"قيمة شراء المديونية"}</div>
-                  <div style={{fontSize:9,color:"#7dd3fc",fontWeight:600}}>{lang==='en'?"9,414,256.834 × 26%":"9,414,256.834 × 26%"}</div>
+                  <div style={{fontSize:small?10:12,color:"rgba(255,255,255,0.75)",fontWeight:700,marginBottom:3}}>
+                    {lang==='en'?"Purchase Value of Debt":"قيمة شراء المديونية"}
+                  </div>
+                  <div style={{display:"flex",alignItems:"center",gap:6,background:"rgba(255,255,255,0.15)",borderRadius:20,padding:"3px 10px",width:"fit-content"}}>
+                    <span style={{fontSize:9,color:"rgba(255,255,255,0.9)",fontWeight:700}}>9,414,256.834 × 26%</span>
+                  </div>
                 </div>
-                <div style={{textAlign:"right"}}>
-                  <div style={{fontSize:small?18:22,fontWeight:900,color:"#0369a1",direction:"ltr"}}>2,447,706.777</div>
-                  <div style={{fontSize:10,color:"#7dd3fc",fontWeight:600}}>OMR</div>
+                <div style={{background:"rgba(255,255,255,0.15)",borderRadius:8,padding:"3px 10px"}}>
+                  <span style={{fontSize:9,color:"rgba(255,255,255,0.85)",fontWeight:700}}>💡</span>
                 </div>
+              </div>
+              <div style={{display:"flex",alignItems:"baseline",gap:6}}>
+                <div style={{fontSize:small?22:28,fontWeight:900,color:"#fff",direction:"ltr",letterSpacing:0.5}}>2,447,706.777</div>
+                <div style={{fontSize:11,color:"rgba(255,255,255,0.8)",fontWeight:700}}>OMR</div>
+              </div>
+              <div style={{background:"rgba(255,255,255,0.15)",borderRadius:4,height:3,marginTop:10}}>
+                <div style={{width:"26%",background:"rgba(255,255,255,0.8)",height:"100%",borderRadius:4}}/>
               </div>
             </div>
             <div style={{display:"flex",justifyContent:"center",paddingTop:4}}>
