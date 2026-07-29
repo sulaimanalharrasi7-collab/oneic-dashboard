@@ -9447,7 +9447,6 @@ function HistoryModal({ history, onClose, small }) {
                     </div>
                   );
                 })()}
-                  })()}
                 </div>
               )}
             </div>
@@ -9916,6 +9915,10 @@ function handlePrint(data, lang='ar') {
     +'<div style="background:linear-gradient(135deg,#0369a1,#0ea5e9);border-radius:8px;padding:7px 12px;margin-top:6px;display:flex;justify-content:space-between;align-items:center">'
     +'<span style="color:rgba(255,255,255,0.85);font-weight:700;font-size:9pt">'+(lang==='en'?'Purchase Value (×26%)':'قيمة شراء المديونية (×26%)')+'</span>'
     +'<span style="color:#fff;font-weight:900;font-size:11pt">2,447,706.777 OMR</span></div>'
+    +'<div style="margin-top:6px"><div style="display:flex;justify-content:space-between;margin-bottom:3px">'
+    +'<span style="font-size:9pt;color:rgba(255,255,255,0.8);font-weight:700">'+(lang==='en'?'Purchase rate of portfolio':'نسبة الشراء من المحفظة')+'</span>'
+    +'<span style="font-size:10pt;color:#fff;font-weight:900">26%</span></div>'
+    +'<div style="background:rgba(255,255,255,0.2);border-radius:4px;height:6px"><div style="width:26%;background:rgba(255,255,255,0.85);height:100%;border-radius:4px"></div></div></div>'
     +'</div>'
     +'<div class="s1-coll">'
     +'<div class="s1-coll-title">{t("💰 التحصيل",lang)}</div>'
@@ -11018,7 +11021,63 @@ export default function Dashboard() {
   </div>
 </div>
 <div class="card" style="margin-bottom:14px">
-  <div class="card-hdr" style="background:linear-gradient(135deg,#78350f,#d97706)"><span>🏆 ${ar?'أعلى 10 حسابات برصيد':'Top 10 Accounts by Balance'}</span></div>
+  <div class="card-hdr" style="background:linear-gradient(135deg,#1e3a5f,#2d5a8e)"><span>💰 ${ar?'توزيع الأرصدة (OMR)':'Balance Distribution (OMR)'}</span></div>
+  <div style="padding:12px 16px">
+    <div style="display:flex;height:14px;border-radius:8px;overflow:hidden;margin-bottom:12px;box-shadow:0 1px 4px rgba(0,0,0,0.1)">
+      <div style="width:52.5%;background:#1e40af"></div>
+      <div style="width:45.1%;background:#16a34a"></div>
+      <div style="width:2.0%;background:#d97706"></div>
+      <div style="width:0.4%;background:#e85d20"></div>
+    </div>
+    <table style="width:100%;border-collapse:collapse;font-size:11px">
+      <thead><tr style="background:#f0f4f8">
+        <th style="padding:6px 10px;text-align:${ar?'right':'left'};font-weight:900;color:#374151;border-bottom:2px solid #e2e8f0">${ar?'الفئة':'Range'}</th>
+        <th style="padding:6px 10px;text-align:center;font-weight:900;color:#374151;border-bottom:2px solid #e2e8f0">${ar?'الإجمالي':'Total'}</th>
+        <th style="padding:6px 10px;text-align:center;font-weight:900;color:#374151;border-bottom:2px solid #e2e8f0">${ar?'النسبة':'%'}</th>
+        <th style="padding:6px 10px;text-align:${ar?'right':'left'};font-weight:900;color:#16a34a;border-bottom:2px solid #e2e8f0">🟢 ${ar?'عُماني':'Omani'}</th>
+        <th style="padding:6px 10px;text-align:${ar?'right':'left'};font-weight:900;color:#e85d20;border-bottom:2px solid #e2e8f0">🟠 ${ar?'وافد':'Expat'}</th>
+      </tr></thead>
+      <tbody>
+        <tr style="border-bottom:1px solid #f0f4f8">
+          <td style="padding:7px 10px"><span style="background:#1e40af;color:#fff;border-radius:4px;padding:1px 8px;font-size:9px;font-weight:700">${ar?'أقل من 100':'&lt;100 OMR'}</span></td>
+          <td style="padding:7px 10px;text-align:center;font-weight:900;color:#111">55,291</td>
+          <td style="padding:7px 10px;text-align:center;font-weight:900;color:#1e40af">52.5%</td>
+          <td style="padding:7px 10px;font-size:10px;color:#374151">22,591 | 1,193,187 OMR</td>
+          <td style="padding:7px 10px;font-size:10px;color:#374151">32,700 | 2,009,581 OMR</td>
+        </tr>
+        <tr style="border-bottom:1px solid #f0f4f8;background:#f9fafb">
+          <td style="padding:7px 10px"><span style="background:#16a34a;color:#fff;border-radius:4px;padding:1px 8px;font-size:9px;font-weight:700">100–500 OMR</span></td>
+          <td style="padding:7px 10px;text-align:center;font-weight:900;color:#111">47,491</td>
+          <td style="padding:7px 10px;text-align:center;font-weight:900;color:#16a34a">45.1%</td>
+          <td style="padding:7px 10px;font-size:10px;color:#374151">20,300 | 3,740,512 OMR</td>
+          <td style="padding:7px 10px;font-size:10px;color:#374151">27,191 | 4,725,716 OMR</td>
+        </tr>
+        <tr style="border-bottom:1px solid #f0f4f8">
+          <td style="padding:7px 10px"><span style="background:#d97706;color:#fff;border-radius:4px;padding:1px 8px;font-size:9px;font-weight:700">500–1K OMR</span></td>
+          <td style="padding:7px 10px;text-align:center;font-weight:900;color:#111">2,131</td>
+          <td style="padding:7px 10px;text-align:center;font-weight:900;color:#d97706">2.0%</td>
+          <td style="padding:7px 10px;font-size:10px;color:#374151">1,113 | 706,825 OMR</td>
+          <td style="padding:7px 10px;font-size:10px;color:#374151">1,018 | 651,982 OMR</td>
+        </tr>
+        <tr style="border-bottom:1px solid #f0f4f8;background:#f9fafb">
+          <td style="padding:7px 10px"><span style="background:#e85d20;color:#fff;border-radius:4px;padding:1px 8px;font-size:9px;font-weight:700">1K–5K OMR</span></td>
+          <td style="padding:7px 10px;text-align:center;font-weight:900;color:#111">371</td>
+          <td style="padding:7px 10px;text-align:center;font-weight:900;color:#e85d20">0.4%</td>
+          <td style="padding:7px 10px;font-size:10px;color:#374151">144 | 226,175 OMR</td>
+          <td style="padding:7px 10px;font-size:10px;color:#374151">227 | 324,143 OMR</td>
+        </tr>
+        <tr>
+          <td style="padding:7px 10px"><span style="background:#dc2626;color:#fff;border-radius:4px;padding:1px 8px;font-size:9px;font-weight:700">${ar?'أكثر من 5K':'&gt;5K OMR'}</span></td>
+          <td style="padding:7px 10px;text-align:center;font-weight:900;color:#111">3</td>
+          <td style="padding:7px 10px;text-align:center;font-weight:900;color:#dc2626">0.0%</td>
+          <td style="padding:7px 10px;font-size:10px;color:#374151">3 | 17,110 OMR</td>
+          <td style="padding:7px 10px;font-size:10px;color:#374151">0 | 0 OMR</td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+</div>
+<div class="card" style="margin-bottom:14px">
   <table>
     <thead><tr><th>#</th><th>${ar?'اسم العميل':'Customer'}</th><th>${ar?'الجنسية':'Nat.'}</th><th>${ar?'الخدمة':'Service'}</th><th>${ar?'قيمة المديونية':'Balance (OMR)'}</th></tr></thead>
     <tbody>
@@ -11072,14 +11131,21 @@ export default function Dashboard() {
                 <div style={{display:"inline-flex",alignItems:"center",gap:6,background:"rgba(255,255,255,0.15)",borderRadius:20,padding:"4px 14px",marginBottom:10}}>
                   <span style={{fontSize:11,color:"rgba(255,255,255,0.9)",fontWeight:700}}>13,595,235.153 OMR × 16%</span>
                 </div>
-                <div style={{background:"rgba(255,255,255,0.15)",borderRadius:4,height:4,width:200}}>
-                  <div style={{width:"16%",background:"rgba(255,255,255,0.8)",height:"100%",borderRadius:4}}/>
+                <div style={{marginTop:6}}>
+                  <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:3}}>
+                    <span style={{fontSize:13,color:"rgba(255,255,255,0.85)",fontWeight:800}}>{ar?"نسبة الشراء من المحفظة":"Purchase rate of portfolio"}</span>
+                    <span style={{fontSize:15,color:"#fff",fontWeight:900}}>16%</span>
+                  </div>
+                  <div style={{background:"rgba(255,255,255,0.15)",borderRadius:6,height:8,width:"100%"}}>
+                    <div style={{width:"16%",background:"rgba(255,255,255,0.85)",height:"100%",borderRadius:6}}/>
+                  </div>
                 </div>
               </div>
               <div style={{textAlign:"right"}}>
-                <div style={{fontSize:34,fontWeight:900,color:"#fff",direction:"ltr",letterSpacing:0.5,lineHeight:1}}>2,175,237.624</div>
-                <div style={{fontSize:12,color:"rgba(255,255,255,0.8)",fontWeight:700,marginTop:4}}>OMR</div>
-
+                <div style={{display:"flex",alignItems:"baseline",gap:5,direction:"ltr",justifyContent:"flex-end"}}>
+                  <span style={{fontSize:34,fontWeight:900,color:"#fff",letterSpacing:0.5,lineHeight:1}}>2,175,237.624</span>
+                  <span style={{fontSize:14,color:"rgba(255,255,255,0.75)",fontWeight:700}}>OMR</span>
+                </div>
               </div>
             </div>
           </div>
@@ -11134,9 +11200,9 @@ export default function Dashboard() {
                       <div style={{background:"#fff",padding:"12px 16px"}}>
                         <div style={{display:"flex",justifyContent:"space-between",alignItems:"baseline",marginBottom:6}}>
                           <span style={{fontSize:14,fontWeight:900,color:"#111827"}}>{ar?"قيمة المديونية":"Debt Value"}</span>
-                          <div style={{textAlign:"right"}}>
-                            <div style={{fontSize:20,fontWeight:900,color:"#111827"}}>{f2(r.bal)}</div>
-                            <div style={{fontSize:10,color:"#6b7280",fontWeight:700}}>OMR</div>
+                          <div style={{display:"flex",alignItems:"baseline",gap:4}}>
+                            <span style={{fontSize:20,fontWeight:900,color:"#111827"}}>{f2(r.bal)}</span>
+                            <span style={{fontSize:11,color:"#6b7280",fontWeight:700}}>OMR</span>
                           </div>
                         </div>
                         <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:5}}>
@@ -12020,7 +12086,7 @@ export default function Dashboard() {
             <div style={{background:"#eef6ff",borderRadius:12,padding:"14px 18px",border:"1px solid #bfdbfe"}}>
               <div style={{display:"flex",justifyContent:"space-between",alignItems:"flex-start"}}>
                 <div>
-                  <div style={{fontSize:small?11:13,color:"#1e3a5f",fontWeight:900,marginBottom:4}}>
+                  <div style={{fontSize:small?13:15,color:"#1e3a5f",fontWeight:700,marginBottom:4}}>
                     {lang==='en'?"Purchase Value of Debt":"قيمة شراء المديونية"}
                   </div>
                   <div style={{fontSize:9,color:"#60a5fa",fontWeight:700,background:"#dbeafe",borderRadius:20,padding:"2px 10px",display:"inline-block"}}>
@@ -12028,12 +12094,20 @@ export default function Dashboard() {
                   </div>
                 </div>
                 <div style={{textAlign:"right"}}>
-                  <div style={{fontSize:small?20:26,fontWeight:900,color:"#1e3a5f",direction:"ltr",letterSpacing:0.3}}>2,447,706.777</div>
-                  <div style={{fontSize:small?10:11,color:"#60a5fa",fontWeight:700}}>OMR</div>
+                  <div style={{display:"flex",alignItems:"baseline",gap:5,direction:"ltr",justifyContent:"flex-end"}}>
+                    <div style={{fontSize:small?20:26,fontWeight:900,color:"#1e3a5f",letterSpacing:0.3}}>2,447,706.777</div>
+                    <div style={{fontSize:small?10:11,color:"#60a5fa",fontWeight:700}}>OMR</div>
+                  </div>
                 </div>
               </div>
-              <div style={{background:"#bfdbfe",borderRadius:4,height:3,marginTop:10}}>
-                <div style={{width:"26%",background:"#1e3a5f",height:"100%",borderRadius:4}}/>
+              <div style={{marginTop:10}}>
+                <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:3}}>
+                  <span style={{fontSize:small?11:13,color:"#60a5fa",fontWeight:800}}>{lang==='en'?"Purchase rate of portfolio":"نسبة الشراء من المحفظة"}</span>
+                  <span style={{fontSize:small?12:15,color:"#1e3a5f",fontWeight:900}}>26%</span>
+                </div>
+                <div style={{background:"#bfdbfe",borderRadius:6,height:8}}>
+                  <div style={{width:"26%",background:"#1e3a5f",height:"100%",borderRadius:6}}/>
+                </div>
               </div>
             </div>
             <div style={{display:"flex",justifyContent:"center",paddingTop:4}}>
