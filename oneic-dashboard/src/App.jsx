@@ -9988,24 +9988,31 @@ function useSmartNotifications(gTotal, hoPrincipal, bestDayEver, currentDayTotal
       });
     }
     const milestones = [
-      { val:500000,  label:lang==='en'?"Half Million OMR! 🎉":"نصف مليون ريال! 🎉",  color:"#16a34a", icon:"💰", celebrate:true },
-      { val:1000000, label:lang==='en'?"One Million OMR! 🏆":"مليون ريال كاملة! 🏆", color:"#e85d20", icon:"🏆", celebrate:true },
-      { val:1500000, label:lang==='en'?"1.5 Million OMR! 🚀":"مليون ونص ريال! 🚀",   color:"#7c3aed", icon:"🚀", celebrate:true },
-      { val:2000000, label:lang==='en'?"Two Million OMR! 🎊":"مليونين ريال! 🎊",      color:"#0891b2", icon:"💎", celebrate:true },
-      { val:2500000, label:lang==='en'?"2.5 Million OMR! ⭐":"مليونين ونص! ⭐",       color:"#d97706", icon:"⭐", celebrate:true },
-      { val:3000000, label:lang==='en'?"3 Million OMR! 🔥":"3 ملايين ريال! 🔥",     color:"#dc2626", icon:"🔥", celebrate:true },
-      { val:4000000, label:lang==='en'?"4 Million OMR! 🌟":"4 ملايين ريال! 🌟",     color:"#059669", icon:"🌟", celebrate:true },
-      { val:5000000, label:lang==='en'?"5 Million OMR! 👑":"5 ملايين ريال! 👑",     color:"#7c3aed", icon:"👑", celebrate:true },
+      { val:500000,     label:lang==='en'?"Half Million OMR! 🎉":"نصف مليون ريال! 🎉",                           color:"#16a34a", icon:"💰", celebrate:true },
+      { val:1000000,    label:lang==='en'?"One Million OMR! 🏆":"مليون ريال كاملة! 🏆",                         color:"#e85d20", icon:"🏆", celebrate:true },
+      { val:1500000,    label:lang==='en'?"1.5 Million OMR! 🚀":"مليون ونص ريال! 🚀",                           color:"#7c3aed", icon:"🚀", celebrate:true },
+      { val:2000000,    label:lang==='en'?"Two Million OMR! 🎊":"مليونين ريال! 🎊",                             color:"#0891b2", icon:"💎", celebrate:true },
+      { val:2447706,    label:lang==='en'?"🎯 Purchase Value Reached! 9,414,256 × 26%":"🎯 تم استرداد قيمة شراء المديونية! 9,414,256 × 26%", color:"#0369a1", icon:"🏅", celebrate:true, special:true },
+      { val:2500000,    label:lang==='en'?"2.5 Million OMR! ⭐":"مليونين ونص! ⭐",                               color:"#d97706", icon:"⭐", celebrate:true },
+      { val:3000000,    label:lang==='en'?"3 Million OMR! 🔥":"3 ملايين ريال! 🔥",                             color:"#dc2626", icon:"🔥", celebrate:true },
+      { val:4000000,    label:lang==='en'?"4 Million OMR! 🌟":"4 ملايين ريال! 🌟",                             color:"#059669", icon:"🌟", celebrate:true },
+      { val:5000000,    label:lang==='en'?"5 Million OMR! 👑":"5 ملايين ريال! 👑",                             color:"#7c3aed", icon:"👑", celebrate:true },
     ];
     milestones.forEach(m => {
       const key = `milestone_${m.val}`;
       if (prev < m.val && gTotal >= m.val && !shownMilestones.current.has(key)) {
         shownMilestones.current.add(key);
         try { localStorage.setItem('oneic_shown_milestones', JSON.stringify([...shownMilestones.current])); } catch(e){}
-        addNotification({ type:'milestone', title:lang==='en'?`🎯 Milestone Achieved!`:`🎯 تم تحقيق الهدف!`,
-          message:lang==='en'?`Grand Total reached ${m.label}`:`الإجمالي الكلي وصل ${m.label}`,
+        const isSpecial = m.special;
+        addNotification({ type:'milestone',
+          title: isSpecial
+            ? (lang==='en'?'🏅 Purchase Value Recovered!':'🏅 تم استرداد قيمة الشراء!')
+            : (lang==='en'?`🎯 Milestone Achieved!`:`🎯 تم تحقيق الهدف!`),
+          message: isSpecial
+            ? (lang==='en'?'Grand Total exceeded the Debt Purchase Value (9,414,256 × 26%)':'الإجمالي تجاوز قيمة شراء المديونية (9,414,256 × 26%)')
+            : (lang==='en'?`Grand Total reached ${m.label}`:`الإجمالي الكلي وصل ${m.label}`),
           sub:`${new Intl.NumberFormat('en-US',{minimumFractionDigits:3}).format(gTotal)} OMR`,
-          color:m.color, icon:m.icon, celebrate:m.celebrate, duration:10000 });
+          color: m.color, icon: m.icon, celebrate: m.celebrate, duration: isSpecial ? 15000 : 10000 });
       }
     });
     if (prev > 0 && gTotal < prev * 0.95 && gTotal > 100000) {
@@ -10072,17 +10079,29 @@ function ConfettiRain({ active }) {
   );
 }
 
-function CelebrationModal({ celebration }) {
+function CelebrationModal({ celebration, onClose }) {
   const { lang } = useLang();
+  React.useEffect(() => {
+    if (!celebration) return;
+    const timer = setTimeout(() => { if (onClose) onClose(); }, celebration.duration || 10000);
+    return () => clearTimeout(timer);
+  }, [celebration]);
   if (!celebration) return null;
   return (
-    <div style={{position:'fixed',inset:0,background:'rgba(0,0,0,0.75)',
+    <div style={{position:'fixed',inset:0,background:'rgba(0,0,0,0.78)',
       display:'flex',alignItems:'center',justifyContent:'center',
-      zIndex:99998,padding:20,direction:'rtl'}}>
+      zIndex:99998,padding:20,direction:'rtl'}}
+      onClick={onClose}>
+      <ConfettiRain />
       <div style={{background:`linear-gradient(135deg,${celebration.color}22,#fff)`,
         border:`3px solid ${celebration.color}`,borderRadius:24,padding:'36px 28px',
         maxWidth:460,width:'100%',textAlign:'center',
-        boxShadow:`0 0 60px ${celebration.color}66`}}>
+        boxShadow:`0 0 60px ${celebration.color}66`,position:'relative'}}
+        onClick={e=>e.stopPropagation()}>
+        {/* زر الإغلاق */}
+        <button onClick={onClose} style={{position:'absolute',top:12,left:12,
+          background:'none',border:'none',fontSize:20,cursor:'pointer',
+          color:'#aaa',lineHeight:1,padding:4}}>✕</button>
         <div style={{fontSize:64,marginBottom:12,lineHeight:1}}>{celebration.icon}</div>
         <div style={{fontSize:22,fontWeight:900,color:celebration.color,marginBottom:8}}>{celebration.title}</div>
         <div style={{fontSize:16,fontWeight:800,color:'#111',marginBottom:6}}>{celebration.message}</div>
@@ -10090,6 +10109,11 @@ function CelebrationModal({ celebration }) {
           background:`${celebration.color}18`,borderRadius:10,padding:'8px 16px',
           margin:'10px auto',display:'inline-block'}}>{celebration.sub}</div>}
         <div style={{fontSize:12,color:'#888',marginTop:12}}>{t("🎊 تهانينا لفريق ONEIC بأكمله! 🎊",lang)}</div>
+        <button onClick={onClose} style={{marginTop:16,background:celebration.color,
+          color:'#fff',border:'none',borderRadius:12,padding:'10px 28px',
+          fontSize:13,fontWeight:800,cursor:'pointer',fontFamily:"'Cairo',sans-serif"}}>
+          {lang==='en'?'🎉 Close':'🎉 إغلاق'}
+        </button>
       </div>
     </div>
   );
@@ -11570,12 +11594,12 @@ export default function Dashboard() {
     <LangContext.Provider value={langCtx}>
     <div style={{
       height:"100vh", display:"flex", flexDirection:"column",
-      background:"#f5f0eb",
+      background:"#f0f4f9",
       fontFamily:"'Cairo','Tajawal','Segoe UI',sans-serif",
       direction:"rtl", color:"#111", overflow:"hidden"
     }}>
       <ConfettiRain active={confettiActive}/>
-      <CelebrationModal celebration={celebration}/>
+      <CelebrationModal celebration={celebration} onClose={()=>setCelebration(null)}/>
       <NotificationStack notifications={notifications} onDismiss={id=>setNotifications(prev=>prev.filter(n=>n.id!==id))}/>
       {showHistory && <HistoryModal history={history} onClose={()=>setShowHistory(false)} small={small}/>}
       <VerifyModal pending={pending} onConfirm={confirmData} onReject={rejectData}/>
@@ -11671,7 +11695,7 @@ export default function Dashboard() {
               >{t("✅ حفظ الإعدادات",lang)}</button>
               <button
                 onClick={() => setShowSettings(false)}
-                style={{flex:1,background:"#f5f0eb",color:"#555",border:"1px solid #ddd",borderRadius:12,padding:"12px",fontSize:14,fontWeight:700,cursor:"pointer",fontFamily:"'Cairo',sans-serif"}}
+                style={{flex:1,background:"#f0f4f9",color:"#555",border:"1px solid #ddd",borderRadius:12,padding:"12px",fontSize:14,fontWeight:700,cursor:"pointer",fontFamily:"'Cairo',sans-serif"}}
               >{t("إلغاء",lang)}</button>
             </div>
           </div>
@@ -11887,7 +11911,7 @@ export default function Dashboard() {
               >{t("✅ حفظ الإعدادات",lang)}</button>
               <button
                 onClick={() => setShowSettings(false)}
-                style={{flex:1,background:"#f5f0eb",color:"#555",border:"1px solid #ddd",borderRadius:12,padding:"12px",fontSize:14,fontWeight:700,cursor:"pointer",fontFamily:"'Cairo',sans-serif"}}
+                style={{flex:1,background:"#f0f4f9",color:"#555",border:"1px solid #ddd",borderRadius:12,padding:"12px",fontSize:14,fontWeight:700,cursor:"pointer",fontFamily:"'Cairo',sans-serif"}}
               >{t("إلغاء",lang)}</button>
             </div>
           </div>
@@ -12018,7 +12042,7 @@ export default function Dashboard() {
                 gridColumn:"1 / -1",
                 display:"flex",alignItems:"center",justifyContent:"center",gap:6,
                 background:"linear-gradient(120deg,#1a1a2e,#2d2d5e)",
-                color:"#fff",border:"1px solid rgba(255,255,255,0.15)",borderRadius:10,
+                color:"#fff",border:"0.5px solid rgba(255,255,255,0.2)",borderRadius:8,
                 padding:"6px 10px",fontSize:11,fontWeight:800,cursor:"pointer",
                 fontFamily:"'Cairo',sans-serif",whiteSpace:"nowrap",
                 boxShadow:"0 2px 8px rgba(0,0,0,0.3)"
@@ -12079,7 +12103,7 @@ export default function Dashboard() {
               <div style={{fontSize:small?13:15,color:"#555",fontWeight:700}}>{t("عدد الحسابات",lang)}</div>
               <div style={{fontSize:small?20:26,fontWeight:900,color:"#1e3a5f",direction:"ltr",textAlign:"right"}}>{(data.totalPortfolio?.cnt||47963).toLocaleString()} <span style={{fontSize:small?11:13,color:"#888",fontWeight:600}}>حساب</span></div>
             </div>
-            <div style={{background:"#fff3ee",borderRadius:12,padding:"14px 18px",display:"flex",justifyContent:"space-between",alignItems:"center",border:"1px solid #ffe4d4"}}>
+            <div style={{background:"#f8faff",borderRadius:12,padding:"14px 18px",display:"flex",justifyContent:"space-between",alignItems:"center",border:"1px solid #ffe4d4"}}>
               <div style={{fontSize:small?13:15,color:"#555",fontWeight:700}}>{t("قيمة المحفظة",lang)}</div>
               <div style={{fontSize:small?20:26,fontWeight:900,color:"#e85d20",direction:"ltr",textAlign:"right"}}>{omr(data.totalPortfolio?.amt||9414256.834)} <span style={{fontSize:small?11:13,color:"#888",fontWeight:600}}>OMR</span></div>
             </div>
@@ -12304,7 +12328,7 @@ export default function Dashboard() {
           </div>
         </div>
 
-        <div id="print-footer" style={{ textAlign:"center", fontSize:11, color:"#bbb", paddingTop:16, paddingBottom:4 }}>
+        <div id="print-footer" style={{ textAlign:"center", fontSize:11, color:"#94a3b8", paddingTop:16, paddingBottom:4 }}>
           ONEIC — لوحة تحكم إدارة تحصيل الديون © 2026 · {data.uploadDate}
         </div>
         <div style={{textAlign:"center",fontSize:11,color:"#9ca3af",fontWeight:500,paddingBottom:10}}>
