@@ -9982,10 +9982,11 @@ function useSmartNotifications(gTotal, hoPrincipal, bestDayEver, currentDayTotal
     // أول دفعة
     if (prev === 0 && gTotal > 0) {
       addNotification({
-        type:"success", celebrate:true, icon:"🎊", color:"#16a34a",
-        label:lang==='en'?"First collection! 🎊":"أول دفعة تحصيل! 🎊",
-        msg:lang==='en'?`First payment recorded: ${omr(gTotal)} OMR — Collection journey begins! 🚀`:`تم تسجيل أول دفعة بقيمة ${omr(gTotal)} OMR — انطلاق رحلة التحصيل! 🚀`
+        type:"success", celebrate:false, icon:"🎊", color:"#16a34a",
+        title:lang==='en'?"Welcome! Data loaded":"مرحباً! تم تحميل البيانات",
+        message:lang==='en'?`Grand Total: ${new Intl.NumberFormat('en-US',{minimumFractionDigits:3}).format(gTotal)} OMR`:`الإجمالي الكلي: ${new Intl.NumberFormat('en-US',{minimumFractionDigits:3}).format(gTotal)} OMR`
       });
+      return;
     }
     const milestones = [
       { val:500000,     label:lang==='en'?"Half Million OMR! 🎉":"نصف مليون ريال! 🎉",                           color:"#16a34a", icon:"💰", celebrate:true },
