@@ -9975,17 +9975,36 @@ function useSmartNotifications(gTotal, hoPrincipal, bestDayEver, currentDayTotal
     }, notif.duration || 7000);
   }, []);
 
+  const milestones_list = [
+    { val:500000 }, { val:1000000 }, { val:1500000 }, { val:2000000 },
+    { val:2447706 }, { val:2500000 }, { val:3000000 }, { val:4000000 }, { val:5000000 }
+  ];
+
   useEffect(() => {
     if (!gTotal || gTotal === prevTotal.current) return;
     const prev = prevTotal.current;
     prevTotal.current = gTotal;
-    // أول دفعة
+
+    // أول دفعة من الـ seed (صفر → بيانات أولية)
     if (prev === 0 && gTotal > 0) {
       addNotification({
         type:"success", celebrate:false, icon:"🎊", color:"#16a34a",
         title:lang==='en'?"Welcome! Data loaded":"مرحباً! تم تحميل البيانات",
         message:lang==='en'?`Grand Total: ${new Intl.NumberFormat('en-US',{minimumFractionDigits:3}).format(gTotal)} OMR`:`الإجمالي الكلي: ${new Intl.NumberFormat('en-US',{minimumFractionDigits:3}).format(gTotal)} OMR`
       });
+      return;
+    }
+
+    // عند تحميل Supabase للمرة الأولى (القفزة الكبيرة من seed)
+    // إذا كان الفرق كبيراً جداً (أكثر من 100K)، سجّل الأهداف المتجاوزة بدون احتفال
+    if (gTotal - prev > 100000) {
+      milestones_list.forEach(m => {
+        const key = `milestone_${m.val}`;
+        if (gTotal >= m.val && !shownMilestones.current.has(key)) {
+          shownMilestones.current.add(key);
+        }
+      });
+      try { localStorage.setItem('oneic_shown_milestones', JSON.stringify([...shownMilestones.current])); } catch(e){}
       return;
     }
     const milestones = [
