@@ -10093,44 +10093,9 @@ function ConfettiRain({ active }) {
 }
 
 function CelebrationModal({ celebration, onClose }) {
-  const { lang } = useLang();
-  React.useEffect(() => {
-    if (!celebration) return;
-    const timer = setTimeout(() => { if (onClose) onClose(); }, celebration.duration || 10000);
-    return () => clearTimeout(timer);
-  }, [celebration]);
-  if (!celebration) return null;
-  return (
-    <div style={{position:'fixed',inset:0,background:'rgba(0,0,0,0.78)',
-      display:'flex',alignItems:'center',justifyContent:'center',
-      zIndex:99998,padding:20,direction:'rtl'}}
-      onClick={onClose}>
-      <ConfettiRain />
-      <div style={{background:`linear-gradient(135deg,${celebration.color}22,#fff)`,
-        border:`3px solid ${celebration.color}`,borderRadius:24,padding:'36px 28px',
-        maxWidth:460,width:'100%',textAlign:'center',
-        boxShadow:`0 0 60px ${celebration.color}66`,position:'relative'}}
-        onClick={e=>e.stopPropagation()}>
-        {/* زر الإغلاق */}
-        <button onClick={onClose} style={{position:'absolute',top:12,left:12,
-          background:'none',border:'none',fontSize:20,cursor:'pointer',
-          color:'#aaa',lineHeight:1,padding:4}}>✕</button>
-        <div style={{fontSize:64,marginBottom:12,lineHeight:1}}>{celebration.icon}</div>
-        <div style={{fontSize:22,fontWeight:900,color:celebration.color,marginBottom:8}}>{celebration.title}</div>
-        <div style={{fontSize:16,fontWeight:800,color:'#111',marginBottom:6}}>{celebration.message}</div>
-        {celebration.sub && <div style={{fontSize:18,fontWeight:900,color:celebration.color,
-          background:`${celebration.color}18`,borderRadius:10,padding:'8px 16px',
-          margin:'10px auto',display:'inline-block'}}>{celebration.sub}</div>}
-        <div style={{fontSize:12,color:'#888',marginTop:12}}>{t("🎊 تهانينا لفريق ONEIC بأكمله! 🎊",lang)}</div>
-        <button onClick={onClose} style={{marginTop:16,background:celebration.color,
-          color:'#fff',border:'none',borderRadius:12,padding:'10px 28px',
-          fontSize:13,fontWeight:800,cursor:'pointer',fontFamily:"'Cairo',sans-serif"}}>
-          {lang==='en'?'🎉 Close':'🎉 إغلاق'}
-        </button>
-      </div>
-    </div>
-  );
+  return null;
 }
+
 
 function NotificationStack({ notifications, onDismiss }) {
   if (!notifications.length) return null;
