@@ -10025,7 +10025,7 @@ function useSmartNotifications(gTotal, hoPrincipal, bestDayEver, currentDayTotal
   }, [gTotal, addNotification]);
 
   useEffect(() => {
-    if (!hoPrincipal) return;
+    if (!hoPrincipal || prevTotal.current === 0) return;
     const key = 'principal_4m';
     if (hoPrincipal >= 4000000 && !shownMilestones.current.has(key)) {
       shownMilestones.current.add(key);
@@ -10040,6 +10040,7 @@ function useSmartNotifications(gTotal, hoPrincipal, bestDayEver, currentDayTotal
   const prevBest = useRef(0);
   useEffect(() => {
     if (!currentDayTotal || currentDayTotal <= 0) return;
+    if (prevBest.current === 0) { prevBest.current = currentDayTotal; return; }
     const storedBest = (() => { try { return parseFloat(localStorage.getItem('oneic_best_day')||'0'); } catch(e){return 0;} })();
     if (currentDayTotal > storedBest && currentDayTotal > prevBest.current) {
       prevBest.current = currentDayTotal;
