@@ -9975,6 +9975,8 @@ function useSmartNotifications(gTotal, hoPrincipal, bestDayEver, currentDayTotal
     }, notif.duration || 7000);
   }, []);
 
+  const dataInitialized = useRef(false);
+
   const milestones_list = [
     { val:500000 }, { val:1000000 }, { val:1500000 }, { val:2000000 },
     { val:2447706 }, { val:2500000 }, { val:3000000 }, { val:4000000 }, { val:5000000 }
@@ -9985,19 +9987,9 @@ function useSmartNotifications(gTotal, hoPrincipal, bestDayEver, currentDayTotal
     const prev = prevTotal.current;
     prevTotal.current = gTotal;
 
-    // أول دفعة من الـ seed (صفر → بيانات أولية)
-    if (prev === 0 && gTotal > 0) {
-      addNotification({
-        type:"success", celebrate:false, icon:"🎊", color:"#16a34a",
-        title:lang==='en'?"Welcome! Data loaded":"مرحباً! تم تحميل البيانات",
-        message:lang==='en'?`Grand Total: ${new Intl.NumberFormat('en-US',{minimumFractionDigits:3}).format(gTotal)} OMR`:`الإجمالي الكلي: ${new Intl.NumberFormat('en-US',{minimumFractionDigits:3}).format(gTotal)} OMR`
-      });
-      return;
-    }
-
-    // عند تحميل Supabase للمرة الأولى (القفزة الكبيرة من seed)
-    // إذا كان الفرق كبيراً جداً (أكثر من 100K)، سجّل الأهداف المتجاوزة بدون احتفال
-    if (gTotal - prev > 100000) {
+    // عند أول تحميل (seed أو Supabase) — سجّل الأهداف المتجاوزة بدون احتفال
+    if (!dataInitialized.current) {
+      dataInitialized.current = true;
       milestones_list.forEach(m => {
         const key = `milestone_${m.val}`;
         if (gTotal >= m.val && !shownMilestones.current.has(key)) {
@@ -10044,7 +10036,7 @@ function useSmartNotifications(gTotal, hoPrincipal, bestDayEver, currentDayTotal
   }, [gTotal, addNotification]);
 
   useEffect(() => {
-    if (!hoPrincipal || prevTotal.current === 0) return;
+    if (!hoPrincipal || !dataInitialized.current) return;
     const key = 'principal_4m';
     if (hoPrincipal >= 4000000 && !shownMilestones.current.has(key)) {
       shownMilestones.current.add(key);
@@ -10058,7 +10050,7 @@ function useSmartNotifications(gTotal, hoPrincipal, bestDayEver, currentDayTotal
 
   const prevBest = useRef(0);
   useEffect(() => {
-    if (!currentDayTotal || currentDayTotal <= 0) return;
+    if (!currentDayTotal || currentDayTotal <= 0 || !dataInitialized.current) return;
     if (prevBest.current === 0) { prevBest.current = currentDayTotal; return; }
     const storedBest = (() => { try { return parseFloat(localStorage.getItem('oneic_best_day')||'0'); } catch(e){return 0;} })();
     if (currentDayTotal > storedBest && currentDayTotal > prevBest.current) {
