@@ -6417,13 +6417,12 @@ async function parseXLS(file) {
       else if (colL.includes('refund') && colL.includes('before')) key = 'Refund - before legal';
       else if (colL.includes('refund') && colL.includes('after'))  key = 'Refund - after legal';
       else if (colL.includes('refund')) key = 'Refund - before legal';
-      else if (colL.includes('communication') || colL.includes('omantel communication')) key = 'Omantel Communication';
       else if (colL.includes('saif')) key = 'Legal -Oneic';
       else if (col.trim() === '')     key = 'Legal -Oneic';
-      else                            key = col.trim() || 'Legal -Oneic';
+      else                            key = 'Legal -Oneic';
       if (!hoMap[key]) hoMap[key] = { paid:0, adj:0, count:0, closed:0, active:0, principalAmt:0 };
       hoMap[key].paid += paid; hoMap[key].adj += adj; hoMap[key].count++; hoMap[key].principalAmt += n(row['Principal Amount']||0);
-      if (key==='Legal -Oneic'||key==='Documentation- Omantel'||key==='Legal - DR. Sarhaan'||key==='HO'||key==='Refund - before legal'||key==='Refund - after legal'||key==='Omantel Communication') { if (osAmt<=0) hoMap[key].closed++; else hoMap[key].active++; }
+      if (key==='Legal -Oneic'||key==='Documentation- Omantel'||key==='Legal - DR. Sarhaan'||key==='HO'||key==='Refund - before legal'||key==='Refund - after legal') { if (osAmt<=0) hoMap[key].closed++; else hoMap[key].active++; }
 
     } else if (REG_AR[region]) {
       if (!regMap[region]) regMap[region] = { paid:0, adj:0, count:0, paidCount:0, adjCount:0, cMap:{}, principalAmt:0 };
@@ -6490,21 +6489,19 @@ async function parseXLS(file) {
   const debtCompanies = dcList.sort((a,b)=>((b.paid||0)+(b.adj||0))-((a.paid||0)+(a.adj||0)));
 
   // -- المكتب الرئيسي ----------------------------------------------------
-  const HO_KEYS = ["Legal - DR. Sarhaan","Documentation- Omantel","HO","Legal -Oneic","Refund - before legal","Refund - after legal","Omantel Communication"];
+  const HO_KEYS = ["Legal - DR. Sarhaan","Documentation- Omantel","HO","Legal -Oneic"];
   const headOffice = HO_KEYS.map(nm => {
     const d = hoMap[nm]||{paid:0,adj:0,count:0};
     const p = PORT.ho[nm]||{portAmt:0,portCnt:0};
-    const HO_DISPLAY = {"HO":"Non-due accounts","Non-due accounts":"Non-due accounts","Documentation- Omantel":"Documentation- Omantel","Legal - DR. Sarhaan":"Legal - DR. Sarhaan","Legal -Oneic":"Legal -Oneic","Refund - before legal":"Refund - before legal","Refund - after legal":"Refund - after legal","Omantel Communication":"Omantel Communication"};
+    const HO_DISPLAY = {"HO":"Non-due accounts","Non-due accounts":"Non-due accounts","Documentation- Omantel":"Documentation- Omantel","Legal - DR. Sarhaan":"Legal - DR. Sarhaan","Legal -Oneic":"Legal -Oneic"};
     return {name:HO_DISPLAY[nm]||nm, paid:d.paid, adj:d.adj, count:d.count||0, closed:d.closed||0, active:d.active||0,
-      portAmt: Math.max(0, d.principalAmt||p.portAmt||0),
-      portCnt: d.count>0 ? d.count : (p.portCnt||0),
+      portAmt: Math.max(0, d.principalAmt||p.portAmt||0), portCnt: p.portCnt||0,
       principalAmt: p.principalAmt||0};
   });
   const HO_DN={"HO":"Non-due accounts","Non-due accounts":"Non-due accounts"};
   Object.keys(hoMap).forEach(k => {
     if (!HO_KEYS.includes(k))
-      headOffice.push({name:HO_DN[k]||k,paid:hoMap[k].paid,adj:hoMap[k].adj,count:hoMap[k].count||0,
-        portAmt:hoMap[k].principalAmt||0, portCnt:hoMap[k].count||0});
+      headOffice.push({name:HO_DN[k]||k,paid:hoMap[k].paid,adj:hoMap[k].adj,count:hoMap[k].count||0,portAmt:0,portCnt:0});
   });
 
   return {
@@ -9978,29 +9975,17 @@ function useSmartNotifications(gTotal, hoPrincipal, bestDayEver, currentDayTotal
     }, notif.duration || 7000);
   }, []);
 
-  const dataInitialized = useRef(false);
-
-  const milestones_list = [
-    { val:500000 }, { val:1000000 }, { val:1500000 }, { val:2000000 },
-    { val:2447706 }, { val:2500000 }, { val:3000000 }, { val:4000000 }, { val:5000000 }
-  ];
-
   useEffect(() => {
     if (!gTotal || gTotal === prevTotal.current) return;
     const prev = prevTotal.current;
     prevTotal.current = gTotal;
-
-    // عند أول تحميل (seed أو Supabase) — سجّل الأهداف المتجاوزة بدون احتفال
-    if (!dataInitialized.current) {
-      dataInitialized.current = true;
-      milestones_list.forEach(m => {
-        const key = `milestone_${m.val}`;
-        if (gTotal >= m.val && !shownMilestones.current.has(key)) {
-          shownMilestones.current.add(key);
-        }
+    // أول دفعة
+    if (prev === 0 && gTotal > 0) {
+      addNotification({
+        type:"success", celebrate:true, icon:"🎊", color:"#16a34a",
+        label:lang==='en'?"First collection! 🎊":"أول دفعة تحصيل! 🎊",
+        msg:lang==='en'?`First payment recorded: ${omr(gTotal)} OMR — Collection journey begins! 🚀`:`تم تسجيل أول دفعة بقيمة ${omr(gTotal)} OMR — انطلاق رحلة التحصيل! 🚀`
       });
-      try { localStorage.setItem('oneic_shown_milestones', JSON.stringify([...shownMilestones.current])); } catch(e){}
-      return;
     }
     const milestones = [
       { val:500000,     label:lang==='en'?"Half Million OMR! 🎉":"نصف مليون ريال! 🎉",                           color:"#16a34a", icon:"💰", celebrate:true },
@@ -10039,7 +10024,7 @@ function useSmartNotifications(gTotal, hoPrincipal, bestDayEver, currentDayTotal
   }, [gTotal, addNotification]);
 
   useEffect(() => {
-    if (!hoPrincipal || !dataInitialized.current) return;
+    if (!hoPrincipal) return;
     const key = 'principal_4m';
     if (hoPrincipal >= 4000000 && !shownMilestones.current.has(key)) {
       shownMilestones.current.add(key);
@@ -10053,8 +10038,7 @@ function useSmartNotifications(gTotal, hoPrincipal, bestDayEver, currentDayTotal
 
   const prevBest = useRef(0);
   useEffect(() => {
-    if (!currentDayTotal || currentDayTotal <= 0 || !dataInitialized.current) return;
-    if (prevBest.current === 0) { prevBest.current = currentDayTotal; return; }
+    if (!currentDayTotal || currentDayTotal <= 0) return;
     const storedBest = (() => { try { return parseFloat(localStorage.getItem('oneic_best_day')||'0'); } catch(e){return 0;} })();
     if (currentDayTotal > storedBest && currentDayTotal > prevBest.current) {
       prevBest.current = currentDayTotal;
@@ -10096,9 +10080,44 @@ function ConfettiRain({ active }) {
 }
 
 function CelebrationModal({ celebration, onClose }) {
-  return null;
+  const { lang } = useLang();
+  React.useEffect(() => {
+    if (!celebration) return;
+    const timer = setTimeout(() => { if (onClose) onClose(); }, celebration.duration || 10000);
+    return () => clearTimeout(timer);
+  }, [celebration]);
+  if (!celebration) return null;
+  return (
+    <div style={{position:'fixed',inset:0,background:'rgba(0,0,0,0.78)',
+      display:'flex',alignItems:'center',justifyContent:'center',
+      zIndex:99998,padding:20,direction:'rtl'}}
+      onClick={onClose}>
+      <ConfettiRain />
+      <div style={{background:`linear-gradient(135deg,${celebration.color}22,#fff)`,
+        border:`3px solid ${celebration.color}`,borderRadius:24,padding:'36px 28px',
+        maxWidth:460,width:'100%',textAlign:'center',
+        boxShadow:`0 0 60px ${celebration.color}66`,position:'relative'}}
+        onClick={e=>e.stopPropagation()}>
+        {/* زر الإغلاق */}
+        <button onClick={onClose} style={{position:'absolute',top:12,left:12,
+          background:'none',border:'none',fontSize:20,cursor:'pointer',
+          color:'#aaa',lineHeight:1,padding:4}}>✕</button>
+        <div style={{fontSize:64,marginBottom:12,lineHeight:1}}>{celebration.icon}</div>
+        <div style={{fontSize:22,fontWeight:900,color:celebration.color,marginBottom:8}}>{celebration.title}</div>
+        <div style={{fontSize:16,fontWeight:800,color:'#111',marginBottom:6}}>{celebration.message}</div>
+        {celebration.sub && <div style={{fontSize:18,fontWeight:900,color:celebration.color,
+          background:`${celebration.color}18`,borderRadius:10,padding:'8px 16px',
+          margin:'10px auto',display:'inline-block'}}>{celebration.sub}</div>}
+        <div style={{fontSize:12,color:'#888',marginTop:12}}>{t("🎊 تهانينا لفريق ONEIC بأكمله! 🎊",lang)}</div>
+        <button onClick={onClose} style={{marginTop:16,background:celebration.color,
+          color:'#fff',border:'none',borderRadius:12,padding:'10px 28px',
+          fontSize:13,fontWeight:800,cursor:'pointer',fontFamily:"'Cairo',sans-serif"}}>
+          {lang==='en'?'🎉 Close':'🎉 إغلاق'}
+        </button>
+      </div>
+    </div>
+  );
 }
-
 
 function NotificationStack({ notifications, onDismiss }) {
   if (!notifications.length) return null;
@@ -11027,70 +11046,59 @@ export default function Dashboard() {
 </div>
 <div class="card" style="margin-bottom:14px">
   <div class="card-hdr" style="background:linear-gradient(135deg,#1e3a5f,#2d5a8e)"><span>💰 ${ar?'توزيع الأرصدة (OMR)':'Balance Distribution (OMR)'}</span></div>
-  <div style="padding:14px 16px">
-    <div style="display:flex;height:10px;border-radius:6px;overflow:hidden;margin-bottom:14px">
+  <div style="padding:12px 16px">
+    <div style="display:flex;height:14px;border-radius:8px;overflow:hidden;margin-bottom:12px;box-shadow:0 1px 4px rgba(0,0,0,0.1)">
       <div style="width:52.5%;background:#1e40af"></div>
       <div style="width:45.1%;background:#16a34a"></div>
       <div style="width:2.0%;background:#d97706"></div>
       <div style="width:0.4%;background:#e85d20"></div>
     </div>
-    <div style="display:grid;grid-template-columns:repeat(5,1fr);gap:8px">
-      ${[
-        {lbl:ar?'أقل من 100':'&lt;100',col:'#1e40af',total:'55,291',bal:'3,202,768',pct:'52.5%',pW:'52.5%',omCnt:'22,591',omBal:'1,193,187',omW:'41%',exCnt:'32,700',exBal:'2,009,581',exW:'59%'},
-        {lbl:'100–500',col:'#16a34a',total:'47,491',bal:'8,466,229',pct:'45.1%',pW:'85.7%',omCnt:'20,300',omBal:'3,740,512',omW:'43%',exCnt:'27,191',exBal:'4,725,716',exW:'57%'},
-        {lbl:'500–1K',col:'#d97706',total:'2,131',bal:'1,358,807',pct:'2.0%',pW:'3.8%',omCnt:'1,113',omBal:'706,825',omW:'52%',exCnt:'1,018',exBal:'651,982',exW:'48%'},
-        {lbl:'1K–5K',col:'#e85d20',total:'371',bal:'550,318',pct:'0.4%',pW:'0.7%',omCnt:'144',omBal:'226,175',omW:'39%',exCnt:'227',exBal:'324,143',exW:'61%'},
-        {lbl:ar?'أكثر 5K':'&gt;5K',col:'#dc2626',total:'3',bal:'17,110',pct:'0.0%',pW:'0%',omCnt:'3',omBal:'17,110',omW:'100%',exCnt:'0',exBal:'0',exW:'0%'},
-      ].map(rd=>`
-        <div style="border-radius:10px;overflow:hidden;border:1px solid #e2e8f0;background:#fff">
-          <div style="padding:9px 9px 0">
-            <div style="display:inline-block;font-size:9px;font-weight:700;border-radius:4px;padding:2px 6px;margin-bottom:6px;background:${rd.col}18;color:${rd.col}">${rd.lbl}</div>
-            <div style="font-size:10px;font-weight:700;color:#111827;margin-bottom:1px">${ar?'عدد الحسابات':'Accounts'}</div>
-            <div style="font-size:16px;font-weight:900;color:#111827;line-height:1.1;margin-bottom:3px">${rd.total}</div>
-          </div>
-          <div style="height:1px;background:#e2e8f0;margin:5px 9px"></div>
-          <div style="padding:0 9px">
-            <div style="font-size:10px;font-weight:700;color:#111827;margin-bottom:1px">${ar?'قيمة المديونية':'Debt'}</div>
-            <div style="font-size:12px;font-weight:900;color:#111827;line-height:1.1">${rd.bal}</div>
-            <div style="font-size:8px;font-weight:700;color:${rd.col};margin-bottom:3px">OMR</div>
-          </div>
-          <div style="height:1px;background:#e2e8f0;margin:5px 9px"></div>
-          <div style="padding:0 9px 8px">
-            <div style="display:flex;justify-content:space-between;margin-bottom:3px">
-              <span style="font-size:10px;font-weight:700;color:#111827">${ar?'النسبة':'Share'}</span>
-              <span style="font-size:11px;font-weight:900;color:${rd.col}">${rd.pct}</span>
-            </div>
-            <div style="background:#e8edf3;border-radius:3px;height:4px;overflow:hidden"><div style="width:${rd.pW};height:100%;background:${rd.col}"></div></div>
-          </div>
-          <div style="border-top:1px solid #e2e8f0;padding:7px 9px;background:#f0fdf4">
-            <div style="font-size:9px;font-weight:700;color:#16a34a;margin-bottom:4px">🟢 ${ar?'عُماني':'Omani'}</div>
-            <div style="font-size:10px;font-weight:700;color:#111827;margin-bottom:1px">${ar?'عدد الحسابات':'Accounts'}</div>
-            <div style="font-size:12px;font-weight:900;color:#111827;margin-bottom:3px">${rd.omCnt}</div>
-            <div style="font-size:10px;font-weight:700;color:#111827;margin-bottom:1px">${ar?'قيمة المديونية':'Debt'}</div>
-            <div style="font-size:11px;font-weight:900;color:#111827">${rd.omBal}</div>
-            <div style="font-size:8px;font-weight:700;color:#16a34a;margin-bottom:4px">OMR</div>
-            <div style="height:1px;background:#d1fae5;margin-bottom:3px"></div>
-            <div style="display:flex;align-items:center;gap:3px">
-              <span style="font-size:9px;font-weight:700;color:#111827;white-space:nowrap">${ar?'النسبة':'Share'} ${rd.omW}</span>
-              <div style="flex:1;background:#e8edf3;border-radius:2px;height:3px;overflow:hidden"><div style="width:${rd.omW};height:100%;background:#16a34a"></div></div>
-            </div>
-          </div>
-          <div style="border-top:1px solid #e2e8f0;padding:7px 9px;background:#fff7f3">
-            <div style="font-size:9px;font-weight:700;color:#e85d20;margin-bottom:4px">🟠 ${ar?'وافد':'Expat'}</div>
-            <div style="font-size:10px;font-weight:700;color:#111827;margin-bottom:1px">${ar?'عدد الحسابات':'Accounts'}</div>
-            <div style="font-size:12px;font-weight:900;color:#111827;margin-bottom:3px">${rd.exCnt}</div>
-            <div style="font-size:10px;font-weight:700;color:#111827;margin-bottom:1px">${ar?'قيمة المديونية':'Debt'}</div>
-            <div style="font-size:11px;font-weight:900;color:#111827">${rd.exBal}</div>
-            <div style="font-size:8px;font-weight:700;color:#e85d20;margin-bottom:4px">OMR</div>
-            <div style="height:1px;background:#fed7aa;margin-bottom:3px"></div>
-            <div style="display:flex;align-items:center;gap:3px">
-              <span style="font-size:9px;font-weight:700;color:#111827;white-space:nowrap">${ar?'النسبة':'Share'} ${rd.exW}</span>
-              <div style="flex:1;background:#e8edf3;border-radius:2px;height:3px;overflow:hidden"><div style="width:${rd.exW};height:100%;background:#e85d20"></div></div>
-            </div>
-          </div>
-        </div>
-      `).join('')}
-    </div>
+    <table style="width:100%;border-collapse:collapse;font-size:11px">
+      <thead><tr style="background:#f0f4f8">
+        <th style="padding:6px 10px;text-align:${ar?'right':'left'};font-weight:900;color:#374151;border-bottom:2px solid #e2e8f0">${ar?'الفئة':'Range'}</th>
+        <th style="padding:6px 10px;text-align:center;font-weight:900;color:#374151;border-bottom:2px solid #e2e8f0">${ar?'الإجمالي':'Total'}</th>
+        <th style="padding:6px 10px;text-align:center;font-weight:900;color:#374151;border-bottom:2px solid #e2e8f0">${ar?'النسبة':'%'}</th>
+        <th style="padding:6px 10px;text-align:${ar?'right':'left'};font-weight:900;color:#16a34a;border-bottom:2px solid #e2e8f0">🟢 ${ar?'عُماني':'Omani'}</th>
+        <th style="padding:6px 10px;text-align:${ar?'right':'left'};font-weight:900;color:#e85d20;border-bottom:2px solid #e2e8f0">🟠 ${ar?'وافد':'Expat'}</th>
+      </tr></thead>
+      <tbody>
+        <tr style="border-bottom:1px solid #f0f4f8">
+          <td style="padding:7px 10px"><span style="background:#1e40af;color:#fff;border-radius:4px;padding:1px 8px;font-size:9px;font-weight:700">${ar?'أقل من 100':'&lt;100 OMR'}</span></td>
+          <td style="padding:7px 10px;text-align:center;font-weight:900;color:#111">55,291</td>
+          <td style="padding:7px 10px;text-align:center;font-weight:900;color:#1e40af">52.5%</td>
+          <td style="padding:7px 10px;font-size:10px;color:#374151">22,591 | 1,193,187 OMR</td>
+          <td style="padding:7px 10px;font-size:10px;color:#374151">32,700 | 2,009,581 OMR</td>
+        </tr>
+        <tr style="border-bottom:1px solid #f0f4f8;background:#f9fafb">
+          <td style="padding:7px 10px"><span style="background:#16a34a;color:#fff;border-radius:4px;padding:1px 8px;font-size:9px;font-weight:700">100–500 OMR</span></td>
+          <td style="padding:7px 10px;text-align:center;font-weight:900;color:#111">47,491</td>
+          <td style="padding:7px 10px;text-align:center;font-weight:900;color:#16a34a">45.1%</td>
+          <td style="padding:7px 10px;font-size:10px;color:#374151">20,300 | 3,740,512 OMR</td>
+          <td style="padding:7px 10px;font-size:10px;color:#374151">27,191 | 4,725,716 OMR</td>
+        </tr>
+        <tr style="border-bottom:1px solid #f0f4f8">
+          <td style="padding:7px 10px"><span style="background:#d97706;color:#fff;border-radius:4px;padding:1px 8px;font-size:9px;font-weight:700">500–1K OMR</span></td>
+          <td style="padding:7px 10px;text-align:center;font-weight:900;color:#111">2,131</td>
+          <td style="padding:7px 10px;text-align:center;font-weight:900;color:#d97706">2.0%</td>
+          <td style="padding:7px 10px;font-size:10px;color:#374151">1,113 | 706,825 OMR</td>
+          <td style="padding:7px 10px;font-size:10px;color:#374151">1,018 | 651,982 OMR</td>
+        </tr>
+        <tr style="border-bottom:1px solid #f0f4f8;background:#f9fafb">
+          <td style="padding:7px 10px"><span style="background:#e85d20;color:#fff;border-radius:4px;padding:1px 8px;font-size:9px;font-weight:700">1K–5K OMR</span></td>
+          <td style="padding:7px 10px;text-align:center;font-weight:900;color:#111">371</td>
+          <td style="padding:7px 10px;text-align:center;font-weight:900;color:#e85d20">0.4%</td>
+          <td style="padding:7px 10px;font-size:10px;color:#374151">144 | 226,175 OMR</td>
+          <td style="padding:7px 10px;font-size:10px;color:#374151">227 | 324,143 OMR</td>
+        </tr>
+        <tr>
+          <td style="padding:7px 10px"><span style="background:#dc2626;color:#fff;border-radius:4px;padding:1px 8px;font-size:9px;font-weight:700">${ar?'أكثر من 5K':'&gt;5K OMR'}</span></td>
+          <td style="padding:7px 10px;text-align:center;font-weight:900;color:#111">3</td>
+          <td style="padding:7px 10px;text-align:center;font-weight:900;color:#dc2626">0.0%</td>
+          <td style="padding:7px 10px;font-size:10px;color:#374151">3 | 17,110 OMR</td>
+          <td style="padding:7px 10px;font-size:10px;color:#374151">0 | 0 OMR</td>
+        </tr>
+      </tbody>
+    </table>
   </div>
 </div>
 <div class="card" style="margin-bottom:14px">
@@ -11251,61 +11259,53 @@ export default function Dashboard() {
               {/* Detail cards with nationality breakdown */}
               <div style={{display:"grid",gridTemplateColumns:"repeat(5,1fr)",gap:12}}>
                 {P2.rangeDetail.map((rd,i)=>(
-                  <div key={i} style={{borderRadius:12,overflow:"hidden",border:"1px solid #e2e8f0",background:"#fff",boxShadow:"0 2px 10px rgba(0,0,0,0.05)",display:"flex",flexDirection:"column"}}>
-                    {/* Badge */}
-                    <div style={{padding:"12px 12px 0"}}>
-                      <div style={{display:"inline-flex",fontSize:11,fontWeight:700,borderRadius:4,padding:"2px 8px",marginBottom:10,background:rd.col+"18",color:rd.col}}>{ar?rd.lblAr:rd.lblEn}</div>
-                      {/* عدد الحسابات */}
-                      <div style={{fontSize:13,fontWeight:700,color:"#111827",marginBottom:2}}>{ar?"عدد الحسابات":"Accounts"}</div>
-                      <div style={{fontSize:20,fontWeight:900,color:"#111827",lineHeight:1.15,marginBottom:8}}>{n2(rd.total)}</div>
+                  <div key={i} style={{borderRadius:14,overflow:"hidden",border:"2px solid "+rd.col+"35",boxShadow:"0 2px 10px rgba(0,0,0,0.06)"}}>
+                    {/* Header */}
+                    <div style={{background:rd.col,padding:"10px 12px",textAlign:"center"}}>
+                      <div style={{fontSize:14,fontWeight:900,color:"#fff"}}>{ar?rd.lblAr:rd.lblEn}</div>
                     </div>
-                    {/* فاصل */}
-                    <div style={{height:1,background:"#e2e8f0",margin:"10px 12px"}}/>
-                    {/* قيمة المديونية */}
-                    <div style={{padding:"0 12px"}}>
-                      <div style={{fontSize:13,fontWeight:700,color:"#111827",marginBottom:2}}>{ar?"قيمة المديونية":"Debt Value"}</div>
-                      <div style={{fontSize:16,fontWeight:900,color:"#111827",lineHeight:1.15}}>{f2(rd.totalBal)} <span style={{fontSize:10,fontWeight:700,color:rd.col}}>OMR</span></div>
-                    </div>
-                    {/* فاصل */}
-                    <div style={{height:1,background:"#e2e8f0",margin:"10px 12px"}}/>
-                    {/* النسبة */}
-                    <div style={{padding:"0 12px 12px"}}>
-                      <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:5}}>
-                        <span style={{fontSize:13,fontWeight:700,color:"#111827"}}>{ar?"النسبة":"Share"}</span>
-                        <span style={{fontSize:14,fontWeight:900,color:rd.col}}>{p2(rd.total,P2.total)}</span>
+                    {/* Total */}
+                    <div style={{background:"#f8fafc",padding:"16px 16px",borderBottom:"1px solid "+rd.col+"20"}}>
+                      <div style={{display:"flex",justifyContent:"space-between",alignItems:"baseline",marginBottom:6}}>
+                        <span style={{fontSize:12,color:"#111827",fontWeight:900}}>{ar?"عدد الحسابات":"Accounts"}</span>
+                        <span style={{fontSize:24,fontWeight:900,color:"#111827"}}>{n2(rd.total)}</span>
                       </div>
-                      <div style={{background:"#e8edf3",borderRadius:4,height:5,overflow:"hidden"}}>
-                        <div style={{width:p2(rd.total,P2.total),background:rd.col,height:"100%",borderRadius:4}}/>
+                      <div style={{display:"flex",justifyContent:"space-between",alignItems:"baseline",marginBottom:6}}>
+                        <span style={{fontSize:12,color:"#111827",fontWeight:900}}>{ar?"قيمة المديونية":"Debt"}</span>
+                        <span style={{fontSize:14,fontWeight:900,color:"#111827"}}>{f2(rd.totalBal)} <span style={{fontSize:10,color:rd.col,fontWeight:700}}>OMR</span></span>
                       </div>
-                    </div>
-                    {/* عُماني */}
-                    <div style={{borderTop:"1px solid #e2e8f0",padding:"10px 12px",background:"#f0fdf4"}}>
-                      <div style={{fontSize:12,fontWeight:700,color:"#16a34a",marginBottom:8}}>🟢 {ar?"عُماني":"Omani"}</div>
-                      <div style={{fontSize:13,fontWeight:700,color:"#111827",marginBottom:2}}>{ar?"عدد الحسابات":"Accounts"}</div>
-                      <div style={{fontSize:16,fontWeight:900,color:"#111827",marginBottom:8}}>{n2(rd.omCnt)}</div>
-                      <div style={{fontSize:13,fontWeight:700,color:"#111827",marginBottom:2}}>{ar?"قيمة المديونية":"Debt"}</div>
-                      <div style={{fontSize:18,fontWeight:900,color:"#111827",lineHeight:1.15,marginBottom:6,direction:"ltr",textAlign:"right"}}>{f2(rd.omBal)} <span style={{fontSize:12,fontWeight:700,color:"#16a34a"}}>OMR</span></div>
-                      <div style={{height:1,background:"#d1fae5",marginBottom:6}}/>
-                      <div style={{display:"flex",alignItems:"center",gap:6}}>
-                        <span style={{fontSize:12,fontWeight:700,color:"#111827",whiteSpace:"nowrap"}}>{ar?"النسبة":"Share"} {rd.omCnt?(rd.omCnt/(rd.omCnt+rd.exCnt)*100).toFixed(0):0}%</span>
-                        <div style={{flex:1,background:"#e8edf3",borderRadius:3,height:5,overflow:"hidden"}}>
-                          <div style={{width:rd.omCnt?(rd.omCnt/(rd.omCnt+rd.exCnt)*100).toFixed(0)+"%":"0%",height:"100%",background:"#16a34a",borderRadius:3}}/>
+                      <div style={{marginTop:8}}>
+                        <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:5}}>
+                          <span style={{fontSize:12,color:"#111827",fontWeight:900}}>{ar?"النسبة":"Share"}</span>
+                          <span style={{fontSize:15,fontWeight:900,color:rd.col}}>{p2(rd.total,P2.total)}</span>
+                        </div>
+                        <div style={{background:"#e8edf3",borderRadius:6,height:7,overflow:"hidden"}}>
+                          <div style={{width:p2(rd.total,P2.total),background:"linear-gradient(90deg,"+rd.col+"99,"+rd.col+")",height:"100%",borderRadius:6}}/>
                         </div>
                       </div>
                     </div>
-                    {/* وافد */}
-                    <div style={{borderTop:"1px solid #e2e8f0",padding:"10px 12px",background:"#fff7f3"}}>
-                      <div style={{fontSize:12,fontWeight:700,color:"#e85d20",marginBottom:8}}>🟠 {ar?"وافد":"Expat"}</div>
-                      <div style={{fontSize:13,fontWeight:700,color:"#111827",marginBottom:2}}>{ar?"عدد الحسابات":"Accounts"}</div>
-                      <div style={{fontSize:18,fontWeight:900,color:"#111827",lineHeight:1.15,marginBottom:8}}>{n2(rd.exCnt)}</div>
-                      <div style={{fontSize:13,fontWeight:700,color:"#111827",marginBottom:2}}>{ar?"قيمة المديونية":"Debt"}</div>
-                      <div style={{fontSize:18,fontWeight:900,color:"#111827",lineHeight:1.15,marginBottom:6,direction:"ltr",textAlign:"right"}}>{f2(rd.exBal)} <span style={{fontSize:12,fontWeight:700,color:"#e85d20"}}>OMR</span></div>
-                      <div style={{height:1,background:"#fed7aa",marginBottom:6}}/>
-                      <div style={{display:"flex",alignItems:"center",gap:6}}>
-                        <span style={{fontSize:12,fontWeight:700,color:"#111827",whiteSpace:"nowrap"}}>{ar?"النسبة":"Share"} {rd.exCnt?(rd.exCnt/(rd.omCnt+rd.exCnt)*100).toFixed(0):0}%</span>
-                        <div style={{flex:1,background:"#e8edf3",borderRadius:3,height:5,overflow:"hidden"}}>
-                          <div style={{width:rd.exCnt?(rd.exCnt/(rd.omCnt+rd.exCnt)*100).toFixed(0)+"%":"0%",height:"100%",background:"#e85d20",borderRadius:3}}/>
-                        </div>
+                    {/* Omani */}
+                    <div style={{padding:"14px 16px",borderBottom:"1px solid #e8edf3",background:"#f0fdf4"}}>
+                      <div style={{fontSize:12,color:"#16a34a",fontWeight:900,marginBottom:8}}>🟢 {ar?"عُماني":"Omani"}</div>
+                      <div style={{display:"flex",justifyContent:"space-between",alignItems:"baseline",marginBottom:5}}>
+                        <span style={{fontSize:12,color:"#111827",fontWeight:900}}>{ar?"عدد الحسابات":"Accounts"}</span>
+                        <span style={{fontSize:16,fontWeight:900,color:"#111827"}}>{n2(rd.omCnt)}</span>
+                      </div>
+                      <div style={{display:"flex",justifyContent:"space-between",alignItems:"baseline"}}>
+                        <span style={{fontSize:12,color:"#111827",fontWeight:900}}>{ar?"قيمة المديونية":"Debt"}</span>
+                        <span style={{fontSize:14,fontWeight:900,color:"#111827"}}>{f2(rd.omBal)} <span style={{fontSize:10,color:"#16a34a",fontWeight:700}}>OMR</span></span>
+                      </div>
+                    </div>
+                    {/* Expat */}
+                    <div style={{padding:"14px 16px",background:"#fff7f3"}}>
+                      <div style={{fontSize:12,color:"#e85d20",fontWeight:900,marginBottom:8}}>🟠 {ar?"وافد":"Expat"}</div>
+                      <div style={{display:"flex",justifyContent:"space-between",alignItems:"baseline",marginBottom:5}}>
+                        <span style={{fontSize:12,color:"#111827",fontWeight:900}}>{ar?"عدد الحسابات":"Accounts"}</span>
+                        <span style={{fontSize:16,fontWeight:900,color:"#111827"}}>{n2(rd.exCnt)}</span>
+                      </div>
+                      <div style={{display:"flex",justifyContent:"space-between",alignItems:"baseline"}}>
+                        <span style={{fontSize:12,color:"#111827",fontWeight:900}}>{ar?"قيمة المديونية":"Debt"}</span>
+                        <span style={{fontSize:14,fontWeight:900,color:"#111827"}}>{f2(rd.exBal)} <span style={{fontSize:10,color:"#e85d20",fontWeight:700}}>OMR</span></span>
                       </div>
                     </div>
                   </div>
