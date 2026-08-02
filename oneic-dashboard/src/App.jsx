@@ -6510,28 +6510,45 @@ async function parseXLS(file) {
 const FIREBASE_URL = "https://oneic-dashboard-default-rtdb.firebaseio.com";
 
 // ═══ ONE-TIME DATA FIX ═══════════════════════════════════
-// يُصلح Firebase مرة واحدة بالبيانات الصحيحة من SEED
+// يُصلح Firebase: يصحح أسماء شركات التحصيل ويحافظ على history و uploadCount
 (function() {
   if (typeof window === 'undefined') return;
-  if (localStorage.getItem('oneic_data_fixed_v4')) return;
+  if (localStorage.getItem('oneic_data_fixed_v5')) return;
   var now = new Date().toISOString();
-  var fixData = Object.assign({}, SEED, {
-    lastUpdated: now, _updatedAt: now,
-    uploadCount: 1,
-    totalPortfolio: SEED.totalPortfolio,
-    history: []
-  });
-  try { localStorage.setItem('oneic_dashboard_data', JSON.stringify(fixData)); } catch(e) {}
-  fetch('https://oneic-dashboard-default-rtdb.firebaseio.com/main.json', {
-    method: 'PUT',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify(fixData)
-  }).then(function() {
-    localStorage.setItem('oneic_data_fixed_v4', '1');
-    console.log('[ONEIC] Data fixed successfully');
-  }).catch(function(e) {
-    console.warn('[ONEIC] Fix failed:', e.message);
-  });
+  // اقرأ Firebase أولاً لتحافظ على history و uploadCount
+  fetch('https://oneic-dashboard-default-rtdb.firebaseio.com/main.json')
+    .then(function(r){ return r.json(); })
+    .then(function(existing) {
+      // تحقق هل بيانات DC صحيحة بالفعل
+      var existDC = (existing && existing.debtCompanies)||[];
+      var alreadyValid = existDC.some(function(c){ return c.name==='Matrix Debt Collection'||c.name==='National Center'; });
+      if (alreadyValid && existing && existing.regions && existing.regions.length > 0) {
+        // البيانات صحيحة — فقط حافظ على localStorage وضع العلامة
+        try { localStorage.setItem('oneic_data_fixed_v5','1'); } catch(e) {}
+        // لكن تأكد من أن localStorage محدّث
+        try { localStorage.setItem('oneic_dashboard_data', JSON.stringify(existing)); } catch(e) {}
+        return;
+      }
+      // البيانات خاطئة — استبدل debtCompanies و regions بـ SEED لكن احتفظ بـ history و uploadCount
+      var fixData = Object.assign({}, SEED, {
+        lastUpdated: now, _updatedAt: now,
+        totalPortfolio: SEED.totalPortfolio,
+        // احتفظ بـ history و uploadCount من Firebase إذا وُجدت
+        history: (existing && existing.history && existing.history.length > 0) ? existing.history : [],
+        uploadCount: (existing && existing.uploadCount && existing.uploadCount > 1) ? existing.uploadCount : (SEED.uploadCount||1),
+      });
+      try { localStorage.setItem('oneic_dashboard_data', JSON.stringify(fixData)); } catch(e) {}
+      fetch('https://oneic-dashboard-default-rtdb.firebaseio.com/main.json', {
+        method: 'PUT', headers: {'Content-Type':'application/json'}, body: JSON.stringify(fixData)
+      }).then(function() {
+        try { localStorage.setItem('oneic_data_fixed_v5','1'); } catch(e) {}
+        console.log('[ONEIC] Data fixed — DC names corrected, history preserved');
+      }).catch(function(e) { console.warn('[ONEIC] Fix failed:', e.message); });
+    }).catch(function() {
+      // Firebase غير متاح — استخدم SEED فقط للـ localStorage
+      try { localStorage.setItem('oneic_dashboard_data', JSON.stringify(SEED)); } catch(e) {}
+      try { localStorage.setItem('oneic_data_fixed_v5','1'); } catch(e) {}
+    });
 })();
 // ══════════════════════════════════════════════════════════
 
@@ -10545,11 +10562,26 @@ export default function Dashboard() {
           var newRegions = (base.regions||[]).map(function(r) {
             var rKey = (r.nameEn||r.nameAr||'').trim();
             var rKeyL = rKey.toLowerCase();
+            // خريطة تحويل من أسماء الملف إلى IDs المناطق
+            var FILE_REGION_MAP = {
+              'north and south al shaurqiah and al wasatah': 'sharqiah',
+              'ash sharqiyah north': 'sharqiah', 'ash sharqiyah south': 'sharqiah',
+              'south and north al batinah': 'batinah',
+              'al batinah north': 'batinah', 'al batinah south': 'batinah',
+              'muscat and al dakhiliyah': 'muscat', 'muscat': 'muscat', 'ad dakhiliyah': 'muscat',
+              'musandam, al burimai and al dahirah': 'musandam',
+              'musandam': 'musandam', 'al buraimi': 'musandam', 'al burimai': 'musandam',
+              'ad dhahirah': 'musandam', 'musandam, al burimai': 'musandam',
+              'dhofar': 'dhofar', 'al wusta': 'sharqiah',
+            };
             var rm = regionMap[rKey] || regionMap[r.nameEn] || regionMap[r.nameAr||''];
             if (!rm) {
               var keys = Object.keys(regionMap);
               for (var ki=0; ki<keys.length; ki++) {
                 var kl = keys[ki].toLowerCase();
+                // تحقق إذا كان مفتاح الملف يطابق ID المنطقة
+                var mappedId = FILE_REGION_MAP[kl];
+                if (mappedId && mappedId === r.id) { rm = regionMap[keys[ki]]; break; }
                 if (kl === rKeyL || kl.indexOf(rKeyL)>=0 || rKeyL.indexOf(kl)>=0) { rm = regionMap[keys[ki]]; break; }
               }
             }
