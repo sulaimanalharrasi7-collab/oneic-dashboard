@@ -10244,7 +10244,7 @@ export default function Dashboard() {
       try {
         const row = await sbGet('oneic_data');
         if (row?.history?.length > 0) {
-          setHistory(function(prevH){ var rh=row.history||[]; var merged=(rh.length>=(prevH||[]).length)?rh:prevH; try { localStorage.setItem('oneic_history', JSON.stringify(merged)); } catch(e) {} return merged; });
+          setHistory(function(prevH){ var rh=row.history||[]; var merged=(function(){var _rh=rh||[];var _ph=prevH||[];if(_rh.length===0)return _ph;if(_ph.length===0)return _rh;var _rhDate=(_rh[0]&&_rh[0].date)||"";var _phDate=(_ph[0]&&_ph[0].date)||"";return _rhDate>=_phDate?_rh:_ph;})(); try { localStorage.setItem('oneic_history', JSON.stringify(merged)); } catch(e) {} return merged; });
         }
       } catch(e) {}
     }
@@ -10321,7 +10321,7 @@ export default function Dashboard() {
         setData(function(prev){d.uploadCount=Math.max(d.uploadCount||0,(prev&&prev.uploadCount)||0);if((prev&&prev.uploadDate||"")>(d.uploadDate||""))d.uploadDate=prev.uploadDate||d.uploadDate;return d;});
         try { localStorage.setItem('oneic_dashboard_data', JSON.stringify(d)); } catch(e) {}
         if (row.history?.length > 0) {
-          setHistory(function(prevH){ var rh=row.history||[]; var merged=(rh.length>=(prevH||[]).length)?rh:prevH; try { localStorage.setItem('oneic_history', JSON.stringify(merged)); } catch(e) {} return merged; });
+          setHistory(function(prevH){ var rh=row.history||[]; var merged=(function(){var _rh=rh||[];var _ph=prevH||[];if(_rh.length===0)return _ph;if(_ph.length===0)return _rh;var _rhDate=(_rh[0]&&_rh[0].date)||"";var _phDate=(_ph[0]&&_ph[0].date)||"";return _rhDate>=_phDate?_rh:_ph;})(); try { localStorage.setItem('oneic_history', JSON.stringify(merged)); } catch(e) {} return merged; });
         }
       }
       setLoadingServer(false);
@@ -10359,7 +10359,7 @@ export default function Dashboard() {
         lastSyncRef.current = dSync._updatedAt || new Date().toISOString();
         setData(function(prev){dSync.uploadCount=Math.max(dSync.uploadCount||0,(prev&&prev.uploadCount)||0);if(prev&&prev.uploadDate>(dSync.uploadDate||""))dSync.uploadDate=prev.uploadDate;return dSync;});
         try{localStorage.setItem('oneic_dashboard_data',JSON.stringify(dSync));}catch(ex){}
-        if(row.history&&row.history.length){setHistory(function(prevH){var rh=row.history||[];var merged=(rh.length>=(prevH||[]).length)?rh:prevH;try{localStorage.setItem('oneic_history',JSON.stringify(merged));}catch(ex){}return merged;});}
+        if(row.history&&row.history.length){setHistory(function(prevH){var rh=row.history||[];var merged=(function(){var _rh=rh||[];var _ph=prevH||[];if(_rh.length===0)return _ph;if(_ph.length===0)return _rh;var _rhDate=(_rh[0]&&_rh[0].date)||"";var _phDate=(_ph[0]&&_ph[0].date)||"";return _rhDate>=_phDate?_rh:_ph;})();try{localStorage.setItem('oneic_history',JSON.stringify(merged));}catch(ex){}return merged;});}
         sbGet('oneic_bulk').then(function(br){if(br&&br.daily&&br.daily.length){setBulkData(br);try{localStorage.setItem('oneic_bulk_data',JSON.stringify(br));}catch(ex){};}}).catch(function(){});
         setLastSync(new Date());
       }).catch(function(e){console.warn('Sync error:',e.message);});
@@ -10384,7 +10384,7 @@ export default function Dashboard() {
         lastSyncRef.current = dSync4._updatedAt || new Date().toISOString();
         setData(function(prev){dSync4.uploadCount=Math.max(dSync4.uploadCount||0,(prev&&prev.uploadCount)||0);if(prev&&prev.uploadDate>(dSync4.uploadDate||""))dSync4.uploadDate=prev.uploadDate;return dSync4;});
         try{localStorage.setItem('oneic_dashboard_data',JSON.stringify(dSync4));}catch(e){}
-        if(row.history&&row.history.length){setHistory(function(prevH){var rh=row.history||[];return (rh.length>=(prevH||[]).length)?rh:prevH;});}
+        if(row.history&&row.history.length){setHistory(function(prevH){var rh=row.history||[];return (function(){var _rh=rh||[];var _ph=prevH||[];if(_rh.length===0)return _ph;if(_ph.length===0)return _rh;var _rhDate=(_rh[0]&&_rh[0].date)||"";var _phDate=(_ph[0]&&_ph[0].date)||"";return _rhDate>=_phDate?_rh:_ph;})();});}
         sbGet('oneic_bulk').then(function(br){if(br&&br.daily&&br.daily.length){setBulkData(br);}}).catch(function(){});
         setLastSync(new Date());
       }).catch(function(e){console.warn('Sync error:',e.message);});
@@ -10433,7 +10433,7 @@ export default function Dashboard() {
       lastSyncRef.current = d5._updatedAt || new Date().toISOString();
       setData(function(prev){d5.uploadCount=Math.max(d5.uploadCount||0,(prev&&prev.uploadCount)||0);if(prev&&prev.uploadDate&&prev.uploadDate>(d5.uploadDate||''))d5.uploadDate=prev.uploadDate;return d5;});
       try{localStorage.setItem('oneic_dashboard_data',JSON.stringify(d5));}catch(e){}
-      if(row.history&&row.history.length>0){setHistory(function(prevH){var rh=row.history||[];return (rh.length>=(prevH||[]).length)?rh:prevH;});}
+      if(row.history&&row.history.length>0){setHistory(function(prevH){var rh=row.history||[];return (function(){var _rh=rh||[];var _ph=prevH||[];if(_rh.length===0)return _ph;if(_ph.length===0)return _rh;var _rhDate=(_rh[0]&&_rh[0].date)||"";var _phDate=(_ph[0]&&_ph[0].date)||"";return _rhDate>=_phDate?_rh:_ph;})();});}
       setLastSync(new Date());
       setSyncing(false);
     }).catch(function(e){ console.warn('forceRefresh error:',e.message); setSyncing(false); });
@@ -10671,7 +10671,7 @@ export default function Dashboard() {
               newDC.push({name:bkn, paid:bkm.paid||0, adj:bkm.adj||0, principalAmt:0, portAmt:0, portCnt:bkm.count||0, count:bkm.count||0});
             }
           }
-          var _tF=new Date().toISOString();var _tFd=_tF.split("T")[0];var _gp2=newRegions.reduce(function(s,r){return s+(r.paid||0);},0)+newDC.reduce(function(s,r){return s+(r.paid||0);},0)+newHO.reduce(function(s,r){return s+(r.paid||0);},0);var _ga2=newRegions.reduce(function(s,r){return s+(r.adj||0);},0)+newDC.reduce(function(s,r){return s+(r.adj||0);},0)+newHO.reduce(function(s,r){return s+(r.adj||0);},0);var _he={date:_tFd,savedAt:_tF,totalRecords:base.totalRecords||0,grandPaid:_gp2,grandAdj:_ga2,grandTotal:_gp2+_ga2};var _prevHist=base.history||[];var _flHist=_prevHist.filter(function(h){return h.date!==_he.date;});var _nh=[_he].concat(_flHist).slice(0,90);var mg=Object.assign({},base,{regions:newRegions,debtCompanies:newDC,headOffice:newHO,totalPortfolio:{amt:dcAmt+hoAmt+govAmt,cnt:total,outstanding:totalOS},totalDiscount:totalDiscount||base.totalDiscount||0,overRecovery:totalOverRecovery||0,overRecoveryCount:totalOverRecoveryCount||0,_updatedAt:_tF,lastUpdated:_tF,uploadDate:_tFd,complaintsDate:_tFd,uploadCount:(base.uploadCount||0)+1,history:_nh});lastSyncRef.current=_tF;window._noSyncUntil=Date.now()+60000;try{localStorage.setItem('oneic_dashboard_data',JSON.stringify(mg));}catch(e){}try{localStorage.setItem('oneic_complaints_region_map',JSON.stringify(regionMap||{}));}catch(e){}try{localStorage.setItem('oneic_complaints_branch_map',JSON.stringify(branchMap||{}));}catch(e){}try{localStorage.setItem('oneic_history',JSON.stringify(_nh));}catch(e){}sbUpsert('oneic_data',{payload:mg}).then(function(){console.log('Complaints saved size='+JSON.stringify(mg).length);}).catch(function(e){console.error('Complaints save FAILED:',e&&e.message||e);try{fetch(FIREBASE_URL+'/main/uploadCount.json',{method:'PUT',headers:{'Content-Type':'application/json'},body:JSON.stringify(mg.uploadCount)});fetch(FIREBASE_URL+'/main/uploadDate.json',{method:'PUT',headers:{'Content-Type':'application/json'},body:JSON.stringify(mg.uploadDate)});fetch(FIREBASE_URL+'/main/history.json',{method:'PUT',headers:{'Content-Type':'application/json'},body:JSON.stringify(_nh)});}catch(e2){}});setHistory(function(prev){return (_nh.length>=(prev||[]).length)?_nh:prev;});return mg;
+          var _tF=new Date().toISOString();var _tFd=_tF.split("T")[0];var _gp2=newRegions.reduce(function(s,r){return s+(r.paid||0);},0)+newDC.reduce(function(s,r){return s+(r.paid||0);},0)+newHO.reduce(function(s,r){return s+(r.paid||0);},0);var _ga2=newRegions.reduce(function(s,r){return s+(r.adj||0);},0)+newDC.reduce(function(s,r){return s+(r.adj||0);},0)+newHO.reduce(function(s,r){return s+(r.adj||0);},0);var _he={date:_tFd,savedAt:_tF,totalRecords:base.totalRecords||0,grandPaid:_gp2,grandAdj:_ga2,grandTotal:_gp2+_ga2};var _prevHist=base.history||[];var _flHist=_prevHist.filter(function(h){return h.date!==_he.date;});var _nh=[_he].concat(_flHist).slice(0,90);var mg=Object.assign({},base,{regions:newRegions,debtCompanies:newDC,headOffice:newHO,totalPortfolio:{amt:dcAmt+hoAmt+govAmt,cnt:total,outstanding:totalOS},totalDiscount:totalDiscount||base.totalDiscount||0,overRecovery:totalOverRecovery||0,overRecoveryCount:totalOverRecoveryCount||0,_updatedAt:_tF,lastUpdated:_tF,uploadDate:_tFd,complaintsDate:_tFd,uploadCount:(base.uploadCount||0)+1,history:_nh});lastSyncRef.current=_tF;window._noSyncUntil=Date.now()+300000;try{localStorage.setItem('oneic_dashboard_data',JSON.stringify(mg));}catch(e){}try{localStorage.setItem('oneic_complaints_region_map',JSON.stringify(regionMap||{}));}catch(e){}try{localStorage.setItem('oneic_complaints_branch_map',JSON.stringify(branchMap||{}));}catch(e){}try{localStorage.setItem('oneic_history',JSON.stringify(_nh));}catch(e){}sbUpsert('oneic_data',{payload:mg}).then(function(){console.log('Complaints saved size='+JSON.stringify(mg).length);}).catch(function(e){console.error('Complaints save FAILED:',e&&e.message||e);try{fetch(FIREBASE_URL+'/main/uploadCount.json',{method:'PUT',headers:{'Content-Type':'application/json'},body:JSON.stringify(mg.uploadCount)});fetch(FIREBASE_URL+'/main/uploadDate.json',{method:'PUT',headers:{'Content-Type':'application/json'},body:JSON.stringify(mg.uploadDate)});fetch(FIREBASE_URL+'/main/history.json',{method:'PUT',headers:{'Content-Type':'application/json'},body:JSON.stringify(_nh)});}catch(e2){}});setHistory(function(prev){return (_nh.length>=(prev||[]).length)?_nh:prev;});return mg;
         });
         // احفظ complaints في localStorage
         try {
