@@ -11633,11 +11633,30 @@ export default function Dashboard() {
                 style={{flex:1,background:"#f0f4f9",color:"#555",border:"1px solid #ddd",borderRadius:12,padding:"12px",fontSize:14,fontWeight:700,cursor:"pointer",fontFamily:"'Cairo',sans-serif"}}
               >{t("إلغاء",lang)}</button>
             </div>
-          </div>
-        </div>
-      )}
-      <style>{`
-        @import url('https://fonts.googleapis.com/css2?family=Cairo:wght@400;500;600;700;800;900&family=IBM+Plex+Mono:wght@400;600;700&display=swap');
+            <div style={{marginTop:14,borderTop:"1px solid #f0f4f9",paddingTop:14}}>
+              <div style={{fontSize:12,color:"#888",marginBottom:8}}>⚠️ إعادة تعيين البيانات من SEED — سيتم حذف جميع البيانات الحالية</div>
+              <button onClick={async()=>{
+                if(!window.confirm('سيتم إعادة تعيين جميع بيانات الداشبورد من SEED. هل أنت متأكد؟')) return;
+                try {
+                  const now = new Date().toISOString();
+                  const seedData = {
+                    ...SEED,
+                    totalPortfolio:{
+                      amt: SEED.debtCompanies.reduce((s,c)=>s+(c.portAmt||0),0)+SEED.headOffice.reduce((s,c)=>s+(c.portAmt||0),0)+SEED.regions.reduce((s,r)=>s+(r.portAmt||0),0),
+                      cnt: SEED.totalRecords,
+                      outstanding: 0
+                    },
+                    _updatedAt: now, lastUpdated: now,
+                    complaintsDate: SEED.uploadDate, uploadCount: 0, history:[],
+                  };
+                  await sbUpsert('oneic_data', {payload: seedData});
+                  try{localStorage.setItem('oneic_dashboard_data', JSON.stringify(seedData));}catch(e){}
+                  window.location.reload();
+                } catch(e) { alert('خطأ: ' + e.message); }
+              }} style={{width:"100%",background:"#dc2626",color:"#fff",border:"none",borderRadius:10,padding:"10px",fontSize:13,fontWeight:700,cursor:"pointer",fontFamily:"'Cairo',sans-serif"}}>
+                🔄 إعادة تعيين البيانات (SEED)
+              </button>
+            </div>
         * { box-sizing:border-box; margin:0; padding:0; }
         ::-webkit-scrollbar { width:5px; }
         ::-webkit-scrollbar-thumb { background:#e8c0a8; border-radius:3px; }
