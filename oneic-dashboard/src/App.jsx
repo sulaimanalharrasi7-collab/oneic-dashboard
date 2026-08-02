@@ -6366,7 +6366,7 @@ async function parseXLS(file) {
     },
     ho: {
       "Legal - DR. Sarhaan": { portAmt: 3229651.681, portCnt: 3691, closed:67, active:3624, principalAmt: 3301711.348 },
-      "Documentation- Omantel": { portAmt: 471756.070,  portCnt: 1099, closed:8, active:1091 },
+      "Documentation- Omantel": { portAmt: 471756.070,  portCnt: 0, closed:0, active:0 },
       "Legal -Oneic":{portAmt:64528.164,portCnt:144,principalAmt:64528.164,closed:3,active:141},"Refund - before legal":{portAmt:0,portCnt:0,closed:0,active:0},"Refund - after legal":{portAmt:0,portCnt:0,closed:0,active:0},
       "HO":                  { portAmt: 0,           portCnt: 340  },
       "Non-due accounts":    { portAmt: 0,           portCnt: 340  }
@@ -10243,7 +10243,7 @@ export default function Dashboard() {
         const HO_REQ = ["Legal - DR. Sarhaan","Documentation- Omantel","Non-due accounts","Legal -Oneic","Refund - before legal","Refund - after legal","Omantel Communication"];
         const HO_P = {
           "Legal - DR. Sarhaan":{portAmt:3229651.681,portCnt:3691,closed:67,active:3624,principalAmt:3301711.348},
-          "Documentation- Omantel":{portAmt:471756.070,portCnt:1099,closed:8,active:1091},
+          "Documentation- Omantel":{portAmt:471756.070,portCnt:0,closed:0,active:0},
           "Non-due accounts":{portAmt:0,portCnt:340},
           "Legal -Oneic":{portAmt:64528.164,portCnt:144,principalAmt:64528.164,closed:3,active:141},"Refund - before legal":{portAmt:0,portCnt:0,closed:0,active:0},"Refund - after legal":{portAmt:0,portCnt:0,closed:0,active:0},"Omantel Communication":{portAmt:0,portCnt:0,closed:0,active:0}
         };
@@ -10277,7 +10277,7 @@ export default function Dashboard() {
         var myTime = lastSyncRef.current ? new Date(lastSyncRef.current).getTime() : 0;
         if (fbTime > 0 && myTime > 0 && fbTime <= myTime) return;
         var HO_KEYS3 = ["Legal - DR. Sarhaan","Documentation- Omantel","Non-due accounts","Legal -Oneic","Refund - before legal","Refund - after legal","Omantel Communication"];
-        var HO_DEF3 = {"Legal - DR. Sarhaan":{portAmt:3229651.681,portCnt:3691,closed:67,active:3624},"Documentation- Omantel":{portAmt:471756.070,portCnt:1099,closed:8,active:1091},"Non-due accounts":{portAmt:0,portCnt:340},"Legal -Oneic":{portAmt:64528.164,portCnt:144,closed:3,active:141},"Refund - before legal":{portAmt:0,portCnt:0,closed:0,active:0},"Refund - after legal":{portAmt:0,portCnt:0,closed:0,active:0},"Omantel Communication":{portAmt:0,portCnt:0,closed:0,active:0}};
+        var HO_DEF3 = {"Legal - DR. Sarhaan":{portAmt:3229651.681,portCnt:3691,closed:67,active:3624},"Documentation- Omantel":{portAmt:471756.070,portCnt:0,closed:0,active:0},"Non-due accounts":{portAmt:0,portCnt:340},"Legal -Oneic":{portAmt:64528.164,portCnt:144,closed:3,active:141},"Refund - before legal":{portAmt:0,portCnt:0,closed:0,active:0},"Refund - after legal":{portAmt:0,portCnt:0,closed:0,active:0},"Omantel Communication":{portAmt:0,portCnt:0,closed:0,active:0}};
         var eHO3 = row.headOffice||[];
         var fullHO3 = HO_KEYS3.map(function(nm){
           var f=eHO3.find(function(c){return c.name===nm;})||(nm==='Non-due accounts'?eHO3.find(function(c){return c.name==='HO';}):null);
@@ -10307,7 +10307,7 @@ export default function Dashboard() {
         var myTime = lastSyncRef.current ? new Date(lastSyncRef.current).getTime() : 0;
         if (fbTime > 0 && myTime > 0 && fbTime <= myTime) return;
         var HO_KEYS4=["Legal - DR. Sarhaan","Documentation- Omantel","Non-due accounts","Legal -Oneic","Refund - before legal","Refund - after legal","Omantel Communication"];
-        var HO_P4={"Legal - DR. Sarhaan":{portAmt:3229651.681,portCnt:3691,closed:67,active:3624},"Documentation- Omantel":{portAmt:471756.070,portCnt:1099,closed:8,active:1091},"Non-due accounts":{portAmt:0,portCnt:340},"Legal -Oneic":{portAmt:64528.164,portCnt:144,closed:3,active:141},"Refund - before legal":{portAmt:0,portCnt:0,closed:0,active:0},"Refund - after legal":{portAmt:0,portCnt:0,closed:0,active:0},"Omantel Communication":{portAmt:0,portCnt:0,closed:0,active:0}};
+        var HO_P4={"Legal - DR. Sarhaan":{portAmt:3229651.681,portCnt:3691,closed:67,active:3624},"Documentation- Omantel":{portAmt:471756.070,portCnt:0,closed:0,active:0},"Non-due accounts":{portAmt:0,portCnt:340},"Legal -Oneic":{portAmt:64528.164,portCnt:144,closed:3,active:141},"Refund - before legal":{portAmt:0,portCnt:0,closed:0,active:0},"Refund - after legal":{portAmt:0,portCnt:0,closed:0,active:0},"Omantel Communication":{portAmt:0,portCnt:0,closed:0,active:0}};
         var eHO4=row.headOffice||[];
         var fullHO4=HO_KEYS4.map(function(nm){var f=eHO4.find(function(c){return c.name===nm;})||(nm==='Non-due accounts'?eHO4.find(function(c){return c.name==='HO';}):null);var p=HO_P4[nm]||{};if(f)return Object.assign({},p,f,{name:nm,closed:(f.closed!==undefined&&f.closed!==null)?f.closed:(p.closed||0),active:(f.active!==undefined&&f.active!==null)?f.active:(p.active||0)});return {name:nm,paid:0,adj:0,count:0,portAmt:p.portAmt||0,portCnt:p.portCnt||0,closed:0,active:0};});
         // == Firebase يحتوي البيانات الكاملة والنهائية الصحيحة - لا حاجة لأي دمج إضافي من localStorage ==
@@ -10354,7 +10354,7 @@ export default function Dashboard() {
       if (!row || !row.regions || !row.regions.length) { setSyncing(false); return; }
       // == Firebase يحتوي البيانات الكاملة والنهائية الصحيحة - لا حاجة لأي دمج أو إعادة بناء إضافي ==
       var HO_KEYS5=["Legal - DR. Sarhaan","Documentation- Omantel","Non-due accounts","Legal -Oneic","Refund - before legal","Refund - after legal","Omantel Communication"];
-      var HO_P5={"Legal - DR. Sarhaan":{portAmt:3229651.681,portCnt:3691,closed:67,active:3624},"Documentation- Omantel":{portAmt:471756.070,portCnt:1099,closed:8,active:1091},"Non-due accounts":{portAmt:0,portCnt:340},"Legal -Oneic":{portAmt:64528.164,portCnt:144,closed:3,active:141},"Refund - before legal":{portAmt:0,portCnt:0,closed:0,active:0},"Refund - after legal":{portAmt:0,portCnt:0,closed:0,active:0},"Omantel Communication":{portAmt:0,portCnt:0,closed:0,active:0}};
+      var HO_P5={"Legal - DR. Sarhaan":{portAmt:3229651.681,portCnt:3691,closed:67,active:3624},"Documentation- Omantel":{portAmt:471756.070,portCnt:0,closed:0,active:0},"Non-due accounts":{portAmt:0,portCnt:340},"Legal -Oneic":{portAmt:64528.164,portCnt:144,closed:3,active:141},"Refund - before legal":{portAmt:0,portCnt:0,closed:0,active:0},"Refund - after legal":{portAmt:0,portCnt:0,closed:0,active:0},"Omantel Communication":{portAmt:0,portCnt:0,closed:0,active:0}};
       var eHO5=row.headOffice||[];
       var fullHO5=HO_KEYS5.map(function(nm){var f=eHO5.find(function(c){return c.name===nm;})||(nm==='Non-due accounts'?eHO5.find(function(c){return c.name==='HO';}):null);var p=HO_P5[nm]||{};if(f)return Object.assign({},p,f,{name:nm,closed:(f.closed!==undefined&&f.closed!==null)?f.closed:(p.closed||0),active:(f.active!==undefined&&f.active!==null)?f.active:(p.active||0)});return Object.assign({name:nm,paid:0,adj:0,count:0,closed:0,active:0},p);});
       var d5={}; var rk5=Object.keys(row); for(var ki5=0;ki5<rk5.length;ki5++){d5[rk5[ki5]]=row[rk5[ki5]];}
@@ -10636,7 +10636,7 @@ export default function Dashboard() {
     const HO_REQUIRED = ["Legal - DR. Sarhaan","Documentation- Omantel","HO","Legal -Oneic"];
     const HO_PORT_DATA = {
       "Legal - DR. Sarhaan": { portAmt: 3229651.681, portCnt: 3662, principalAmt: 3301711.348 },
-      "Documentation- Omantel":  { portAmt: 471756.070,  portCnt: 1099, closed:8, active:1091 },
+      "Documentation- Omantel":  { portAmt: 471756.070,  portCnt: 0, closed:0, active:0 },
       "HO":                   { portAmt: 0,           portCnt: 340  },
       "Non-due accounts":     { portAmt: 0,           portCnt: 340  },
       "Legal -Oneic":{portAmt:64528.164,portCnt:144,principalAmt:64528.164,closed:3,active:141},"Refund - before legal":{portAmt:0,portCnt:0,closed:0,active:0},"Refund - after legal":{portAmt:0,portCnt:0,closed:0,active:0}
