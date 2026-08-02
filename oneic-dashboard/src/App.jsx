@@ -1,7 +1,48 @@
 import { useState, useRef, useCallback, useEffect, createContext, useContext } from "react";
 
-// ======================================================
-// TRANSLATIONS -- Arabic ↔ English
+// ── AUTO FIX FIREBASE when ?fix=1 ──────────────────────
+const _urlFix = typeof window!=='undefined' && new URLSearchParams(window.location.search).get('fix')==='1';
+if (_urlFix && typeof window!=='undefined') {
+  (async()=>{
+    const now = new Date().toISOString();
+    const fixData = {
+      uploadDate:"2026-08-02",complaintsDate:"2026-08-02",totalRecords:47963,
+      uploadCount:1,lastUpdated:now,_updatedAt:now,
+      totalDiscount:1749.473,overRecovery:0,overRecoveryCount:0,
+      totalPortfolio:{amt:9414256.834,cnt:47963,outstanding:8284388.413},
+      regions:[
+        {id:"dhofar",nameAr:"ظفار",nameEn:"Dhofar",paid:1258.225,adj:1200.858,portAmt:1946.119,portCnt:25,collectors:[{name:"Hussein Abdul Muttalib",paid:1258.225,adj:1200.858}]},
+        {id:"musandam",nameAr:"مسندم والبريمي والظاهرة",nameEn:"Musandam, Al Buraimi & Al Dahirah",paid:33147.380,adj:4048.733,portAmt:37449.515,portCnt:518,collectors:[{name:"Fawzia Ali Al Suhi",paid:9643.894,adj:1314.242},{name:"Sheikha Rashid Al Muqrshi",paid:8068.957,adj:582.375},{name:"Fahad Said Al Ghaiti",paid:9173.831,adj:1175.042},{name:"Alanood Ali Al Balushi",paid:1988.937,adj:461.102},{name:"Wadha Al Kimzari",paid:1352.404,adj:415.972},{name:"Yaqoob Salim Al Harthy",paid:1773.655,adj:0},{name:"Mariam Rashid Al Suhi",paid:1077.391,adj:100},{name:"Sarah Ali Al Suhi",paid:68.311,adj:0}]},
+        {id:"muscat",nameAr:"مسقط والداخلية",nameEn:"Muscat & Al Dakhiliyah",paid:51495.212,adj:4718.009,portAmt:68131.760,portCnt:1279,collectors:[{name:"Tharaya Muhanna Al-Rashdi",paid:6259.878,adj:138.846},{name:"Khulood Nasser Al Kindi",paid:4699.698,adj:222.068},{name:"Ibtisam Al Siyabiya",paid:5346.225,adj:259.708},{name:"Badria Al-Maghribi",paid:4279.356,adj:485.772},{name:"Faisal Al-Zadjali",paid:4505.351,adj:95.800},{name:"Sultan Hilal Al Busaidi",paid:1759.086,adj:114.122},{name:"Salwa Hamed Al-Julandani",paid:2828.327,adj:309.150},{name:"Nasir Sulaiman",paid:2312.976,adj:0},{name:"Mahmood al nabhani",paid:4930.539,adj:860.481},{name:"Manar Nasser Al-Rawahi",paid:5164.179,adj:769.390},{name:"Anoud Ibrahim Al Balushi",paid:3446.819,adj:407.019},{name:"Hamad Al Hinai",paid:3453.680,adj:790.911}]},
+        {id:"sharqiah",nameAr:"الشرقية والوسطى",nameEn:"Ash Sharqiyah & Al Wusta",paid:57703.771,adj:14223.590,portAmt:164461.982,portCnt:2588,collectors:[{name:"Marwa Juma Mubarak",paid:10825.706,adj:1525.823},{name:"Sabah Said",paid:14470.396,adj:3852.604},{name:"Juma Al Habsi",paid:4966.137,adj:2922.382},{name:"Wjdan said khamis Al alawi",paid:2018.917,adj:660.801},{name:"Yusra khamis Al Daoudia",paid:2637.009,adj:476.897},{name:"Shamsa Mohammed",paid:1972.431,adj:578.708},{name:"Ahoud Nasser",paid:4937.432,adj:1041.718},{name:"Moza Mohammed Ali",paid:1089.169,adj:107.990},{name:"Shima Yousuf Al Mukhaini",paid:2753.593,adj:270.712},{name:"Shiiab Al Habsi",paid:1196.977,adj:530.471}]},
+        {id:"batinah",nameAr:"الباطنة",nameEn:"Al Batinah",paid:58907.061,adj:14917.782,portAmt:93541.029,portCnt:2319,collectors:[{name:"Aida Kasaf Al Nofli",paid:13464.102,adj:7098.014},{name:"Mrs. Moza Khamis Al Mamari",paid:10286.984,adj:1631.711},{name:"Suliman mosa AL Balushi",paid:4270.876,adj:378.353},{name:"Fathia MohamedAldairia",paid:2458.690,adj:139.603},{name:"Ahmed Hassan Al Balushi",paid:7810.757,adj:1326.232},{name:"Faisal Saif Al Sinani",paid:3143.232,adj:459.565},{name:"Khamis Al Adawi",paid:2412.780,adj:518.496},{name:"Majed Ahmed alzabi",paid:4281.063,adj:1181.902},{name:"Khaled Al-Maliki",paid:3141.485,adj:427.107},{name:"Ahmed Slim Alqafri",paid:3752.460,adj:1177.450}]}
+      ],
+      debtCompanies:[
+        {name:"Matrix Debt Collection",paid:190090.915,adj:31117.278,portAmt:2882018.894,portCnt:23398,count:23399,osAmt:2395028.149,principalAmt:3085719.293},
+        {name:"National Center",paid:99260.084,adj:4660.167,portAmt:1014744.033,portCnt:6741,count:6740,osAmt:912004.619,principalAmt:1089520.558},
+        {name:"Compass Risk Support Services",paid:120137.613,adj:10842.512,portAmt:386199.737,portCnt:3992,count:3990,osAmt:264609.617,principalAmt:510391.070},
+        {name:"Ejada",paid:234768.002,adj:26578.195,portAmt:261235.418,portCnt:1938,count:1938,osAmt:-3096.635,principalAmt:261235.418},
+        {name:"Tahseel United",paid:8362.595,adj:433.130,portAmt:0,portCnt:108,count:109,osAmt:0,principalAmt:8796.192},
+        {name:"High Speed Company",paid:5927.788,adj:67.577,portAmt:0,portCnt:35,count:35,osAmt:0,principalAmt:5995.160}
+      ],
+      headOffice:[
+        {name:"Legal - DR. Sarhaan",paid:102755.525,adj:20792.517,portAmt:3229651.681,portCnt:3973,count:3973,closed:135,active:3838},
+        {name:"Documentation- Omantel",paid:0,adj:0,portAmt:471756.070,portCnt:0,count:0,closed:0,active:0},
+        {name:"Non-due accounts",paid:98.741,adj:0.127,portAmt:0,portCnt:252,count:252,closed:252,active:0},
+        {name:"Legal -Oneic",paid:26573.783,adj:4863.010,portAmt:64528.164,portCnt:101,count:101,closed:101,active:0},
+        {name:"Refund - before legal",paid:400.680,adj:152.552,portAmt:0,portCnt:520,count:520,closed:0,active:520},
+        {name:"Omantel Communication",paid:110.934,adj:254.075,portAmt:0,portCnt:177,count:177,closed:0,active:177}
+      ],
+      history:[]
+    };
+    try {
+      await fetch('https://oneic-dashboard-default-rtdb.firebaseio.com/main.json',{method:'PUT',headers:{'Content-Type':'application/json'},body:JSON.stringify(fixData)});
+      try{localStorage.setItem('oneic_dashboard_data',JSON.stringify(fixData));}catch(e){}
+      window.location.href = window.location.pathname + '?fixed=1';
+    } catch(e) { alert('Fix error: '+e.message); }
+  })();
+}
+
 // ======================================================
 const TRANS = {
   // -- KPI / metrics ----------------------------------
