@@ -6512,11 +6512,37 @@ const FIREBASE_URL = "https://oneic-dashboard-default-rtdb.firebaseio.com";
     overRecovery:0,overRecoveryCount:0,
     totalPortfolio:{amt:9414256.834,cnt:47963,outstanding:8284388.413},
     regions:[
-      {id:"dhofar",nameAr:"ظفار",nameEn:"Dhofar",paid:1258.225,adj:1200.858,portAmt:1946.119,portCnt:25},
-      {id:"musandam",nameAr:"مسندم والبريمي والظاهرة",nameEn:"Musandam, Al Buraimi & Al Dahirah",paid:33147.380,adj:4048.733,portAmt:37449.515,portCnt:518},
-      {id:"muscat",nameAr:"مسقط والداخلية",nameEn:"Muscat & Al Dakhiliyah",paid:51495.212,adj:4718.009,portAmt:68131.760,portCnt:1279},
-      {id:"sharqiah",nameAr:"الشرقية والوسطى",nameEn:"Ash Sharqiyah & Al Wusta",paid:57703.771,adj:14223.590,portAmt:164461.982,portCnt:2588},
-      {id:"batinah",nameAr:"الباطنة",nameEn:"Al Batinah",paid:58907.061,adj:14917.782,portAmt:93541.029,portCnt:2319}
+      {id:"dhofar",nameAr:"ظفار",nameEn:"Dhofar",paid:1258.225,adj:1200.858,portAmt:1946.119,portCnt:25,collectors:[{name:"Hussein Abdul Muttalib",paid:1258.225,adj:1200.858}]},
+      {id:"musandam",nameAr:"مسندم والبريمي والظاهرة",nameEn:"Musandam, Al Buraimi & Al Dahirah",paid:33147.380,adj:4048.733,portAmt:37449.515,portCnt:518,collectors:[
+        {name:"Alanood Ali Al Balushi",paid:1988.937,adj:461.102},{name:"Fawzia Ali Al Suhi",paid:9643.894,adj:1314.242},{name:"Wadha Al Kimzari",paid:1352.404,adj:415.972},
+        {name:"Sheikha Rashid Al Muqrshi",paid:8068.957,adj:582.375},{name:"Fahad Said Al Ghaiti",paid:9173.831,adj:1175.042},{name:"Yaqoob Salim Al Harthy",paid:1773.655,adj:0},
+        {name:"Mariam Rashid Al Suhi",paid:1077.391,adj:100},{name:"Sarah Ali Al Suhi",paid:68.311,adj:0}]},
+      {id:"muscat",nameAr:"مسقط والداخلية",nameEn:"Muscat & Al Dakhiliyah",paid:51495.212,adj:4718.009,portAmt:68131.760,portCnt:1279,collectors:[
+        {name:"Tharaya Muhanna Al-Rashdi",paid:6259.878,adj:138.846},{name:"Khulood Nasser Al Kindi",paid:4699.698,adj:222.068},{name:"Ibtisam Al Siyabiya",paid:5346.225,adj:259.708},
+        {name:"Badria Al-Maghribi",paid:4279.356,adj:485.772},{name:"Faisal Al-Zadjali",paid:4505.351,adj:95.800},{name:"Sultan Hilal Al Busaidi",paid:1759.086,adj:114.122},
+        {name:"Salwa Hamed Al-Julandani",paid:2828.327,adj:309.150},{name:"Mahmood al nabhani",paid:4930.539,adj:860.481},{name:"Nasir Sulaiman",paid:2312.976,adj:0},
+        {name:"Manar Nasser Al-Rawahi",paid:5164.179,adj:769.390},{name:"Hamad Al Hinai",paid:3453.680,adj:790.911},{name:"Anoud Ibrahim Al Balushi",paid:3446.819,adj:407.019},
+        {name:"Abdullah Mohammed Ambusaidi",paid:1019.960,adj:264.742},{name:"Rehab Al-Saadi",paid:118.418,adj:0},{name:"Wadha Ali Al Dhali",paid:1177.849,adj:0},
+        {name:"Amira Hamed",paid:166.111,adj:0},{name:"Asaad Nasser Al-Hadrami",paid:26.760,adj:0}]},
+      {id:"sharqiah",nameAr:"الشرقية والوسطى",nameEn:"Ash Sharqiyah & Al Wusta",paid:57703.771,adj:14223.590,portAmt:164461.982,portCnt:2588,collectors:[
+        {name:"Marwa Juma Mubarak",paid:10825.706,adj:1525.823},{name:"Sabah Said",paid:14470.396,adj:3852.604},{name:"Juma Al Habsi",paid:4966.137,adj:2922.382},
+        {name:"Wjdan said khamis Al alawi",paid:2018.917,adj:660.801},{name:"Yusra khamis Al Daoudia",paid:2637.009,adj:476.897},{name:"Shamsa Mohammed",paid:1972.431,adj:578.708},
+        {name:"Ahoud Nasser",paid:4937.432,adj:1041.718},{name:"Moza Mohammed Ali",paid:1089.169,adj:107.990},{name:"Shima Yousuf Al Mukhaini",paid:2753.593,adj:270.712},
+        {name:"Shiiab Al Habsi",paid:1196.977,adj:530.471},{name:"Meyaad Abdullah",paid:1046.164,adj:205.029},{name:"Ahmed Abdullah",paid:597.129,adj:144.479},
+        {name:"Amira Sultan",paid:2578.937,adj:844.818},{name:"Ahmed Salim Al Mahruqi",paid:1209.212,adj:80.262},{name:"Zainab Mabrouk",paid:2574.620,adj:493.689},
+        {name:"Ghaliya Mubarak",paid:1150.515,adj:133.038},{name:"Badar Khamis Al Malkhi",paid:1679.427,adj:354.169}]},
+      {id:"batinah",nameAr:"الباطنة",nameEn:"Al Batinah",paid:58907.061,adj:14917.782,portAmt:93541.029,portCnt:2319,collectors:[
+        {name:"Aida Kasaf Al Nofli",paid:13464.102,adj:7098.014},{name:"Mrs. Moza Khamis Al Mamari",paid:10286.984,adj:1631.711},{name:"Suliman mosa AL Balushi",paid:4270.876,adj:378.353},
+        {name:"Fathia MohamedAldairia",paid:2458.690,adj:139.603},{name:"Ahmed Hassan Al Balushi",paid:7810.757,adj:1326.232},{name:"Faisal Saif Al Sinani",paid:3143.232,adj:459.565},
+        {name:"Khamis Al Adawi",paid:2412.780,adj:518.496},{name:"Majed Ahmed alzabi",paid:4281.063,adj:1181.902},{name:"Khaled Al-Maliki",paid:3141.485,adj:427.107},
+        {name:"Ahmed Slim Alqafri",paid:3752.460,adj:1177.450},{name:"Iman Al-Abbadi",paid:791.790,adj:200.960},{name:"Fatima Al-Hanai",paid:420.766,adj:106.441},
+        {name:"Ahmed Mohammed Al-Shakili",paid:269.051,adj:177.689},{name:"Samia Al-Awfiya",paid:340.722,adj:0},{name:"Asmahan Al-Saidiyya",paid:14.715,adj:0},
+        {name:"Tareq Al-Shiyadi",paid:87.140,adj:0},{name:"Aisha Al-Tawbiya",paid:92.772,adj:17.290},{name:"Fatima Al-Khaziriya",paid:43.114,adj:0},
+        {name:"Fatima Al Muqbali",paid:38.166,adj:0},{name:"Amana Al-Sharqiya",paid:120.197,adj:0},{name:"Zahra Al-Alawi",paid:99.751,adj:0},
+        {name:"Abdul Mutalib Darwish",paid:167.737,adj:0},{name:"Fatima Al Kaabiya",paid:128.935,adj:0},{name:"Wafaa Al-Sulaymieh",paid:81.760,adj:0},
+        {name:"Ahmed Al-Khazimi",paid:25.002,adj:0},{name:"sadika Al-Aajmi",paid:41.589,adj:26.345},{name:"Hamid Al-Sanani",paid:231.071,adj:0},
+        {name:"Adnan Al Mayasi",paid:125.446,adj:0.290},{name:"Mahfouza Al-Awfiya",paid:92.486,adj:0},{name:"Ahmed Al Balushi",paid:51.225,adj:0},
+        {name:"Naji Al-Shibli",paid:69.239,adj:17.869},{name:"Khaled Al-Hadwani",paid:201.641,adj:0},{name:"Mohammed Ali",paid:304.259,adj:32.465}]}
     ],
     debtCompanies:[
       {name:"Matrix Debt Collection",paid:190090.915,adj:31117.278,portAmt:2882018.894,portCnt:23398,count:23399},
