@@ -11666,6 +11666,10 @@ export default function Dashboard() {
                 🔄 إعادة تعيين البيانات (SEED)
               </button>
             </div>
+          </div>
+        </div>
+      )}
+      <style>{`
         * { box-sizing:border-box; margin:0; padding:0; }
         ::-webkit-scrollbar { width:5px; }
         ::-webkit-scrollbar-thumb { background:#e8c0a8; border-radius:3px; }
