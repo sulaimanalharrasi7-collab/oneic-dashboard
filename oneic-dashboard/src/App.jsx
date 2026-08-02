@@ -257,146 +257,84 @@ const SEED = {
   uploadDate: "2026-05-28",
   totalRecords: 47963,
   regions: [
-    {
-      id: "dhofar",
-      nameAr: "ظفار",
-      nameEn: "Dhofar",
-      paid: 1258.225, adj: 1200.858, portAmt: 1946.119, portCnt: 25,
-      collectors: [
-        { name: "Hussein Abdul Muttalib", paid: 1258.225, adj: 1200.858 }
+    { id:"dhofar",   nameAr:"ظفار",              nameEn:"Dhofar",
+      paid:1258.225,  adj:1200.858,  portAmt:1946.119,   portCnt:25,
+      collectors:[
+        { name:"Hussein Abdul Muttalib", paid:1258.225, adj:1200.858 }
       ]
     },
-    {
-      id: "musandam",
-      nameAr: "مسندم، البريمي والظاهرة",
-      nameEn: "Musandam, Al Burimai and Al Dahirah",
-      paid: 33513.304, adj: 4048.733, portAmt: 37449.515, portCnt: 491,
-      collectors: [
-        { name: "Fawzia Ali Al Suhi",       paid: 9588.894, adj: 1314.242 },
-        { name: "Fahad Said Al Ghaiti",      paid: 9003.186, adj: 1175.042 },
-        { name: "Sheikha Rashid Al Muqrshi", paid: 8068.957, adj: 582.375  },
-        { name: "Alanood Ali Al Balushi",    paid: 1988.937, adj: 461.102  },
-        { name: "Yaqoob Salim Al Harthy",    paid: 1773.655, adj: 0.000    },
-        { name: "Wadha Al Kimzari",          paid: 1352.404, adj: 415.972  },
-        { name: "Mariam Rashid Al Suhi",     paid: 1077.391, adj: 100.000  },
-        { name: "Mohammed",                  paid: 431.569,  adj: 0.000    },
-        { name: "Company",                   paid: 160.000,  adj: 0.000    },
-        { name: "Sarah Ali Al Suhi",         paid: 68.311,   adj: 0.000    }
+    { id:"musandam", nameAr:"مسندم والبريمي والظاهرة", nameEn:"Musandam, Al Buraimi & Al Dahirah",
+      paid:33513.304, adj:4048.733,  portAmt:37449.515,  portCnt:491,
+      collectors:[
+        { name:"Fawzia Ali Al Suhi",         paid:9643.894,  adj:1314.242 },
+        { name:"Sheikha Rashid Al Muqrshi",  paid:8068.957,  adj:582.375  },
+        { name:"Fahad Said Al Ghaiti",       paid:9113.831,  adj:1175.042 },
+        { name:"Wadha Al Kimzari",           paid:1352.404,  adj:415.972  },
+        { name:"Alanood Ali Al Balushi",     paid:1988.937,  adj:461.102  },
+        { name:"Yaqoob Salim Al Harthy",     paid:1773.655,  adj:0.000    },
+        { name:"Mariam Rashid Al Suhi",      paid:1077.391,  adj:100.000  },
+        { name:"Sarah Ali Al Suhi",          paid:68.311,    adj:0.000    },
       ]
     },
-    {
-      id: "muscat",
-      nameAr: "مسقط والداخلية",
-      nameEn: "MUSCAT AND AL DAKHILIYAH",
-      paid: 49597.968, adj: 4581.404, portAmt: 68131.760, portCnt: 1279,
-      collectors: [
-        { name: "Tharaya Muhanna Al-Rashdi",  paid: 5877.813, adj: 138.846 },
-        { name: "Manar Nasser Al-Rawahi",     paid: 5164.179, adj: 769.390 },
-        { name: "Ibtisam Al Siyabiya",        paid: 4966.515, adj: 259.708 },
-        { name: "Mahmood al nabhani",         paid: 4845.539, adj: 860.481 },
-        { name: "Khulood Nasser Al Kindi",    paid: 4453.248, adj: 222.068 },
-        { name: "Faisal Al-Zadjali",          paid: 4259.351, adj: 95.800  },
-        { name: "Badria Al-Maghribi",         paid: 4100.256, adj: 485.772 },
-        { name: "Hamad Al Hinai",             paid: 3453.680, adj: 790.911 },
-        { name: "Anoud Ibrahim Al Balushi",   paid: 3446.819, adj: 407.019 },
-        { name: "Salwa Hamed Al-Julandani",   paid: 2675.773, adj: 182.855 },
-        { name: "Nasir Sulaiman",             paid: 2286.621, adj: 0.000   },
-        { name: "Sultan Hilal Al Busaidi",    paid: 1559.076, adj: 103.812 },
-        { name: "Wadha Ali Al Dhali",         paid: 1177.849, adj: 0.000   },
-        { name: "Abdullah Mohammed Ambusaidi",paid: 1019.960, adj: 264.742 },
-        { name: "Amira Hamed",               paid: 166.111,  adj: 0.000   },
-        { name: "Rehab Al-Saadi",             paid: 118.418,  adj: 0.000   },
-        { name: "Asaad Nasser Al-Hadrami",    paid: 26.760,   adj: 0.000   }
+    { id:"muscat",   nameAr:"مسقط والداخلية",    nameEn:"Muscat & Al Dakhiliyah",
+      paid:49597.968, adj:4581.404,  portAmt:68131.760,  portCnt:1279,
+      collectors:[
+        { name:"Tharaya Muhanna Al-Rashdi",   paid:6259.878,  adj:138.846  },
+        { name:"Khulood Nasser Al Kindi",     paid:4699.698,  adj:222.068  },
+        { name:"Ibtisam Al Siyabiya",         paid:5346.225,  adj:259.708  },
+        { name:"Badria Al-Maghribi",          paid:4279.356,  adj:485.772  },
+        { name:"Faisal Al-Zadjali",           paid:4505.351,  adj:95.800   },
+        { name:"Sultan Hilal Al Busaidi",     paid:1759.086,  adj:114.122  },
+        { name:"Salwa Hamed Al-Julandani",    paid:2828.327,  adj:309.150  },
+        { name:"Nasir Sulaiman",              paid:2312.976,  adj:0.000    },
+        { name:"Mahmood al nabhani",          paid:4930.539,  adj:860.481  },
+        { name:"Manar Nasser Al-Rawahi",      paid:5164.179,  adj:769.390  },
+        { name:"Anoud Ibrahim Al Balushi",    paid:3446.819,  adj:407.019  },
+        { name:"Hamad Al Hinai",              paid:3453.680,  adj:790.911  },
       ]
     },
-    {
-      id: "sharqiya",
-      nameAr: "الشرقية الشمالية والجنوبية والوسطى",
-      nameEn: "North and South Al Shaurqiah and Al Wasatah",
-      paid: 55338.005, adj: 13860.218, portAmt: 164461.982, portCnt: 2463,
-      collectors: [
-        { name: "Sabah Said",                paid: 13318.394, adj: 3644.907 },
-        { name: "Marwa Juma Mubarak",        paid: 10015.619, adj: 1477.823 },
-        { name: "Ahoud Nasser",              paid: 4937.432,  adj: 1041.718 },
-        { name: "Juma Al Habsi",             paid: 4834.481,  adj: 2922.382 },
-        { name: "Shima Yousuf Al Mukhaini",  paid: 2722.389,  adj: 270.712  },
-        { name: "Yusra khamis Al Daoudia",   paid: 2637.009,  adj: 476.897  },
-        { name: "Amira Sultan",              paid: 2578.937,  adj: 844.818  },
-        { name: "Zainab Mabrouk",            paid: 2574.620,  adj: 493.689  },
-        { name: "Wjdan said khamis Al alawi",paid: 2018.917,  adj: 660.801  },
-        { name: "Shamsa Mohammed",           paid: 1814.271,  adj: 578.708  },
-        { name: "Badar Khamis Al Malkhi",    paid: 1679.427,  adj: 246.494  },
-        { name: "Ahmed Salim Al Mahruqi",    paid: 1199.212,  adj: 80.262   },
-        { name: "Shiiab Al Habsi",           paid: 1181.957,  adj: 530.471  },
-        { name: "Ghaliya Mubarak",           paid: 1092.878,  adj: 133.038  },
-        { name: "Moza Mohammed Ali",         paid: 1089.169,  adj: 107.990  },
-        { name: "Meyaad Abdullah",           paid: 1046.164,  adj: 205.029  },
-        { name: "Ahmed Abdullah",            paid: 597.129,   adj: 144.479  }
+    { id:"sharqiah", nameAr:"الشرقية والوسطى",   nameEn:"Ash Sharqiyah & Al Wusta",
+      paid:55338.005, adj:13860.218, portAmt:164461.982, portCnt:2463,
+      collectors:[
+        { name:"Marwa Juma Mubarak",          paid:10825.706, adj:1525.823 },
+        { name:"Sabah Said",                  paid:14470.396, adj:3852.604 },
+        { name:"Juma Al Habsi",               paid:4966.137,  adj:2922.382 },
+        { name:"Wjdan said khamis Al alawi",  paid:2018.917,  adj:660.801  },
+        { name:"Yusra khamis Al Daoudia",     paid:2637.009,  adj:476.897  },
+        { name:"Shamsa Mohammed",             paid:1972.431,  adj:578.708  },
+        { name:"Khamis Al Adawi",             paid:2412.780,  adj:518.496  },
+        { name:"Ahoud Nasser",                paid:4937.432,  adj:1041.718 },
       ]
     },
-    {
-      id: "batinah",
-      nameAr: "الباطنة الشمالية والجنوبية",
-      nameEn: "South and North Al Batinah",
-      paid: 58118.002, adj: 14917.782, portAmt: 93541.029, portCnt: 2219,
-      collectors: [
-        { name: "Aida Kasaf Al Nofli",          paid: 13372.187, adj: 7098.014 },
-        { name: "Mrs. Moza Khamis Al Mamari",   paid: 9876.809,  adj: 1631.711 },
-        { name: "Ahmed Hassan Al Balushi",      paid: 7810.757,  adj: 1326.232 },
-        { name: "Majed Ahmed alzabi",           paid: 4281.063,  adj: 1181.902 },
-        { name: "Suliman mosa AL Balushi",      paid: 4270.876,  adj: 378.353  },
-        { name: "Ahmed Slim Alqafri",           paid: 3752.460,  adj: 1177.450 },
-        { name: "Khaled Al-Maliki",             paid: 3141.485,  adj: 427.107  },
-        { name: "Faisal Saif Al Sinani",        paid: 3113.373,  adj: 459.565  },
-        { name: "Fathia MohamedAldairia",       paid: 2458.690,  adj: 139.603  },
-        { name: "Khamis Al Adawi",              paid: 2344.838,  adj: 518.496  },
-        { name: "Iman Al-Abbadi",               paid: 733.887,   adj: 200.960  },
-        { name: "Fatima Al-Hanai",              paid: 420.766,   adj: 106.441  },
-        { name: "Samia Al-Awfiya",              paid: 305.722,   adj: 0.000    },
-        { name: "Mohammed Ali",                 paid: 304.259,   adj: 32.465   },
-        { name: "Ahmed Mohammed Al-Shakili",    paid: 269.051,   adj: 177.689  },
-        { name: "Hamid Al-Sanani",              paid: 231.071,   adj: 0.000    },
-        { name: "Khaled Al-Hadwani",            paid: 201.641,   adj: 0.000    },
-        { name: "Abdul Mutalib Darwish",        paid: 167.737,   adj: 0.000    },
-        { name: "Fatima Al Kaabiya",            paid: 128.935,   adj: 0.000    },
-        { name: "Adnan Al Mayasi",              paid: 125.446,   adj: 0.290    },
-        { name: "Amana Al-Sharqiya",            paid: 120.197,   adj: 0.000    },
-        { name: "Mahfouza Al-Awfiya",           paid: 92.486,    adj: 0.000    },
-        { name: "Zahra Al-Alawi",               paid: 88.211,    adj: 0.000    },
-        { name: "Wafaa Al-Sulaymieh",           paid: 81.760,    adj: 0.000    },
-        { name: "Tareq Al-Shiyadi",             paid: 69.380,    adj: 0.000    },
-        { name: "Aisha Al-Tawbiya",             paid: 54.107,    adj: 17.290   },
-        { name: "Ahmed Al Balushi",             paid: 51.225,    adj: 0.000    },
-        { name: "Fatima Al-Khaziriya",          paid: 43.114,    adj: 0.000    },
-        { name: "sadika Al-Aajmi",              paid: 41.589,    adj: 26.345   },
-        { name: "Naji Al-Shibli",               paid: 40.939,    adj: 17.869   },
-        { name: "Fatima Al Muqbali",            paid: 38.166,    adj: 0.000    },
-        { name: "Mohammed Al Balushi",          paid: 33.458,    adj: 0.000    },
-        { name: "Ahmed Al-Khazimi",             paid: 25.002,    adj: 0.000    },
-        { name: "Asmahan Al-Saidiyya",          paid: 14.715,    adj: 0.000    },
-        { name: "Halima Al Balushi",            paid: 12.600,    adj: 0.000    },
-        { name: "Afrah Al-Darmakiah",           paid: 0.000,     adj: 0.000    },
-        { name: "Ali Al-Ajmi",                  paid: 0.000,     adj: 0.000    }
+    { id:"batinah",  nameAr:"الباطنة",            nameEn:"Al Batinah",
+      paid:58118.002, adj:14917.782, portAmt:93541.029,  portCnt:2219,
+      collectors:[
+        { name:"Aida Kasaf Al Nofli",         paid:13464.102, adj:7098.014 },
+        { name:"Mrs. Moza Khamis Al Mamari",  paid:10286.984, adj:1631.711 },
+        { name:"Suliman mosa AL Balushi",     paid:4270.876,  adj:378.353  },
+        { name:"Fathia MohamedAldairia",      paid:2458.690,  adj:139.603  },
+        { name:"Ahmed Hassan Al Balushi",     paid:7810.757,  adj:1326.232 },
+        { name:"Faisal Saif Al Sinani",       paid:3143.232,  adj:459.565  },
       ]
-    }
+    },
   ],
   debtCompanies: [
-    { name: "Ejada",                         paid: 0.000,       adj: 0.000,       portAmt: 0,           portCnt: 1938  },
-    { name: "Matrix Debt Collection",        paid: 169090.790,  adj: 29481.071,   portAmt: 2882018.894, portCnt: 23398 },
-    { name: "Compass Risk Support Services", paid: 113050.394,  adj: 0.000,       portAmt: 386199.737,  portCnt: 3992  },
-    { name: "National Center",               paid: 133891.609,  adj: 3174.667,    portAmt: 1014744.033, portCnt: 6741  },
-    { name: "Tahseel United",                paid: 0.000,       adj: 0.000,       portAmt: 0, principalAmt: 0,    portCnt: 108   },
-    { name: "High Speed Company",            paid: 0.000,       adj: 0.000,       portAmt: 0, principalAmt: 0,    portCnt: 35    }],
-  headOffice: [
-    { name: "Legal - DR. Sarhaan", paid: 46866.090, adj: 14781.368, portAmt: 3229651.681, portCnt: 3691, closed:67, active:3624, principalAmt: 3301711.348 },
-    { name: "Documentation- Omantel",  paid: 1915.939,  adj: 3468.859,  portAmt: 471756.070,  portCnt: 1099, closed:8, active:1091 },
-    { name: "Non-due accounts",                   paid: 0.000,     adj: 0.000,     portAmt: 0,           portCnt: 340  },
-    { name: "Legal -Oneic",           paid:0, adj:0, portAmt:64528.164, portCnt:144, closed:3, active:141  },
-    { name: "Refund - before legal",  paid:0, adj:0, portAmt:0, portCnt:0, count:0, closed:0, active:0 },
-    { name: "Refund - after legal",   paid:0, adj:0, portAmt:0, portCnt:0, count:0, closed:0, active:0 }
+    { name:"Ejada",                       paid:0.000,       adj:0.000,      portAmt:0,            portCnt:1938  },
+    { name:"Matrix Debt Collection",      paid:169090.790,  adj:29481.071,  portAmt:2882018.894,  portCnt:23398 },
+    { name:"Compass Risk Support Services", paid:113050.394, adj:0.000,     portAmt:386199.737,   portCnt:3992  },
+    { name:"National Center",             paid:133891.609,  adj:3174.667,   portAmt:1014744.033,  portCnt:6741  },
+    { name:"Tahseel United",              paid:0.000,       adj:0.000,      portAmt:0,            portCnt:108   },
+    { name:"High Speed Company",          paid:0.000,       adj:0.000,      portAmt:0,            portCnt:35    },
   ],
-  totalPortfolio: { amt: 0, cnt: 0, outstanding: 0 },
-  totalCollection: { paid: 863165.364, adj: 128508.848 }
+  headOffice: [
+    { name:"Legal - DR. Sarhaan",    paid:102755.525, adj:20792.517, portAmt:3229651.681, portCnt:3973,  closed:135,  active:3838 },
+    { name:"Documentation- Omantel", paid:0.000,      adj:0.000,     portAmt:471756.070,  portCnt:0,     closed:0,    active:0    },
+    { name:"Non-due accounts",       paid:98.741,     adj:0.127,     portAmt:0,           portCnt:252,   closed:252,  active:0    },
+    { name:"Legal -Oneic",           paid:26573.783,  adj:4863.010,  portAmt:64528.164,   portCnt:101,   closed:101,  active:0    },
+    { name:"Refund - before legal",  paid:400.680,    adj:152.552,   portAmt:0,           portCnt:520,   closed:0,    active:520  },
+    { name:"Omantel Communication",  paid:110.934,    adj:254.075,   portAmt:0,           portCnt:177,   closed:0,    active:177  },
+  ],
+  totalDiscount: 1749.473,
 };
 
 // -- Bulk Payment Seed Data ----------------------------------------------------
@@ -6381,7 +6319,7 @@ async function parseXLS(file) {
     },
     ho: {
       "Legal - DR. Sarhaan": { portAmt: 3229651.681, portCnt: 3691, closed:67, active:3624, principalAmt: 3301711.348 },
-      "Documentation- Omantel": { portAmt: 471756.070,  portCnt: 1099, closed:8, active:1091 },
+      "Documentation- Omantel": { portAmt: 471756.070,  portCnt: 0, closed:0, active:0 },
       "Legal -Oneic":{portAmt:64528.164,portCnt:144,principalAmt:64528.164,closed:3,active:141},"Refund - before legal":{portAmt:0,portCnt:0,closed:0,active:0},"Refund - after legal":{portAmt:0,portCnt:0,closed:0,active:0},
       "HO":                  { portAmt: 0,           portCnt: 340  },
       "Non-due accounts":    { portAmt: 0,           portCnt: 340  }
@@ -6417,12 +6355,13 @@ async function parseXLS(file) {
       else if (colL.includes('refund') && colL.includes('before')) key = 'Refund - before legal';
       else if (colL.includes('refund') && colL.includes('after'))  key = 'Refund - after legal';
       else if (colL.includes('refund')) key = 'Refund - before legal';
-      else if (colL.includes('saif')) key = 'Legal -Oneic';
+      else if (colL.includes('communication') || colL.includes('omantel communication')) key = 'Omantel Communication';
+      else if (colL.includes('saif') || col.trim() === 'Legal -Oneic') key = 'Legal -Oneic';
       else if (col.trim() === '')     key = 'Legal -Oneic';
-      else                            key = 'Legal -Oneic';
+      else                            key = col.trim() || 'Legal -Oneic';
       if (!hoMap[key]) hoMap[key] = { paid:0, adj:0, count:0, closed:0, active:0, principalAmt:0 };
       hoMap[key].paid += paid; hoMap[key].adj += adj; hoMap[key].count++; hoMap[key].principalAmt += n(row['Principal Amount']||0);
-      if (key==='Legal -Oneic'||key==='Documentation- Omantel'||key==='Legal - DR. Sarhaan'||key==='HO'||key==='Refund - before legal'||key==='Refund - after legal') { if (osAmt<=0) hoMap[key].closed++; else hoMap[key].active++; }
+      if (['Legal -Oneic','Documentation- Omantel','Legal - DR. Sarhaan','HO','Refund - before legal','Refund - after legal','Omantel Communication'].includes(key)) { if (osAmt<=0) hoMap[key].closed++; else hoMap[key].active++; }
 
     } else if (REG_AR[region]) {
       if (!regMap[region]) regMap[region] = { paid:0, adj:0, count:0, paidCount:0, adjCount:0, cMap:{}, principalAmt:0 };
@@ -6489,19 +6428,23 @@ async function parseXLS(file) {
   const debtCompanies = dcList.sort((a,b)=>((b.paid||0)+(b.adj||0))-((a.paid||0)+(a.adj||0)));
 
   // -- المكتب الرئيسي ----------------------------------------------------
-  const HO_KEYS = ["Legal - DR. Sarhaan","Documentation- Omantel","HO","Legal -Oneic"];
+  const HO_KEYS = ["Legal - DR. Sarhaan","Documentation- Omantel","HO","Legal -Oneic","Refund - before legal","Refund - after legal","Omantel Communication"];
   const headOffice = HO_KEYS.map(nm => {
     const d = hoMap[nm]||{paid:0,adj:0,count:0};
     const p = PORT.ho[nm]||{portAmt:0,portCnt:0};
-    const HO_DISPLAY = {"HO":"Non-due accounts","Non-due accounts":"Non-due accounts","Documentation- Omantel":"Documentation- Omantel","Legal - DR. Sarhaan":"Legal - DR. Sarhaan","Legal -Oneic":"Legal -Oneic"};
+    const HO_DISPLAY = {"HO":"Non-due accounts","Non-due accounts":"Non-due accounts","Documentation- Omantel":"Documentation- Omantel","Legal - DR. Sarhaan":"Legal - DR. Sarhaan","Legal -Oneic":"Legal -Oneic","Refund - before legal":"Refund - before legal","Refund - after legal":"Refund - after legal","Omantel Communication":"Omantel Communication"};
+    // إذا وُجد الملف وأعطى count، استخدمه. إذا لا يوجد ملف (d = default) استخدم portCnt
+    const hasFileData = Object.keys(hoMap).length > 0;
     return {name:HO_DISPLAY[nm]||nm, paid:d.paid, adj:d.adj, count:d.count||0, closed:d.closed||0, active:d.active||0,
-      portAmt: Math.max(0, d.principalAmt||p.portAmt||0), portCnt: p.portCnt||0,
+      portAmt: Math.max(0, d.principalAmt||p.portAmt||0),
+      portCnt: hasFileData ? (d.count||0) : (p.portCnt||0),
       principalAmt: p.principalAmt||0};
   });
   const HO_DN={"HO":"Non-due accounts","Non-due accounts":"Non-due accounts"};
   Object.keys(hoMap).forEach(k => {
     if (!HO_KEYS.includes(k))
-      headOffice.push({name:HO_DN[k]||k,paid:hoMap[k].paid,adj:hoMap[k].adj,count:hoMap[k].count||0,portAmt:0,portCnt:0});
+      headOffice.push({name:HO_DN[k]||k,paid:hoMap[k].paid,adj:hoMap[k].adj,count:hoMap[k].count||0,
+        portAmt:hoMap[k].principalAmt||0, portCnt:hoMap[k].count||0});
   });
 
   return {
@@ -9524,7 +9467,6 @@ async function parseComplaints(file) {
           total++;
           
           if (region === DC_REGION) {
-            // شركات التحصيل → نجمّع حسب Branch
             dcCount++; dcAmt += amt; dcPaid += paidAmt; dcAdj += adjAmt;
             if (branch) {
               if (!branchMap[branch]) branchMap[branch] = {count:0, amt:0, paid:0, adj:0};
@@ -10251,7 +10193,7 @@ export default function Dashboard() {
         const HO_REQ = ["Legal - DR. Sarhaan","Documentation- Omantel","Non-due accounts","Legal -Oneic","Refund - before legal","Refund - after legal","Omantel Communication"];
         const HO_P = {
           "Legal - DR. Sarhaan":{portAmt:3229651.681,portCnt:3691,closed:67,active:3624,principalAmt:3301711.348},
-          "Documentation- Omantel":{portAmt:471756.070,portCnt:1099,closed:8,active:1091},
+          "Documentation- Omantel":{portAmt:471756.070,portCnt:0,closed:0,active:0},
           "Non-due accounts":{portAmt:0,portCnt:340},
           "Legal -Oneic":{portAmt:64528.164,portCnt:144,principalAmt:64528.164,closed:3,active:141},"Refund - before legal":{portAmt:0,portCnt:0,closed:0,active:0},"Refund - after legal":{portAmt:0,portCnt:0,closed:0,active:0},"Omantel Communication":{portAmt:0,portCnt:0,closed:0,active:0}
         };
@@ -10285,7 +10227,7 @@ export default function Dashboard() {
         var myTime = lastSyncRef.current ? new Date(lastSyncRef.current).getTime() : 0;
         if (fbTime > 0 && myTime > 0 && fbTime <= myTime) return;
         var HO_KEYS3 = ["Legal - DR. Sarhaan","Documentation- Omantel","Non-due accounts","Legal -Oneic","Refund - before legal","Refund - after legal","Omantel Communication"];
-        var HO_DEF3 = {"Legal - DR. Sarhaan":{portAmt:3229651.681,portCnt:3691,closed:67,active:3624},"Documentation- Omantel":{portAmt:471756.070,portCnt:1099,closed:8,active:1091},"Non-due accounts":{portAmt:0,portCnt:340},"Legal -Oneic":{portAmt:64528.164,portCnt:144,closed:3,active:141},"Refund - before legal":{portAmt:0,portCnt:0,closed:0,active:0},"Refund - after legal":{portAmt:0,portCnt:0,closed:0,active:0},"Omantel Communication":{portAmt:0,portCnt:0,closed:0,active:0}};
+        var HO_DEF3 = {"Legal - DR. Sarhaan":{portAmt:3229651.681,portCnt:3691,closed:67,active:3624},"Documentation- Omantel":{portAmt:471756.070,portCnt:0,closed:0,active:0},"Non-due accounts":{portAmt:0,portCnt:340},"Legal -Oneic":{portAmt:64528.164,portCnt:144,closed:3,active:141},"Refund - before legal":{portAmt:0,portCnt:0,closed:0,active:0},"Refund - after legal":{portAmt:0,portCnt:0,closed:0,active:0},"Omantel Communication":{portAmt:0,portCnt:0,closed:0,active:0}};
         var eHO3 = row.headOffice||[];
         var fullHO3 = HO_KEYS3.map(function(nm){
           var f=eHO3.find(function(c){return c.name===nm;})||(nm==='Non-due accounts'?eHO3.find(function(c){return c.name==='HO';}):null);
@@ -10315,7 +10257,7 @@ export default function Dashboard() {
         var myTime = lastSyncRef.current ? new Date(lastSyncRef.current).getTime() : 0;
         if (fbTime > 0 && myTime > 0 && fbTime <= myTime) return;
         var HO_KEYS4=["Legal - DR. Sarhaan","Documentation- Omantel","Non-due accounts","Legal -Oneic","Refund - before legal","Refund - after legal","Omantel Communication"];
-        var HO_P4={"Legal - DR. Sarhaan":{portAmt:3229651.681,portCnt:3691,closed:67,active:3624},"Documentation- Omantel":{portAmt:471756.070,portCnt:1099,closed:8,active:1091},"Non-due accounts":{portAmt:0,portCnt:340},"Legal -Oneic":{portAmt:64528.164,portCnt:144,closed:3,active:141},"Refund - before legal":{portAmt:0,portCnt:0,closed:0,active:0},"Refund - after legal":{portAmt:0,portCnt:0,closed:0,active:0},"Omantel Communication":{portAmt:0,portCnt:0,closed:0,active:0}};
+        var HO_P4={"Legal - DR. Sarhaan":{portAmt:3229651.681,portCnt:3691,closed:67,active:3624},"Documentation- Omantel":{portAmt:471756.070,portCnt:0,closed:0,active:0},"Non-due accounts":{portAmt:0,portCnt:340},"Legal -Oneic":{portAmt:64528.164,portCnt:144,closed:3,active:141},"Refund - before legal":{portAmt:0,portCnt:0,closed:0,active:0},"Refund - after legal":{portAmt:0,portCnt:0,closed:0,active:0},"Omantel Communication":{portAmt:0,portCnt:0,closed:0,active:0}};
         var eHO4=row.headOffice||[];
         var fullHO4=HO_KEYS4.map(function(nm){var f=eHO4.find(function(c){return c.name===nm;})||(nm==='Non-due accounts'?eHO4.find(function(c){return c.name==='HO';}):null);var p=HO_P4[nm]||{};if(f)return Object.assign({},p,f,{name:nm,closed:(f.closed!==undefined&&f.closed!==null)?f.closed:(p.closed||0),active:(f.active!==undefined&&f.active!==null)?f.active:(p.active||0)});return {name:nm,paid:0,adj:0,count:0,portAmt:p.portAmt||0,portCnt:p.portCnt||0,closed:0,active:0};});
         // == Firebase يحتوي البيانات الكاملة والنهائية الصحيحة - لا حاجة لأي دمج إضافي من localStorage ==
@@ -10362,7 +10304,7 @@ export default function Dashboard() {
       if (!row || !row.regions || !row.regions.length) { setSyncing(false); return; }
       // == Firebase يحتوي البيانات الكاملة والنهائية الصحيحة - لا حاجة لأي دمج أو إعادة بناء إضافي ==
       var HO_KEYS5=["Legal - DR. Sarhaan","Documentation- Omantel","Non-due accounts","Legal -Oneic","Refund - before legal","Refund - after legal","Omantel Communication"];
-      var HO_P5={"Legal - DR. Sarhaan":{portAmt:3229651.681,portCnt:3691,closed:67,active:3624},"Documentation- Omantel":{portAmt:471756.070,portCnt:1099,closed:8,active:1091},"Non-due accounts":{portAmt:0,portCnt:340},"Legal -Oneic":{portAmt:64528.164,portCnt:144,closed:3,active:141},"Refund - before legal":{portAmt:0,portCnt:0,closed:0,active:0},"Refund - after legal":{portAmt:0,portCnt:0,closed:0,active:0},"Omantel Communication":{portAmt:0,portCnt:0,closed:0,active:0}};
+      var HO_P5={"Legal - DR. Sarhaan":{portAmt:3229651.681,portCnt:3691,closed:67,active:3624},"Documentation- Omantel":{portAmt:471756.070,portCnt:0,closed:0,active:0},"Non-due accounts":{portAmt:0,portCnt:340},"Legal -Oneic":{portAmt:64528.164,portCnt:144,closed:3,active:141},"Refund - before legal":{portAmt:0,portCnt:0,closed:0,active:0},"Refund - after legal":{portAmt:0,portCnt:0,closed:0,active:0},"Omantel Communication":{portAmt:0,portCnt:0,closed:0,active:0}};
       var eHO5=row.headOffice||[];
       var fullHO5=HO_KEYS5.map(function(nm){var f=eHO5.find(function(c){return c.name===nm;})||(nm==='Non-due accounts'?eHO5.find(function(c){return c.name==='HO';}):null);var p=HO_P5[nm]||{};if(f)return Object.assign({},p,f,{name:nm,closed:(f.closed!==undefined&&f.closed!==null)?f.closed:(p.closed||0),active:(f.active!==undefined&&f.active!==null)?f.active:(p.active||0)});return Object.assign({name:nm,paid:0,adj:0,count:0,closed:0,active:0},p);});
       var d5={}; var rk5=Object.keys(row); for(var ki5=0;ki5<rk5.length;ki5++){d5[rk5[ki5]]=row[rk5[ki5]];}
@@ -10644,7 +10586,7 @@ export default function Dashboard() {
     const HO_REQUIRED = ["Legal - DR. Sarhaan","Documentation- Omantel","HO","Legal -Oneic"];
     const HO_PORT_DATA = {
       "Legal - DR. Sarhaan": { portAmt: 3229651.681, portCnt: 3662, principalAmt: 3301711.348 },
-      "Documentation- Omantel":  { portAmt: 471756.070,  portCnt: 1099, closed:8, active:1091 },
+      "Documentation- Omantel":  { portAmt: 471756.070,  portCnt: 0, closed:0, active:0 },
       "HO":                   { portAmt: 0,           portCnt: 340  },
       "Non-due accounts":     { portAmt: 0,           portCnt: 340  },
       "Legal -Oneic":{portAmt:64528.164,portCnt:144,principalAmt:64528.164,closed:3,active:141},"Refund - before legal":{portAmt:0,portCnt:0,closed:0,active:0},"Refund - after legal":{portAmt:0,portCnt:0,closed:0,active:0}
@@ -10654,8 +10596,8 @@ export default function Dashboard() {
       const fromNew = (newData.headOffice||[]).find(c=>c.name===displayNm||c.name===nm);
       const fromExisting = (data.headOffice||[]).find(d=>d.name===displayNm||d.name===nm);
       const portInfo = HO_PORT_DATA[nm]||{};
-      if (fromNew) return { ...fromNew, portAmt: fromNew.portAmt||portInfo.portAmt||0, portCnt: fromNew.portCnt||portInfo.portCnt||0 };
-      if (fromExisting) return { ...fromExisting, portAmt: fromExisting.portAmt||portInfo.portAmt||0, portCnt: fromExisting.portCnt||portInfo.portCnt||0 };
+      if (fromNew) return { ...fromNew, portAmt: fromNew.portAmt||portInfo.portAmt||0, portCnt: fromNew.portCnt != null ? fromNew.portCnt : (portInfo.portCnt||0) };
+      if (fromExisting) return { ...fromExisting, portAmt: fromExisting.portAmt||portInfo.portAmt||0, portCnt: fromExisting.portCnt != null ? fromExisting.portCnt : (portInfo.portCnt||0) };
       return { name:nm, paid:0, adj:0, count:0, portAmt:portInfo.portAmt||0, portCnt:portInfo.portCnt||0 };
     });
     const _ts = new Date().toISOString();
@@ -12318,7 +12260,7 @@ export default function Dashboard() {
           <div style={{ background:"#fff", borderRadius:16, boxShadow:"0 3px 18px rgba(0,0,0,0.07)", border:"1.5px solid #f0ece8", overflow:"hidden" }}>
             <SectionHeader title={t("🏛 المكتب الرئيسي",lang)} paid={hPd} adj={hAd} color="#6c3fa0" small={small} portAmt={hPortAmt||0} portCnt={hPortCnt||hCnt||complaintsCounts.ho||0}/>
             <div style={{ padding: small?"10px":"14px 16px", display:"flex", flexDirection:"column", gap: small?8:10 }}>
-              {[...(data.headOffice||[])].filter(c=>c.name&&c.name!=='HO'&&c.name!=='Blanks').sort((a,b)=>{return ((b.paid||0)+(b.adj||0))-((a.paid||0)+(a.adj||0));}).map((c,i) => (
+              {[...(data.headOffice||[])].map(c => c.name==='Documentation- Omantel' ? {...c, portCnt:0, count:0, active:0, closed:0} : c).filter(c=>c.name&&c.name!=='HO'&&c.name!=='Blanks').sort((a,b)=>{return ((b.paid||0)+(b.adj||0))-((a.paid||0)+(a.adj||0));}).map((c,i) => (
                 <EntityCard key={c.name} name={c.name} paid={c.paid} adj={c.adj} cBranch={complaintsBranchMap} color="#6c3fa0" rank={i+1} closed={c.closed||0} active={c.active||0} small={small} portAmt={c.portAmt||0} portCnt={c.portCnt||0} principalAmt={c.principalAmt||0} refundAmt={c.refundAmt||0}/>
               ))}
             </div>
