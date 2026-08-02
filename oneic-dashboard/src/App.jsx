@@ -6417,12 +6417,13 @@ async function parseXLS(file) {
       else if (colL.includes('refund') && colL.includes('before')) key = 'Refund - before legal';
       else if (colL.includes('refund') && colL.includes('after'))  key = 'Refund - after legal';
       else if (colL.includes('refund')) key = 'Refund - before legal';
+      else if (colL.includes('communication') || colL.includes('omantel communication')) key = 'Omantel Communication';
       else if (colL.includes('saif')) key = 'Legal -Oneic';
       else if (col.trim() === '')     key = 'Legal -Oneic';
-      else                            key = 'Legal -Oneic';
+      else                            key = col.trim() || 'Legal -Oneic';
       if (!hoMap[key]) hoMap[key] = { paid:0, adj:0, count:0, closed:0, active:0, principalAmt:0 };
       hoMap[key].paid += paid; hoMap[key].adj += adj; hoMap[key].count++; hoMap[key].principalAmt += n(row['Principal Amount']||0);
-      if (key==='Legal -Oneic'||key==='Documentation- Omantel'||key==='Legal - DR. Sarhaan'||key==='HO'||key==='Refund - before legal'||key==='Refund - after legal') { if (osAmt<=0) hoMap[key].closed++; else hoMap[key].active++; }
+      if (key==='Legal -Oneic'||key==='Documentation- Omantel'||key==='Legal - DR. Sarhaan'||key==='HO'||key==='Refund - before legal'||key==='Refund - after legal'||key==='Omantel Communication') { if (osAmt<=0) hoMap[key].closed++; else hoMap[key].active++; }
 
     } else if (REG_AR[region]) {
       if (!regMap[region]) regMap[region] = { paid:0, adj:0, count:0, paidCount:0, adjCount:0, cMap:{}, principalAmt:0 };
@@ -6489,19 +6490,21 @@ async function parseXLS(file) {
   const debtCompanies = dcList.sort((a,b)=>((b.paid||0)+(b.adj||0))-((a.paid||0)+(a.adj||0)));
 
   // -- المكتب الرئيسي ----------------------------------------------------
-  const HO_KEYS = ["Legal - DR. Sarhaan","Documentation- Omantel","HO","Legal -Oneic"];
+  const HO_KEYS = ["Legal - DR. Sarhaan","Documentation- Omantel","HO","Legal -Oneic","Refund - before legal","Refund - after legal","Omantel Communication"];
   const headOffice = HO_KEYS.map(nm => {
     const d = hoMap[nm]||{paid:0,adj:0,count:0};
     const p = PORT.ho[nm]||{portAmt:0,portCnt:0};
-    const HO_DISPLAY = {"HO":"Non-due accounts","Non-due accounts":"Non-due accounts","Documentation- Omantel":"Documentation- Omantel","Legal - DR. Sarhaan":"Legal - DR. Sarhaan","Legal -Oneic":"Legal -Oneic"};
+    const HO_DISPLAY = {"HO":"Non-due accounts","Non-due accounts":"Non-due accounts","Documentation- Omantel":"Documentation- Omantel","Legal - DR. Sarhaan":"Legal - DR. Sarhaan","Legal -Oneic":"Legal -Oneic","Refund - before legal":"Refund - before legal","Refund - after legal":"Refund - after legal","Omantel Communication":"Omantel Communication"};
     return {name:HO_DISPLAY[nm]||nm, paid:d.paid, adj:d.adj, count:d.count||0, closed:d.closed||0, active:d.active||0,
-      portAmt: Math.max(0, d.principalAmt||p.portAmt||0), portCnt: p.portCnt||0,
+      portAmt: Math.max(0, d.principalAmt||p.portAmt||0),
+      portCnt: d.count>0 ? d.count : (p.portCnt||0),
       principalAmt: p.principalAmt||0};
   });
   const HO_DN={"HO":"Non-due accounts","Non-due accounts":"Non-due accounts"};
   Object.keys(hoMap).forEach(k => {
     if (!HO_KEYS.includes(k))
-      headOffice.push({name:HO_DN[k]||k,paid:hoMap[k].paid,adj:hoMap[k].adj,count:hoMap[k].count||0,portAmt:0,portCnt:0});
+      headOffice.push({name:HO_DN[k]||k,paid:hoMap[k].paid,adj:hoMap[k].adj,count:hoMap[k].count||0,
+        portAmt:hoMap[k].principalAmt||0, portCnt:hoMap[k].count||0});
   });
 
   return {
