@@ -379,7 +379,7 @@ const SEED = {
     { name:"Non-due accounts",       paid:98.741,     adj:0.127,     portAmt:0,           portCnt:252,   closed:252,  active:0    },
     { name:"Omantel Communication",  paid:110.934,    adj:254.075,   portAmt:0,           portCnt:177,   closed:0,    active:177  },
     { name:"Legal -Oneic",           paid:26573.783,  adj:4863.010,  portAmt:64528.164,   portCnt:101,   closed:101,  active:0    },
-    { name:"Documentation- Omantel", paid:0.000,      adj:0.000,     portAmt:471756.070,  portCnt:1099,  closed:8,    active:1091 },
+    { name:"Documentation- Omantel", paid:0.000,      adj:0.000,     portAmt:471756.070,  portCnt:0,     closed:0,    active:0    },
   ],
   totalDiscount: 1749.473,
 };
@@ -6481,9 +6481,11 @@ async function parseXLS(file) {
     const d = hoMap[nm]||{paid:0,adj:0,count:0};
     const p = PORT.ho[nm]||{portAmt:0,portCnt:0};
     const HO_DISPLAY = {"HO":"Non-due accounts","Non-due accounts":"Non-due accounts","Documentation- Omantel":"Documentation- Omantel","Legal - DR. Sarhaan":"Legal - DR. Sarhaan","Legal -Oneic":"Legal -Oneic","Refund - before legal":"Refund - before legal","Refund - after legal":"Refund - after legal","Omantel Communication":"Omantel Communication"};
+    // إذا وُجد الملف وأعطى count، استخدمه. إذا لا يوجد ملف (d = default) استخدم portCnt
+    const hasFileData = Object.keys(hoMap).length > 0;
     return {name:HO_DISPLAY[nm]||nm, paid:d.paid, adj:d.adj, count:d.count||0, closed:d.closed||0, active:d.active||0,
       portAmt: Math.max(0, d.principalAmt||p.portAmt||0),
-      portCnt: d.count>0 ? d.count : (p.portCnt||0),
+      portCnt: hasFileData ? (d.count||0) : (p.portCnt||0),
       principalAmt: p.principalAmt||0};
   });
   const HO_DN={"HO":"Non-due accounts","Non-due accounts":"Non-due accounts"};
