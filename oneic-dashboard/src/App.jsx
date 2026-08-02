@@ -9934,9 +9934,9 @@ function handlePrint(data, lang='ar') {
 
     // KPI
     +'<div class="kpi-row">'
-    +'<div class="kpi-card"><div class="kpi-label">'+(lang==\'en\'?\'Portfolio Value\':\'قيمة المحفظة\')+'</div><div class="kpi-value" style="color:#e85d20">'+omrN(portAmt)+' OMR</div></div>'
-    +'<div class="kpi-card"><div class="kpi-label">'+(lang==\'en\'?\'Paid\':\'المدفوع\')+'</div><div class="kpi-value" style="color:#16a34a">'+omrN(grandPaid)+' OMR</div></div>'
-    +'<div class="kpi-card"><div class="kpi-label">'+(lang==\'en\'?\'Adjustments\':\'التسويات\')+'</div><div class="kpi-value" style="color:#d97706">'+omrN(grandAdj)+' OMR</div></div>'
+    +'<div class="kpi-card"><div class="kpi-label">'+(lang==='en'?'Portfolio Value':'قيمة المحفظة')+'</div><div class="kpi-value" style="color:#e85d20">'+omrN(portAmt)+' OMR</div></div>'
+    +'<div class="kpi-card"><div class="kpi-label">'+(lang==='en'?'Paid':'المدفوع')+'</div><div class="kpi-value" style="color:#16a34a">'+omrN(grandPaid)+' OMR</div></div>'
+    +'<div class="kpi-card"><div class="kpi-label">'+(lang==='en'?'Adjustments':'التسويات')+'</div><div class="kpi-value" style="color:#d97706">'+omrN(grandAdj)+' OMR</div></div>'
     +'<div class="kpi-card"><div class="kpi-label">'+(lang==='en'?'Total Collected':'الإجمالي المحصّل')+'</div><div class="kpi-value" style="color:#1e3a5f">'+omrN(grandTotal)+' OMR</div></div>'
     +'</div>'
 
@@ -9955,7 +9955,7 @@ function handlePrint(data, lang='ar') {
     +'<div style="background:rgba(255,255,255,0.2);border-radius:4px;height:6px"><div style="width:26%;background:rgba(255,255,255,0.85);height:100%;border-radius:4px"></div></div></div>'
     +'</div>'
     +'<div class="s1-coll">'
-    +'<div class="s1-coll-title">'+(lang==\'en\'?\'💰 Collection\':\'💰 التحصيل\')+'</div>'
+    +'<div class="s1-coll-title">'+(lang==='en'?'💰 Collection':'💰 التحصيل')+'</div>'
     +s1HTML
     +'</div></div>'
 
