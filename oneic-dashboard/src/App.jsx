@@ -9839,9 +9839,9 @@ function handlePrint(data, lang='ar') {
       +'<td class="amt green">'+omrN(p)+'</td><td class="amt amber">'+omrN(a)+'</td><td class="amt total">'+omrN(p+a)+'</td></tr>';
   }).join('');
 
-  var css = '*{box-sizing:border-box;margin:0;padding:0;-webkit-print-color-adjust:exact!important;print-color-adjust:exact!important}'
-    +'body{font-family:\'Cairo\',sans-serif;background:#f0ece8;direction:rtl;color:#111}'
-    +'@import url(\'https://fonts.googleapis.com/css2?family=Cairo:wght@400;600;700;900&display=swap\');'
+  var css = '@import url(\'https://fonts.googleapis.com/css2?family=Cairo:wght@400;600;700;900&display=swap\');'
+    +'*{box-sizing:border-box;margin:0;padding:0;-webkit-print-color-adjust:exact!important;print-color-adjust:exact!important}'
+    +'body{font-family:\'Cairo\',\'Arial\',sans-serif;background:#f0ece8;direction:rtl;color:#111}'
     +'.page{width:210mm;margin:0 auto;background:#fff;box-shadow:0 0 40px rgba(0,0,0,.2)}'
     // Hero
     +'.hero{background:linear-gradient(135deg,#1e3a5f 0%,#2d5a8e 60%,#1e3a5f 100%);padding:8mm 12mm 6mm}'
@@ -9913,14 +9913,15 @@ function handlePrint(data, lang='ar') {
     +'.footer{text-align:center;padding:5mm;font-size:8pt;color:#aaa;border-top:2px solid #f0ece8}'
     +'@page{size:A4;margin:10mm 12mm}@media print{body{background:#fff}.no-print{display:none!important}.page{box-shadow:none}}';
 
-  var html = '<!DOCTYPE html><html dir="rtl"><head><meta charset="UTF-8">'
+  var html = '<!DOCTYPE html><html lang="'+(lang==='en'?'en':'ar')+'" dir="rtl"><head>'
+    +'<meta charset="UTF-8"><meta http-equiv="Content-Type" content="text/html; charset=UTF-8">'
     +'<link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;600;700;900&display=swap" rel="stylesheet">'
-    +'<style>'+css+'</style><title>تقرير ONEIC</title></head><body><div class="page">'
+    +'<style>'+css+'</style><title>'+(lang==='en'?'ONEIC Report':'تقرير ONEIC — عُمانتل 1')+'</title></head><body><div class="page">'
 
     // Hero
     +'<div class="hero"><div class="hero-inner">'
     +'<div class="hero-logo"><img src="'+LOGO_SRC+'" alt="ONEIC"></div>'
-    +'<div class="hero-title"><h1>{t("محفظة عُمانتل 1",lang)}</h1><p>Omantel Debt Collection Portfolio — ONEIC</p></div>'
+    +'<div class="hero-title"><h1>'+(lang==='en'?'Omantel Portfolio 1':'محفظة عُمانتل 1')+'</h1><p>Omantel Debt Collection Portfolio — ONEIC</p></div>'
     +'<div class="hero-meta"><strong>'+date+'</strong>'+(lang==='en'?'Last file update':'آخر تحديث للملف')+'<br>'+String(portCnt.toLocaleString())+' '+(lang==='en'?' account':'حساب')+'</div>'
     +'</div></div>'
 
@@ -9933,9 +9934,9 @@ function handlePrint(data, lang='ar') {
 
     // KPI
     +'<div class="kpi-row">'
-    +'<div class="kpi-card"><div class="kpi-label">{t("قيمة المحفظة",lang)}</div><div class="kpi-value" style="color:#e85d20">'+omrN(portAmt)+' OMR</div></div>'
-    +'<div class="kpi-card"><div class="kpi-label">{t("المدفوع",lang)}</div><div class="kpi-value" style="color:#16a34a">'+omrN(grandPaid)+' OMR</div></div>'
-    +'<div class="kpi-card"><div class="kpi-label">{t("التسويات",lang)}</div><div class="kpi-value" style="color:#d97706">'+omrN(grandAdj)+' OMR</div></div>'
+    +'<div class="kpi-card"><div class="kpi-label">'+(lang==\'en\'?\'Portfolio Value\':\'قيمة المحفظة\')+'</div><div class="kpi-value" style="color:#e85d20">'+omrN(portAmt)+' OMR</div></div>'
+    +'<div class="kpi-card"><div class="kpi-label">'+(lang==\'en\'?\'Paid\':\'المدفوع\')+'</div><div class="kpi-value" style="color:#16a34a">'+omrN(grandPaid)+' OMR</div></div>'
+    +'<div class="kpi-card"><div class="kpi-label">'+(lang==\'en\'?\'Adjustments\':\'التسويات\')+'</div><div class="kpi-value" style="color:#d97706">'+omrN(grandAdj)+' OMR</div></div>'
     +'<div class="kpi-card"><div class="kpi-label">'+(lang==='en'?'Total Collected':'الإجمالي المحصّل')+'</div><div class="kpi-value" style="color:#1e3a5f">'+omrN(grandTotal)+' OMR</div></div>'
     +'</div>'
 
@@ -9954,7 +9955,7 @@ function handlePrint(data, lang='ar') {
     +'<div style="background:rgba(255,255,255,0.2);border-radius:4px;height:6px"><div style="width:26%;background:rgba(255,255,255,0.85);height:100%;border-radius:4px"></div></div></div>'
     +'</div>'
     +'<div class="s1-coll">'
-    +'<div class="s1-coll-title">{t("💰 التحصيل",lang)}</div>'
+    +'<div class="s1-coll-title">'+(lang==\'en\'?\'💰 Collection\':\'💰 التحصيل\')+'</div>'
     +s1HTML
     +'</div></div>'
 
