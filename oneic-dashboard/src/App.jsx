@@ -385,6 +385,7 @@ const SEED = {
     { name:"Legal -Oneic",           paid:26573.783,  adj:4863.010,  portAmt:64528.164,   portCnt:101,  count:101,  closed:101,  active:0,    principalAmt:64528.164   },
     { name:"Refund - before legal",  paid:400.680,    adj:152.552,   portAmt:0,           portCnt:520,  count:520,  closed:0,    active:520,  principalAmt:0           },
     { name:"Omantel Communication",  paid:110.934,    adj:254.075,   portAmt:0,           portCnt:177,  count:177,  closed:0,    active:177,  principalAmt:0           },
+    { name:"Initial Loss",           paid:0.000,      adj:0.000,     portAmt:0,           portCnt:0,    count:0,    closed:0,    active:0,    principalAmt:0           },
   ],
 };
 
@@ -6925,8 +6926,8 @@ function EntityCard({name,paid,adj,color,rank,small,cnt,cBranch,portAmt,portCnt,
                 <div style={{fontSize:small?8:9,color:"#aaa",fontWeight:600}}>{t("حساب",lang)}</div>
               </div>
             )}
-            {(name==="Legal -Oneic"||name==="Documentation- Omantel"||name==="Legal - DR. Sarhaan"||name==="Refund - before legal"||name==="Refund - after legal"||name==="Omantel Communication")&&<div style={{flex:1,background:"#fee2e2",borderRadius:10,padding:small?"5px 6px":"7px 10px",border:"1px solid #fca5a5",textAlign:"center"}}><div style={{fontSize:small?8:10,color:"#dc2626",fontWeight:800,marginBottom:2}}>{t("🔴 مغلقة",lang)}</div><div style={{fontSize:small?12:15,fontWeight:900,color:"#dc2626"}}>{effClosed.toLocaleString()}</div></div>}
-            {(name==="Legal -Oneic"||name==="Documentation- Omantel"||name==="Legal - DR. Sarhaan"||name==="Refund - before legal"||name==="Refund - after legal"||name==="Omantel Communication")&&<div style={{flex:1,background:"#dcfce7",borderRadius:10,padding:small?"5px 6px":"7px 10px",border:"1px solid #86efac",textAlign:"center"}}><div style={{fontSize:small?8:10,color:"#16a34a",fontWeight:800,marginBottom:2}}>{t("🟢 نشطة",lang)}</div><div style={{fontSize:small?12:15,fontWeight:900,color:"#16a34a"}}>{effActive.toLocaleString()}</div></div>}
+            {(name==="Legal -Oneic"||name==="Documentation- Omantel"||name==="Legal - DR. Sarhaan"||name==="Refund - before legal"||name==="Refund - after legal"||name==="Omantel Communication"||name==="Initial Loss")&&<div style={{flex:1,background:"#fee2e2",borderRadius:10,padding:small?"5px 6px":"7px 10px",border:"1px solid #fca5a5",textAlign:"center"}}><div style={{fontSize:small?8:10,color:"#dc2626",fontWeight:800,marginBottom:2}}>{t("🔴 مغلقة",lang)}</div><div style={{fontSize:small?12:15,fontWeight:900,color:"#dc2626"}}>{effClosed.toLocaleString()}</div></div>}
+            {(name==="Legal -Oneic"||name==="Documentation- Omantel"||name==="Legal - DR. Sarhaan"||name==="Refund - before legal"||name==="Refund - after legal"||name==="Omantel Communication"||name==="Initial Loss")&&<div style={{flex:1,background:"#dcfce7",borderRadius:10,padding:small?"5px 6px":"7px 10px",border:"1px solid #86efac",textAlign:"center"}}><div style={{fontSize:small?8:10,color:"#16a34a",fontWeight:800,marginBottom:2}}>{t("🟢 نشطة",lang)}</div><div style={{fontSize:small?12:15,fontWeight:900,color:"#16a34a"}}>{effActive.toLocaleString()}</div></div>}
           </div>
         )}
 
