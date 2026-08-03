@@ -6479,19 +6479,24 @@ async function parseXLS(file) {
   const debtCompanies = dcList.sort((a,b)=>((b.paid||0)+(b.adj||0))-((a.paid||0)+(a.adj||0)));
 
   // -- المكتب الرئيسي ----------------------------------------------------
-  const HO_KEYS = ["Legal - DR. Sarhaan","Documentation- Omantel","HO","Legal -Oneic"];
+  const HO_KEYS = ["Legal - DR. Sarhaan","Documentation- Omantel","HO","Legal -Oneic","Initial Loss"];
+  const HO_DISPLAY_MAP = {"HO":"Non-due accounts","Non-due accounts":"Non-due accounts","Documentation- Omantel":"Documentation- Omantel","Legal - DR. Sarhaan":"Legal - DR. Sarhaan","Legal -Oneic":"Legal -Oneic","Initial Loss":"Initial Loss"};
   const headOffice = HO_KEYS.map(nm => {
-    const d = hoMap[nm]||{paid:0,adj:0,count:0};
+    const d = hoMap[nm]||{paid:0,adj:0,count:0,principalAmt:0,closed:0,active:0};
     const p = PORT.ho[nm]||{portAmt:0,portCnt:0};
-    const HO_DISPLAY = {"HO":"Non-due accounts","Non-due accounts":"Non-due accounts","Documentation- Omantel":"Documentation- Omantel","Legal - DR. Sarhaan":"Legal - DR. Sarhaan","Legal -Oneic":"Legal -Oneic"};
-    return {name:HO_DISPLAY[nm]||nm, paid:d.paid, adj:d.adj, count:d.count||0, closed:d.closed||0, active:d.active||0,
-      portAmt: Math.max(0, d.principalAmt||p.portAmt||0), portCnt: p.portCnt||0,
-      principalAmt: p.principalAmt||0};
+    // استخدم count من الملف إذا كان PORT.portCnt صفر (محصّل جديد)
+    const finalPortCnt = (d.count>0 && d.count>(p.portCnt||0)) ? d.count : (p.portCnt||0);
+    const finalPortAmt = Math.max(0, d.principalAmt||p.portAmt||0);
+    return {name:HO_DISPLAY_MAP[nm]||nm, paid:d.paid, adj:d.adj, count:d.count||0,
+      closed:d.closed||0, active:d.active||0,
+      portAmt:finalPortAmt, portCnt:finalPortCnt, principalAmt:finalPortAmt};
   });
   const HO_DN={"HO":"Non-due accounts","Non-due accounts":"Non-due accounts"};
   Object.keys(hoMap).forEach(k => {
     if (!HO_KEYS.includes(k))
-      headOffice.push({name:HO_DN[k]||k,paid:hoMap[k].paid,adj:hoMap[k].adj,count:hoMap[k].count||0,portAmt:0,portCnt:0});
+      headOffice.push({name:HO_DN[k]||k,paid:hoMap[k].paid,adj:hoMap[k].adj,count:hoMap[k].count||0,
+        portAmt:hoMap[k].principalAmt||0, portCnt:hoMap[k].count||0,
+        closed:hoMap[k].closed||0, active:hoMap[k].active||0});
   });
 
   return {
@@ -6514,7 +6519,7 @@ const FIREBASE_URL = "https://oneic-dashboard-default-rtdb.firebaseio.com";
 // يُصلح Firebase: يصحح أسماء شركات التحصيل ويحافظ على history و uploadCount
 (function() {
   if (typeof window === 'undefined') return;
-  if (localStorage.getItem('oneic_data_fixed_v5')) return;
+  if (localStorage.getItem('oneic_data_fixed_v6')) return;
   var now = new Date().toISOString();
   // اقرأ Firebase أولاً لتحافظ على history و uploadCount
   fetch('https://oneic-dashboard-default-rtdb.firebaseio.com/main.json')
@@ -6525,7 +6530,7 @@ const FIREBASE_URL = "https://oneic-dashboard-default-rtdb.firebaseio.com";
       var alreadyValid = existDC.some(function(c){ return c.name==='Matrix Debt Collection'||c.name==='National Center'; });
       if (alreadyValid && existing && existing.regions && existing.regions.length > 0) {
         // البيانات صحيحة — فقط حافظ على localStorage وضع العلامة
-        try { localStorage.setItem('oneic_data_fixed_v5','1'); } catch(e) {}
+        try { localStorage.setItem('oneic_data_fixed_v6','1'); } catch(e) {}
         // لكن تأكد من أن localStorage محدّث
         try { localStorage.setItem('oneic_dashboard_data', JSON.stringify(existing)); } catch(e) {}
         return;
@@ -6542,13 +6547,13 @@ const FIREBASE_URL = "https://oneic-dashboard-default-rtdb.firebaseio.com";
       fetch('https://oneic-dashboard-default-rtdb.firebaseio.com/main.json', {
         method: 'PUT', headers: {'Content-Type':'application/json'}, body: JSON.stringify(fixData)
       }).then(function() {
-        try { localStorage.setItem('oneic_data_fixed_v5','1'); } catch(e) {}
+        try { localStorage.setItem('oneic_data_fixed_v6','1'); } catch(e) {}
         console.log('[ONEIC] Data fixed — DC names corrected, history preserved');
       }).catch(function(e) { console.warn('[ONEIC] Fix failed:', e.message); });
     }).catch(function() {
       // Firebase غير متاح — استخدم SEED فقط للـ localStorage
       try { localStorage.setItem('oneic_dashboard_data', JSON.stringify(SEED)); } catch(e) {}
-      try { localStorage.setItem('oneic_data_fixed_v5','1'); } catch(e) {}
+      try { localStorage.setItem('oneic_data_fixed_v6','1'); } catch(e) {}
     });
 })();
 // ══════════════════════════════════════════════════════════
