@@ -6407,12 +6407,15 @@ async function parseXLS(file) {
       else if (colL.includes('refund') && colL.includes('before')) key = 'Refund - before legal';
       else if (colL.includes('refund') && colL.includes('after'))  key = 'Refund - after legal';
       else if (colL.includes('refund')) key = 'Refund - before legal';
+      else if (colL.includes('communication') || colL.includes('omantel communication')) key = 'Omantel Communication';
+      else if (colL.includes('initial loss') || colL === 'initial loss') key = 'Initial Loss';
       else if (colL.includes('saif')) key = 'Legal -Oneic';
       else if (col.trim() === '')     key = 'Legal -Oneic';
-      else                            key = 'Legal -Oneic';
+      else                            key = col.trim() || 'Legal -Oneic';
       if (!hoMap[key]) hoMap[key] = { paid:0, adj:0, count:0, closed:0, active:0, principalAmt:0 };
       hoMap[key].paid += paid; hoMap[key].adj += adj; hoMap[key].count++; hoMap[key].principalAmt += n(row['Principal Amount']||0);
-      if (key==='Legal -Oneic'||key==='Documentation- Omantel'||key==='Legal - DR. Sarhaan'||key==='HO'||key==='Refund - before legal'||key==='Refund - after legal') { if (osAmt<=0) hoMap[key].closed++; else hoMap[key].active++; }
+      const _hoTracked = ['Legal -Oneic','Documentation- Omantel','Legal - DR. Sarhaan','HO','Refund - before legal','Refund - after legal','Omantel Communication','Initial Loss'];
+      if (_hoTracked.includes(key)) { if (osAmt<=0) hoMap[key].closed++; else hoMap[key].active++; }
 
     } else if (REG_AR[region]) {
       if (!regMap[region]) regMap[region] = { paid:0, adj:0, count:0, paidCount:0, adjCount:0, cMap:{}, principalAmt:0 };
