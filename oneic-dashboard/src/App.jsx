@@ -6818,7 +6818,7 @@ function EntityCard({name,paid,adj,color,rank,small,cnt,cBranch,portAmt,portCnt,
   const cPaid   = paid||0;
   const cAdj    = adj||0;
   const total   = cPaid + cAdj; // الإجمالي = Paid + Adj من Complaints
-  const allZero = total === 0 && name !== "Legal -Oneic" && name !== "Non-due accounts" && !["Ejada","Tahseel United","High Speed Company","High Speed company"].includes(name);
+  const allZero = total === 0 && name !== "Legal -Oneic" && name !== "Non-due accounts" && name !== "Initial Loss" && !["Ejada","Tahseel United","High Speed Company","High Speed company"].includes(name);
   // Non-due accounts: عرض كامل (عدد الحسابات + مغلقة/نشطة + مدفوع/تسويات/إجمالي)
   if (name === "Non-due accounts") {
     return (<div style={{background:"#fff",borderRadius:13,border:`1.5px solid ${color}33`,
