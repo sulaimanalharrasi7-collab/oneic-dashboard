@@ -9581,6 +9581,7 @@ async function parseComplaints(file) {
               var cLow = collector2.toLowerCase();
               if (cLow.indexOf('sarhaan')>=0||cLow.indexOf('sarhan')>=0||cLow.indexOf('dr.')>=0||cLow.indexOf(' dr')>=0) hoColKey='Legal - DR. Sarhaan';
               else if (cLow.indexOf('omantel communication')>=0||cLow.indexOf('communication')>=0) hoColKey='Omantel Communication';
+              else if (cLow.indexOf('initial loss')>=0||cLow==='initial loss') hoColKey='Initial Loss';
               else if (cLow.indexOf('doc')>=0) hoColKey='Documentation- Omantel';
               else if (cLow.indexOf('non-due')>=0||collector2.toUpperCase()==='HO') hoColKey='Non-due accounts';
               else if (cLow.indexOf('refund')>=0&&cLow.indexOf('before')>=0) hoColKey='Refund - before legal';
@@ -9595,7 +9596,7 @@ async function parseComplaints(file) {
               if (hoColKey==='Refund - before legal') {
                 branchMap[hoColKey].refundAmt += (osAmt>0 ? osAmt*0.26 : 0);
               }
-              if (hoColKey==='Legal -Oneic'||hoColKey==='Documentation- Omantel'||hoColKey==='Legal - DR. Sarhaan'||hoColKey==='Non-due accounts'||hoColKey==='Refund - before legal'||hoColKey==='Refund - after legal'||hoColKey==='Omantel Communication') {
+              if (hoColKey==='Legal -Oneic'||hoColKey==='Documentation- Omantel'||hoColKey==='Legal - DR. Sarhaan'||hoColKey==='Non-due accounts'||hoColKey==='Refund - before legal'||hoColKey==='Refund - after legal'||hoColKey==='Omantel Communication'||hoColKey==='Initial Loss') {
                 if (osAmt<=0) branchMap[hoColKey].closed++; else branchMap[hoColKey].active++;
               }
             }
@@ -12417,7 +12418,7 @@ export default function Dashboard() {
           ONEIC — لوحة تحكم إدارة تحصيل الديون © 2026 · {data.uploadDate}
         </div>
         <div style={{textAlign:"center",fontSize:11,color:"#9ca3af",fontWeight:500,paddingBottom:10}}>
-          Programming and design by Sulaiman Al-Harrasi — 16296
+          Programming and design by Sulaiman Al-Harrasi — 16296 &nbsp;·&nbsp; <span style={{fontSize:9,background:"#e0f2fe",color:"#0369a1",borderRadius:4,padding:"1px 5px"}}>v2026.08.03-B</span>
         </div>
       </div>
     </div>
