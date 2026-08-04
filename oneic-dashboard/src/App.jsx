@@ -12277,6 +12277,39 @@ export default function Dashboard() {
         </div>
       </div>
 
+              {/* بطاقة توزيع الحسابات — مجمّدة من ملف 2026-08-04 */}
+        <div style={{background:"linear-gradient(135deg,#1e3a5f 0%,#2d5a8e 100%)",borderRadius:16,padding:"20px 24px",marginBottom:small?14:18,color:"#fff",boxShadow:"0 4px 20px rgba(30,58,95,0.2)"}}>
+          <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",marginBottom:16}}>
+            <div>
+              <div style={{fontSize:small?14:17,fontWeight:900,letterSpacing:0.3}}>{lang==='en'?'Account Distribution':'توزيع الحسابات'}</div>
+              <div style={{fontSize:small?11:13,color:"#93c5fd",marginTop:2}}>47,963 {lang==='en'?'accounts':'حساب'} · 9,414,256.834 OMR</div>
+            </div>
+            <div style={{fontSize:28}}>📊</div>
+          </div>
+          <div style={{display:"grid",gridTemplateColumns:"repeat(3,1fr)",gap:10}}>
+            {[
+              {label:lang==='en'?'Oman':'عُمان',         count:25599, principal:4360234.212, color:"#4ade80", pct:53.4},
+              {label:lang==='en'?'Expat':'وافد',         count:19309, principal:3058659.763, color:"#60a5fa", pct:40.3},
+              {label:lang==='en'?'Enterprise':'شركات',   count:3055,  principal:1995362.859, color:"#f59e0b", pct:6.4},
+            ].map(item=>(
+              <div key={item.label} style={{background:"rgba(255,255,255,0.1)",borderRadius:12,padding:"14px 12px",backdropFilter:"blur(4px)"}}>
+                <div style={{fontSize:small?13:15,fontWeight:800,color:"#bfdbfe",marginBottom:6}}>{item.label}</div>
+                {/* عدد الحسابات */}
+                <div style={{fontSize:small?22:28,fontWeight:900,color:"#fff",marginBottom:1}}>{item.count.toLocaleString()}</div>
+                <div style={{fontSize:small?12:13,color:"#93c5fd",marginBottom:8}}>{lang==='en'?'accounts':'حساب'}</div>
+                {/* شريط النسبة */}
+                <div style={{background:"rgba(0,0,0,0.2)",borderRadius:4,height:4,marginBottom:8}}>
+                  <div style={{width:item.pct+'%',height:"100%",borderRadius:4,background:item.color}}/>
+                </div>
+                {/* قيمة المديونية */}
+                <div style={{fontSize:small?12:13,color:"#bfdbfe",marginBottom:3}}>{lang==='en'?'Debt Value':'قيمة المديونية'}</div>
+                <div style={{fontSize:small?15:19,fontWeight:900,color:item.color}}>{item.principal.toLocaleString('en',{minimumFractionDigits:3,maximumFractionDigits:3})}</div>
+                <div style={{fontSize:small?11:12,color:"#93c5fd"}}>OMR</div>
+              </div>
+            ))}
+          </div>
+        </div>
+
                 {/* Summary cards */}
         <div id="print-summary" style={{
           display:"grid",
