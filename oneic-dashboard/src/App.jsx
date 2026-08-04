@@ -9758,264 +9758,220 @@ function parseBulkPayment(file) {
 function handlePrint(data, lang='ar') {
   var w = window.open('','_blank','width=1200,height=900');
   if (!w) return;
+  var ar = lang !== 'en';
+  var T = function(a,e){ return ar ? a : e; };
   var omrN = function(n) { return new Intl.NumberFormat('en-US',{minimumFractionDigits:3,maximumFractionDigits:3}).format(n||0); };
+  var fmtN = function(n) { return new Intl.NumberFormat('en-US',{maximumFractionDigits:0}).format(n||0); };
 
-  // -- حساب الإجماليات -- نفس منطق الداشبورد (gPd+dPd+hPd من data.regions/debtCompanies/headOffice) --
-  var govPaid = (data.regions||[]).reduce(function(s,r){return s+r.paid;},0);
-  var govAdj  = (data.regions||[]).reduce(function(s,r){return s+r.adj;},0);
-  var dcPaid  = (data.debtCompanies||[]).reduce(function(s,r){return s+r.paid;},0);
-  var dcAdj   = (data.debtCompanies||[]).reduce(function(s,r){return s+r.adj;},0);
+  // ── Totals (same logic as dashboard) ──
+  var govPaid = (data.regions||[]).reduce(function(s,r){return s+(r.paid||0);},0);
+  var govAdj  = (data.regions||[]).reduce(function(s,r){return s+(r.adj||0);},0);
+  var dcPaid  = (data.debtCompanies||[]).reduce(function(s,r){return s+(r.paid||0);},0);
+  var dcAdj   = (data.debtCompanies||[]).reduce(function(s,r){return s+(r.adj||0);},0);
   var hoPaid  = (data.headOffice||[]).reduce(function(s,r){return s+Math.max(0,r.paid||0);},0);
   var hoAdj   = (data.headOffice||[]).reduce(function(s,r){return s+Math.max(0,r.adj||0);},0);
-  var grandPaid = govPaid+dcPaid+hoPaid;
-  var grandAdj  = govAdj+dcAdj+hoAdj;
+  var grandPaid  = govPaid + dcPaid + hoPaid;
+  var grandAdj   = govAdj  + dcAdj  + hoAdj;
   var grandTotal = grandPaid + grandAdj;
   var portAmt    = (data.totalPortfolio&&data.totalPortfolio.amt) ? data.totalPortfolio.amt : 9414256.834;
   var portCnt    = (data.totalPortfolio&&data.totalPortfolio.cnt) ? data.totalPortfolio.cnt : 47963;
-  var ONEIC_DISC = data.totalDiscount||0;
+  var DISC       = data.totalDiscount||0;
   var pctDone    = portAmt>0 ? Math.min(100,(grandTotal/portAmt*100)).toFixed(1) : '0';
-  var remaining  = (data.totalPortfolio&&data.totalPortfolio.outstanding!=null) ? data.totalPortfolio.outstanding : (portAmt - grandTotal - ONEIC_DISC);
-  var date      = data.uploadDate||new Date().toISOString().split('T')[0];
-  var printDate = new Date().toLocaleDateString(lang==='en'?'en-US':'ar-OM',{year:'numeric',month:'long',day:'numeric'});
-  var LOGO_SRC  = typeof LOGO!=='undefined'?LOGO:'';
+  var remaining  = portAmt - grandTotal - DISC;
+  var date       = data.uploadDate||new Date().toISOString().split('T')[0];
+  var printDate  = new Date().toLocaleDateString(ar?'ar-OM':'en-US',{year:'numeric',month:'long',day:'numeric'});
+  var LOGO_SRC   = typeof LOGO!=='undefined'?LOGO:'';
 
-  // -- Section 1 rows --
-  var s1rows = [
-    ['المدفوع',            grandPaid,  '#16a34a'],
-    ['تسويات عُمانتل',     grandAdj,   '#d97706'],
-    ['خصومات ONEIC',       ONEIC_DISC, '#7c3aed'],
-    ['الإجمالي',           grandTotal, '#1e3a5f'],
-    ['المتبقي من المحفظة', remaining,  '#e85d20'],
-  ];
-  var s1HTML = s1rows.map(function(r){
-    return '<div class="s1-row"><span class="s1-lbl" style="color:'+r[2]+'">'+r[0]+'</span><span class="s1-val" style="color:'+r[2]+'">'+omrN(r[1])+' OMR</span></div>';
+  // ── Helper: entity card row ──
+  function eRow(name, paid, adj, portAmtV, portCntV, closed, active, idx, color) {
+    var tot = paid+adj;
+    var pct = portAmtV>0 ? Math.min(100,(tot/portAmtV*100)).toFixed(1) : '0';
+    var rem = portAmtV>0 ? portAmtV-tot : 0;
+    return '<tr style="background:'+(idx%2===0?'#fff':'#f9fafb')+'">'
+      +'<td style="padding:8px 12px;font-weight:700">'+name+'</td>'
+      +'<td style="padding:8px;text-align:center;color:#16a34a;font-weight:800">'+omrN(paid)+'</td>'
+      +'<td style="padding:8px;text-align:center;color:#d97706;font-weight:800">'+omrN(adj)+'</td>'
+      +'<td style="padding:8px;text-align:center;font-weight:900;color:'+color+'">'+omrN(tot)+'</td>'
+      +'<td style="padding:8px;text-align:center;color:#555">'+fmtN(portCntV)+'</td>'
+      +'<td style="padding:8px;text-align:center">'
+        +'<div style="background:#e5e7eb;border-radius:3px;height:6px;width:80px;display:inline-block;vertical-align:middle">'
+          +'<div style="width:'+pct+'%;height:100%;background:'+color+';border-radius:3px"></div>'
+        +'</div>'
+        +' <span style="font-size:10pt;font-weight:700;color:'+color+'">'+pct+'%</span>'
+      +'</td>'
+      +'<td style="padding:8px;text-align:center;color:#888;font-size:9pt">'+omrN(rem)+'</td>'
+    +'</tr>';
+  }
+
+  // Build DC rows
+  var inactive = ['Ejada','Tahseel United','High Speed Company','High Speed company'];
+  var dcRows = (data.debtCompanies||[]).filter(function(c){return (c.paid||0)+(c.adj||0)>0||!inactive.includes(c.name);}).map(function(c,i){
+    return eRow(c.name, c.paid||0, c.adj||0, c.portAmt||c.principalAmt||0, c.portCnt||c.count||0, c.closed||0, c.active||0, i, '#1a7a6b');
   }).join('');
 
-  // -- Summary Cards --
-  var summaries = [
-    {label:'المكتب الرئيسي', paid:hoPaid, adj:hoAdj, color:'#6c3fa0', icon:'🏛'},
-    {label:'شركات التحصيل',  paid:dcPaid, adj:dcAdj, color:'#1a7a6b', icon:'🏢'},
-    {label:'مكاتب أونك',     paid:govPaid,adj:govAdj,color:'#e85d20', icon:'🗺'},
-  ];
-  var sumHTML = summaries.map(function(s){
-    var tot = s.paid+s.adj;
-    var pct = grandTotal>0?((tot/grandTotal)*100).toFixed(1):'0';
-    return '<div class="sum-card" style="border-top:4px solid '+s.color+'">'
-      +'<div class="sum-header" style="background:'+s.color+'"><span class="sum-icon">'+s.icon+'</span><span class="sum-title">'+s.label+'</span><span class="sum-pct">'+pct+'%</span></div>'
-      +'<div class="sum-body">'
-      +'<div class="sum-row"><span class="sum-lbl">المدفوع</span><span class="sum-val green">'+omrN(s.paid)+'</span></div>'
-      +'<div class="sum-row"><span class="sum-lbl">التسويات</span><span class="sum-val amber">'+omrN(s.adj)+'</span></div>'
-      +'<div class="sum-row sum-total"><span class="sum-lbl">الإجمالي</span><span class="sum-val" style="color:'+s.color+'">'+omrN(tot)+'</span></div>'
-      +'</div></div>';
+  // Build HO rows
+  var hoRows = (data.headOffice||[]).filter(function(c){return c.name!=='HO'&&c.name!=='Blanks';}).map(function(c,i){
+    return eRow(c.name, c.paid||0, c.adj||0, c.portAmt||c.principalAmt||0, c.portCnt||c.count||0, c.closed||0, c.active||0, i, '#6c3fa0');
   }).join('');
 
-  // -- مكاتب أونك --
-  var regsHTML = '';
-  (data.regions||[]).forEach(function(r,ri){
-    var rTotal=r.paid+r.adj;
-    var rPct = grandTotal>0?Math.min(100,Math.round(rTotal/grandTotal*100)):0;
-    var portA = r.portAmt||0;
-    var portPct = portA>0?Math.min(100,(rTotal/portA*100)).toFixed(1):'—';
-    regsHTML += '<tr class="sec-header"><td colspan="5">'
-      +'<div class="sec-title"><span>'+String(ri+1)+'. '+r.nameAr+'</span>'
-      +'<span class="badge">نسبة إنجاز: '+portPct+'%</span></div>'
-      +(portA>0?'<div class="prog-wrap"><div class="prog-bar" style="width:'+portPct+'%"></div></div>':'')
-      +'</td></tr>';
-    (r.collectors||[]).forEach(function(c,ci){
-      regsHTML += '<tr class="'+(ci%2===0?'even':'odd')+'"><td class="rank">'+String(ci+1)+'</td><td class="col-name">'+c.name+'</td>'
-        +'<td class="amt green">'+omrN(c.paid)+'</td><td class="amt amber">'+omrN(c.adj)+'</td><td class="amt total">'+omrN((c.paid||0)+(c.adj||0))+'</td></tr>';
-    });
-    regsHTML += '<tr class="subtotal"><td colspan="2">'+(lang==='en'?'Total ':'إجمالي ')+r.nameAr+'</td>'
-      +'<td class="green">'+omrN(r.paid)+'</td><td class="amber">'+omrN(r.adj)+'</td><td class="total">'+omrN(rTotal)+'</td></tr>';
-  });
-
-  // -- شركات التحصيل --
-  var dcHTML = (data.debtCompanies||[]).map(function(c,i){
-    var tot=(c.paid||0)+(c.adj||0);
-    var inactive=['Ejada','Tahseel United','High Speed Company','High Speed company'].includes(c.name)?'<span class="badge-inactive">غير نشطة</span>':'';
-    return '<tr class="'+(i%2===0?'even':'odd')+'"><td class="rank">'+String(i+1)+'</td><td class="col-name">'+c.name+inactive+'</td>'
-      +'<td class="amt green">'+omrN(c.paid)+'</td><td class="amt amber">'+omrN(c.adj)+'</td><td class="amt total">'+omrN(tot)+'</td></tr>';
+  // Build Regions rows
+  var regRows = (data.regions||[]).map(function(r,i){
+    return eRow((ar?r.nameAr:r.nameEn)||r.nameAr||'', r.paid||0, r.adj||0, r.principalAmt||r.portAmt||0, r.portCnt||r.count||0, 0, 0, i, '#b45309');
   }).join('');
 
-  // -- المكتب الرئيسي --
-  var hoHTML = (data.headOffice||[]).map(function(c,i){
-    if (c.name==='Non-due accounts'||c.name==='HO') {
-      return '<tr class="'+(i%2===0?'even':'odd')+'"><td class="rank">'+String(i+1)+'</td><td class="col-name">'+c.name+' <span class="badge-sm">'+((c.portCnt||0).toLocaleString())+' حساب فقط</span></td>'
-        +'<td colspan="3" class="center-cell" style="color:#888;font-style:italic">حسابات غير مستحقة</td></tr>';
-    }
-    var p=Math.max(0,c.paid||0),a=Math.max(0,c.adj||0);
-    var pa=(c.principalAmt||0)>0?' <span class="badge-sm">PA: '+omrN(c.principalAmt)+'</span>':'';
-    return '<tr class="'+(i%2===0?'even':'odd')+'"><td class="rank">'+String(i+1)+'</td><td class="col-name">'+c.name+pa+'</td>'
-      +'<td class="amt green">'+omrN(p)+'</td><td class="amt amber">'+omrN(a)+'</td><td class="amt total">'+omrN(p+a)+'</td></tr>';
-  }).join('');
+  // ── Table header ──
+  var TH = '<thead><tr style="background:#1e3a5f;color:#fff">'
+    +'<th style="padding:9px 12px;text-align:right;font-weight:700">'+T('الجهة','Entity')+'</th>'
+    +'<th style="padding:9px;text-align:center;font-weight:700">'+T('المدفوع','Paid')+'</th>'
+    +'<th style="padding:9px;text-align:center;font-weight:700">'+T('التسويات','Adjustments')+'</th>'
+    +'<th style="padding:9px;text-align:center;font-weight:700">'+T('الإجمالي','Total')+'</th>'
+    +'<th style="padding:9px;text-align:center;font-weight:700">'+T('الحسابات','Accounts')+'</th>'
+    +'<th style="padding:9px;text-align:center;font-weight:700">'+T('نسبة الإنجاز','Progress')+'</th>'
+    +'<th style="padding:9px;text-align:center;font-weight:700">'+T('المتبقي','Remaining')+'</th>'
+    +'</tr></thead>';
 
-  var css = '@import url(\'https://fonts.googleapis.com/css2?family=Cairo:wght@400;600;700;900&display=swap\');'
-    +'*{box-sizing:border-box;margin:0;padding:0;-webkit-print-color-adjust:exact!important;print-color-adjust:exact!important}'
-    +'body{font-family:\'Cairo\',\'Arial\',sans-serif;background:#f0ece8;direction:rtl;color:#111}'
-    +'.page{width:210mm;margin:0 auto;background:#fff;box-shadow:0 0 40px rgba(0,0,0,.2)}'
-    // Hero
-    +'.hero{background:linear-gradient(135deg,#1e3a5f 0%,#2d5a8e 60%,#1e3a5f 100%);padding:8mm 12mm 6mm}'
-    +'.hero-inner{display:flex;justify-content:space-between;align-items:center}'
-    +'.hero-logo img{height:48px;filter:brightness(0) invert(1);opacity:.95}'
-    +'.hero-title{text-align:center;flex:1;padding:0 10mm}'
-    +'.hero-title h1{font-size:20pt;font-weight:900;color:#fff;line-height:1.1}'
-    +'.hero-title p{font-size:9pt;color:rgba(255,255,255,.65);margin-top:3px}'
-    +'.hero-meta{text-align:left;font-size:9pt;color:rgba(255,255,255,.65)}'
-    +'.hero-meta strong{color:#fbbf24;font-size:12pt;display:block}'
-    // Section 1
-    +'.s1-wrap{display:grid;grid-template-columns:1fr 1fr;border-bottom:3px solid #f0ece8}'
-    +'.s1-port{padding:5mm 8mm;border-left:1.5px solid #f0ece8}'
-    +'.s1-port-title{font-size:10pt;font-weight:900;color:#1e3a5f;margin-bottom:4mm;padding:2px 10px;background:#e8f0fe;border-radius:6px;display:inline-block}'
-    +'.s1-port-row{display:flex;justify-content:space-between;padding:3mm 4mm;margin-bottom:2mm;border-radius:8px}'
-    +'.s1-port-row.blue{background:#f8f9fc;border:1px solid #e8f0fe}'
-    +'.s1-port-row.orange{background:#fff3ee;border:1px solid #ffe4d4}'
-    +'.s1-port-label{font-size:9pt;color:#555;font-weight:700}'
-    +'.s1-port-value{font-size:12pt;font-weight:900;color:#1e3a5f}'
-    +'.s1-port-value.orange{color:#e85d20}'
-    +'.s1-coll{padding:5mm 8mm}'
-    +'.s1-coll-title{font-size:10pt;font-weight:900;color:#16a34a;margin-bottom:4mm;padding:2px 10px;background:#f0fdf4;border-radius:6px;display:inline-block}'
-    +'.s1-row{display:flex;justify-content:space-between;align-items:center;padding:3mm 4mm;margin-bottom:2mm;background:#fafafa;border-radius:8px;border:1px solid #f0ece8}'
-    +'.s1-lbl{font-size:9pt;font-weight:700}'
-    +'.s1-val{font-size:11pt;font-weight:900}'
-    // نسبة الإنجاز
-    +'.prog-strip{background:linear-gradient(90deg,#1e3a5f,#2d5a8e);padding:4mm 10mm;display:flex;align-items:center;gap:8mm}'
-    +'.prog-label{color:rgba(255,255,255,.8);font-size:9pt;font-weight:700;white-space:nowrap}'
-    +'.prog-track{flex:1;height:12px;background:rgba(255,255,255,.2);border-radius:6px;overflow:hidden}'
-    +'.prog-fill{height:100%;background:linear-gradient(90deg,#4ade80,#16a34a);border-radius:6px}'
-    +'.prog-pct{color:#4ade80;font-size:14pt;font-weight:900;white-space:nowrap}'
-    // KPI
-    +'.kpi-row{display:grid;grid-template-columns:repeat(4,1fr);border-bottom:3px solid #f0ece8}'
-    +'.kpi-card{padding:4mm 5mm;text-align:center;border-left:1px solid #f0ece8}'
-    +'.kpi-label{font-size:8pt;color:#777;font-weight:700;margin-bottom:3px}'
-    +'.kpi-value{font-size:13pt;font-weight:900}'
-    // Summary cards
-    +'.sum-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:4mm;padding:5mm 8mm;border-bottom:3px solid #f0ece8}'
-    +'.sum-card{border-radius:10px;overflow:hidden;border:1.5px solid #f0ece8}'
-    +'.sum-header{display:flex;align-items:center;gap:6px;padding:3mm 4mm;color:#fff}'
-    +'.sum-icon{font-size:14pt}'
-    +'.sum-title{flex:1;font-size:10pt;font-weight:900}'
-    +'.sum-pct{background:rgba(255,255,255,.25);border-radius:20px;padding:1px 8px;font-size:11pt;font-weight:900}'
-    +'.sum-body{padding:3mm 4mm}'
-    +'.sum-row{display:flex;justify-content:space-between;padding:2mm 0;border-bottom:1px solid #f5f5f5}'
-    +'.sum-total{border-top:1.5px solid #e0e0e0;margin-top:2mm;padding-top:2mm;border-bottom:none}'
-    +'.sum-lbl{font-size:8pt;color:#666;font-weight:700}'
-    +'.sum-val{font-size:9pt;font-weight:900}'
-    +'.green{color:#16a34a}.amber{color:#d97706}'
-    // Tables
-    +'.section-title{background:linear-gradient(120deg,#1e3a5f,#2d5a8e);color:#fff;padding:4mm 8mm;font-size:12pt;font-weight:900;display:flex;justify-content:space-between;align-items:center;margin-top:4mm}'
-    +'.data-table{width:100%;border-collapse:collapse}'
-    +'.data-table th{background:#f0ece8;padding:3mm 4mm;font-size:8pt;font-weight:900;color:#444;text-align:right}'
-    +'.data-table td{padding:3mm 4mm;font-size:9pt;border-bottom:1px solid #f5f5f5}'
-    +'.data-table .rank{width:30px;text-align:center;font-weight:900;color:#888}'
-    +'.data-table .col-name{font-weight:700}'
-    +'.data-table .amt{text-align:left;font-weight:900;font-variant-numeric:tabular-nums;direction:ltr}'
-    +'.data-table .total{color:#1e3a5f;font-size:10pt}'
-    +'.even{background:#fff}.odd{background:#fafafa}'
-    +'.sec-header td{background:linear-gradient(90deg,#fff7f3,#fff);padding:3mm 4mm}'
-    +'.sec-title{display:flex;justify-content:space-between;align-items:center;margin-bottom:2mm}'
-    +'.badge{background:#e85d20;color:#fff;border-radius:20px;padding:1px 8px;font-size:8pt;font-weight:800}'
-    +'.badge-inactive{background:#fee2e2;color:#ef4444;border:1px solid #fca5a5;border-radius:20px;padding:1px 8px;font-size:7pt;font-weight:800;margin-right:4px}'
-    +'.badge-sm{background:#e8f0fe;color:#1e3a5f;border-radius:20px;padding:1px 6px;font-size:7pt;font-weight:800}'
-    +'.prog-wrap{height:6px;background:#f0ece8;border-radius:3px;overflow:hidden}'
-    +'.prog-bar{height:100%;background:linear-gradient(90deg,#e85d20,#f07030);border-radius:3px}'
-    +'.subtotal{background:#fff3ee;font-weight:900}'
-    +'.center-cell{text-align:center}'
-    +'.footer{text-align:center;padding:5mm;font-size:8pt;color:#aaa;border-top:2px solid #f0ece8}'
-    +'@page{size:A4;margin:10mm 12mm}@media print{body{background:#fff}.no-print{display:none!important}.page{box-shadow:none}}';
+  // ── CSS ──
+  var css = "@import url(\'https://fonts.googleapis.com/css2?family=Cairo:wght@400;600;700;900&display=swap\');"
+    +"*{box-sizing:border-box;margin:0;padding:0;-webkit-print-color-adjust:exact!important;print-color-adjust:exact!important}"
+    +"body{font-family:\'Cairo\',\'Arial\',sans-serif;direction:"+(ar?'rtl':'ltr')+";color:#111;background:#f0f4f9;font-size:11pt}"
+    +"table{width:100%;border-collapse:collapse;margin-bottom:20px;font-size:10pt}"
+    +"th{font-weight:700}td,th{border-bottom:1px solid #e5e7eb}"
+    +".page{max-width:1100px;margin:0 auto;padding:20px}"
+    +".hero{background:linear-gradient(135deg,#1e3a5f,#2d5a8e);color:#fff;border-radius:14px;padding:20px 24px;display:flex;align-items:center;justify-content:space-between;margin-bottom:18px}"
+    +".hero-title h1{font-size:20pt;font-weight:900;margin-bottom:4px}"
+    +".hero-title p{font-size:10pt;color:#93c5fd}"
+    +".hero-meta{text-align:center;font-size:10pt;color:#bfdbfe}"
+    +".hero-meta strong{display:block;font-size:13pt;color:#fff;font-weight:900}"
+    +".kpi-grid{display:grid;grid-template-columns:repeat(5,1fr);gap:10px;margin-bottom:18px}"
+    +".kpi{background:#fff;border-radius:10px;padding:12px 14px;text-align:center;box-shadow:0 2px 8px rgba(0,0,0,0.07);border:1px solid #e5e7eb}"
+    +".kpi-label{font-size:9pt;color:#6b7280;font-weight:600;margin-bottom:4px}"
+    +".kpi-value{font-size:15pt;font-weight:900}"
+    +".section-title{font-size:13pt;font-weight:900;color:#1e3a5f;margin:18px 0 10px;padding-right:10px;border-right:4px solid #1e3a5f}"
+    +".prog-bar-container{background:#fff;border-radius:12px;padding:16px;margin-bottom:18px;box-shadow:0 2px 8px rgba(0,0,0,0.07)}"
+    +".prog-bar-wrap{background:#e5e7eb;border-radius:8px;height:20px;margin:8px 0}"
+    +".prog-bar-fill{height:100%;border-radius:8px;background:linear-gradient(90deg,#1e3a5f,#2d5a8e)}"
+    +".dist-card{background:#fff;border-radius:12px;padding:14px 18px;margin-bottom:18px;box-shadow:0 2px 8px rgba(0,0,0,0.07)}"
+    +".dist-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-top:10px}"
+    +".dist-item{border-radius:9px;padding:10px 12px}"
+    +".footer{text-align:center;font-size:9pt;color:#9ca3af;margin-top:20px;padding:12px;border-top:1px solid #e5e7eb;display:flex;justify-content:space-between;align-items:center}"
+    +"@page{size:A4 landscape;margin:10mm}"
+    +"@media print{.no-print{display:none!important}}";
 
-  var html = '<!DOCTYPE html><html lang="'+(lang==='en'?'en':'ar')+'" dir="rtl"><head>'
+  // ── HTML ──
+  var html = '<!DOCTYPE html><html lang="'+(ar?'ar':'en')+'" dir="'+(ar?'rtl':'ltr')+'"><head>'
     +'<meta charset="UTF-8"><meta http-equiv="Content-Type" content="text/html; charset=UTF-8">'
     +'<link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;600;700;900&display=swap" rel="stylesheet">'
-    +'<style>'+css+'</style><title>'+(lang==='en'?'ONEIC Report':'تقرير ONEIC — عُمانتل 1')+'</title></head><body><div class="page">'
+    +'<style>'+css+'</style>'
+    +'<title>'+T('تقرير ONEIC — عُمانتل 1','ONEIC Report — Omantel 1')+'</title></head><body><div class="page">'
 
-    // Hero
-    +'<div class="hero"><div class="hero-inner">'
-    +'<div class="hero-logo"><img src="'+LOGO_SRC+'" alt="ONEIC"></div>'
-    +'<div class="hero-title"><h1>'+(lang==='en'?'Omantel Portfolio 1':'محفظة عُمانتل 1')+'</h1><p>Omantel Debt Collection Portfolio — ONEIC</p></div>'
-    +'<div class="hero-meta"><strong>'+date+'</strong>'+(lang==='en'?'Last file update':'آخر تحديث للملف')+'<br>'+String(portCnt.toLocaleString())+' '+(lang==='en'?' account':'حساب')+'</div>'
-    +'</div></div>'
-
-    // شريط الإنجاز
-    +'<div class="prog-strip">'
-    +'<span class="prog-label">🎯 نسبة الإنجاز الكلي من المحفظة</span>'
-    +'<div class="prog-track"><div class="prog-fill" style="width:'+String(pctDone)+'%"></div></div>'
-    +'<span class="prog-pct">'+String(pctDone)+'%</span>'
+    // ── Hero ──
+    +'<div class="hero">'
+      +'<div style="display:flex;align-items:center;gap:14px">'
+        +(LOGO_SRC?'<img src="'+LOGO_SRC+'" style="height:50px;border-radius:8px" alt="ONEIC">':'')
+        +'<div class="hero-title"><h1>'+T('محفظة عُمانتل 1','Omantel Portfolio 1')+'</h1><p>Omantel Debt Collection — ONEIC</p></div>'
+      +'</div>'
+      +'<div class="hero-meta">'
+        +'<strong>'+date+'</strong>'
+        +'<span>'+T('آخر تحديث للملف','Last file update')+'</span><br>'
+        +'<span>'+fmtN(portCnt)+' '+T('حساب','accounts')+'</span>'
+      +'</div>'
     +'</div>'
 
-    // KPI
-    +'<div class="kpi-row">'
-    +'<div class="kpi-card"><div class="kpi-label">'+(lang==='en'?'Portfolio Value':'قيمة المحفظة')+'</div><div class="kpi-value" style="color:#e85d20">'+omrN(portAmt)+' OMR</div></div>'
-    +'<div class="kpi-card"><div class="kpi-label">'+(lang==='en'?'Paid':'المدفوع')+'</div><div class="kpi-value" style="color:#16a34a">'+omrN(grandPaid)+' OMR</div></div>'
-    +'<div class="kpi-card"><div class="kpi-label">'+(lang==='en'?'Adjustments':'التسويات')+'</div><div class="kpi-value" style="color:#d97706">'+omrN(grandAdj)+' OMR</div></div>'
-    +'<div class="kpi-card"><div class="kpi-label">'+(lang==='en'?'Total Collected':'الإجمالي المحصّل')+'</div><div class="kpi-value" style="color:#1e3a5f">'+omrN(grandTotal)+' OMR</div></div>'
+    // ── KPI Cards ──
+    +'<div class="kpi-grid">'
+      +'<div class="kpi"><div class="kpi-label">'+T('المدفوع','Paid')+'</div><div class="kpi-value" style="color:#16a34a">'+omrN(grandPaid)+'</div><div style="font-size:8pt;color:#9ca3af">OMR</div></div>'
+      +'<div class="kpi"><div class="kpi-label">'+T('التسويات','Adjustments')+'</div><div class="kpi-value" style="color:#d97706">'+omrN(grandAdj)+'</div><div style="font-size:8pt;color:#9ca3af">OMR</div></div>'
+      +'<div class="kpi"><div class="kpi-label">'+T('الإجمالي','Grand Total')+'</div><div class="kpi-value" style="color:#1e3a5f">'+omrN(grandTotal)+'</div><div style="font-size:8pt;color:#9ca3af">OMR</div></div>'
+      +'<div class="kpi"><div class="kpi-label">'+T('قيمة المحفظة','Portfolio Value')+'</div><div class="kpi-value" style="color:#e85d20">'+omrN(portAmt)+'</div><div style="font-size:8pt;color:#9ca3af">OMR</div></div>'
+      +'<div class="kpi"><div class="kpi-label">'+T('المتبقي','Remaining')+'</div><div class="kpi-value" style="color:#dc2626">'+omrN(remaining)+'</div><div style="font-size:8pt;color:#9ca3af">OMR</div></div>'
     +'</div>'
 
-    // Section 1
-    +'<div class="s1-wrap">'
-    +'<div class="s1-port">'
-    +'<div class="s1-port-title">'+(lang==='en'?'📋 Portfolio':'📋 المحفظة')+'</div>'
-    +'<div class="s1-port-row blue"><span class="s1-port-label">عدد الحسابات</span><span class="s1-port-value">'+String(portCnt.toLocaleString())+' حساب</span></div>'
-    +'<div class="s1-port-row orange"><span class="s1-port-label">قيمة المحفظة</span><span class="s1-port-value orange">'+omrN(portAmt)+' OMR</span></div>'
-    +'<div style="background:linear-gradient(135deg,#0369a1,#0ea5e9);border-radius:8px;padding:7px 12px;margin-top:6px;display:flex;justify-content:space-between;align-items:center">'
-    +'<span style="color:rgba(255,255,255,0.85);font-weight:700;font-size:9pt">'+(lang==='en'?'Purchase Value (×26%)':'قيمة شراء المديونية (×26%)')+'</span>'
-    +'<span style="color:#fff;font-weight:900;font-size:11pt">2,447,706.777 OMR</span></div>'
-    +'<div style="margin-top:6px"><div style="display:flex;justify-content:space-between;margin-bottom:3px">'
-    +'<span style="font-size:9pt;color:rgba(255,255,255,0.8);font-weight:700">'+(lang==='en'?'Purchase rate of portfolio':'نسبة الشراء من المحفظة')+'</span>'
-    +'<span style="font-size:10pt;color:#fff;font-weight:900">26%</span></div>'
-    +'<div style="background:rgba(255,255,255,0.2);border-radius:4px;height:6px"><div style="width:26%;background:rgba(255,255,255,0.85);height:100%;border-radius:4px"></div></div></div>'
+    // ── نسبة الإنجاز ──
+    +'<div class="prog-bar-container">'
+      +'<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px">'
+        +'<span style="font-weight:900;font-size:12pt;color:#1e3a5f">🎯 '+T('نسبة الإنجاز الكلي من المحفظة','Overall Achievement Rate')+'</span>'
+        +'<span style="font-size:18pt;font-weight:900;color:#1e3a5f">'+pctDone+'%</span>'
+      +'</div>'
+      +'<div class="prog-bar-wrap"><div class="prog-bar-fill" style="width:'+pctDone+'%"></div></div>'
+      +'<div style="display:flex;justify-content:space-between;font-size:9pt;color:#6b7280;margin-top:4px">'
+        +'<span>'+T('الإجمالي المحصّل: ','Total Collected: ')+omrN(grandTotal)+' OMR</span>'
+        +'<span>'+T('قيمة المحفظة: ','Portfolio Value: ')+omrN(portAmt)+' OMR</span>'
+      +'</div>'
     +'</div>'
-    +'<div class="s1-coll">'
-    +'<div class="s1-coll-title">'+(lang==='en'?'💰 Collection':'💰 التحصيل')+'</div>'
-    +s1HTML
-    +'</div></div>'
 
-    // Summary Cards
-    +'<div style="padding:3mm 8mm 1mm;font-size:10pt;font-weight:900;color:#1e3a5f;border-bottom:1px solid #f0ece8">📊 ملخص الأقسام — نسبة المساهمة</div>'
-    +'<div class="sum-grid">'+sumHTML+'</div>'
-
-    // مكاتب أونك
-    +'<div class="section-title"><span>🗺 مكاتب أونك</span><span>المدفوع: '+omrN(govPaid)+' | التسويات: '+omrN(govAdj)+'</span></div>'
-    +'<table class="data-table"><thead><tr><th>#</th><th>المحصّل</th><th>المدفوع</th><th>التسويات</th><th>الإجمالي</th></tr></thead><tbody>'+regsHTML+'</tbody></table>'
-
-    // شركات التحصيل
-    +'<div class="section-title"><span>🏢 شركات التحصيل</span><span>المدفوع: '+omrN(dcPaid)+' | التسويات: '+omrN(dcAdj)+'</span></div>'
-    +'<table class="data-table"><thead><tr><th>#</th><th>الشركة</th><th>المدفوع</th><th>التسويات</th><th>الإجمالي</th></tr></thead><tbody>'+dcHTML+'</tbody></table>'
-
-    // المكتب الرئيسي
-    +'<div class="section-title"><span>🏛 المكتب الرئيسي</span><span>المدفوع: '+omrN(hoPaid)+' | التسويات: '+omrN(hoAdj)+'</span></div>'
-    +'<table class="data-table"><thead><tr><th>#</th><th>القسم</th><th>المدفوع</th><th>التسويات</th><th>الإجمالي</th></tr></thead><tbody>'+hoHTML+'</tbody></table>'
-
-    +'<div style="margin-top:20px;background:#fff;border-radius:12px;padding:14px 18px;border:1px solid #e5e7eb">'
-    +'<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px">'
-    +'<div style="font-size:13pt;font-weight:900;color:#111">'+(lang==='en'?'Account Distribution':'توزيع الحسابات')+'</div>'
-    +'<div style="font-size:11pt;color:#1f2937;font-weight:600">47,963 '+(lang==='en'?'accounts':'حساب')+' &middot; 9,414,256.834 OMR</div>'
+    // ── توزيع الحسابات ──
+    +'<div class="dist-card">'
+      +'<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px">'
+        +'<span style="font-size:13pt;font-weight:900;color:#111">'+T('توزيع الحسابات','Account Distribution')+'</span>'
+        +'<span style="font-size:11pt;color:#1f2937;font-weight:600">47,963 '+T('حساب','accounts')+' &middot; 9,414,256.834 OMR</span>'
+      +'</div>'
+      +'<table style="margin-bottom:0">'
+        +'<thead><tr style="background:#f3f4f6"><th style="padding:7px 12px;font-weight:700;text-align:right">'+T('النوع','Type')+'</th>'
+        +'<th style="padding:7px;text-align:center;font-weight:700">'+T('الحسابات','Accounts')+'</th>'
+        +'<th style="padding:7px;text-align:center;font-weight:700">'+T('النسبة','%')+'</th>'
+        +'<th style="padding:7px;text-align:center;font-weight:700">'+T('قيمة المديونية (OMR)','Debt Value (OMR)')+'</th>'
+        +'<th style="padding:7px;text-align:center;font-weight:700">'+T('النسبة','%')+'</th>'
+        +'</tr></thead><tbody>'
+        +'<tr><td style="padding:7px 12px;font-weight:800;color:#16a34a">'+T('عُمان','Oman')+'</td><td style="text-align:center;font-weight:900;padding:7px">25,599</td><td style="text-align:center;color:#16a34a;font-weight:700;padding:7px">53.4%</td><td style="text-align:center;font-weight:900;padding:7px">4,360,234.212</td><td style="text-align:center;color:#16a34a;font-weight:700;padding:7px">46.3%</td></tr>'
+        +'<tr style="background:#f9fafb"><td style="padding:7px 12px;font-weight:800;color:#2563eb">'+T('وافد','Expat')+'</td><td style="text-align:center;font-weight:900;padding:7px">19,309</td><td style="text-align:center;color:#2563eb;font-weight:700;padding:7px">40.3%</td><td style="text-align:center;font-weight:900;padding:7px">3,058,659.763</td><td style="text-align:center;color:#2563eb;font-weight:700;padding:7px">32.5%</td></tr>'
+        +'<tr><td style="padding:7px 12px;font-weight:800;color:#d97706">'+T('شركات','Enterprise')+'</td><td style="text-align:center;font-weight:900;padding:7px">3,055</td><td style="text-align:center;color:#d97706;font-weight:700;padding:7px">6.4%</td><td style="text-align:center;font-weight:900;padding:7px">1,995,362.859</td><td style="text-align:center;color:#d97706;font-weight:700;padding:7px">21.2%</td></tr>'
+        +'</tbody><tfoot><tr style="background:#1e3a5f"><td style="padding:7px 12px;font-weight:900;color:#fff">'+T('الإجمالي','Total')+'</td>'
+        +'<td style="text-align:center;font-weight:900;color:#fff;padding:7px">47,963</td>'
+        +'<td style="text-align:center;color:#93c5fd;padding:7px">100%</td>'
+        +'<td style="text-align:center;font-weight:900;color:#fff;padding:7px">9,414,256.834</td>'
+        +'<td style="text-align:center;color:#93c5fd;padding:7px">100%</td>'
+        +'</tr></tfoot>'
+      +'</table>'
     +'</div>'
-    +'<table style="width:100%;border-collapse:collapse;font-family:Cairo,sans-serif">'
-    +'<thead><tr style="background:#f3f4f6">'
-    +'<th style="padding:7px 12px;font-weight:700;color:#111;text-align:right;border-bottom:2px solid #e5e7eb">'+(lang==='en'?'Type':'النوع')+'</th>'
-    +'<th style="padding:7px 12px;font-weight:700;color:#111;text-align:center;border-bottom:2px solid #e5e7eb">'+(lang==='en'?'Accounts':'الحسابات')+'</th>'
-    +'<th style="padding:7px 12px;font-weight:700;color:#111;text-align:center;border-bottom:2px solid #e5e7eb">'+(lang==='en'?'Count %':'نسبة')+'</th>'
-    +'<th style="padding:7px 12px;font-weight:700;color:#111;text-align:center;border-bottom:2px solid #e5e7eb">'+(lang==='en'?'Debt Value (OMR)':'قيمة المديونية (OMR)')+'</th>'
-    +'<th style="padding:7px 12px;font-weight:700;color:#111;text-align:center;border-bottom:2px solid #e5e7eb">'+(lang==='en'?'Value %':'نسبة')+'</th>'
-    +'</tr></thead><tbody>'
-    +'<tr><td style="padding:7px 12px;font-weight:800;color:#16a34a;border-bottom:1px solid #e5e7eb">'+(lang==='en'?'Oman':'عُمان')+'</td><td style="text-align:center;font-weight:900;padding:7px">25,599</td><td style="text-align:center;font-weight:700;color:#16a34a;padding:7px">53.4%</td><td style="text-align:center;font-weight:900;padding:7px">4,360,234.212</td><td style="text-align:center;font-weight:700;color:#16a34a;padding:7px">46.3%</td></tr>'
-    +'<tr style="background:#f9fafb"><td style="padding:7px 12px;font-weight:800;color:#2563eb;border-bottom:1px solid #e5e7eb">'+(lang==='en'?'Expat':'وافد')+'</td><td style="text-align:center;font-weight:900;padding:7px">19,309</td><td style="text-align:center;font-weight:700;color:#2563eb;padding:7px">40.3%</td><td style="text-align:center;font-weight:900;padding:7px">3,058,659.763</td><td style="text-align:center;font-weight:700;color:#2563eb;padding:7px">32.5%</td></tr>'
-    +'<tr><td style="padding:7px 12px;font-weight:800;color:#d97706;border-bottom:1px solid #e5e7eb">'+(lang==='en'?'Enterprise':'شركات')+'</td><td style="text-align:center;font-weight:900;padding:7px">3,055</td><td style="text-align:center;font-weight:700;color:#d97706;padding:7px">6.4%</td><td style="text-align:center;font-weight:900;padding:7px">1,995,362.859</td><td style="text-align:center;font-weight:700;color:#d97706;padding:7px">21.2%</td></tr>'
-    +'</tbody><tfoot><tr style="background:#1e3a5f">'
-    +'<td style="padding:7px 12px;font-weight:900;color:#fff">'+(lang==='en'?'Total':'الإجمالي')+'</td>'
-    +'<td style="text-align:center;font-weight:900;color:#fff;padding:7px">47,963</td>'
-    +'<td style="text-align:center;color:#93c5fd;padding:7px">100%</td>'
-    +'<td style="text-align:center;font-weight:900;color:#fff;padding:7px">9,414,256.834</td>'
-    +'<td style="text-align:center;color:#93c5fd;padding:7px">100%</td>'
-    +'</tr></tfoot></table></div>'
 
-    +'<div class="footer">'+(lang==='en'?'ONEIC — Omantel Debt Collection Dashboard © 2026':'ONEIC — لوحة تحكم إدارة تحصيل الديون © 2026')+' · '+printDate+'<span style="margin-right:auto;font-size:8pt;color:#aaa">Programming and design by Sulaiman Al-Harrasi — 16296</span><button class="no-print" onclick="window.print()" style="margin-right:10px;background:#1e3a5f;color:#fff;border:none;border-radius:8px;padding:6px 18px;cursor:pointer;font-family:Cairo,sans-serif;font-size:10pt">🖨 طباعة</button></div>'
+    // ── شركات التحصيل ──
+    +'<div class="section-title">🏢 '+T('شركات التحصيل','Debt Collection Companies')+'</div>'
+    +'<table>'+TH+'<tbody>'+dcRows+'</tbody>'
+      +'<tfoot><tr style="background:#e0f2f1;font-weight:900">'
+        +'<td style="padding:9px 12px">'+T('إجمالي شركات التحصيل','DC Total')+'</td>'
+        +'<td style="text-align:center;color:#16a34a;padding:9px">'+omrN(dcPaid)+'</td>'
+        +'<td style="text-align:center;color:#d97706;padding:9px">'+omrN(dcAdj)+'</td>'
+        +'<td style="text-align:center;font-weight:900;padding:9px">'+omrN(dcPaid+dcAdj)+'</td>'
+        +'<td colspan="3"></td>'
+      +'</tr></tfoot>'
+    +'</table>'
+
+    // ── المكتب الرئيسي ──
+    +'<div class="section-title">🏛️ '+T('المكتب الرئيسي','Head Office')+'</div>'
+    +'<table>'+TH+'<tbody>'+hoRows+'</tbody>'
+      +'<tfoot><tr style="background:#ede9fe;font-weight:900">'
+        +'<td style="padding:9px 12px">'+T('إجمالي المكتب الرئيسي','HO Total')+'</td>'
+        +'<td style="text-align:center;color:#16a34a;padding:9px">'+omrN(hoPaid)+'</td>'
+        +'<td style="text-align:center;color:#d97706;padding:9px">'+omrN(hoAdj)+'</td>'
+        +'<td style="text-align:center;font-weight:900;padding:9px">'+omrN(hoPaid+hoAdj)+'</td>'
+        +'<td colspan="3"></td>'
+      +'</tr></tfoot>'
+    +'</table>'
+
+    // ── مكاتب أونك ──
+    +'<div class="section-title">🗺️ '+T('مكاتب أونك','ONEIC Regional Offices')+'</div>'
+    +'<table>'+TH+'<tbody>'+regRows+'</tbody>'
+      +'<tfoot><tr style="background:#fef3c7;font-weight:900">'
+        +'<td style="padding:9px 12px">'+T('إجمالي المناطق','Regions Total')+'</td>'
+        +'<td style="text-align:center;color:#16a34a;padding:9px">'+omrN(govPaid)+'</td>'
+        +'<td style="text-align:center;color:#d97706;padding:9px">'+omrN(govAdj)+'</td>'
+        +'<td style="text-align:center;font-weight:900;padding:9px">'+omrN(govPaid+govAdj)+'</td>'
+        +'<td colspan="3"></td>'
+      +'</tr></tfoot>'
+    +'</table>'
+
+    // ── Footer ──
+    +'<div class="footer">'
+      +'<span>'+T('ONEIC — لوحة تحكم إدارة تحصيل الديون © 2026','ONEIC — Debt Collection Management Dashboard © 2026')+' · '+printDate+'</span>'
+      +'<button class="no-print" onclick="window.print()" style="background:#1e3a5f;color:#fff;border:none;border-radius:8px;padding:7px 20px;cursor:pointer;font-family:Cairo,sans-serif;font-size:10pt">🖨 '+T('طباعة','Print')+'</button>'
+      +'<span style="font-size:9pt;color:#bbb">Programming and design by Sulaiman Al-Harrasi — 16296</span>'
+    +'</div>'
+
     +'</div></body></html>';
 
-  w.document.write(html);
-  w.document.close();
+  w.document.open(); w.document.write(html); w.document.close();
+  setTimeout(function(){ try{ w.document.title = (lang==="en"?"ONEIC Report":"تقرير ONEIC"); }catch(e){} }, 500);
 }
-
 
 function useSmartNotifications(gTotal, hoPrincipal, bestDayEver, currentDayTotal) {
   const { lang } = useLang();
