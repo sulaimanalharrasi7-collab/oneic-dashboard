@@ -12279,32 +12279,39 @@ export default function Dashboard() {
 
               {/* بطاقة توزيع الحسابات — مجمّدة من ملف 2026-08-04 */}
         <div style={{background:"#fff",borderRadius:12,padding:"12px 16px",marginBottom:small?10:12,boxShadow:"0 2px 10px rgba(0,0,0,0.07)",border:"1px solid #e5e7eb"}}>
-          <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",marginBottom:10}}>
-            <div>
-              <div style={{fontSize:small?12:14,fontWeight:900,color:"#1e3a5f"}}>{lang==='en'?'Account Distribution':'توزيع الحسابات'}</div>
-              <div style={{fontSize:small?11:13,color:"#1f2937",fontWeight:600,marginTop:2}}>47,963 {lang==='en'?'accounts':'حساب'} · 9,414,256.834 OMR</div>
-            </div>
-            <div style={{fontSize:18}}>📊</div>
+          <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",marginBottom:12}}>
+            <div style={{fontSize:small?12:14,fontWeight:900,color:"#111"}}>{lang==='en'?'Account Distribution':'توزيع الحسابات'}</div>
+            <div style={{fontSize:small?11:13,color:"#1f2937",fontWeight:600}}>47,963 {lang==='en'?'accounts':'حساب'} · 9,414,256.834 OMR</div>
           </div>
-          <div style={{display:"grid",gridTemplateColumns:"repeat(3,1fr)",gap:8}}>
+          <div style={{display:"grid",gridTemplateColumns:"repeat(3,1fr)",gap:10}}>
             {[
-              {label:lang==='en'?'Oman':'عُمان',       count:25599, principal:4360234.212, color:"#16a34a", light:"#dcfce7", pct:53.4},
-              {label:lang==='en'?'Expat':'وافد',       count:19309, principal:3058659.763, color:"#2563eb", light:"#dbeafe", pct:40.3},
-              {label:lang==='en'?'Enterprise':'شركات', count:3055,  principal:1995362.859, color:"#d97706", light:"#fef3c7", pct:6.4},
+              {label:lang==='en'?'Oman':'عُمان',       count:25599, principal:4360234.212, color:"#16a34a", light:"#dcfce7", cntPct:53.4, valPct:46.3},
+              {label:lang==='en'?'Expat':'وافد',       count:19309, principal:3058659.763, color:"#2563eb", light:"#dbeafe", cntPct:40.3, valPct:32.5},
+              {label:lang==='en'?'Enterprise':'شركات', count:3055,  principal:1995362.859, color:"#d97706", light:"#fef3c7", cntPct:6.4,  valPct:21.2},
             ].map(item=>(
               <div key={item.label} style={{background:item.light,borderRadius:10,padding:"10px 12px",border:`1px solid ${item.color}20`}}>
-                <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:5}}>
-                  <div style={{fontSize:small?11:13,fontWeight:800,color:item.color}}>{item.label}</div>
-                  <div style={{fontSize:11,color:item.color,background:`${item.color}15`,borderRadius:4,padding:"2px 7px",fontWeight:700}}>{item.pct}%</div>
+                {/* العنوان */}
+                <div style={{fontSize:small?12:14,fontWeight:800,color:item.color,marginBottom:8,borderBottom:`1px solid ${item.color}25`,paddingBottom:6}}>{item.label}</div>
+
+                {/* Accounts */}
+                <div style={{fontSize:small?10:11,fontWeight:700,color:"#111",marginBottom:2}}>{lang==='en'?'Accounts':'حساب'}</div>
+                <div style={{fontSize:small?16:20,fontWeight:900,color:"#111",marginBottom:4}}>{item.count.toLocaleString()}</div>
+                <div style={{display:"flex",alignItems:"center",gap:6,marginBottom:8}}>
+                  <div style={{flex:1,background:"rgba(0,0,0,0.1)",borderRadius:3,height:5}}>
+                    <div style={{width:item.cntPct+'%',height:"100%",borderRadius:3,background:item.color}}/>
+                  </div>
+                  <div style={{fontSize:11,fontWeight:700,color:item.color,minWidth:32}}>{item.cntPct}%</div>
                 </div>
-                <div style={{fontSize:small?18:22,fontWeight:900,color:"#111"}}>{item.count.toLocaleString()}</div>
-                <div style={{fontSize:small?11:12,color:"#111",fontWeight:700,marginBottom:6}}>{lang==='en'?'accounts':'حساب'}</div>
-                <div style={{background:"#e5e7eb",borderRadius:3,height:3,marginBottom:6}}>
-                  <div style={{width:item.pct+'%',height:"100%",borderRadius:3,background:item.color}}/>
+
+                {/* Debt Value */}
+                <div style={{fontSize:small?10:11,fontWeight:700,color:"#111",marginBottom:2}}>{lang==='en'?'Debt Value':'قيمة المديونية'}</div>
+                <div style={{fontSize:small?12:15,fontWeight:900,color:"#111",marginBottom:1}}>{item.principal.toLocaleString('en',{minimumFractionDigits:3,maximumFractionDigits:3})} <span style={{fontSize:10,fontWeight:700,color:"#111"}}>OMR</span></div>
+                <div style={{display:"flex",alignItems:"center",gap:6}}>
+                  <div style={{flex:1,background:"rgba(0,0,0,0.1)",borderRadius:3,height:5}}>
+                    <div style={{width:item.valPct+'%',height:"100%",borderRadius:3,background:item.color,opacity:0.7}}/>
+                  </div>
+                  <div style={{fontSize:11,fontWeight:700,color:item.color,minWidth:32}}>{item.valPct}%</div>
                 </div>
-                <div style={{fontSize:small?11:12,color:"#111",fontWeight:700,marginBottom:1}}>{lang==='en'?'Debt Value':'قيمة المديونية'}</div>
-                <div style={{fontSize:small?13:16,fontWeight:900,color:item.color}}>{item.principal.toLocaleString('en',{minimumFractionDigits:3,maximumFractionDigits:3})}</div>
-                <div style={{fontSize:small?11:12,color:"#111",fontWeight:700}}>OMR</div>
               </div>
             ))}
           </div>
