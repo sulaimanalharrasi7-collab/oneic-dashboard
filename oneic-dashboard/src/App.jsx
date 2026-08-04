@@ -9776,7 +9776,7 @@ function handlePrint(data, lang='ar') {
   var pctDone    = portAmt>0 ? Math.min(100,(grandTotal/portAmt*100)).toFixed(1) : '0';
   var remaining  = (data.totalPortfolio&&data.totalPortfolio.outstanding!=null) ? data.totalPortfolio.outstanding : (portAmt - grandTotal - ONEIC_DISC);
   var date      = data.uploadDate||new Date().toISOString().split('T')[0];
-  var printDate = new Date().toLocaleDateString('ar-OM',{year:'numeric',month:'long',day:'numeric'});
+  var printDate = new Date().toLocaleDateString(lang==='en'?'en-US':'ar-OM',{year:'numeric',month:'long',day:'numeric'});
   var LOGO_SRC  = typeof LOGO!=='undefined'?LOGO:'';
 
   // -- Section 1 rows --
@@ -9984,6 +9984,30 @@ function handlePrint(data, lang='ar') {
     // المكتب الرئيسي
     +'<div class="section-title"><span>🏛 المكتب الرئيسي</span><span>المدفوع: '+omrN(hoPaid)+' | التسويات: '+omrN(hoAdj)+'</span></div>'
     +'<table class="data-table"><thead><tr><th>#</th><th>القسم</th><th>المدفوع</th><th>التسويات</th><th>الإجمالي</th></tr></thead><tbody>'+hoHTML+'</tbody></table>'
+
+    +'<div style="margin-top:20px;background:#fff;border-radius:12px;padding:14px 18px;border:1px solid #e5e7eb">'
+    +'<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px">'
+    +'<div style="font-size:13pt;font-weight:900;color:#111">'+(lang==='en'?'Account Distribution':'توزيع الحسابات')+'</div>'
+    +'<div style="font-size:11pt;color:#1f2937;font-weight:600">47,963 '+(lang==='en'?'accounts':'حساب')+' &middot; 9,414,256.834 OMR</div>'
+    +'</div>'
+    +'<table style="width:100%;border-collapse:collapse;font-family:Cairo,sans-serif">'
+    +'<thead><tr style="background:#f3f4f6">'
+    +'<th style="padding:7px 12px;font-weight:700;color:#111;text-align:right;border-bottom:2px solid #e5e7eb">'+(lang==='en'?'Type':'النوع')+'</th>'
+    +'<th style="padding:7px 12px;font-weight:700;color:#111;text-align:center;border-bottom:2px solid #e5e7eb">'+(lang==='en'?'Accounts':'الحسابات')+'</th>'
+    +'<th style="padding:7px 12px;font-weight:700;color:#111;text-align:center;border-bottom:2px solid #e5e7eb">'+(lang==='en'?'Count %':'نسبة')+'</th>'
+    +'<th style="padding:7px 12px;font-weight:700;color:#111;text-align:center;border-bottom:2px solid #e5e7eb">'+(lang==='en'?'Debt Value (OMR)':'قيمة المديونية (OMR)')+'</th>'
+    +'<th style="padding:7px 12px;font-weight:700;color:#111;text-align:center;border-bottom:2px solid #e5e7eb">'+(lang==='en'?'Value %':'نسبة')+'</th>'
+    +'</tr></thead><tbody>'
+    +'<tr><td style="padding:7px 12px;font-weight:800;color:#16a34a;border-bottom:1px solid #e5e7eb">'+(lang==='en'?'Oman':'عُمان')+'</td><td style="text-align:center;font-weight:900;padding:7px">25,599</td><td style="text-align:center;font-weight:700;color:#16a34a;padding:7px">53.4%</td><td style="text-align:center;font-weight:900;padding:7px">4,360,234.212</td><td style="text-align:center;font-weight:700;color:#16a34a;padding:7px">46.3%</td></tr>'
+    +'<tr style="background:#f9fafb"><td style="padding:7px 12px;font-weight:800;color:#2563eb;border-bottom:1px solid #e5e7eb">'+(lang==='en'?'Expat':'وافد')+'</td><td style="text-align:center;font-weight:900;padding:7px">19,309</td><td style="text-align:center;font-weight:700;color:#2563eb;padding:7px">40.3%</td><td style="text-align:center;font-weight:900;padding:7px">3,058,659.763</td><td style="text-align:center;font-weight:700;color:#2563eb;padding:7px">32.5%</td></tr>'
+    +'<tr><td style="padding:7px 12px;font-weight:800;color:#d97706;border-bottom:1px solid #e5e7eb">'+(lang==='en'?'Enterprise':'شركات')+'</td><td style="text-align:center;font-weight:900;padding:7px">3,055</td><td style="text-align:center;font-weight:700;color:#d97706;padding:7px">6.4%</td><td style="text-align:center;font-weight:900;padding:7px">1,995,362.859</td><td style="text-align:center;font-weight:700;color:#d97706;padding:7px">21.2%</td></tr>'
+    +'</tbody><tfoot><tr style="background:#1e3a5f">'
+    +'<td style="padding:7px 12px;font-weight:900;color:#fff">'+(lang==='en'?'Total':'الإجمالي')+'</td>'
+    +'<td style="text-align:center;font-weight:900;color:#fff;padding:7px">47,963</td>'
+    +'<td style="text-align:center;color:#93c5fd;padding:7px">100%</td>'
+    +'<td style="text-align:center;font-weight:900;color:#fff;padding:7px">9,414,256.834</td>'
+    +'<td style="text-align:center;color:#93c5fd;padding:7px">100%</td>'
+    +'</tr></tfoot></table></div>'
 
     +'<div class="footer">'+(lang==='en'?'ONEIC — Omantel Debt Collection Dashboard © 2026':'ONEIC — لوحة تحكم إدارة تحصيل الديون © 2026')+' · '+printDate+'<span style="margin-right:auto;font-size:8pt;color:#aaa">Programming and design by Sulaiman Al-Harrasi — 16296</span><button class="no-print" onclick="window.print()" style="margin-right:10px;background:#1e3a5f;color:#fff;border:none;border-radius:8px;padding:6px 18px;cursor:pointer;font-family:Cairo,sans-serif;font-size:10pt">🖨 طباعة</button></div>'
     +'</div></body></html>';
@@ -12281,7 +12305,7 @@ export default function Dashboard() {
         <div style={{background:"#fff",borderRadius:12,padding:"12px 16px",marginBottom:small?10:12,boxShadow:"0 2px 10px rgba(0,0,0,0.07)",border:"1px solid #e5e7eb"}}>
           <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",marginBottom:12}}>
             <div style={{fontSize:small?12:14,fontWeight:900,color:"#111"}}>{lang==='en'?'Account Distribution':'توزيع الحسابات'}</div>
-            <div style={{fontSize:small?11:13,color:"#1f2937",fontWeight:600}}>47,963 {lang==='en'?'accounts':'حساب'} · 9,414,256.834 OMR</div>
+            <div style={{fontSize:small?10:12,color:"#1f2937",fontWeight:600}}>47,963 {lang==='en'?'accounts':'حساب'} · 9,414,256.834 OMR</div>
           </div>
           <div style={{display:"grid",gridTemplateColumns:"repeat(3,1fr)",gap:10}}>
             {[
@@ -12300,7 +12324,7 @@ export default function Dashboard() {
                   <div style={{flex:1,background:"rgba(0,0,0,0.1)",borderRadius:3,height:5}}>
                     <div style={{width:item.cntPct+'%',height:"100%",borderRadius:3,background:item.color}}/>
                   </div>
-                  <div style={{fontSize:11,fontWeight:700,color:item.color,minWidth:32}}>{item.cntPct}%</div>
+                  <div style={{fontSize:13,fontWeight:800,color:item.color,minWidth:34}}>{item.cntPct}%</div>
                 </div>
 
                 {/* Debt Value */}
@@ -12310,7 +12334,7 @@ export default function Dashboard() {
                   <div style={{flex:1,background:"rgba(0,0,0,0.1)",borderRadius:3,height:5}}>
                     <div style={{width:item.valPct+'%',height:"100%",borderRadius:3,background:item.color,opacity:0.7}}/>
                   </div>
-                  <div style={{fontSize:11,fontWeight:700,color:item.color,minWidth:32}}>{item.valPct}%</div>
+                  <div style={{fontSize:13,fontWeight:800,color:item.color,minWidth:34}}>{item.valPct}%</div>
                 </div>
               </div>
             ))}
