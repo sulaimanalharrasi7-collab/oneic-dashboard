@@ -12562,7 +12562,7 @@ export default function Dashboard() {
                           <rect x={x0}       y={yB-bH(sarhaan[i])} width={bW} height={bH(sarhaan[i])} fill="#3b82f6" rx="2" opacity="0.9"/>
                           <rect x={x0+bW+2}  y={yB-bH(coll[i])}    width={bW} height={bH(coll[i])}    fill="#f97316" rx="2" opacity="0.9"/>
                           <rect x={x0+bW*2+4}y={yB-bH(dc[i])}      width={bW} height={bH(dc[i])}      fill="#22c55e" rx="2" opacity="0.9"/>
-                          <text x={x0+bW*1.5+2} y={yB+14} textAnchor="middle" fontSize="8.5" fill="#6b7280">{m}</text>
+                          <text x={x0+bW*1.5+2} y={yB+16} textAnchor="middle" fontSize="11" fill="#111" fontWeight="700">{m}</text>
                         </g>;
                       })}
                       <path d={pts.map(function(p,i){return (i===0?"M":"L")+p.x+","+p.y;}).join(" ")} fill="none" stroke="#2563eb" strokeWidth="2.5" strokeLinejoin="round"/>
