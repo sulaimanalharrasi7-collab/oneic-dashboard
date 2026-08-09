@@ -10192,6 +10192,7 @@ export default function Dashboard() {
   const [showPerf,     setShowPerf]     = useState(false);
   const [perfTip,      setPerfTip]      = useState(null);
   const [showAddData,  setShowAddData]  = useState(false);
+  const [perfEdit,     setPerfEdit]     = useState(null);
   const [perfFull,     setPerfFull]     = useState(false);
   const [showHistory, setShowHistory] = useState(false);
   const [unlocked, setUnlocked] = useState(false);
@@ -11664,6 +11665,7 @@ export default function Dashboard() {
     <LangContext.Provider value={langCtx}>
     <>
     <div style={{
+      height:"100vh", display:"flex", flexDirection:"column",
       background:"#f0f4f9",
       fontFamily:"'Cairo','Tajawal','Segoe UI',sans-serif",
       direction:"rtl", color:"#111", overflow:"hidden"
@@ -12481,12 +12483,26 @@ export default function Dashboard() {
                   var sarhaan=[1500,6500,5500,9400,17200,26600,30800];
                   var coll=[7100,5400,3600,5000,3900,3000,1800];
                   var dc=[10400,10600,6800,9400,22300,26100,30600];
-                  var html='<!DOCTYPE html><html lang="'+(ar?'ar':'en')+'" dir="'+(ar?'rtl':'ltr')+'"><head><meta charset="UTF-8"><link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;700;900&display=swap" rel="stylesheet"><style>*{box-sizing:border-box;margin:0;padding:0;-webkit-print-color-adjust:exact!important}body{font-family:Cairo,sans-serif;padding:24px;direction:'+(ar?'rtl':'ltr')+'}h1{font-size:18px;color:#1e3a5f}table{width:100%;border-collapse:collapse;margin-top:16px}th{background:#1e3a5f;color:#fff;padding:9px;font-weight:700;text-align:center}td{padding:8px;border-bottom:1px solid #e5e7eb}@media print{.np{display:none}@page{size:A4 landscape;margin:12mm}}</style></head><body>'
-                    +'<div style="display:flex;justify-content:space-between;border-bottom:3px solid #e85d20;padding-bottom:10px;margin-bottom:16px"><h1>📈 '+T('تقرير الأداء التحصيلي','Collection Performance Report')+'</h1><button class="np" onclick="window.print()" style="background:#1e3a5f;color:#fff;border:none;border-radius:8px;padding:8px 20px;cursor:pointer;font-family:Cairo,sans-serif">🖨</button></div>'
+                  var html='<!DOCTYPE html><html lang="'+(ar?'ar':'en')+'" dir="'+(ar?'rtl':'ltr')+'"><head><meta charset="UTF-8"><link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;700;900&display=swap" rel="stylesheet"><style>*{box-sizing:border-box;margin:0;padding:0;-webkit-print-color-adjust:exact!important}body{font-family:Cairo,sans-serif;padding:24px;direction:'+(ar?'rtl':'ltr')+'}h1{font-size:18px;color:#1e3a5f}.legend{display:flex;gap:14px;flex-wrap:wrap;margin:10px 0;font-size:10pt;font-weight:700}.legend-item{display:flex;align-items:center;gap:5px}.swatch{width:13px;height:13px;border-radius:2px}.chart-box{border:1px solid #e5e7eb;border-radius:10px;padding:12px;margin-bottom:20px;background:#fafafa}table{width:100%;border-collapse:collapse;margin-top:16px}th{background:#1e3a5f;color:#fff;padding:9px;font-weight:700;text-align:center}td{padding:8px;border-bottom:1px solid #e5e7eb}@media print{.np{display:none}@page{size:A4 landscape;margin:12mm}}</style></head><body>'
+                    +'<div style="display:flex;justify-content:space-between;border-bottom:3px solid #e85d20;padding-bottom:10px;margin-bottom:12px"><h1>📈 '+T('تقرير الأداء التحصيلي','Collection Performance Report')+'<span style="font-size:11px;color:#6b7280;margin-right:10px">'+T('يناير — يوليو 2026','January — July 2026')+'</span></h1><button class="np" onclick="window.print()" style="background:#1e3a5f;color:#fff;border:none;border-radius:8px;padding:8px 20px;cursor:pointer;font-family:Cairo,sans-serif">🖨</button></div>'
+                    // Legend
+                    +'<div class="legend"><div class="legend-item"><svg width="26" height="12"><line x1="0" y1="6" x2="26" y2="6" stroke="#2563eb" stroke-width="2.5"/><circle cx="13" cy="6" r="3.5" fill="#2563eb"/></svg><span>'+T('الإجمالي الشهري','Monthly Total')+'</span></div><div class="legend-item"><span class="swatch" style="background:#3b82f6"></span><span>Legal DR. Sarhaan</span></div><div class="legend-item"><span class="swatch" style="background:#f97316"></span><span>'+T('المحصّلون','Collectors')+'</span></div><div class="legend-item"><span class="swatch" style="background:#22c55e"></span><span>'+T('شركات التحصيل','DC Company')+'</span></div></div>'
+                    // Chart SVG
+                    +(function(){
+                      var cH=200,padL=58,grpW=100,bW=18,yB=20+cH,W=padL+months.length*grpW+16;
+                      var bH=function(v){return cH*v/Math.max.apply(null,mTotal);};
+                      var pts=months.map(function(_,i){return {x:padL+i*grpW+12+bW*1.5,y:20+cH*(1-mTotal[i]/Math.max.apply(null,mTotal)),v:mTotal[i]};});
+                      var grid='';[0,.25,.5,.75,1].forEach(function(r){var y=20+cH*(1-r);grid+='<line x1="'+padL+'" y1="'+y+'" x2="'+(padL+months.length*grpW)+'" y2="'+y+'" stroke="#e5e7eb" stroke-width="1"/><text x="'+(padL-4)+'" y="'+(y+4)+'" text-anchor="end" font-size="8" fill="#9ca3af">'+Math.round(Math.max.apply(null,mTotal)*r/1000)+'k</text>';});
+                      var bars='';months.forEach(function(m,i){var x0=padL+i*grpW+10;bars+='<rect x="'+x0+'" y="'+(yB-bH(sarhaan[i]))+'" width="'+bW+'" height="'+bH(sarhaan[i])+'" fill="#3b82f6" rx="2"/><rect x="'+(x0+bW+2)+'" y="'+(yB-bH(coll[i]))+'" width="'+bW+'" height="'+bH(coll[i])+'" fill="#f97316" rx="2"/><rect x="'+(x0+bW*2+4)+'" y="'+(yB-bH(dc[i]))+'" width="'+bW+'" height="'+bH(dc[i])+'" fill="#22c55e" rx="2"/><text x="'+(x0+bW*1.5+2)+'" y="'+(yB+14)+'" text-anchor="middle" font-size="8.5" fill="#6b7280">'+m+'</text>';});
+                      var line=pts.map(function(p,i){return (i===0?'M':'L')+p.x+','+p.y;}).join(' ');
+                      var dots='';pts.forEach(function(p){dots+='<circle cx="'+p.x+'" cy="'+p.y+'" r="5" fill="#fff" stroke="#2563eb" stroke-width="2.5"/><text x="'+p.x+'" y="'+(p.y-9)+'" text-anchor="middle" font-size="8" fill="#1e3a5f" font-weight="800">'+p.v.toLocaleString()+'</text>';});
+                      return '<div class="chart-box"><svg width="'+W+'" height="'+(cH+50)+'" style="font-family:Cairo,sans-serif;display:block;width:100%">'+grid+bars+'<path d="'+line+'" fill="none" stroke="#2563eb" stroke-width="2.5" stroke-linejoin="round"/>'+dots+'</svg></div>';
+                    })()
+                    +'<div style="font-size:12pt;font-weight:900;color:#1e3a5f;margin-bottom:8px">'+T('ملخص الأداء الشهري','Monthly Performance Summary')+'</div>'
                     +'<table><thead><tr><th>'+T('الشهر','Month')+'</th><th>Legal DR. Sarhaan</th><th>'+T('المحصّلون','Collectors')+'</th><th>'+T('شركات التحصيل','DC Company')+'</th><th>'+T('الإجمالي','Total')+'</th></tr></thead><tbody>'
                     +months.map(function(m,i){return '<tr style="background:'+(i%2===0?'#fff':'#f3f4f6')+'"><td style="padding:8px 12px;font-weight:700;color:#1e3a5f">'+m+'</td><td style="text-align:center;color:#3b82f6;font-weight:700;padding:8px">'+sarhaan[i].toLocaleString()+'</td><td style="text-align:center;color:#f97316;font-weight:700;padding:8px">'+coll[i].toLocaleString()+'</td><td style="text-align:center;color:#22c55e;font-weight:700;padding:8px">'+dc[i].toLocaleString()+'</td><td style="text-align:center;font-weight:900;color:#1e3a5f;padding:8px">'+mTotal[i].toLocaleString()+'</td></tr>';}).join('')
                     +'<tr style="background:#1e3a5f;color:#fff;font-weight:900"><td style="padding:8px 12px">'+T('الإجمالي','Total')+'</td><td style="text-align:center;padding:8px">97,500</td><td style="text-align:center;padding:8px">30,800</td><td style="text-align:center;padding:8px">116,200</td><td style="text-align:center;padding:8px">242,526</td></tr>'
-                    +'</tbody></table><div style="margin-top:16px;font-size:9pt;color:#9ca3af;text-align:center">Programming and design by Sulaiman Al-Harrasi — 16296 · ONEIC © 2026</div></body></html>';
+                    +'</tbody></table><div style="margin-top:16px;font-size:9pt;color:#9ca3af;text-align:center;border-top:1px solid #e5e7eb;padding-top:10px">Programming and design by Sulaiman Al-Harrasi — 16296 · ONEIC © 2026</div></body></html>';
                   w.document.write(html); w.document.close();
                 }} style={{background:"rgba(255,255,255,0.15)",color:"#fff",border:"1px solid rgba(255,255,255,0.25)",borderRadius:8,padding:"6px 12px",fontSize:11,fontWeight:700,cursor:"pointer"}}>
                   {"🖨 "}{lang==='ar'?"طباعة":"Print"}
@@ -12562,10 +12578,10 @@ export default function Dashboard() {
                       <div style={{position:"absolute",top:20,right:20,background:"#1e3a5f",color:"#fff",borderRadius:12,padding:"12px 16px",fontSize:11,minWidth:190,boxShadow:"0 8px 24px rgba(0,0,0,0.3)",zIndex:10}}>
                         <div style={{fontWeight:900,fontSize:13,borderBottom:"1px solid rgba(255,255,255,0.2)",paddingBottom:6,marginBottom:8}}>{"📅 "}{perfTip.m}</div>
                         {[
-                          {l:lang==='ar'?"الإجمالي":"Total",v:perfTip.v,c:"#93c5fd"},
                           {l:"Legal DR. Sarhaan",v:perfTip.s,c:"#60a5fa"},
                           {l:lang==='ar'?"المحصّلون":"Collectors",v:perfTip.c,c:"#fb923c"},
                           {l:lang==='ar'?"شركات التحصيل":"DC Company",v:perfTip.d,c:"#4ade80"},
+                          {l:lang==='ar'?"الإجمالي":"Total",v:perfTip.v,c:"#93c5fd"},
                         ].map(function(x){return (
                           <div key={x.l} style={{display:"flex",justifyContent:"space-between",gap:12,marginBottom:4}}>
                             <span style={{color:"#bfdbfe",fontSize:10}}>{x.l}</span>
@@ -12583,24 +12599,30 @@ export default function Dashboard() {
               <div id="perf-table">
                 <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:8}}>
                   <div style={{fontSize:12,fontWeight:900,color:"#1e3a5f"}}>{lang==='ar'?"ملخص الأداء الشهري":"Monthly Performance Summary"}</div>
-                  <button onClick={function(){setShowAddData(true);}} style={{background:"#1e3a5f",color:"#fff",border:"none",borderRadius:8,padding:"5px 12px",fontSize:10.5,fontWeight:700,cursor:"pointer",display:"flex",alignItems:"center",gap:4}}>
+                  <button onClick={function(){setShowAddData(true);setPerfEdit(null);}} style={{background:"#1e3a5f",color:"#fff",border:"none",borderRadius:8,padding:"5px 12px",fontSize:10.5,fontWeight:700,cursor:"pointer",display:"flex",alignItems:"center",gap:4}}>
                     {"➕ "}{lang==='ar'?"إضافة بيانات":"Add Data"}
                   </button>
                 </div>
                 <table style={{width:"100%",borderCollapse:"collapse",fontSize:10.5}}>
                   <thead>
                     <tr style={{background:"#1e3a5f",color:"#fff"}}>
-                      {[lang==='ar'?"الشهر":"Month","Legal DR. Sarhaan",lang==='ar'?"المحصّلون":"Collectors",lang==='ar'?"شركات التحصيل":"DC Co.",lang==='ar'?"الإجمالي":"Total"].map(function(h){return <th key={h} style={{padding:"7px 10px",textAlign:"center",fontWeight:700}}>{h}</th>;})}
+                      {[lang==='ar'?"الشهر":"Month","Legal DR. Sarhaan",lang==='ar'?"المحصّلون":"Collectors",lang==='ar'?"شركات التحصيل":"DC Co.",lang==='ar'?"الإجمالي":"Total",""].map(function(h){return <th key={h} style={{padding:"7px 10px",textAlign:"center",fontWeight:700}}>{h}</th>;})}
                     </tr>
                   </thead>
                   <tbody>
                     {(lang==='ar'?['يناير','فبراير','مارس','أبريل','مايو','يونيو','يوليو']:['January','February','March','April','May','June','July']).map(function(m,i){return (
                       <tr key={m} style={{background:i%2===0?"#fff":"#f3f4f6"}}>
-                        <td style={{padding:"7px 10px",textAlign:"center",fontWeight:700,color:"#1e3a5f"}}>{m}</td>
+                        <td style={{padding:"7px 10px",textAlign:"center",fontWeight:900,color:"#111"}}>{m}</td>
                         <td style={{padding:"7px 10px",textAlign:"center",color:"#3b82f6",fontWeight:700}}>{[1500,6500,5500,9400,17200,26600,30800][i].toLocaleString()}</td>
                         <td style={{padding:"7px 10px",textAlign:"center",color:"#f97316",fontWeight:700}}>{[7100,5400,3600,5000,3900,3000,1800][i].toLocaleString()}</td>
                         <td style={{padding:"7px 10px",textAlign:"center",color:"#22c55e",fontWeight:700}}>{[10400,10600,6800,9400,22300,26100,30600][i].toLocaleString()}</td>
                         <td style={{padding:"7px 10px",textAlign:"center",fontWeight:900,color:"#1e3a5f"}}>{[19013,22013,15859,23421,43353,55616,63251][i].toLocaleString()}</td>
+                        <td style={{padding:"4px 8px",textAlign:"center"}}>
+                          <div style={{display:"flex",gap:4,justifyContent:"center"}}>
+                            <button onClick={function(){setPerfEdit(i);setShowAddData(true);}} title={lang==='ar'?"تعديل":"Edit"} style={{background:"#dbeafe",color:"#2563eb",border:"none",borderRadius:6,padding:"3px 8px",fontSize:10,fontWeight:700,cursor:"pointer"}}>✏️</button>
+                            <button onClick={function(){if(window.confirm(lang==='ar'?"هل تريد حذف هذا الشهر؟":"Delete this month?")){}}} title={lang==='ar'?"حذف":"Delete"} style={{background:"#fee2e2",color:"#dc2626",border:"none",borderRadius:6,padding:"3px 8px",fontSize:10,fontWeight:700,cursor:"pointer"}}>🗑</button>
+                          </div>
+                        </td>
                       </tr>
                     );})}
                     <tr style={{background:"#1e3a5f",color:"#fff",fontWeight:900}}>
@@ -12619,7 +12641,9 @@ export default function Dashboard() {
                 <div style={{position:"fixed",top:0,left:0,right:0,bottom:0,background:"rgba(0,0,0,0.5)",display:"flex",alignItems:"center",justifyContent:"center",zIndex:10001}}
                   onClick={function(e){if(e.target===e.currentTarget)setShowAddData(false);}}>
                   <div style={{background:"#fff",borderRadius:16,padding:"24px",width:340,boxShadow:"0 16px 40px rgba(0,0,0,0.3)"}}>
-                    <div style={{fontSize:14,fontWeight:900,color:"#1e3a5f",marginBottom:14}}>{"➕ "}{lang==='ar'?"إضافة شهر جديد":"Add New Month"}</div>
+                    <div style={{fontSize:14,fontWeight:900,color:"#1e3a5f",marginBottom:14}}>
+                      {perfEdit!==null?("✏️ "+(lang==='ar'?"تعديل بيانات":"Edit Data")):("➕ "+(lang==='ar'?"إضافة شهر جديد":"Add New Month"))}
+                    </div>
                     {[
                       {label:lang==='ar'?"الشهر":"Month",ph:lang==='ar'?"مثال: أغسطس":"e.g. August",type:"text"},
                       {label:"Legal DR. Sarhaan",ph:"0",type:"number"},
