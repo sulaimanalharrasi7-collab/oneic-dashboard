@@ -12492,8 +12492,8 @@ export default function Dashboard() {
                       var cH=200,padL=58,grpW=100,bW=18,yB=20+cH,W=padL+months.length*grpW+16;
                       var bH=function(v){return cH*v/Math.max.apply(null,mTotal);};
                       var pts=months.map(function(_,i){return {x:padL+i*grpW+12+bW*1.5,y:20+cH*(1-mTotal[i]/Math.max.apply(null,mTotal)),v:mTotal[i]};});
-                      var grid='';[0,.25,.5,.75,1].forEach(function(r){var y=20+cH*(1-r);grid+='<line x1="'+padL+'" y1="'+y+'" x2="'+(padL+months.length*grpW)+'" y2="'+y+'" stroke="#e5e7eb" stroke-width="1"/><text x="'+(padL-4)+'" y="'+(y+4)+'" text-anchor="end" font-size="8" fill="#9ca3af">'+Math.round(Math.max.apply(null,mTotal)*r/1000)+'k</text>';});
-                      var bars='';months.forEach(function(m,i){var x0=padL+i*grpW+10;bars+='<rect x="'+x0+'" y="'+(yB-bH(sarhaan[i]))+'" width="'+bW+'" height="'+bH(sarhaan[i])+'" fill="#3b82f6" rx="2"/><rect x="'+(x0+bW+2)+'" y="'+(yB-bH(coll[i]))+'" width="'+bW+'" height="'+bH(coll[i])+'" fill="#f97316" rx="2"/><rect x="'+(x0+bW*2+4)+'" y="'+(yB-bH(dc[i]))+'" width="'+bW+'" height="'+bH(dc[i])+'" fill="#22c55e" rx="2"/><text x="'+(x0+bW*1.5+2)+'" y="'+(yB+14)+'" text-anchor="middle" font-size="8.5" fill="#6b7280">'+m+'</text>';});
+                      var grid='';[0,.25,.5,.75,1].forEach(function(r){var y=20+cH*(1-r);grid+='<line x1="'+padL+'" y1="'+y+'" x2="'+(padL+months.length*grpW)+'" y2="'+y+'" stroke="#e5e7eb" stroke-width="1"/><text x="'+(padL-4)+'" y="'+(y+4)+'" text-anchor="end" font-size="11" font-weight="700" fill="#111">'+Math.round(Math.max.apply(null,mTotal)*r/1000)+'k</text>';});
+                      var bars='';months.forEach(function(m,i){var x0=padL+i*grpW+10;bars+='<rect x="'+x0+'" y="'+(yB-bH(sarhaan[i]))+'" width="'+bW+'" height="'+bH(sarhaan[i])+'" fill="#3b82f6" rx="2"/><rect x="'+(x0+bW+2)+'" y="'+(yB-bH(coll[i]))+'" width="'+bW+'" height="'+bH(coll[i])+'" fill="#f97316" rx="2"/><rect x="'+(x0+bW*2+4)+'" y="'+(yB-bH(dc[i]))+'" width="'+bW+'" height="'+bH(dc[i])+'" fill="#22c55e" rx="2"/><text x="'+(x0+bW*1.5+2)+'" y="'+(yB+16)+'" text-anchor="middle" font-size="11" font-weight="700" fill="#111">'+m+'</text>';});
                       var line=pts.map(function(p,i){return (i===0?'M':'L')+p.x+','+p.y;}).join(' ');
                       var dots='';pts.forEach(function(p){dots+='<circle cx="'+p.x+'" cy="'+p.y+'" r="5" fill="#fff" stroke="#2563eb" stroke-width="2.5"/><text x="'+p.x+'" y="'+(p.y-9)+'" text-anchor="middle" font-size="8" fill="#1e3a5f" font-weight="800">'+p.v.toLocaleString()+'</text>';});
                       return '<div class="chart-box"><svg width="'+W+'" height="'+(cH+50)+'" style="font-family:Cairo,sans-serif;display:block;width:100%">'+grid+bars+'<path d="'+line+'" fill="none" stroke="#2563eb" stroke-width="2.5" stroke-linejoin="round"/>'+dots+'</svg></div>';
@@ -12554,7 +12554,7 @@ export default function Dashboard() {
                     <svg width="100%" viewBox={"0 0 "+Math.max(760,totalW)+" "+(cH+56)} style={{fontFamily:"Cairo,sans-serif",display:"block"}}>
                       {[0,.25,.5,.75,1].map(function(r){
                         var y=20+cH*(1-r);
-                        return <g key={r}><line x1={padL} y1={y} x2={padL+months.length*grpW+10} y2={y} stroke="#e5e7eb" strokeWidth="1"/><text x={padL-4} y={y+4} textAnchor="end" fontSize="9" fill="#9ca3af">{Math.round(maxV*r/1000)}k</text></g>;
+                        return <g key={r}><line x1={padL} y1={y} x2={padL+months.length*grpW+10} y2={y} stroke="#e5e7eb" strokeWidth="1"/><text x={padL-4} y={y+4} textAnchor="end" fontSize="11" fill="#111" fontWeight="700">{Math.round(maxV*r/1000)}k</text></g>;
                       })}
                       {months.map(function(m,i){
                         var x0=padL+i*grpW+10;
