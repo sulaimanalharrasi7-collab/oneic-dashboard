@@ -10189,6 +10189,7 @@ export default function Dashboard() {
   const [pending, setPending]   = useState(null);
   const [verified, setVerified] = useState(false);
   const [showSettings, setShowSettings] = useState(false);
+  const [showPerf,     setShowPerf]     = useState(false);
   const [showHistory, setShowHistory] = useState(false);
   const [unlocked, setUnlocked] = useState(false);
   const [pwInput, setPwInput] = useState('');
@@ -12101,20 +12102,33 @@ export default function Dashboard() {
               💳 Bulk Payment
             </button>
 
-            {/* صف 3 — اختيار المشروع (عرض كامل) */}
-            <button
-              onClick={() => { setProjectChoice(null); setUnlocked(false); setPwInput(''); }}
-              style={{
-                gridColumn:"1 / -1",
-                display:"flex",alignItems:"center",justifyContent:"center",gap:6,
-                background:"linear-gradient(120deg,#1a1a2e,#2d2d5e)",
-                color:"#fff",border:"0.5px solid rgba(255,255,255,0.2)",borderRadius:8,
-                padding:"6px 10px",fontSize:11,fontWeight:800,cursor:"pointer",
-                fontFamily:"'Cairo',sans-serif",whiteSpace:"nowrap",
-                boxShadow:"0 2px 8px rgba(0,0,0,0.3)"
-              }}>
-              🏠 {lang==='ar'?"اختيار المشروع":"Select Project"}
-            </button>
+            {/* صف 3 — اختيار المشروع + الأداء */}
+            <div style={{gridColumn:"1 / -1",display:"grid",gridTemplateColumns:"1fr 1fr",gap:6}}>
+              <button
+                onClick={() => { setProjectChoice(null); setUnlocked(false); setPwInput(''); }}
+                style={{
+                  display:"flex",alignItems:"center",justifyContent:"center",gap:6,
+                  background:"linear-gradient(120deg,#1a1a2e,#2d2d5e)",
+                  color:"#fff",border:"0.5px solid rgba(255,255,255,0.2)",borderRadius:8,
+                  padding:"6px 10px",fontSize:11,fontWeight:800,cursor:"pointer",
+                  fontFamily:"'Cairo',sans-serif",whiteSpace:"nowrap",
+                  boxShadow:"0 2px 8px rgba(0,0,0,0.3)"
+                }}>
+                🏠 {lang==='ar'?"اختيار المشروع":"Select Project"}
+              </button>
+              <button
+                onClick={() => setShowPerf(true)}
+                style={{
+                  display:"flex",alignItems:"center",justifyContent:"center",gap:6,
+                  background:"linear-gradient(120deg,#b45309,#d97706)",
+                  color:"#fff",border:"0.5px solid rgba(255,255,255,0.2)",borderRadius:8,
+                  padding:"6px 10px",fontSize:11,fontWeight:800,cursor:"pointer",
+                  fontFamily:"'Cairo',sans-serif",whiteSpace:"nowrap",
+                  boxShadow:"0 2px 8px rgba(0,0,0,0.3)"
+                }}>
+                📈 {lang==='ar'?"الأداء":"Performance"}
+              </button>
+            </div>
           </div>
 
           {/* مؤشر المزامنة */}
@@ -12442,6 +12456,113 @@ export default function Dashboard() {
         </div>
       </div>
     </div>
+
+      {/* ══ نافذة الأداء ══════════════════════════════════ */}
+      {showPerf && (
+        <div style={{position:"fixed",inset:0,background:"rgba(0,0,0,0.7)",display:"flex",alignItems:"center",justifyContent:"center",zIndex:9999,padding:16,direction:"rtl"}}
+          onClick={e=>{if(e.target===e.currentTarget)setShowPerf(false)}}>
+          <div style={{background:"#fff",borderRadius:20,width:"100%",maxWidth:860,maxHeight:"90vh",overflow:"auto",boxShadow:"0 20px 60px rgba(0,0,0,0.4)"}}>
+            <div style={{background:"linear-gradient(120deg,#1a1a2e,#2d2d5e)",padding:"18px 24px",borderRadius:"20px 20px 0 0",display:"flex",justifyContent:"space-between",alignItems:"center"}}>
+              <div>
+                <div style={{fontSize:17,fontWeight:900,color:"#fff"}}>📈 {lang==='ar'?"تقرير الأداء التحصيلي":"Collection Performance Report"}</div>
+                <div style={{fontSize:11,color:"#93c5fd",marginTop:3}}>{lang==='ar'?"من يناير حتى يوليو 2026م":"January to July 2026"}</div>
+              </div>
+              <button onClick={()=>setShowPerf(false)} style={{background:"rgba(255,255,255,0.15)",color:"#fff",border:"none",borderRadius:10,padding:"8px 14px",fontSize:13,fontWeight:700,cursor:"pointer"}}>✕</button>
+            </div>
+            <div style={{padding:"20px 24px"}}>
+              {/* Legend */}
+              <div style={{display:"flex",gap:16,flexWrap:"wrap",marginBottom:14,fontSize:11,fontWeight:700}}>
+                {[
+                  {color:"#2563eb",label:lang==='ar'?"الإجمالي الشهري":"Monthly Total",type:"line"},
+                  {color:"#3b82f6",label:"Legal - DR. Sarhaan",type:"bar"},
+                  {color:"#f97316",label:lang==='ar'?"المحصّلون":"Collectors",type:"bar"},
+                  {color:"#22c55e",label:lang==='ar'?"شركات التحصيل":"Debt Collection Company",type:"bar"},
+                ].map(l=>(
+                  <div key={l.label} style={{display:"flex",alignItems:"center",gap:5}}>
+                    {l.type==="line"
+                      ? <svg width="26" height="12"><line x1="0" y1="6" x2="26" y2="6" stroke={l.color} strokeWidth="2.5"/><circle cx="13" cy="6" r="3.5" fill={l.color}/></svg>
+                      : <div style={{width:14,height:14,background:l.color,borderRadius:2}}/>}
+                    <span style={{color:"#374151"}}>{l.label}</span>
+                  </div>
+                ))}
+              </div>
+              {/* Chart SVG */}
+              {(()=>{
+                var months=lang==='ar'?['يناير','فبراير','مارس','أبريل','مايو','يونيو','يوليو']:['January','February','March','April','May','June','July'];
+                var mTotal=[19013,22013,15859,23421,43353,55616,63251];
+                var sarhaan=[1500,6500,5500,9400,17200,26600,30800];
+                var coll=[7100,5400,3600,5000,3900,3000,1800];
+                var dc=[10400,10600,6800,9400,22300,26100,30600];
+                var maxV=Math.max(...mTotal);
+                var cH=220,padL=65,padB=40,grpW=92,bW=18;
+                var totalW=padL+months.length*grpW+10;
+                var yB=20+cH;
+                var bH=function(v){return cH*v/maxV;};
+                var pts=months.map((_,i)=>({x:padL+i*grpW+8+bW*1.5+2,y:20+cH*(1-mTotal[i]/maxV),v:mTotal[i]}));
+                return (
+                  <div style={{overflowX:"auto",borderRadius:12,border:"1px solid #e5e7eb",padding:8}}>
+                    <svg width={Math.max(760,totalW)} height={cH+padB+30} style={{fontFamily:"Cairo,sans-serif",display:"block"}}>
+                      {[0,.25,.5,.75,1].map(r=>{
+                        var y=20+cH*(1-r);
+                        return <g key={r}>
+                          <line x1={padL} y1={y} x2={padL+months.length*grpW} y2={y} stroke="#e5e7eb" strokeWidth="1"/>
+                          <text x={padL-6} y={y+4} textAnchor="end" fontSize="9" fill="#6b7280">{Math.round(maxV*r/1000)}k</text>
+                        </g>;
+                      })}
+                      {months.map((m,i)=>{
+                        var x0=padL+i*grpW+8;
+                        return <g key={m}>
+                          <rect x={x0}         y={yB-bH(sarhaan[i])} width={bW} height={bH(sarhaan[i])} fill="#3b82f6" rx="2"/>
+                          <rect x={x0+bW+2}    y={yB-bH(coll[i])}    width={bW} height={bH(coll[i])}    fill="#f97316" rx="2"/>
+                          <rect x={x0+bW*2+4}  y={yB-bH(dc[i])}      width={bW} height={bH(dc[i])}      fill="#22c55e" rx="2"/>
+                          <text x={x0+bW*1.5+2} y={yB+14} textAnchor="middle" fontSize="9" fill="#374151" fontWeight="600">{m}</text>
+                        </g>;
+                      })}
+                      <path d={pts.map((p,i)=>(i===0?'M':'L')+p.x+','+p.y).join(' ')} fill="none" stroke="#2563eb" strokeWidth="2.5" strokeLinejoin="round"/>
+                      {pts.map((p,i)=><g key={i}>
+                        <circle cx={p.x} cy={p.y} r="5" fill="#fff" stroke="#2563eb" strokeWidth="2.5"/>
+                        <text x={p.x} y={p.y-9} textAnchor="middle" fontSize="9" fill="#1e3a5f" fontWeight="800">{p.v.toLocaleString()}</text>
+                      </g>)}
+                    </svg>
+                  </div>
+                );
+              })()}
+              {/* Summary Table */}
+              <div style={{marginTop:14,background:"#f9fafb",borderRadius:12,padding:"12px 14px",border:"1px solid #e5e7eb"}}>
+                <div style={{fontSize:12,fontWeight:900,color:"#1e3a5f",marginBottom:8}}>{lang==='ar'?"ملخص الأداء الشهري":"Monthly Performance Summary"}</div>
+                <table style={{width:"100%",borderCollapse:"collapse",fontSize:10}}>
+                  <thead>
+                    <tr style={{background:"#1e3a5f",color:"#fff"}}>
+                      {[lang==='ar'?"الشهر":"Month","Legal DR. Sarhaan",lang==='ar'?"المحصّلون":"Collectors",lang==='ar'?"شركات التحصيل":"DC Company",lang==='ar'?"الإجمالي":"Total"].map(h=>(
+                        <th key={h} style={{padding:"6px 8px",textAlign:"center",fontWeight:700}}>{h}</th>
+                      ))}
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {(lang==='ar'?['يناير','فبراير','مارس','أبريل','مايو','يونيو','يوليو']:['January','February','March','April','May','June','July']).map((m,i)=>(
+                      <tr key={m} style={{background:i%2===0?"#fff":"#f3f4f6"}}>
+                        <td style={{padding:"5px 8px",textAlign:"center",fontWeight:700,color:"#1e3a5f"}}>{m}</td>
+                        <td style={{padding:"5px 8px",textAlign:"center",color:"#3b82f6",fontWeight:700}}>{[1500,6500,5500,9400,17200,26600,30800][i].toLocaleString()}</td>
+                        <td style={{padding:"5px 8px",textAlign:"center",color:"#f97316",fontWeight:700}}>{[7100,5400,3600,5000,3900,3000,1800][i].toLocaleString()}</td>
+                        <td style={{padding:"5px 8px",textAlign:"center",color:"#22c55e",fontWeight:700}}>{[10400,10600,6800,9400,22300,26100,30600][i].toLocaleString()}</td>
+                        <td style={{padding:"5px 8px",textAlign:"center",fontWeight:900,color:"#1e3a5f"}}>{[19013,22013,15859,23421,43353,55616,63251][i].toLocaleString()}</td>
+                      </tr>
+                    ))}
+                    <tr style={{background:"#1e3a5f",color:"#fff",fontWeight:900}}>
+                      <td style={{padding:"6px 8px",textAlign:"center"}}>{lang==='ar'?"الإجمالي":"Total"}</td>
+                      <td style={{padding:"6px 8px",textAlign:"center"}}>{(97500).toLocaleString()}</td>
+                      <td style={{padding:"6px 8px",textAlign:"center"}}>{(30800).toLocaleString()}</td>
+                      <td style={{padding:"6px 8px",textAlign:"center"}}>{(116200).toLocaleString()}</td>
+                      <td style={{padding:"6px 8px",textAlign:"center"}}>{(242526).toLocaleString()}</td>
+                    </tr>
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
     </LangContext.Provider>
   );
 
