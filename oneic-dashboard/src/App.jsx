@@ -10190,6 +10190,8 @@ export default function Dashboard() {
   const [verified, setVerified] = useState(false);
   const [showSettings, setShowSettings] = useState(false);
   const [showPerf,     setShowPerf]     = useState(false);
+  const [perfTip,      setPerfTip]      = useState(null);
+  const [showAddData,  setShowAddData]  = useState(false);
   const [showHistory, setShowHistory] = useState(false);
   const [unlocked, setUnlocked] = useState(false);
   const [pwInput, setPwInput] = useState('');
@@ -12459,110 +12461,191 @@ export default function Dashboard() {
 
       {/* ══ نافذة الأداء ══════════════════════════════════ */}
       {showPerf && (
-        <div style={{position:"fixed",inset:0,background:"rgba(0,0,0,0.7)",display:"flex",alignItems:"center",justifyContent:"center",zIndex:9999,padding:16,direction:"rtl"}}
+        <div style={{position:"fixed",inset:0,background:"rgba(0,0,0,0.75)",display:"flex",alignItems:"center",justifyContent:"center",zIndex:9999,padding:12,direction:"rtl",animation:"fadeIn 0.25s ease"}}
           onClick={e=>{if(e.target===e.currentTarget)setShowPerf(false)}}>
-          <div style={{background:"#fff",borderRadius:20,width:"100%",maxWidth:860,maxHeight:"90vh",overflow:"auto",boxShadow:"0 20px 60px rgba(0,0,0,0.4)"}}>
-            <div style={{background:"linear-gradient(120deg,#1a1a2e,#2d2d5e)",padding:"18px 24px",borderRadius:"20px 20px 0 0",display:"flex",justifyContent:"space-between",alignItems:"center"}}>
+          <style>{`@keyframes fadeIn{from{opacity:0}to{opacity:1}}@keyframes slideUp{from{transform:translateY(30px);opacity:0}to{transform:translateY(0);opacity:1}}.perf-modal{animation:slideUp 0.3s ease}.pt-hover{cursor:pointer;transition:r 0.15s}.pt-hover:hover{r:8!important}.tip-box{pointer-events:none;transition:opacity 0.2s}.add-data-btn:hover{background:#1e3a5f!important;color:#fff!important}.scroll-btn:hover{background:#1e3a5f!important;color:#fff!important}`}</style>
+          <div className="perf-modal" style={{background:"#fff",borderRadius:20,width:"100%",maxWidth:920,maxHeight:"92vh",overflow:"auto",boxShadow:"0 24px 80px rgba(0,0,0,0.5)",display:"flex",flexDirection:"column"}}>
+
+            {/* Header */}
+            <div style={{background:"linear-gradient(120deg,#1a1a2e,#2d2d5e)",padding:"16px 24px",borderRadius:"20px 20px 0 0",display:"flex",justifyContent:"space-between",alignItems:"center",flexShrink:0}}>
               <div>
-                <div style={{fontSize:17,fontWeight:900,color:"#fff"}}>📈 {lang==='ar'?"تقرير الأداء التحصيلي":"Collection Performance Report"}</div>
-                <div style={{fontSize:11,color:"#93c5fd",marginTop:3}}>{lang==='ar'?"من يناير حتى يوليو 2026م":"January to July 2026"}</div>
+                <div style={{fontSize:16,fontWeight:900,color:"#fff"}}>📈 {lang==='ar'?"تقرير الأداء التحصيلي":"Collection Performance Report"}</div>
+                <div style={{fontSize:10,color:"#93c5fd",marginTop:2}}>{lang==='ar'?"من يناير حتى يوليو 2026م":"January to July 2026"}</div>
               </div>
-              <button onClick={()=>setShowPerf(false)} style={{background:"rgba(255,255,255,0.15)",color:"#fff",border:"none",borderRadius:10,padding:"8px 14px",fontSize:13,fontWeight:700,cursor:"pointer"}}>✕</button>
+              <div style={{display:"flex",gap:8}}>
+                <button onClick={()=>{
+                  // Print performance report
+                  var w=window.open('','_blank','width=900,height=700');
+                  if(!w)return;
+                  var ar=lang==='ar';
+                  var T=function(a,e){return ar?a:e;};
+                  var months=ar?['يناير','فبراير','مارس','أبريل','مايو','يونيو','يوليو']:['January','February','March','April','May','June','July'];
+                  var data=[[1500,7100,10400,19013],[6500,5400,10600,22013],[5500,3600,6800,15859],[9400,5000,9400,23421],[17200,3900,22300,43353],[26600,3000,26100,55616],[30800,1800,30600,63251]];
+                  var tRow=function(m,d,i){return '<tr style="background:'+(i%2===0?'#fff':'#f3f4f6')+'">'+'<td style="padding:8px 12px;font-weight:700;color:#1e3a5f">'+m+'</td>'+'<td style="text-align:center;color:#3b82f6;font-weight:700;padding:8px">'+d[0].toLocaleString()+'</td>'+'<td style="text-align:center;color:#f97316;font-weight:700;padding:8px">'+d[1].toLocaleString()+'</td>'+'<td style="text-align:center;color:#22c55e;font-weight:700;padding:8px">'+d[2].toLocaleString()+'</td>'+'<td style="text-align:center;font-weight:900;color:#1e3a5f;padding:8px">'+d[3].toLocaleString()+'</td>'+'</tr>';};
+                  var html='<!DOCTYPE html><html lang="'+(ar?'ar':'en')+'" dir="'+(ar?'rtl':'ltr')+'"><head><meta charset="UTF-8"><link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;700;900&display=swap" rel="stylesheet"><style>*{box-sizing:border-box;margin:0;padding:0}body{font-family:Cairo,sans-serif;padding:24px;color:#111;direction:'+(ar?'rtl':'ltr')+'}h1{font-size:20px;color:#1e3a5f;margin-bottom:4px}table{width:100%;border-collapse:collapse;margin-top:16px}th{background:#1e3a5f;color:#fff;padding:10px;font-weight:700;text-align:center}td{padding:8px;border-bottom:1px solid #e5e7eb}.footer{margin-top:20px;font-size:10px;color:#9ca3af;text-align:center;border-top:1px solid #e5e7eb;padding-top:12px}@media print{.no-print{display:none}@page{size:A4;margin:15mm}}</style></head><body>'
+                    +'<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px;border-bottom:3px solid #e85d20;padding-bottom:12px">'
+                    +'<div><h1>📈 '+T('تقرير الأداء التحصيلي','Collection Performance Report')+'</h1><div style="font-size:12px;color:#6b7280">'+T('من يناير حتى يوليو 2026م','January to July 2026')+' · ONEIC</div></div>'
+                    +'<button class="no-print" onclick="window.print()" style="background:#1e3a5f;color:#fff;border:none;border-radius:8px;padding:8px 20px;cursor:pointer;font-family:Cairo,sans-serif;font-size:12px">🖨 '+T('طباعة','Print')+'</button>'
+                    +'</div>'
+                    +'<table><thead><tr><th>'+T('الشهر','Month')+'</th><th>Legal DR. Sarhaan</th><th>'+T('المحصّلون','Collectors')+'</th><th>'+T('شركات التحصيل','DC Company')+'</th><th>'+T('الإجمالي','Total')+'</th></tr></thead><tbody>'
+                    +months.map((m,i)=>tRow(m,data[i],i)).join('')
+                    +'<tr style="background:#1e3a5f;color:#fff;font-weight:900"><td style="padding:8px 12px">'+T('الإجمالي','Total')+'</td><td style="text-align:center;padding:8px">97,500</td><td style="text-align:center;padding:8px">30,800</td><td style="text-align:center;padding:8px">116,200</td><td style="text-align:center;padding:8px">242,526</td></tr>'
+                    +'</tbody></table>'
+                    +'<div class="footer">Programming and design by Sulaiman Al-Harrasi — 16296 · ONEIC © 2026</div>'
+                    +'</body></html>';
+                  w.document.write(html); w.document.close();
+                }}
+                  style={{background:"rgba(255,255,255,0.15)",color:"#fff",border:"1px solid rgba(255,255,255,0.2)",borderRadius:8,padding:"6px 12px",fontSize:11,fontWeight:700,cursor:"pointer",display:"flex",alignItems:"center",gap:4}}>
+                  🖨 {lang==='ar'?"طباعة":"Print"}
+                </button>
+                <button onClick={()=>{var el=document.getElementById('perf-table');if(el)el.scrollIntoView({behavior:'smooth',block:'start'});}}
+                  style={{background:"rgba(255,255,255,0.12)",color:"#fff",border:"1px solid rgba(255,255,255,0.2)",borderRadius:8,padding:"6px 12px",fontSize:11,fontWeight:700,cursor:"pointer",display:"flex",alignItems:"center",gap:4}}>
+                  {lang==='ar'?"الجدول ↓":"Table ↓"}
+                </button>
+                <button onClick={()=>setShowPerf(false)} style={{background:"rgba(255,255,255,0.15)",color:"#fff",border:"none",borderRadius:8,padding:"6px 12px",fontSize:13,fontWeight:700,cursor:"pointer"}}>✕</button>
+              </div>
             </div>
-            <div style={{padding:"20px 24px"}}>
+
+            <div style={{padding:"16px 20px",overflowY:"auto",flex:1}}>
+
               {/* Legend */}
-              <div style={{display:"flex",gap:16,flexWrap:"wrap",marginBottom:14,fontSize:11,fontWeight:700}}>
-                {[
-                  {color:"#2563eb",label:lang==='ar'?"الإجمالي الشهري":"Monthly Total",type:"line"},
-                  {color:"#3b82f6",label:"Legal - DR. Sarhaan",type:"bar"},
-                  {color:"#f97316",label:lang==='ar'?"المحصّلون":"Collectors",type:"bar"},
-                  {color:"#22c55e",label:lang==='ar'?"شركات التحصيل":"Debt Collection Company",type:"bar"},
-                ].map(l=>(
+              <div style={{display:"flex",gap:14,flexWrap:"wrap",marginBottom:12,fontSize:10.5,fontWeight:700}}>
+                {[{color:"#2563eb",label:lang==='ar'?"الإجمالي الشهري":"Monthly Total",type:"line"},{color:"#3b82f6",label:"Legal - DR. Sarhaan",type:"bar"},{color:"#f97316",label:lang==='ar'?"المحصّلون":"Collectors",type:"bar"},{color:"#22c55e",label:lang==='ar'?"شركات التحصيل":"Debt Collection Co.",type:"bar"}].map(l=>(
                   <div key={l.label} style={{display:"flex",alignItems:"center",gap:5}}>
-                    {l.type==="line"
-                      ? <svg width="26" height="12"><line x1="0" y1="6" x2="26" y2="6" stroke={l.color} strokeWidth="2.5"/><circle cx="13" cy="6" r="3.5" fill={l.color}/></svg>
-                      : <div style={{width:14,height:14,background:l.color,borderRadius:2}}/>}
+                    {l.type==="line"?<svg width="26" height="12"><line x1="0" y1="6" x2="26" y2="6" stroke={l.color} strokeWidth="2.5"/><circle cx="13" cy="6" r="3.5" fill={l.color}/></svg>:<div style={{width:13,height:13,background:l.color,borderRadius:2}}/>}
                     <span style={{color:"#374151"}}>{l.label}</span>
                   </div>
                 ))}
               </div>
-              {/* Chart SVG */}
+
+              {/* Chart */}
               {(()=>{
-                var months=lang==='ar'?['يناير','فبراير','مارس','أبريل','مايو','يونيو','يوليو']:['January','February','March','April','May','June','July'];
-                var mTotal=[19013,22013,15859,23421,43353,55616,63251];
-                var sarhaan=[1500,6500,5500,9400,17200,26600,30800];
-                var coll=[7100,5400,3600,5000,3900,3000,1800];
-                var dc=[10400,10600,6800,9400,22300,26100,30600];
-                var maxV=Math.max(...mTotal);
-                var cH=220,padL=65,padB=40,grpW=92,bW=18;
-                var totalW=padL+months.length*grpW+10;
-                var yB=20+cH;
-                var bH=function(v){return cH*v/maxV;};
-                var pts=months.map((_,i)=>({x:padL+i*grpW+8+bW*1.5+2,y:20+cH*(1-mTotal[i]/maxV),v:mTotal[i]}));
+                const months=lang==='ar'?['يناير','فبراير','مارس','أبريل','مايو','يونيو','يوليو']:['January','February','March','April','May','June','July'];
+                const mTotal=[19013,22013,15859,23421,43353,55616,63251];
+                const sarhaan=[1500,6500,5500,9400,17200,26600,30800];
+                const coll=[7100,5400,3600,5000,3900,3000,1800];
+                const dc=[10400,10600,6800,9400,22300,26100,30600];
+                const maxV=Math.max(...mTotal);
+                const cH=210,padL=58,grpW=95,bW=17;
+                const totalW=padL+months.length*grpW+16;
+                const yB=20+cH;
+                const bH=v=>cH*v/maxV;
+                const pts=months.map((_,i)=>({x:padL+i*grpW+12+bW*1.5,y:20+cH*(1-mTotal[i]/maxV),v:mTotal[i],s:sarhaan[i],c:coll[i],d:dc[i],m:months[i]}));
+                const [tip,setTip]=[perfTip,setPerfTip];
                 return (
-                  <div style={{overflowX:"auto",borderRadius:12,border:"1px solid #e5e7eb",padding:8}}>
-                    <svg width={Math.max(760,totalW)} height={cH+padB+30} style={{fontFamily:"Cairo,sans-serif",display:"block"}}>
+                  <div style={{position:"relative",borderRadius:12,border:"1px solid #e5e7eb",padding:"10px 8px",background:"#fafafa",marginBottom:14}}>
+                    <svg width="100%" viewBox={`0 0 ${Math.max(760,totalW)} ${cH+58}`} style={{fontFamily:"Cairo,sans-serif",display:"block"}}>
                       {[0,.25,.5,.75,1].map(r=>{
-                        var y=20+cH*(1-r);
-                        return <g key={r}>
-                          <line x1={padL} y1={y} x2={padL+months.length*grpW} y2={y} stroke="#e5e7eb" strokeWidth="1"/>
-                          <text x={padL-6} y={y+4} textAnchor="end" fontSize="9" fill="#6b7280">{Math.round(maxV*r/1000)}k</text>
-                        </g>;
+                        const y=20+cH*(1-r);
+                        const val=Math.round(maxV*r/1000);
+                        return <g key={r}><line x1={padL} y1={y} x2={padL+months.length*grpW+10} y2={y} stroke="#e5e7eb" strokeWidth="1" strokeDasharray={r>0?"4,3":""}/><text x={padL-4} y={y+4} textAnchor="end" fontSize="9" fill="#9ca3af">{val}k</text></g>;
                       })}
                       {months.map((m,i)=>{
-                        var x0=padL+i*grpW+8;
+                        const x0=padL+i*grpW+10;
                         return <g key={m}>
-                          <rect x={x0}         y={yB-bH(sarhaan[i])} width={bW} height={bH(sarhaan[i])} fill="#3b82f6" rx="2"/>
-                          <rect x={x0+bW+2}    y={yB-bH(coll[i])}    width={bW} height={bH(coll[i])}    fill="#f97316" rx="2"/>
-                          <rect x={x0+bW*2+4}  y={yB-bH(dc[i])}      width={bW} height={bH(dc[i])}      fill="#22c55e" rx="2"/>
-                          <text x={x0+bW*1.5+2} y={yB+14} textAnchor="middle" fontSize="9" fill="#374151" fontWeight="600">{m}</text>
+                          <rect x={x0}       y={yB-bH(sarhaan[i])} width={bW} height={bH(sarhaan[i])} fill="#3b82f6" rx="2" opacity="0.9"/>
+                          <rect x={x0+bW+2}  y={yB-bH(coll[i])}    width={bW} height={bH(coll[i])}    fill="#f97316" rx="2" opacity="0.9"/>
+                          <rect x={x0+bW*2+4}y={yB-bH(dc[i])}      width={bW} height={bH(dc[i])}      fill="#22c55e" rx="2" opacity="0.9"/>
+                          <text x={x0+bW*1.5+2} y={yB+14} textAnchor="middle" fontSize="8.5" fill="#6b7280" fontWeight="600">{m}</text>
                         </g>;
                       })}
+                      {/* Line */}
                       <path d={pts.map((p,i)=>(i===0?'M':'L')+p.x+','+p.y).join(' ')} fill="none" stroke="#2563eb" strokeWidth="2.5" strokeLinejoin="round"/>
-                      {pts.map((p,i)=><g key={i}>
-                        <circle cx={p.x} cy={p.y} r="5" fill="#fff" stroke="#2563eb" strokeWidth="2.5"/>
-                        <text x={p.x} y={p.y-9} textAnchor="middle" fontSize="9" fill="#1e3a5f" fontWeight="800">{p.v.toLocaleString()}</text>
+                      {pts.map((p,i)=><g key={i} onClick={()=>setTip(tip&&tip.i===i?null:{...p,i})} style={{cursor:"pointer"}}>
+                        <circle cx={p.x} cy={p.y} r="6" fill="#fff" stroke="#2563eb" strokeWidth="2.5" className="pt-hover"/>
+                        <circle cx={p.x} cy={p.y} r="18" fill="transparent"/>
+                        <text x={p.x} y={p.y-10} textAnchor="middle" fontSize="8.5" fill="#1e3a5f" fontWeight="900">{p.v.toLocaleString()}</text>
                       </g>)}
                     </svg>
+                    {/* Tooltip */}
+                    {tip&&(
+                      <div style={{position:"absolute",top:tip.y<100?60:Math.max(10,tip.y*0.4),right:lang==='ar'?undefined:'auto',left:lang==='ar'?undefined:20,background:"#1e3a5f",color:"#fff",borderRadius:12,padding:"12px 16px",fontSize:11,minWidth:200,boxShadow:"0 8px 24px rgba(0,0,0,0.3)",zIndex:10,animation:"fadeIn 0.2s ease"}}>
+                        <div style={{fontWeight:900,fontSize:13,borderBottom:"1px solid rgba(255,255,255,0.2)",paddingBottom:6,marginBottom:8}}>📅 {tip.m}</div>
+                        {[{l:lang==='ar'?"الإجمالي الشهري":"Monthly Total",v:tip.v,c:"#93c5fd"},{l:"Legal - DR. Sarhaan",v:tip.s,c:"#60a5fa"},{l:lang==='ar'?"المحصّلون":"Collectors",v:tip.c,c:"#fb923c"},{l:lang==='ar'?"شركات التحصيل":"DC Company",v:tip.d,c:"#4ade80"}].map(x=>(
+                          <div key={x.l} style={{display:"flex",justifyContent:"space-between",gap:12,marginBottom:4}}>
+                            <span style={{color:"#bfdbfe",fontSize:10}}>{x.l}</span>
+                            <span style={{fontWeight:800,color:x.c}}>{x.v.toLocaleString()}</span>
+                          </div>
+                        ))}
+                        <div style={{marginTop:8,fontSize:9,color:"#93c5fd",textAlign:"center"}}>{lang==='ar'?"اضغط مجدداً للإغلاق":"Click again to close"}</div>
+                      </div>
+                    )}
                   </div>
                 );
               })()}
+
               {/* Summary Table */}
-              <div style={{marginTop:14,background:"#f9fafb",borderRadius:12,padding:"12px 14px",border:"1px solid #e5e7eb"}}>
-                <div style={{fontSize:12,fontWeight:900,color:"#1e3a5f",marginBottom:8}}>{lang==='ar'?"ملخص الأداء الشهري":"Monthly Performance Summary"}</div>
-                <table style={{width:"100%",borderCollapse:"collapse",fontSize:10}}>
+              <div id="perf-table">
+                <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:8}}>
+                  <div style={{fontSize:12,fontWeight:900,color:"#1e3a5f"}}>{lang==='ar'?"ملخص الأداء الشهري":"Monthly Performance Summary"}</div>
+                  <button className="add-data-btn" style={{background:"#1e3a5f",color:"#fff",border:"none",borderRadius:8,padding:"5px 12px",fontSize:10.5,fontWeight:700,cursor:"pointer",display:"flex",alignItems:"center",gap:4}}
+                    onClick={()=>setShowAddData(true)}>
+                    ➕ {lang==='ar'?"إضافة بيانات":"Add Data"}
+                  </button>
+                </div>
+                <table style={{width:"100%",borderCollapse:"collapse",fontSize:10.5}}>
                   <thead>
                     <tr style={{background:"#1e3a5f",color:"#fff"}}>
                       {[lang==='ar'?"الشهر":"Month","Legal DR. Sarhaan",lang==='ar'?"المحصّلون":"Collectors",lang==='ar'?"شركات التحصيل":"DC Company",lang==='ar'?"الإجمالي":"Total"].map(h=>(
-                        <th key={h} style={{padding:"6px 8px",textAlign:"center",fontWeight:700}}>{h}</th>
+                        <th key={h} style={{padding:"7px 10px",textAlign:"center",fontWeight:700}}>{h}</th>
                       ))}
                     </tr>
                   </thead>
                   <tbody>
                     {(lang==='ar'?['يناير','فبراير','مارس','أبريل','مايو','يونيو','يوليو']:['January','February','March','April','May','June','July']).map((m,i)=>(
-                      <tr key={m} style={{background:i%2===0?"#fff":"#f3f4f6"}}>
-                        <td style={{padding:"5px 8px",textAlign:"center",fontWeight:700,color:"#1e3a5f"}}>{m}</td>
-                        <td style={{padding:"5px 8px",textAlign:"center",color:"#3b82f6",fontWeight:700}}>{[1500,6500,5500,9400,17200,26600,30800][i].toLocaleString()}</td>
-                        <td style={{padding:"5px 8px",textAlign:"center",color:"#f97316",fontWeight:700}}>{[7100,5400,3600,5000,3900,3000,1800][i].toLocaleString()}</td>
-                        <td style={{padding:"5px 8px",textAlign:"center",color:"#22c55e",fontWeight:700}}>{[10400,10600,6800,9400,22300,26100,30600][i].toLocaleString()}</td>
-                        <td style={{padding:"5px 8px",textAlign:"center",fontWeight:900,color:"#1e3a5f"}}>{[19013,22013,15859,23421,43353,55616,63251][i].toLocaleString()}</td>
+                      <tr key={m} style={{background:i%2===0?"#fff":"#f3f4f6",transition:"background 0.15s"}}
+                        onMouseEnter={e=>e.currentTarget.style.background="#e0f2fe"}
+                        onMouseLeave={e=>e.currentTarget.style.background=i%2===0?"#fff":"#f3f4f6"}>
+                        <td style={{padding:"7px 10px",textAlign:"center",fontWeight:700,color:"#1e3a5f"}}>{m}</td>
+                        <td style={{padding:"7px 10px",textAlign:"center",color:"#3b82f6",fontWeight:700}}>{[1500,6500,5500,9400,17200,26600,30800][i].toLocaleString()}</td>
+                        <td style={{padding:"7px 10px",textAlign:"center",color:"#f97316",fontWeight:700}}>{[7100,5400,3600,5000,3900,3000,1800][i].toLocaleString()}</td>
+                        <td style={{padding:"7px 10px",textAlign:"center",color:"#22c55e",fontWeight:700}}>{[10400,10600,6800,9400,22300,26100,30600][i].toLocaleString()}</td>
+                        <td style={{padding:"7px 10px",textAlign:"center",fontWeight:900,color:"#1e3a5f"}}>{[19013,22013,15859,23421,43353,55616,63251][i].toLocaleString()}</td>
                       </tr>
                     ))}
                     <tr style={{background:"#1e3a5f",color:"#fff",fontWeight:900}}>
-                      <td style={{padding:"6px 8px",textAlign:"center"}}>{lang==='ar'?"الإجمالي":"Total"}</td>
-                      <td style={{padding:"6px 8px",textAlign:"center"}}>{(97500).toLocaleString()}</td>
-                      <td style={{padding:"6px 8px",textAlign:"center"}}>{(30800).toLocaleString()}</td>
-                      <td style={{padding:"6px 8px",textAlign:"center"}}>{(116200).toLocaleString()}</td>
-                      <td style={{padding:"6px 8px",textAlign:"center"}}>{(242526).toLocaleString()}</td>
+                      <td style={{padding:"7px 10px",textAlign:"center"}}>{lang==='ar'?"الإجمالي":"Total"}</td>
+                      <td style={{padding:"7px 10px",textAlign:"center"}}>{(97500).toLocaleString()}</td>
+                      <td style={{padding:"7px 10px",textAlign:"center"}}>{(30800).toLocaleString()}</td>
+                      <td style={{padding:"7px 10px",textAlign:"center"}}>{(116200).toLocaleString()}</td>
+                      <td style={{padding:"7px 10px",textAlign:"center"}}>{(242526).toLocaleString()}</td>
                     </tr>
                   </tbody>
                 </table>
               </div>
             </div>
+
+            {/* Add Data Mini Modal */}
+            {showAddData && (
+              <div style={{position:"absolute",inset:0,background:"rgba(0,0,0,0.5)",display:"flex",alignItems:"center",justifyContent:"center",borderRadius:20,zIndex:10001}} onClick={e=>{if(e.target===e.currentTarget)setShowAddData(false)}}>
+                <div style={{background:"#fff",borderRadius:16,padding:"24px",width:340,boxShadow:"0 16px 40px rgba(0,0,0,0.3)"}}>
+                  <div style={{fontSize:14,fontWeight:900,color:"#1e3a5f",marginBottom:14}}>➕ {lang==='ar'?"إضافة شهر جديد":"Add New Month"}</div>
+                  {[
+                    {label:lang==='ar'?"الشهر":"Month",         ph:lang==='ar'?"مثال: أغسطس":"e.g. August",  type:"text"},
+                    {label:"Legal DR. Sarhaan",                  ph:"0",                                      type:"number"},
+                    {label:lang==='ar'?"المحصّلون":"Collectors", ph:"0",                                      type:"number"},
+                    {label:lang==='ar'?"شركات التحصيل":"DC Co.", ph:"0",                                      type:"number"},
+                  ].map((f,fi)=>(
+                    <div key={fi} style={{marginBottom:10}}>
+                      <div style={{fontSize:11,fontWeight:700,color:"#374151",marginBottom:3}}>{f.label}</div>
+                      <input type={f.type} placeholder={f.ph}
+                        style={{width:"100%",border:"1px solid #d1d5db",borderRadius:8,padding:"8px 10px",fontSize:12,fontFamily:"Cairo,sans-serif",outline:"none",direction:lang==='ar'&&f.type==="text"?'rtl':'ltr'}}/>
+                    </div>
+                  ))}
+                  <div style={{display:"flex",gap:8,marginTop:14}}>
+                    <button onClick={()=>setShowAddData(false)} style={{flex:1,background:"#1e3a5f",color:"#fff",border:"none",borderRadius:8,padding:"10px",fontSize:12,fontWeight:700,cursor:"pointer",fontFamily:"Cairo,sans-serif"}}>
+                      ✅ {lang==='ar'?"حفظ":"Save"}
+                    </button>
+                    <button onClick={()=>setShowAddData(false)} style={{flex:1,background:"#f0f4f9",color:"#555",border:"1px solid #ddd",borderRadius:8,padding:"10px",fontSize:12,fontWeight:700,cursor:"pointer",fontFamily:"Cairo,sans-serif"}}>
+                      {lang==='ar'?"إلغاء":"Cancel"}
+                    </button>
+                  </div>
+                </div>
+              </div>
+            )}
           </div>
         </div>
       )}
-
     </LangContext.Provider>
   );
 
