@@ -12612,7 +12612,7 @@ export default function Dashboard() {
                   <tbody>
                     {(lang==='ar'?['يناير','فبراير','مارس','أبريل','مايو','يونيو','يوليو']:['January','February','March','April','May','June','July']).map(function(m,i){return (
                       <tr key={m} style={{background:i%2===0?"#fff":"#f3f4f6"}}>
-                        <td style={{padding:"7px 10px",textAlign:"center",fontWeight:900,color:"#111"}}>{m}</td>
+                        <td style={{padding:"7px 10px",textAlign:"center",fontWeight:900,color:"#111",fontSize:13,borderBottom:"1px solid #374151"}}>{m}</td>
                         <td style={{padding:"7px 10px",textAlign:"center",color:"#3b82f6",fontWeight:700}}>{[1500,6500,5500,9400,17200,26600,30800][i].toLocaleString()}</td>
                         <td style={{padding:"7px 10px",textAlign:"center",color:"#f97316",fontWeight:700}}>{[7100,5400,3600,5000,3900,3000,1800][i].toLocaleString()}</td>
                         <td style={{padding:"7px 10px",textAlign:"center",color:"#22c55e",fontWeight:700}}>{[10400,10600,6800,9400,22300,26100,30600][i].toLocaleString()}</td>
