@@ -377,6 +377,7 @@ const SEED = {
     { name:"Ejada",                         paid:234768.002, adj:26578.195, portAmt:261235.418,  portCnt:1938,  count:1938,  osAmt:0,           principalAmt:261235.418,  paidCount:987,  adjCount:143  },
     { name:"Tahseel United",                paid:8362.595,   adj:433.130,   portAmt:0,           portCnt:108,   count:109,   osAmt:0,           principalAmt:8796.192,    paidCount:67,   adjCount:12   },
     { name:"High Speed Company",            paid:5927.788,   adj:67.577,    portAmt:0,           portCnt:35,    count:35,    osAmt:0,           principalAmt:5995.160,    paidCount:28,   adjCount:5    },
+    { name:"Eemad",                           paid:0.000,      adj:0.000,     portAmt:0,           portCnt:0,     count:0,     osAmt:0,           principalAmt:0,           paidCount:0,    adjCount:0    },
   ],
   headOffice: [
     { name:"Legal - DR. Sarhaan",    paid:102755.525, adj:20792.517, portAmt:3229651.681, portCnt:3973, count:3973, closed:135,  active:3838, principalAmt:3229651.681 },
@@ -6367,7 +6368,8 @@ async function parseXLS(file) {
       "Ejada":                         { portAmt: 0,           portCnt: 1938  },
       "Tahseel United":                { portAmt: 0, principalAmt: 0, portCnt: 108   },
       "High Speed Company":            { portAmt: 0, principalAmt: 0, portCnt: 35    },
-      "High Speed company":            { portAmt: 0, principalAmt: 0, portCnt: 35    }
+      "High Speed company":            { portAmt: 0, principalAmt: 0, portCnt: 35    },
+      "Eemad":                         { portAmt: 0, principalAmt: 0, portCnt: 0     }
     },
     ho: {
       "Legal - DR. Sarhaan": { portAmt: 3229651.681, portCnt: 3691, closed:67, active:3624, principalAmt: 3301711.348 },
@@ -6391,7 +6393,10 @@ async function parseXLS(file) {
     const branch  = (row['Branch']      || row['branch']       || '').trim();
 
     if (region === 'Debt Collection Company') {
-      const key = branch || col || 'Unknown';
+      // تطبيع أسماء شركات التحصيل
+      var dcNormMap = {'Murtafaat Basteen Fida LLC':'Eemad','Murtafaat Basteen':'Eemad','مرتفعات بستان':'Eemad'};
+      const rawKey = branch || col || 'Unknown';
+      const key = dcNormMap[rawKey] || rawKey;
       if (!dcMap[key]) dcMap[key] = { paid:0, adj:0, count:0, paidCount:0, adjCount:0, osAmt:0, principalAmt:0 };
       dcMap[key].paid  += paid; dcMap[key].adj += adj; dcMap[key].count++; dcMap[key].osAmt += rowPort; dcMap[key].principalAmt += n(row['Principal Amount']||0);
       if (paid>0) dcMap[key].paidCount++;
@@ -6464,7 +6469,7 @@ async function parseXLS(file) {
   }));
 
   // -- شركات التحصيل -----------------------------------------------------
-  const DC_REQUIRED = ["Matrix Debt Collection","National Center","Compass Risk Support Services","Ejada","Tahseel United","High Speed Company"];
+  const DC_REQUIRED = ["Matrix Debt Collection","National Center","Compass Risk Support Services","Ejada","Tahseel United","High Speed Company","Eemad"];
   const dcList = Object.entries(dcMap).map(([nm,d]) => {
     const p = PORT.dc[nm.trim()] || {portAmt:0,portCnt:0};
     // portAmt: من الملف (osAmt) إذا متاح، وإلا من PORT.dc
@@ -6522,7 +6527,7 @@ const FIREBASE_URL = "https://oneic-dashboard-default-rtdb.firebaseio.com";
 // يُصلح Firebase: يصحح أسماء شركات التحصيل ويحافظ على history و uploadCount
 (function() {
   if (typeof window === 'undefined') return;
-  if (localStorage.getItem('oneic_data_fixed_v6')) return;
+  if (localStorage.getItem('oneic_data_fixed_v7')) return;
   var now = new Date().toISOString();
   // اقرأ Firebase أولاً لتحافظ على history و uploadCount
   fetch('https://oneic-dashboard-default-rtdb.firebaseio.com/main.json')
@@ -6533,7 +6538,7 @@ const FIREBASE_URL = "https://oneic-dashboard-default-rtdb.firebaseio.com";
       var alreadyValid = existDC.some(function(c){ return c.name==='Matrix Debt Collection'||c.name==='National Center'; });
       if (alreadyValid && existing && existing.regions && existing.regions.length > 0) {
         // البيانات صحيحة — فقط حافظ على localStorage وضع العلامة
-        try { localStorage.setItem('oneic_data_fixed_v6','1'); } catch(e) {}
+        try { localStorage.setItem('oneic_data_fixed_v7','1'); } catch(e) {}
         // لكن تأكد من أن localStorage محدّث
         try { localStorage.setItem('oneic_dashboard_data', JSON.stringify(existing)); } catch(e) {}
         return;
@@ -6550,13 +6555,13 @@ const FIREBASE_URL = "https://oneic-dashboard-default-rtdb.firebaseio.com";
       fetch('https://oneic-dashboard-default-rtdb.firebaseio.com/main.json', {
         method: 'PUT', headers: {'Content-Type':'application/json'}, body: JSON.stringify(fixData)
       }).then(function() {
-        try { localStorage.setItem('oneic_data_fixed_v6','1'); } catch(e) {}
+        try { localStorage.setItem('oneic_data_fixed_v7','1'); } catch(e) {}
         console.log('[ONEIC] Data fixed — DC names corrected, history preserved');
       }).catch(function(e) { console.warn('[ONEIC] Fix failed:', e.message); });
     }).catch(function() {
       // Firebase غير متاح — استخدم SEED فقط للـ localStorage
       try { localStorage.setItem('oneic_dashboard_data', JSON.stringify(SEED)); } catch(e) {}
-      try { localStorage.setItem('oneic_data_fixed_v6','1'); } catch(e) {}
+      try { localStorage.setItem('oneic_data_fixed_v7','1'); } catch(e) {}
     });
 })();
 // ══════════════════════════════════════════════════════════
@@ -6826,7 +6831,7 @@ function EntityCard({name,paid,adj,color,rank,small,cnt,cBranch,portAmt,portCnt,
   const cPaid   = paid||0;
   const cAdj    = adj||0;
   const total   = cPaid + cAdj; // الإجمالي = Paid + Adj من Complaints
-  const allZero = total === 0 && name !== "Legal -Oneic" && name !== "Non-due accounts" && name !== "Initial Loss" && !["Ejada","Tahseel United","High Speed Company","High Speed company"].includes(name);
+  const allZero = total === 0 && name !== "Legal -Oneic" && name !== "Non-due accounts" && name !== "Initial Loss" && !["Ejada","Tahseel United","High Speed Company","High Speed company","Eemad"].includes(name);
   // Non-due accounts: عرض كامل (عدد الحسابات + مغلقة/نشطة + مدفوع/تسويات/إجمالي)
   if (name === "Non-due accounts") {
     return (<div style={{background:"#fff",borderRadius:13,border:`1.5px solid ${color}33`,
@@ -6873,6 +6878,8 @@ function EntityCard({name,paid,adj,color,rank,small,cnt,cBranch,portAmt,portCnt,
   const hasPort  = principal4card > 0;
   const hasCnt   = (portCnt||0) > 0;
   const effPort  = principal4card > 0 ? principal4card : 0;
+  // للشركات الجديدة (مثل Eemad) — نُظهر القسم حتى لو portAmt=0
+  const showPortSection = effPort > 0 || (portCnt||0) > 0 || !allZero;
   // إذا الشركة عندها تحصيل لكن portAmt غير محدد، استخدم التحصيل نفسه
   const displayPort = effPort > 0 ? effPort : (total>0 ? total : 0);
   const effCnt   = hasCnt  ? portCnt : (bD?.count||0);
@@ -6916,9 +6923,9 @@ function EntityCard({name,paid,adj,color,rank,small,cnt,cBranch,portAmt,portCnt,
       <div style={{padding:small?"10px 12px":"12px 16px",display:"flex",flexDirection:"column",gap:8}}>
 
         {/* صف 1: قيمة المحفظة + عدد الحسابات */}
-        {(effPort>0||effCnt>0) && (
+        {showPortSection && (
           <div style={{display:"flex",gap:6}}>
-            {displayPort>0 && (
+            {(displayPort>0||showPortSection) && (
               <div style={{flex:1,background:`${color}08`,borderRadius:10,padding:small?"6px 8px":"8px 12px",
                 border:`1px solid ${color}22`,textAlign:"center"}}>
                 <div style={{fontSize:small?9:11,color:color,fontWeight:800,marginBottom:3}}>{t("قيمة المحفظة",lang)}</div>
@@ -6926,7 +6933,7 @@ function EntityCard({name,paid,adj,color,rank,small,cnt,cBranch,portAmt,portCnt,
                 <div style={{fontSize:small?8:9,color:"#aaa",fontWeight:600}}>OMR</div>
               </div>
             )}
-            {effCnt>0 && (
+            {(effCnt>0||showPortSection) && (
               <div style={{flex:1,background:`${color}08`,borderRadius:10,padding:small?"6px 8px":"8px 12px",
                 border:`1px solid ${color}22`,textAlign:"center"}}>
                 <div style={{fontSize:small?9:11,color:color,fontWeight:800,marginBottom:3}}>{t("عدد الحسابات",lang)}</div>
@@ -6953,7 +6960,7 @@ function EntityCard({name,paid,adj,color,rank,small,cnt,cBranch,portAmt,portCnt,
         </div>
 
         {/* صف 3: المتبقي + نسبة الإنجاز (غير Refund) */}
-        {effPort > 0 && name!=="Refund - before legal" && name!=="Refund - after legal" && (
+        {showPortSection && name!=="Refund - before legal" && name!=="Refund - after legal" && (
           <div style={{display:"flex",gap:6,alignItems:"center"}}>
             <div style={{flex:1,background:"#fff3ee",borderRadius:10,padding:small?"6px 8px":"8px 12px",
               border:"1px solid #ffe4d4",textAlign:"center"}}>
@@ -9804,7 +9811,7 @@ function handlePrint(data, lang='ar') {
   }
 
   // Build DC rows
-  var inactive = ['Ejada','Tahseel United','High Speed Company','High Speed company'];
+  var inactive = ['Tahseel United','High Speed Company','High Speed company'];
   var dcRows = (data.debtCompanies||[]).filter(function(c){return (c.paid||0)+(c.adj||0)>0||!inactive.includes(c.name);}).map(function(c,i){
     return eRow(c.name, c.paid||0, c.adj||0, c.portAmt||c.principalAmt||0, c.portCnt||c.count||0, c.closed||0, c.active||0, i, '#1a7a6b');
   }).join('');
@@ -10280,7 +10287,7 @@ export default function Dashboard() {
         // ── تحقق من صحة بيانات Firebase ──────────────────────────
         // إذا كانت شركات التحصيل بأسماء أفراد بدلاً من شركات → بيانات خاطئة
         var dcNames = (row.debtCompanies||[]).map(function(c){return c.name||'';});
-        var hasValidDC = dcNames.some(function(n){ return n==='Matrix Debt Collection'||n==='National Center'||n==='Ejada'||n==='Compass Risk Support Services'; });
+        var hasValidDC = dcNames.some(function(n){ return n==='Matrix Debt Collection'||n==='National Center'||n==='Eemad'||n==='Ejada'||n==='Compass Risk Support Services'; });
         if (!hasValidDC) {
           console.warn('[ONEIC] Firebase has invalid DC data, using SEED instead');
           row = Object.assign({}, SEED, {
@@ -10332,7 +10339,7 @@ export default function Dashboard() {
         if (!row || !row.regions || !row.regions.length) return;
         // تحقق من صحة بيانات Firebase - رفض البيانات الخاطئة
         var _dcNames = (row.debtCompanies||[]).map(function(c){return c.name||'';});
-        var _validDC = _dcNames.some(function(n){return n==='Matrix Debt Collection'||n==='National Center'||n==='Ejada';});
+        var _validDC = _dcNames.some(function(n){return n==='Matrix Debt Collection'||n==='National Center'||n==='Eemad'||n==='Ejada';});
         if (!_validDC) { fetch('https://oneic-dashboard-default-rtdb.firebaseio.com/main.json',{method:'PUT',headers:{'Content-Type':'application/json'},body:JSON.stringify(Object.assign({},SEED,{lastUpdated:new Date().toISOString(),_updatedAt:new Date().toISOString(),uploadCount:1,history:[]}))}).catch(function(){}); return; }
         var fbTime = new Date(row._updatedAt||row.lastUpdated||0).getTime();
         var myTime = lastSyncRef.current ? new Date(lastSyncRef.current).getTime() : 0;
@@ -10365,7 +10372,7 @@ export default function Dashboard() {
       sbGet('oneic_data').then(function(row) {
         if (!row || !row.regions || !row.regions.length) return;
         var _dc2 = (row.debtCompanies||[]).map(function(c){return c.name||'';});
-        var _vDC2 = _dc2.some(function(n){return n==='Matrix Debt Collection'||n==='National Center'||n==='Ejada';});
+        var _vDC2 = _dc2.some(function(n){return n==='Matrix Debt Collection'||n==='National Center'||n==='Eemad'||n==='Ejada';});
         if (!_vDC2) { fetch('https://oneic-dashboard-default-rtdb.firebaseio.com/main.json',{method:'PUT',headers:{'Content-Type':'application/json'},body:JSON.stringify(Object.assign({},SEED,{lastUpdated:new Date().toISOString(),_updatedAt:new Date().toISOString(),uploadCount:1,history:[]}))}).catch(function(){}); return; }
         var fbTime = new Date(row._updatedAt||row.lastUpdated||0).getTime();
         var myTime = lastSyncRef.current ? new Date(lastSyncRef.current).getTime() : 0;
@@ -10417,7 +10424,7 @@ export default function Dashboard() {
     sbGet('oneic_data').then(function(row) {
       if (!row || !row.regions || !row.regions.length) { setSyncing(false); return; }
       var _dc5 = (row.debtCompanies||[]).map(function(c){return c.name||'';});
-      var _vDC5 = _dc5.some(function(n){return n==='Matrix Debt Collection'||n==='National Center'||n==='Ejada';});
+      var _vDC5 = _dc5.some(function(n){return n==='Matrix Debt Collection'||n==='National Center'||n==='Eemad'||n==='Ejada';});
       if (!_vDC5) { fetch('https://oneic-dashboard-default-rtdb.firebaseio.com/main.json',{method:'PUT',headers:{'Content-Type':'application/json'},body:JSON.stringify(Object.assign({},SEED,{lastUpdated:new Date().toISOString(),_updatedAt:new Date().toISOString(),uploadCount:1,history:[]}))}).catch(function(){}); setSyncing(false); return; }
       // == Firebase يحتوي البيانات الكاملة والنهائية الصحيحة - لا حاجة لأي دمج أو إعادة بناء إضافي ==
       var HO_KEYS5=["Legal - DR. Sarhaan","Documentation- Omantel","Non-due accounts","Legal -Oneic","Refund - before legal","Refund - after legal","Omantel Communication","Initial Loss"];
