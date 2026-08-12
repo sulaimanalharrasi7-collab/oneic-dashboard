@@ -10663,7 +10663,7 @@ export default function Dashboard() {
           var newHO = (base.headOffice||[]).map(function(c) {
             var bm = findBMTrack(c.name);
             if (bm) {
-              var hasClosedData = (c.name==='Legal -Oneic'||c.name==='Documentation- Omantel'||c.name==='Legal - DR. Sarhaan'||c.name==='Non-due accounts'||c.name==='Refund - before legal'||c.name==='Refund - after legal'||c.name==='Omantel Communication');
+              var hasClosedData = (c.name==='Legal -Oneic'||c.name==='Documentation- Omantel'||c.name==='Legal - DR. Sarhaan'||c.name==='Non-due accounts'||c.name==='Refund - before legal'||c.name==='Refund - after legal'||c.name==='Omantel Communication'||c.name==='Initial Loss');
               return Object.assign({},c,{
                 paid:bm.paid||0,
                 adj:bm.adj||0,
