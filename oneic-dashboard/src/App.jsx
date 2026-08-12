@@ -6523,45 +6523,59 @@ async function parseXLS(file) {
 
 const FIREBASE_URL = "https://oneic-dashboard-default-rtdb.firebaseio.com";
 
-// ═══ ONE-TIME DATA FIX ═══════════════════════════════════
-// يُصلح Firebase: يصحح أسماء شركات التحصيل ويحافظ على history و uploadCount
+// ═══ ONE-TIME DATA FIX v8 ═════════════════════════════════
+// يُصلح Firebase: يُحافظ على history/uploadCount + يُضيف شركات جديدة (Eemad)
 (function() {
   if (typeof window === 'undefined') return;
-  if (localStorage.getItem('oneic_data_fixed_v7')) return;
+  if (localStorage.getItem('oneic_data_fixed_v8')) return;
+  var REQUIRED_DC = ['Matrix Debt Collection','National Center','Compass Risk Support Services','Ejada','Tahseel United','High Speed Company','Eemad'];
   var now = new Date().toISOString();
-  // اقرأ Firebase أولاً لتحافظ على history و uploadCount
   fetch('https://oneic-dashboard-default-rtdb.firebaseio.com/main.json')
     .then(function(r){ return r.json(); })
     .then(function(existing) {
-      // تحقق هل بيانات DC صحيحة بالفعل
       var existDC = (existing && existing.debtCompanies)||[];
-      var alreadyValid = existDC.some(function(c){ return c.name==='Matrix Debt Collection'||c.name==='National Center'; });
-      if (alreadyValid && existing && existing.regions && existing.regions.length > 0) {
-        // البيانات صحيحة — فقط حافظ على localStorage وضع العلامة
-        try { localStorage.setItem('oneic_data_fixed_v7','1'); } catch(e) {}
-        // لكن تأكد من أن localStorage محدّث
+      var hasValidBase = existDC.some(function(c){ return c.name==='Matrix Debt Collection'||c.name==='National Center'; });
+      var hasAllRequired = REQUIRED_DC.every(function(nm){ return existDC.some(function(c){ return c.name===nm; }); });
+
+      if (hasValidBase && hasAllRequired && existing && existing.regions && existing.regions.length > 0) {
+        // كل شيء موجود — فقط حدّث localStorage
+        try { localStorage.setItem('oneic_data_fixed_v8','1'); } catch(e) {}
         try { localStorage.setItem('oneic_dashboard_data', JSON.stringify(existing)); } catch(e) {}
         return;
       }
-      // البيانات خاطئة — استبدل debtCompanies و regions بـ SEED لكن احتفظ بـ history و uploadCount
-      var fixData = Object.assign({}, SEED, {
-        lastUpdated: now, _updatedAt: now,
-        totalPortfolio: SEED.totalPortfolio,
-        // احتفظ بـ history و uploadCount من Firebase إذا وُجدت
-        history: (existing && existing.history && existing.history.length > 0) ? existing.history : [],
-        uploadCount: (existing && existing.uploadCount && existing.uploadCount > 1) ? existing.uploadCount : (SEED.uploadCount||1),
-      });
+
+      // يوجد شركات ناقصة أو بيانات خاطئة — أصلح Firebase
+      var fixData;
+      if (hasValidBase && existing && existing.regions && existing.regions.length > 0) {
+        // البيانات أساسًا صحيحة — فقط أضف الشركات الناقصة
+        var mergedDC = existDC.slice();
+        SEED.debtCompanies.forEach(function(seedCo) {
+          var exists = mergedDC.some(function(c){ return c.name===seedCo.name; });
+          if (!exists) mergedDC.push(seedCo);
+        });
+        fixData = Object.assign({}, existing, {
+          debtCompanies: mergedDC,
+          lastUpdated: now, _updatedAt: now,
+        });
+      } else {
+        // البيانات خاطئة — استخدم SEED كاملاً
+        fixData = Object.assign({}, SEED, {
+          lastUpdated: now, _updatedAt: now,
+          totalPortfolio: SEED.totalPortfolio,
+          history: (existing && existing.history && existing.history.length > 0) ? existing.history : [],
+          uploadCount: (existing && existing.uploadCount && existing.uploadCount > 1) ? existing.uploadCount : (SEED.uploadCount||1),
+        });
+      }
       try { localStorage.setItem('oneic_dashboard_data', JSON.stringify(fixData)); } catch(e) {}
       fetch('https://oneic-dashboard-default-rtdb.firebaseio.com/main.json', {
         method: 'PUT', headers: {'Content-Type':'application/json'}, body: JSON.stringify(fixData)
       }).then(function() {
-        try { localStorage.setItem('oneic_data_fixed_v7','1'); } catch(e) {}
-        console.log('[ONEIC] Data fixed — DC names corrected, history preserved');
-      }).catch(function(e) { console.warn('[ONEIC] Fix failed:', e.message); });
+        try { localStorage.setItem('oneic_data_fixed_v8','1'); } catch(e) {}
+        console.log('[ONEIC] Fix v8: DC companies updated, Eemad added');
+      }).catch(function(e) { console.warn('[ONEIC] Fix v8 failed:', e.message); });
     }).catch(function() {
-      // Firebase غير متاح — استخدم SEED فقط للـ localStorage
       try { localStorage.setItem('oneic_dashboard_data', JSON.stringify(SEED)); } catch(e) {}
-      try { localStorage.setItem('oneic_data_fixed_v7','1'); } catch(e) {}
+      try { localStorage.setItem('oneic_data_fixed_v8','1'); } catch(e) {}
     });
 })();
 // ══════════════════════════════════════════════════════════
