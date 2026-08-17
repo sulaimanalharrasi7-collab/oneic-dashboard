@@ -10828,26 +10828,33 @@ export default function Dashboard() {
     });
     var DC_ALWAYS=[{name:"Tahseel United",portAmt:0,principalAmt:0,portCnt:108,paid:0,adj:0,count:0},{name:"High Speed Company",portAmt:0,principalAmt:0,portCnt:35,paid:0,adj:0,count:0}];
     DC_ALWAYS.forEach(function(dc){if(!mergedCompanies.find(function(c){return c.name===dc.name;})){var pdc=(data.debtCompanies||[]).find(function(c){return c.name===dc.name;});mergedCompanies.push(Object.assign({},dc,pdc||{}));}});
-    // ضمان وجود كل أقسام المكتب الرئيسي الأربعة دائماً
-    const HO_REQUIRED = ["Legal - DR. Sarhaan","Documentation- Omantel","HO","Legal -Oneic"];
+    // ضمان وجود كل أقسام المكتب الرئيسي دائماً
+    const HO_REQUIRED = ["Legal - DR. Sarhaan","Documentation- Omantel","HO","Legal -Oneic","Refund - before legal","Omantel Communication","Initial Loss"];
     const HO_PORT_DATA = {
       "Legal - DR. Sarhaan": { portAmt: 3229651.681, portCnt: 3662, principalAmt: 3301711.348 },
       "Documentation- Omantel":  { portAmt: 471756.070,  portCnt: 1099, closed:8, active:1091 },
       "HO":                   { portAmt: 0,           portCnt: 340  },
       "Non-due accounts":     { portAmt: 0,           portCnt: 340  },
-      "Legal -Oneic":{portAmt:64528.164,portCnt:101,principalAmt:64528.164,closed:101,active:0},"Refund - before legal":{portAmt:0,portCnt:0,closed:0,active:0},"Refund - after legal":{portAmt:0,portCnt:0,closed:0,active:0}
+      "Legal -Oneic":{portAmt:64528.164,portCnt:101,principalAmt:64528.164,closed:101,active:0},
+      "Refund - before legal":{portAmt:0,portCnt:0,closed:0,active:0},
+      "Refund - after legal":{portAmt:0,portCnt:0,closed:0,active:0},
+      "Omantel Communication":{portAmt:0,portCnt:177,closed:0,active:177},
+      "Initial Loss":{portAmt:1437597.544,portCnt:12044,principalAmt:1437597.544,closed:0,active:12044}
     };
     const mergedHO = HO_REQUIRED.map(nm => {
       const displayNm = nm==='HO'?'Non-due accounts':nm;
-      const fromNew = (newData.headOffice||[]).find(c=>c.name===displayNm||c.name===nm);
-      const fromExisting = (data.headOffice||[]).find(d=>d.name===displayNm||d.name===nm);
+      const fromNew = (newData.headOffice||[]).find(function(c){return c.name===displayNm||c.name===nm;});
+      const fromExisting = (data.headOffice||[]).find(function(d){return d.name===displayNm||d.name===nm;});
       const portInfo = HO_PORT_DATA[nm]||{};
       if (fromNew) return { ...fromNew, portAmt: fromNew.portAmt||portInfo.portAmt||0, portCnt: fromNew.portCnt||portInfo.portCnt||0,
-        // CT/VS من الملف الجديد أو احتفظ بالقديم
-        ctExpat:fromNew.ctExpat||c.ctExpat||0, ctOman:fromNew.ctOman||c.ctOman||0, ctEnterprise:fromNew.ctEnterprise||c.ctEnterprise||0,
-        vsExpired:fromNew.vsExpired||c.vsExpired||0, vsNotExpired:fromNew.vsNotExpired||c.vsNotExpired||0, vsNoData:fromNew.vsNoData||c.vsNoData||0 };
+        ctExpat:fromNew.ctExpat||(fromExisting&&fromExisting.ctExpat)||0,
+        ctOman:fromNew.ctOman||(fromExisting&&fromExisting.ctOman)||0,
+        ctEnterprise:fromNew.ctEnterprise||(fromExisting&&fromExisting.ctEnterprise)||0,
+        vsExpired:fromNew.vsExpired||(fromExisting&&fromExisting.vsExpired)||0,
+        vsNotExpired:fromNew.vsNotExpired||(fromExisting&&fromExisting.vsNotExpired)||0,
+        vsNoData:fromNew.vsNoData||(fromExisting&&fromExisting.vsNoData)||0 };
       if (fromExisting) return { ...fromExisting, portAmt: fromExisting.portAmt||portInfo.portAmt||0, portCnt: fromExisting.portCnt||portInfo.portCnt||0 };
-      return { name:nm, paid:0, adj:0, count:0, portAmt:portInfo.portAmt||0, portCnt:portInfo.portCnt||0 };
+      return { name:displayNm, paid:0, adj:0, count:0, portAmt:portInfo.portAmt||0, portCnt:portInfo.portCnt||0 };
     });
     const _ts = new Date().toISOString();
     const dataToSave = {
