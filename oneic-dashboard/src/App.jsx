@@ -7059,7 +7059,7 @@ function EntityCard({name,paid,adj,color,rank,small,cnt,cBranch,portAmt,portCnt,
             ctEnterprise>0 && {label:lang==='ar'?"شركات":"Enterprise", val:ctEnterprise, color:"#d97706", bg:"#fef3c7"},
           ].filter(Boolean);
           var vsBoxes = [
-            vsNotExpired>0 && {label:lang==='ar'?"التأشيرة سارية":"Valid Visa",      val:vsNotExpired, color:"#16a34a", bg:"#dcfce7"},
+            vsNotExpired>0 && {label:lang==='ar'?"سارية":"Valid Visa",      val:vsNotExpired, color:"#16a34a", bg:"#dcfce7"},
             vsExpired>0    && {label:lang==='ar'?"منتهية":"Expired",    val:vsExpired,    color:"#dc2626", bg:"#fee2e2"},
             vsNoData>0     && {label:lang==='ar'?"لا توجد بيانات":"No Data", val:vsNoData,     color:"#6b7280", bg:"#f3f4f6"},
           ].filter(Boolean);
@@ -7071,7 +7071,7 @@ function EntityCard({name,paid,adj,color,rank,small,cnt,cBranch,portAmt,portCnt,
               <div style={{display:"grid",gridTemplateColumns:"1fr auto 1fr",gap:6,alignItems:"start"}}>
                 {/* نوع العميل */}
                 <div>
-                  <div style={{fontSize:small?8:9,fontWeight:800,color:"#111",marginBottom:4}}>{lang==='ar'?"نوع العميل":"Customer Type"}</div>
+                  <div style={{fontSize:small?10:12,fontWeight:800,color:"#111",marginBottom:4,textAlign:"center"}}>{lang==='ar'?"نوع العميل":"Customer Type"}</div>
                   <div style={{display:"grid",gridTemplateColumns:"repeat("+ctBoxes.length+",1fr)",gap:4}}>
                     {ctBoxes.map(function(box,bi){return (
                       <div key={bi} style={{background:box.bg,borderRadius:7,padding:small?"4px 3px":"6px 5px",textAlign:"center",border:"1px solid "+box.color+"40"}}>
@@ -7086,7 +7086,7 @@ function EntityCard({name,paid,adj,color,rank,small,cnt,cBranch,portAmt,portCnt,
                 <div style={{width:1,background:"#7c3aed22",alignSelf:"stretch",margin:"0 2px"}}/>
                 {/* حالة التأشيرة */}
                 <div>
-                  <div style={{fontSize:small?8:9,fontWeight:800,color:"#111",marginBottom:4}}>{lang==='ar'?"حالة التأشيرة":"Visa Status"}</div>
+                  <div style={{fontSize:small?10:12,fontWeight:800,color:"#111",marginBottom:4,textAlign:"center"}}>{lang==='ar'?"حالة التأشيرة":"Visa Status"}</div>
                   <div style={{display:"grid",gridTemplateColumns:"repeat("+vsBoxes.length+",1fr)",gap:4}}>
                     {vsBoxes.map(function(box,bi){return (
                       <div key={bi} style={{background:box.bg,borderRadius:7,padding:small?"4px 3px":"6px 5px",textAlign:"center",border:"1px solid "+box.color+"40"}}>
@@ -9924,7 +9924,7 @@ function handlePrint(data, lang='ar') {
       if (c.ctExpat>0)      ctParts.push('<span style="background:#dbeafe;color:#1d4ed8;padding:3px 10px;border-radius:6px;font-size:9pt;font-weight:700">'+T('وافد','Expat')+': '+(c.ctExpat||0).toLocaleString()+'</span>');
       if (c.ctOman>0)       ctParts.push('<span style="background:#dcfce7;color:#166534;padding:3px 10px;border-radius:6px;font-size:9pt;font-weight:700">'+T('عُماني','Omani')+': '+(c.ctOman||0).toLocaleString()+'</span>');
       if (c.ctEnterprise>0) ctParts.push('<span style="background:#fef3c7;color:#92400e;padding:3px 10px;border-radius:6px;font-size:9pt;font-weight:700">'+T('شركات','Enterprise')+': '+(c.ctEnterprise||0).toLocaleString()+'</span>');
-      if (c.vsNotExpired>0) vsParts.push('<span style="background:#dcfce7;color:#166534;padding:3px 10px;border-radius:6px;font-size:9pt;font-weight:700">'+T('التأشيرة سارية','Valid Visa')+': '+(c.vsNotExpired||0).toLocaleString()+'</span>');
+      if (c.vsNotExpired>0) vsParts.push('<span style="background:#dcfce7;color:#166534;padding:3px 10px;border-radius:6px;font-size:9pt;font-weight:700">'+T('سارية','Valid Visa')+': '+(c.vsNotExpired||0).toLocaleString()+'</span>');
       if (c.vsExpired>0)    vsParts.push('<span style="background:#fee2e2;color:#991b1b;padding:3px 10px;border-radius:6px;font-size:9pt;font-weight:700">'+T('التأشيرة منتهية','Expired Visa')+': '+(c.vsExpired||0).toLocaleString()+'</span>');
       if (c.vsNoData>0)     vsParts.push('<span style="background:#f3f4f6;color:#374151;padding:3px 10px;border-radius:6px;font-size:9pt;font-weight:700">'+T('لا توجد بيانات','No Data')+': '+(c.vsNoData||0).toLocaleString()+'</span>');
       if (ctParts.length||vsParts.length) {
