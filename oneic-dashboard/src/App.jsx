@@ -377,16 +377,16 @@ const SEED = {
     { name:"Ejada",                         paid:234768.002, adj:26578.195, portAmt:261235.418,  portCnt:1938,  count:1938,  osAmt:0,           principalAmt:261235.418,  paidCount:987,  adjCount:143  },
     { name:"Tahseel United",                paid:8362.595,   adj:433.130,   portAmt:0,           portCnt:108,   count:109,   osAmt:0,           principalAmt:8796.192,    paidCount:67,   adjCount:12   },
     { name:"High Speed Company",            paid:5927.788,   adj:67.577,    portAmt:0,           portCnt:35,    count:35,    osAmt:0,           principalAmt:5995.160,    paidCount:28,   adjCount:5    },
-    { name:"Eemad",                           paid:0.000,      adj:0.000,     portAmt:0,           portCnt:0,     count:0,     osAmt:0,           principalAmt:0,           paidCount:0,    adjCount:0    },
+    { name:"Eemad",                           paid:10.000,     adj:0.000,     portAmt:0,           portCnt:2683,  count:2683,  osAmt:0,           principalAmt:0,           paidCount:1,    adjCount:0    },
   ],
   headOffice: [
     { name:"Legal - DR. Sarhaan",    paid:102755.525, adj:20792.517, portAmt:3229651.681, portCnt:3973, count:3973, closed:135,  active:3838, principalAmt:3229651.681 },
-    { name:"Documentation- Omantel", paid:118.650,    adj:1527.216,  portAmt:471756.070,  portCnt:5906, count:5906, closed:0,    active:5906, principalAmt:471756.070, ctExpat:5906, vsNotExpired:5888, vsExpired:18 },
+    { name:"Documentation- Omantel", paid:118.650,    adj:1527.216,  portAmt:471756.070,  portCnt:5906, count:5906, closed:0,    active:5906, principalAmt:471756.070, ctExpat:5906, ctOman:0, ctEnterprise:0, vsNotExpired:5888, vsExpired:18, vsNoData:0 },
     { name:"Non-due accounts",       paid:98.741,     adj:0.127,     portAmt:0,           portCnt:252,  count:252,  closed:252,  active:0,    principalAmt:0           },
     { name:"Legal -Oneic",           paid:26573.783,  adj:4863.010,  portAmt:64528.164,   portCnt:101,  count:101,  closed:101,  active:0,    principalAmt:64528.164   },
     { name:"Refund - before legal",  paid:400.680,    adj:152.552,   portAmt:0,           portCnt:520,  count:520,  closed:0,    active:520,  principalAmt:0           },
     { name:"Omantel Communication",  paid:110.934,    adj:254.075,   portAmt:0,           portCnt:177,  count:177,  closed:0,    active:177,  principalAmt:0           },
-    { name:"Initial Loss",           paid:222.157,    adj:1554.546,  portAmt:1437597.544, portCnt:12044, count:12044, closed:0,    active:12044, principalAmt:1437597.544, ctExpat:12044, vsExpired:10744, vsNoData:1300 },
+    { name:"Initial Loss",           paid:222.157,    adj:1554.546,  portAmt:1437597.544, portCnt:12044, count:12044, closed:0,    active:12044, principalAmt:1437597.544, ctExpat:12044, ctOman:0, ctEnterprise:0, vsExpired:10744, vsNotExpired:0, vsNoData:1300 },
   ],
 };
 
@@ -6394,7 +6394,7 @@ async function parseXLS(file) {
 
     if (region === 'Debt Collection Company') {
       // تطبيع أسماء شركات التحصيل
-      var dcNormMap = {'Murtafaat Basteen Fida LLC':'Eemad','Murtafaat Basteen':'Eemad','مرتفعات بستان':'Eemad'};
+      var dcNormMap = {'Murtafaat Basteen Fida LLC':'Eemad','Murtafaat Basteen':'Eemad','مرتفعات بستان':'Eemad','Eemad (Murtafaat Basteen Fida LLC)':'Eemad','Eemad (Murtafaat Basteen)':'Eemad'};
       const rawKey = branch || col || 'Unknown';
       const key = dcNormMap[rawKey] || rawKey;
       if (!dcMap[key]) dcMap[key] = { paid:0, adj:0, count:0, paidCount:0, adjCount:0, osAmt:0, principalAmt:0 };
@@ -6406,7 +6406,7 @@ async function parseXLS(file) {
       const colL = col.toLowerCase();
       let key = 'HO';
       if      (colL.includes('dr') || colL.includes('sarhaan') || colL.includes('sarhan')) key = 'Legal - DR. Sarhaan';
-      else if (colL.includes('doc'))  key = 'Documentation- Omantel';
+      else if (colL.includes('doc'))  { key = 'Documentation- Omantel'; }
       else if (colL.includes('non-due') || colL.includes('nondue')) key = 'HO';
       else if (col.trim().toUpperCase() === 'HO') key = 'HO';
       else if (colL.includes('refund') && colL.includes('before')) key = 'Refund - before legal';
@@ -6536,7 +6536,7 @@ const FIREBASE_URL = "https://oneic-dashboard-default-rtdb.firebaseio.com";
 // يُصلح Firebase: يُحافظ على history/uploadCount + يُضيف شركات جديدة (Eemad)
 (function() {
   if (typeof window === 'undefined') return;
-  if (localStorage.getItem('oneic_data_fixed_v8')) return;
+  if (localStorage.getItem('oneic_data_fixed_v9')) return;
   var REQUIRED_DC = ['Matrix Debt Collection','National Center','Compass Risk Support Services','Ejada','Tahseel United','High Speed Company','Eemad'];
   var now = new Date().toISOString();
   fetch('https://oneic-dashboard-default-rtdb.firebaseio.com/main.json')
@@ -6548,7 +6548,7 @@ const FIREBASE_URL = "https://oneic-dashboard-default-rtdb.firebaseio.com";
 
       if (hasValidBase && hasAllRequired && existing && existing.regions && existing.regions.length > 0) {
         // كل شيء موجود — فقط حدّث localStorage
-        try { localStorage.setItem('oneic_data_fixed_v8','1'); } catch(e) {}
+        try { localStorage.setItem('oneic_data_fixed_v9','1'); } catch(e) {}
         try { localStorage.setItem('oneic_dashboard_data', JSON.stringify(existing)); } catch(e) {}
         return;
       }
@@ -6579,12 +6579,12 @@ const FIREBASE_URL = "https://oneic-dashboard-default-rtdb.firebaseio.com";
       fetch('https://oneic-dashboard-default-rtdb.firebaseio.com/main.json', {
         method: 'PUT', headers: {'Content-Type':'application/json'}, body: JSON.stringify(fixData)
       }).then(function() {
-        try { localStorage.setItem('oneic_data_fixed_v8','1'); } catch(e) {}
+        try { localStorage.setItem('oneic_data_fixed_v9','1'); } catch(e) {}
         console.log('[ONEIC] Fix v8: DC companies updated, Eemad added');
       }).catch(function(e) { console.warn('[ONEIC] Fix v8 failed:', e.message); });
     }).catch(function() {
       try { localStorage.setItem('oneic_dashboard_data', JSON.stringify(SEED)); } catch(e) {}
-      try { localStorage.setItem('oneic_data_fixed_v8','1'); } catch(e) {}
+      try { localStorage.setItem('oneic_data_fixed_v9','1'); } catch(e) {}
     });
 })();
 // ══════════════════════════════════════════════════════════
@@ -7035,27 +7035,49 @@ function EntityCard({name,paid,adj,color,rank,small,cnt,cBranch,portAmt,portCnt,
             ctEnterprise>0 && {label:lang==='ar'?"شركات":"Enterprise", val:ctEnterprise, color:"#d97706", bg:"#fef3c7"},
           ].filter(Boolean);
           var vsBoxes = [
-            vsNotExpired>0 && {label:lang==='ar'?"سارية":"Valid",      val:vsNotExpired, color:"#16a34a", bg:"#dcfce7"},
-            vsExpired>0    && {label:lang==='ar'?"منتهية":"Expired",    val:vsExpired,    color:"#dc2626", bg:"#fee2e2"},
-            vsNoData>0     && {label:lang==='ar'?"لا بيانات":"No Data", val:vsNoData,     color:"#6b7280", bg:"#f3f4f6"},
+            vsNotExpired>0 && {label:lang==='ar'?"التأشيرة سارية":"Valid Visa",      val:vsNotExpired, color:"#16a34a", bg:"#dcfce7"},
+            vsExpired>0    && {label:lang==='ar'?"التأشيرة منتهية":"Expired Visa",    val:vsExpired,    color:"#dc2626", bg:"#fee2e2"},
+            vsNoData>0     && {label:lang==='ar'?"لا توجد بيانات":"No Data", val:vsNoData,     color:"#6b7280", bg:"#f3f4f6"},
           ].filter(Boolean);
           var allBoxes = ctBoxes.concat(vsBoxes);
           if (!allBoxes.length) return null;
           var cols = allBoxes.length <= 3 ? allBoxes.length : 3;
           return (
-            <div>
-              <div style={{fontSize:small?9:10,fontWeight:800,color:"#6b7280",marginBottom:4,textAlign:"center",letterSpacing:0.3}}>
-                {lang==='ar'?"نوع العميل وحالة التأشيرة":"Customer Type & Visa Status"}
-              </div>
-              <div style={{display:"grid",gridTemplateColumns:"repeat("+cols+",1fr)",gap:5}}>
-                {allBoxes.map(function(box,bi){return (
-                  <div key={bi} style={{background:box.bg,borderRadius:8,padding:small?"5px 4px":"7px 6px",textAlign:"center",border:"1px solid "+box.color+"40"}}>
-                    <div style={{fontSize:small?8:9,color:box.color,fontWeight:800,marginBottom:2}}>{box.label}</div>
-                    <div style={{fontSize:small?12:15,fontWeight:900,color:box.color}}>{(box.val||0).toLocaleString()}</div>
-                    <div style={{fontSize:small?7:8,color:"#9ca3af"}}>{lang==='ar'?"حساب":"acc."}</div>
+            <div style={{borderTop:"1px dashed #7c3aed33",paddingTop:8,display:"flex",flexDirection:"column",gap:6}}>
+              {/* نوع العميل */}
+              {ctBoxes.length > 0 && (
+                <div>
+                  <div style={{fontSize:small?8:9,fontWeight:800,color:"#111",marginBottom:4}}>
+                    {lang==='ar'?"نوع العميل":"Customer Type"}
                   </div>
-                );})}
-              </div>
+                  <div style={{display:"grid",gridTemplateColumns:"repeat("+ctBoxes.length+",1fr)",gap:5}}>
+                    {ctBoxes.map(function(box,bi){return (
+                      <div key={bi} style={{background:box.bg,borderRadius:8,padding:small?"5px 4px":"7px 6px",textAlign:"center",border:"1px solid "+box.color+"40"}}>
+                        <div style={{fontSize:small?8:9,color:box.color,fontWeight:800,marginBottom:2}}>{box.label}</div>
+                        <div style={{fontSize:small?12:15,fontWeight:900,color:box.color}}>{(box.val||0).toLocaleString()}</div>
+                        <div style={{fontSize:small?7:8,color:"#9ca3af"}}>{lang==='ar'?"حساب":"acc."}</div>
+                      </div>
+                    );})}
+                  </div>
+                </div>
+              )}
+              {/* حالة التأشيرة */}
+              {vsBoxes.length > 0 && (
+                <div>
+                  <div style={{fontSize:small?8:9,fontWeight:800,color:"#111",marginBottom:4}}>
+                    {lang==='ar'?"حالة التأشيرة":"Visa Status"}
+                  </div>
+                  <div style={{display:"grid",gridTemplateColumns:"repeat("+vsBoxes.length+",1fr)",gap:5}}>
+                    {vsBoxes.map(function(box,bi){return (
+                      <div key={bi} style={{background:box.bg,borderRadius:8,padding:small?"5px 4px":"7px 6px",textAlign:"center",border:"1px solid "+box.color+"40"}}>
+                        <div style={{fontSize:small?8:9,color:box.color,fontWeight:800,marginBottom:2}}>{box.label}</div>
+                        <div style={{fontSize:small?12:15,fontWeight:900,color:box.color}}>{(box.val||0).toLocaleString()}</div>
+                        <div style={{fontSize:small?7:8,color:"#9ca3af"}}>{lang==='ar'?"حساب":"acc."}</div>
+                      </div>
+                    );})}
+                  </div>
+                </div>
+              )}
             </div>
           );
         })() : null}
@@ -9878,14 +9900,18 @@ function handlePrint(data, lang='ar') {
     var mainRow = eRow(c.name, c.paid||0, c.adj||0, c.portAmt||c.principalAmt||0, c.portCnt||c.count||0, c.closed||0, c.active||0, i, '#6c3fa0');
     // أضف صف CT/VS للـ Initial Loss و Documentation- Omantel
     if ((c.name==='Initial Loss'||c.name==='Documentation- Omantel') && (c.ctExpat||c.ctOman||c.ctEnterprise||c.vsExpired||c.vsNotExpired||c.vsNoData)) {
-      var ctParts = [];
-      if (c.ctExpat>0)      ctParts.push('<span style="background:#dbeafe;color:#1d4ed8;padding:2px 8px;border-radius:4px;font-size:9pt;font-weight:700;margin:2px">'+T('وافد','Expat')+': '+(c.ctExpat||0).toLocaleString()+'</span>');
-      if (c.ctOman>0)       ctParts.push('<span style="background:#dcfce7;color:#166534;padding:2px 8px;border-radius:4px;font-size:9pt;font-weight:700;margin:2px">'+T('عُماني','Omani')+': '+(c.ctOman||0).toLocaleString()+'</span>');
-      if (c.ctEnterprise>0) ctParts.push('<span style="background:#fef3c7;color:#92400e;padding:2px 8px;border-radius:4px;font-size:9pt;font-weight:700;margin:2px">'+T('شركات','Enterprise')+': '+(c.ctEnterprise||0).toLocaleString()+'</span>');
-      if (c.vsNotExpired>0) ctParts.push('<span style="background:#dcfce7;color:#166534;padding:2px 8px;border-radius:4px;font-size:9pt;font-weight:700;margin:2px">'+T('سارية','Valid')+': '+(c.vsNotExpired||0).toLocaleString()+'</span>');
-      if (c.vsExpired>0)    ctParts.push('<span style="background:#fee2e2;color:#991b1b;padding:2px 8px;border-radius:4px;font-size:9pt;font-weight:700;margin:2px">'+T('منتهية','Expired')+': '+(c.vsExpired||0).toLocaleString()+'</span>');
-      if (c.vsNoData>0)     ctParts.push('<span style="background:#f3f4f6;color:#374151;padding:2px 8px;border-radius:4px;font-size:9pt;font-weight:700;margin:2px">'+T('لا بيانات','No Data')+': '+(c.vsNoData||0).toLocaleString()+'</span>');
-      mainRow += '<tr style="background:#faf5ff"><td colspan="7" style="padding:6px 16px;font-size:9pt;color:#6b7280;border-bottom:1px solid #e5e7eb">'+T('↳ نوع العميل وحالة التأشيرة','↳ Customer Type & Visa Status')+': '+ctParts.join(' ')+'</td></tr>';
+      var ctParts = []; var vsParts = [];
+      if (c.ctExpat>0)      ctParts.push('<span style="background:#dbeafe;color:#1d4ed8;padding:3px 10px;border-radius:6px;font-size:9pt;font-weight:700">'+T('وافد','Expat')+': '+(c.ctExpat||0).toLocaleString()+'</span>');
+      if (c.ctOman>0)       ctParts.push('<span style="background:#dcfce7;color:#166534;padding:3px 10px;border-radius:6px;font-size:9pt;font-weight:700">'+T('عُماني','Omani')+': '+(c.ctOman||0).toLocaleString()+'</span>');
+      if (c.ctEnterprise>0) ctParts.push('<span style="background:#fef3c7;color:#92400e;padding:3px 10px;border-radius:6px;font-size:9pt;font-weight:700">'+T('شركات','Enterprise')+': '+(c.ctEnterprise||0).toLocaleString()+'</span>');
+      if (c.vsNotExpired>0) vsParts.push('<span style="background:#dcfce7;color:#166534;padding:3px 10px;border-radius:6px;font-size:9pt;font-weight:700">'+T('التأشيرة سارية','Valid Visa')+': '+(c.vsNotExpired||0).toLocaleString()+'</span>');
+      if (c.vsExpired>0)    vsParts.push('<span style="background:#fee2e2;color:#991b1b;padding:3px 10px;border-radius:6px;font-size:9pt;font-weight:700">'+T('التأشيرة منتهية','Expired Visa')+': '+(c.vsExpired||0).toLocaleString()+'</span>');
+      if (c.vsNoData>0)     vsParts.push('<span style="background:#f3f4f6;color:#374151;padding:3px 10px;border-radius:6px;font-size:9pt;font-weight:700">'+T('لا توجد بيانات','No Data')+': '+(c.vsNoData||0).toLocaleString()+'</span>');
+      if (ctParts.length||vsParts.length) {
+        var ctSec = ctParts.length ? '<div style="margin-bottom:5px"><b style="font-size:9pt;color:#111">'+T('نوع العميل','Customer Type')+':</b> '+ctParts.join(' ')+'</div>' : '';
+        var vsSec = vsParts.length ? '<div><b style="font-size:9pt;color:#111">'+T('حالة التأشيرة','Visa Status')+':</b> '+vsParts.join(' ')+'</div>' : '';
+        mainRow += '<tr style="background:#faf5ff"><td colspan="7" style="padding:7px 16px;border-bottom:1px solid #e5e7eb">'+ctSec+vsSec+'</td></tr>';
+      }
     }
     return mainRow;
   }).join('');
