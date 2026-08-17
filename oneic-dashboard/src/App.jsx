@@ -6499,21 +6499,26 @@ async function parseXLS(file) {
   const HO_KEYS = ["Legal - DR. Sarhaan","Documentation- Omantel","HO","Legal -Oneic","Initial Loss"];
   const HO_DISPLAY_MAP = {"HO":"Non-due accounts","Non-due accounts":"Non-due accounts","Documentation- Omantel":"Documentation- Omantel","Legal - DR. Sarhaan":"Legal - DR. Sarhaan","Legal -Oneic":"Legal -Oneic","Initial Loss":"Initial Loss"};
   const headOffice = HO_KEYS.map(nm => {
-    const d = hoMap[nm]||{paid:0,adj:0,count:0,principalAmt:0,closed:0,active:0};
+    const d = hoMap[nm]||{paid:0,adj:0,count:0,principalAmt:0,closed:0,active:0,ctExpat:0,ctOman:0,ctEnterprise:0,vsExpired:0,vsNotExpired:0,vsNoData:0};
     const p = PORT.ho[nm]||{portAmt:0,portCnt:0};
     // استخدم count من الملف إذا كان PORT.portCnt صفر (محصّل جديد)
     const finalPortCnt = (d.count>0 && d.count>(p.portCnt||0)) ? d.count : (p.portCnt||0);
     const finalPortAmt = Math.max(0, d.principalAmt||p.portAmt||0);
     return {name:HO_DISPLAY_MAP[nm]||nm, paid:d.paid, adj:d.adj, count:d.count||0,
       closed:d.closed||0, active:d.active||0,
-      portAmt:finalPortAmt, portCnt:finalPortCnt, principalAmt:finalPortAmt};
+      portAmt:finalPortAmt, portCnt:finalPortCnt, principalAmt:finalPortAmt,
+      // Customer Type & Visa Status — من الملف مباشرة
+      ctExpat:d.ctExpat||0, ctOman:d.ctOman||0, ctEnterprise:d.ctEnterprise||0,
+      vsExpired:d.vsExpired||0, vsNotExpired:d.vsNotExpired||0, vsNoData:d.vsNoData||0};
   });
   const HO_DN={"HO":"Non-due accounts","Non-due accounts":"Non-due accounts"};
   Object.keys(hoMap).forEach(k => {
     if (!HO_KEYS.includes(k))
       headOffice.push({name:HO_DN[k]||k,paid:hoMap[k].paid,adj:hoMap[k].adj,count:hoMap[k].count||0,
         portAmt:hoMap[k].principalAmt||0, portCnt:hoMap[k].count||0,
-        closed:hoMap[k].closed||0, active:hoMap[k].active||0});
+        closed:hoMap[k].closed||0, active:hoMap[k].active||0,
+        ctExpat:hoMap[k].ctExpat||0, ctOman:hoMap[k].ctOman||0, ctEnterprise:hoMap[k].ctEnterprise||0,
+        vsExpired:hoMap[k].vsExpired||0, vsNotExpired:hoMap[k].vsNotExpired||0, vsNoData:hoMap[k].vsNoData||0});
   });
 
   return {
@@ -10837,7 +10842,10 @@ export default function Dashboard() {
       const fromNew = (newData.headOffice||[]).find(c=>c.name===displayNm||c.name===nm);
       const fromExisting = (data.headOffice||[]).find(d=>d.name===displayNm||d.name===nm);
       const portInfo = HO_PORT_DATA[nm]||{};
-      if (fromNew) return { ...fromNew, portAmt: fromNew.portAmt||portInfo.portAmt||0, portCnt: fromNew.portCnt||portInfo.portCnt||0 };
+      if (fromNew) return { ...fromNew, portAmt: fromNew.portAmt||portInfo.portAmt||0, portCnt: fromNew.portCnt||portInfo.portCnt||0,
+        // CT/VS من الملف الجديد أو احتفظ بالقديم
+        ctExpat:fromNew.ctExpat||c.ctExpat||0, ctOman:fromNew.ctOman||c.ctOman||0, ctEnterprise:fromNew.ctEnterprise||c.ctEnterprise||0,
+        vsExpired:fromNew.vsExpired||c.vsExpired||0, vsNotExpired:fromNew.vsNotExpired||c.vsNotExpired||0, vsNoData:fromNew.vsNoData||c.vsNoData||0 };
       if (fromExisting) return { ...fromExisting, portAmt: fromExisting.portAmt||portInfo.portAmt||0, portCnt: fromExisting.portCnt||portInfo.portCnt||0 };
       return { name:nm, paid:0, adj:0, count:0, portAmt:portInfo.portAmt||0, portCnt:portInfo.portCnt||0 };
     });
