@@ -7075,9 +7075,9 @@ function EntityCard({name,paid,adj,color,rank,small,cnt,cBranch,portAmt,portCnt,
                   <div style={{display:"grid",gridTemplateColumns:"repeat("+ctBoxes.length+",1fr)",gap:4}}>
                     {ctBoxes.map(function(box,bi){return (
                       <div key={bi} style={{background:box.bg,borderRadius:7,padding:small?"4px 3px":"6px 5px",textAlign:"center",border:"1px solid "+box.color+"40"}}>
-                        <div style={{fontSize:small?7:8,color:box.color,fontWeight:800,marginBottom:1}}>{box.label}</div>
-                        <div style={{fontSize:small?11:14,fontWeight:900,color:box.color}}>{(box.val||0).toLocaleString()}</div>
-                        <div style={{fontSize:small?6:7,color:"#9ca3af"}}>{lang==='ar'?"حساب":"acc."}</div>
+                        <div style={{fontSize:small?9:11,color:box.color,fontWeight:800,marginBottom:1}}>{box.label}</div>
+                        <div style={{fontSize:small?13:16,fontWeight:900,color:box.color}}>{(box.val||0).toLocaleString()}</div>
+                        <div style={{fontSize:small?8:9,color:"#111",fontWeight:700}}>{lang==='ar'?"حساب":"acc."}</div>
                       </div>
                     );})}
                   </div>
@@ -7090,9 +7090,9 @@ function EntityCard({name,paid,adj,color,rank,small,cnt,cBranch,portAmt,portCnt,
                   <div style={{display:"grid",gridTemplateColumns:"repeat("+vsBoxes.length+",1fr)",gap:4}}>
                     {vsBoxes.map(function(box,bi){return (
                       <div key={bi} style={{background:box.bg,borderRadius:7,padding:small?"4px 3px":"6px 5px",textAlign:"center",border:"1px solid "+box.color+"40"}}>
-                        <div style={{fontSize:small?7:8,color:box.color,fontWeight:800,marginBottom:1}}>{box.label}</div>
-                        <div style={{fontSize:small?11:14,fontWeight:900,color:box.color}}>{(box.val||0).toLocaleString()}</div>
-                        <div style={{fontSize:small?6:7,color:"#9ca3af"}}>{lang==='ar'?"حساب":"acc."}</div>
+                        <div style={{fontSize:small?9:11,color:box.color,fontWeight:800,marginBottom:1}}>{box.label}</div>
+                        <div style={{fontSize:small?13:16,fontWeight:900,color:box.color}}>{(box.val||0).toLocaleString()}</div>
+                        <div style={{fontSize:small?8:9,color:"#111",fontWeight:700}}>{lang==='ar'?"حساب":"acc."}</div>
                       </div>
                     );})}
                   </div>
