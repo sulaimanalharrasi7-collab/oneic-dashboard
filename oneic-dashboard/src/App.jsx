@@ -6541,7 +6541,7 @@ const FIREBASE_URL = "https://oneic-dashboard-default-rtdb.firebaseio.com";
 // يُصلح Firebase: يُحافظ على history/uploadCount + يُضيف شركات جديدة (Eemad)
 (function() {
   if (typeof window === 'undefined') return;
-  if (localStorage.getItem('oneic_data_fixed_v9')) return;
+  if (localStorage.getItem('oneic_data_fixed_v10')) return;
   var REQUIRED_DC = ['Matrix Debt Collection','National Center','Compass Risk Support Services','Ejada','Tahseel United','High Speed Company','Eemad'];
   var now = new Date().toISOString();
   fetch('https://oneic-dashboard-default-rtdb.firebaseio.com/main.json')
@@ -6550,10 +6550,15 @@ const FIREBASE_URL = "https://oneic-dashboard-default-rtdb.firebaseio.com";
       var existDC = (existing && existing.debtCompanies)||[];
       var hasValidBase = existDC.some(function(c){ return c.name==='Matrix Debt Collection'||c.name==='National Center'; });
       var hasAllRequired = REQUIRED_DC.every(function(nm){ return existDC.some(function(c){ return c.name===nm; }); });
+      var existHO = (existing && existing.headOffice)||[];
+      var hoIL = existHO.find(function(h){ return h.name==='Initial Loss'; });
+      var hoDoc = existHO.find(function(h){ return h.name==='Documentation- Omantel'; });
+      // تحقق هل CT/VS موجودة في Firebase
+      var hasCTVS = hoIL && (hoIL.ctExpat||hoIL.vsExpired||hoIL.vsNoData||hoIL.vsNotExpired);
 
-      if (hasValidBase && hasAllRequired && existing && existing.regions && existing.regions.length > 0) {
-        // كل شيء موجود — فقط حدّث localStorage
-        try { localStorage.setItem('oneic_data_fixed_v9','1'); } catch(e) {}
+      if (hasValidBase && hasAllRequired && existing && existing.regions && existing.regions.length > 0 && hasCTVS) {
+        // كل شيء موجود بما فيه CT/VS — فقط حدّث localStorage
+        try { localStorage.setItem('oneic_data_fixed_v10','1'); } catch(e) {}
         try { localStorage.setItem('oneic_dashboard_data', JSON.stringify(existing)); } catch(e) {}
         return;
       }
@@ -6561,14 +6566,28 @@ const FIREBASE_URL = "https://oneic-dashboard-default-rtdb.firebaseio.com";
       // يوجد شركات ناقصة أو بيانات خاطئة — أصلح Firebase
       var fixData;
       if (hasValidBase && existing && existing.regions && existing.regions.length > 0) {
-        // البيانات أساسًا صحيحة — فقط أضف الشركات الناقصة
+        // البيانات أساسًا صحيحة — أضف الشركات الناقصة وحدّث CT/VS في headOffice
         var mergedDC = existDC.slice();
         SEED.debtCompanies.forEach(function(seedCo) {
           var exists = mergedDC.some(function(c){ return c.name===seedCo.name; });
           if (!exists) mergedDC.push(seedCo);
         });
+        // دمج CT/VS من SEED إلى headOffice الموجود
+        var mergedHOFix = (existing.headOffice||[]).map(function(h) {
+          var seedH = (SEED.headOffice||[]).find(function(s){ return s.name===h.name; });
+          if (!seedH) return h;
+          return Object.assign({}, h, {
+            ctExpat:     h.ctExpat     || seedH.ctExpat     || 0,
+            ctOman:      h.ctOman      || seedH.ctOman      || 0,
+            ctEnterprise:h.ctEnterprise|| seedH.ctEnterprise|| 0,
+            vsExpired:   h.vsExpired   || seedH.vsExpired   || 0,
+            vsNotExpired:h.vsNotExpired|| seedH.vsNotExpired|| 0,
+            vsNoData:    h.vsNoData    || seedH.vsNoData    || 0,
+          });
+        });
         fixData = Object.assign({}, existing, {
           debtCompanies: mergedDC,
+          headOffice: mergedHOFix,
           lastUpdated: now, _updatedAt: now,
         });
       } else {
@@ -6584,12 +6603,12 @@ const FIREBASE_URL = "https://oneic-dashboard-default-rtdb.firebaseio.com";
       fetch('https://oneic-dashboard-default-rtdb.firebaseio.com/main.json', {
         method: 'PUT', headers: {'Content-Type':'application/json'}, body: JSON.stringify(fixData)
       }).then(function() {
-        try { localStorage.setItem('oneic_data_fixed_v9','1'); } catch(e) {}
+        try { localStorage.setItem('oneic_data_fixed_v10','1'); } catch(e) {}
         console.log('[ONEIC] Fix v8: DC companies updated, Eemad added');
       }).catch(function(e) { console.warn('[ONEIC] Fix v8 failed:', e.message); });
     }).catch(function() {
       try { localStorage.setItem('oneic_dashboard_data', JSON.stringify(SEED)); } catch(e) {}
-      try { localStorage.setItem('oneic_data_fixed_v9','1'); } catch(e) {}
+      try { localStorage.setItem('oneic_data_fixed_v10','1'); } catch(e) {}
     });
 })();
 // ══════════════════════════════════════════════════════════
@@ -10363,6 +10382,19 @@ export default function Dashboard() {
 
   // -- تحميل من Supabase عند فتح الصفحة --------------------------------------
   useEffect(() => {
+    // ── مساعد دمج CT/VS من SEED في كل مسارات الـ sync ───────
+    function mergeCTVS(hoArr) {
+      return (hoArr||[]).map(function(h) {
+        var s = (SEED.headOffice||[]).find(function(x){ return x.name===h.name; });
+        if (!s) return h;
+        var hasOwn = h.ctExpat||h.vsExpired||h.vsNotExpired||h.vsNoData;
+        if (hasOwn) return h;
+        return Object.assign({},h,{
+          ctExpat:s.ctExpat||0, ctOman:s.ctOman||0, ctEnterprise:s.ctEnterprise||0,
+          vsExpired:s.vsExpired||0, vsNotExpired:s.vsNotExpired||0, vsNoData:s.vsNoData||0
+        });
+      });
+    }
     async function load() {
       // == منطق مبسّط وموحّد ومضمون: Firebase هو مصدر الحقيقة الوحيد (single source of truth) ==
       // أثبتنا أن sbUpsert يحفظ بنجاح 100% بعد كل Complaints/XLS، لذا Firebase دائماً يُفضَّل إذا توفر ومحتواه صالح
@@ -10412,8 +10444,13 @@ export default function Dashboard() {
           "Omantel Communication":{portAmt:0,portCnt:177,closed:0,active:177}
         };
         const existingHO = row.headOffice || [];
-        const fullHO = HO_REQ.map(function(nm){var f=existingHO.find(function(x){return x.name===nm;})||(nm==='Non-due accounts'?existingHO.find(function(x){return x.name==='HO';}):null);var p=HO_P[nm]||{};if(f)return Object.assign({},p,f,{name:nm,closed:(f.closed!==undefined&&f.closed!==null)?f.closed:(p.closed||0),active:(f.active!==undefined&&f.active!==null)?f.active:(p.active||0)});return Object.assign({name:nm,paid:0,adj:0,count:0,closed:0,active:0},p);});
-        let d = Object.assign({},row,{headOffice:fullHO,_updatedAt:row._updatedAt||row.lastUpdated||''});
+        const fullHO = HO_REQ.map(function(nm){var f=existingHO.find(function(x){return x.name===nm;})||(nm==='Non-due accounts'?existingHO.find(function(x){return x.name==='HO';}):null);var p=HO_P[nm]||{};
+          // دمج CT/VS من SEED إذا لم تكن موجودة في Firebase
+          var seedH=(SEED.headOffice||[]).find(function(s){return s.name===nm;});
+          var ctVS=seedH?{ctExpat:seedH.ctExpat||0,ctOman:seedH.ctOman||0,ctEnterprise:seedH.ctEnterprise||0,vsExpired:seedH.vsExpired||0,vsNotExpired:seedH.vsNotExpired||0,vsNoData:seedH.vsNoData||0}:{};
+          if(f){var merged=Object.assign({},ctVS,f,{name:nm,closed:(f.closed!==undefined&&f.closed!==null)?f.closed:(p.closed||0),active:(f.active!==undefined&&f.active!==null)?f.active:(p.active||0)});return Object.assign({},p,merged);}
+          return Object.assign({name:nm,paid:0,adj:0,count:0,closed:0,active:0},p,ctVS);});
+        let d = Object.assign({},row,{headOffice:mergeCTVS(fullHO),_updatedAt:row._updatedAt||row.lastUpdated||''});
         lastSyncRef.current = d._updatedAt||'';
         if (row.complaintsBranchMap) setComplaintsBranchMap(row.complaintsBranchMap);
         if (row.complaintsRegionMap) setComplaintsRegionMap(row.complaintsRegionMap);
@@ -10447,7 +10484,7 @@ export default function Dashboard() {
         var HO_KEYS3 = ["Legal - DR. Sarhaan","Documentation- Omantel","Non-due accounts","Legal -Oneic","Refund - before legal","Refund - after legal","Omantel Communication","Initial Loss"];
         var HO_DEF3 = {"Legal - DR. Sarhaan":{portAmt:3229651.681,portCnt:3973,closed:135,active:3838},"Documentation- Omantel":{portAmt:471756.070,portCnt:0,closed:0,active:0},"Non-due accounts":{portAmt:0,portCnt:252,closed:252,active:0},"Legal -Oneic":{portAmt:64528.164,portCnt:101,closed:101,active:0},"Refund - before legal":{portAmt:0,portCnt:0,closed:0,active:0},"Refund - after legal":{portAmt:0,portCnt:0,closed:0,active:0},"Omantel Communication":{portAmt:0,portCnt:177,closed:0,active:177},"Initial Loss":{portAmt:1437597.544,portCnt:11185,closed:1,active:11184}};
         var eHO3 = row.headOffice||[];
-        var fullHO3 = HO_KEYS3.map(function(nm){
+        var fullHO3 = HO_KEYS3.map(function(nm){var seedH=(SEED.headOffice||[]).find(function(s){return s.name===nm;});var ctVS=seedH?{ctExpat:seedH.ctExpat||0,ctOman:seedH.ctOman||0,ctEnterprise:seedH.ctEnterprise||0,vsExpired:seedH.vsExpired||0,vsNotExpired:seedH.vsNotExpired||0,vsNoData:seedH.vsNoData||0}:{};
           var f=eHO3.find(function(c){return c.name===nm;})||(nm==='Non-due accounts'?eHO3.find(function(c){return c.name==='HO';}):null);
           var p=HO_DEF3[nm]||{};
           if(f) return Object.assign({},p,f,{name:nm,closed:(f.closed!==undefined&&f.closed!==null)?f.closed:(p.closed||0),active:(f.active!==undefined&&f.active!==null)?f.active:(p.active||0)});
@@ -10457,7 +10494,7 @@ export default function Dashboard() {
         var dSync = {};
         var rKeys = Object.keys(row);
         for(var ki=0;ki<rKeys.length;ki++){dSync[rKeys[ki]]=row[rKeys[ki]];}
-        dSync.headOffice = fullHO3;
+        dSync.headOffice = mergeCTVS(fullHO3);
         dSync._updatedAt = row._updatedAt||row.lastUpdated||'';
         lastSyncRef.current = dSync._updatedAt || new Date().toISOString();
         setData(function(prev){dSync.uploadCount=Math.max(dSync.uploadCount||0,(prev&&prev.uploadCount)||0);if(prev&&prev.uploadDate>(dSync.uploadDate||""))dSync.uploadDate=prev.uploadDate;return dSync;});
@@ -10482,7 +10519,7 @@ export default function Dashboard() {
         var eHO4=row.headOffice||[];
         var fullHO4=HO_KEYS4.map(function(nm){var f=eHO4.find(function(c){return c.name===nm;})||(nm==='Non-due accounts'?eHO4.find(function(c){return c.name==='HO';}):null);var p=HO_P4[nm]||{};if(f)return Object.assign({},p,f,{name:nm,closed:(f.closed!==undefined&&f.closed!==null)?f.closed:(p.closed||0),active:(f.active!==undefined&&f.active!==null)?f.active:(p.active||0)});return {name:nm,paid:0,adj:0,count:0,portAmt:p.portAmt||0,portCnt:p.portCnt||0,closed:0,active:0};});
         // == Firebase يحتوي البيانات الكاملة والنهائية الصحيحة - لا حاجة لأي دمج إضافي من localStorage ==
-        var dSync4={headOffice:fullHO4,_updatedAt:row._updatedAt||row.lastUpdated||''};
+        var dSync4={headOffice:mergeCTVS(fullHO4),_updatedAt:row._updatedAt||row.lastUpdated||''};
         var rk=Object.keys(row); for(var ki4=0;ki4<rk.length;ki4++){if(rk[ki4]!=='headOffice')dSync4[rk[ki4]]=row[rk[ki4]];}
         lastSyncRef.current = dSync4._updatedAt || new Date().toISOString();
         setData(function(prev){dSync4.uploadCount=Math.max(dSync4.uploadCount||0,(prev&&prev.uploadCount)||0);if(prev&&prev.uploadDate>(dSync4.uploadDate||""))dSync4.uploadDate=prev.uploadDate;return dSync4;});
@@ -10532,7 +10569,7 @@ export default function Dashboard() {
       var eHO5=row.headOffice||[];
       var fullHO5=HO_KEYS5.map(function(nm){var f=eHO5.find(function(c){return c.name===nm;})||(nm==='Non-due accounts'?eHO5.find(function(c){return c.name==='HO';}):null);var p=HO_P5[nm]||{};if(f)return Object.assign({},p,f,{name:nm,closed:(f.closed!==undefined&&f.closed!==null)?f.closed:(p.closed||0),active:(f.active!==undefined&&f.active!==null)?f.active:(p.active||0)});return Object.assign({name:nm,paid:0,adj:0,count:0,closed:0,active:0},p);});
       var d5={}; var rk5=Object.keys(row); for(var ki5=0;ki5<rk5.length;ki5++){d5[rk5[ki5]]=row[rk5[ki5]];}
-      d5.headOffice=fullHO5; d5._updatedAt=row._updatedAt||row.lastUpdated||'';
+      d5.headOffice=mergeCTVS(fullHO5); d5._updatedAt=row._updatedAt||row.lastUpdated||'';
       lastSyncRef.current = d5._updatedAt || new Date().toISOString();
       setData(function(prev){d5.uploadCount=Math.max(d5.uploadCount||0,(prev&&prev.uploadCount)||0);if(prev&&prev.uploadDate&&prev.uploadDate>(d5.uploadDate||''))d5.uploadDate=prev.uploadDate;return d5;});
       try{localStorage.setItem('oneic_dashboard_data',JSON.stringify(d5));}catch(e){}
