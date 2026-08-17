@@ -7060,7 +7060,7 @@ function EntityCard({name,paid,adj,color,rank,small,cnt,cBranch,portAmt,portCnt,
           ].filter(Boolean);
           var vsBoxes = [
             vsNotExpired>0 && {label:lang==='ar'?"التأشيرة سارية":"Valid Visa",      val:vsNotExpired, color:"#16a34a", bg:"#dcfce7"},
-            vsExpired>0    && {label:lang==='ar'?"التأشيرة منتهية":"Expired Visa",    val:vsExpired,    color:"#dc2626", bg:"#fee2e2"},
+            vsExpired>0    && {label:lang==='ar'?"منتهية":"Expired",    val:vsExpired,    color:"#dc2626", bg:"#fee2e2"},
             vsNoData>0     && {label:lang==='ar'?"لا توجد بيانات":"No Data", val:vsNoData,     color:"#6b7280", bg:"#f3f4f6"},
           ].filter(Boolean);
           var allBoxes = ctBoxes.concat(vsBoxes);
