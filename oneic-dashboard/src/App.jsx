@@ -386,7 +386,7 @@ const SEED = {
     { name:"Legal -Oneic",           paid:26573.783,  adj:4863.010,  portAmt:64528.164,   portCnt:101,  count:101,  closed:101,  active:0,    principalAmt:64528.164   },
     { name:"Refund - before legal",  paid:400.680,    adj:152.552,   portAmt:0,           portCnt:520,  count:520,  closed:0,    active:520,  principalAmt:0           },
     { name:"Omantel Communication",  paid:110.934,    adj:254.075,   portAmt:0,           portCnt:177,  count:177,  closed:0,    active:177,  principalAmt:0           },
-    { name:"Initial Loss",           paid:233.157,    adj:1554.546,  portAmt:1437597.544, portCnt:12044, count:12044, closed:0,    active:12044, principalAmt:1437597.544, ctExpat:12044, ctOman:0, ctEnterprise:0, vsExpired:10744, vsNotExpired:0, vsNoData:1300, ctExpat_os:1721260.268, ctOman_os:0, ctEnterprise_os:0, vsExpired_os:1517586.515, vsNotExpired_os:0, vsNoData_os:203673.753 },
+    { name:"Initial Loss",           paid:233.157,    adj:1554.546,  portAmt:1437597.544, portCnt:12044, count:12044, closed:0,    active:12044, principalAmt:1437597.544, ctExpat:12044, ctOman:0, ctEnterprise:0, vsExpired:10744, vsNotExpired:0, vsNoData:1300, ctExpat_os:1721260.269, ctOman_os:0, ctEnterprise_os:0, vsExpired_os:1517586.515, vsNotExpired_os:0, vsNoData_os:203673.753 },
   ],
 };
 
@@ -6575,12 +6575,14 @@ const FIREBASE_URL = "https://oneic-dashboard-default-rtdb.firebaseio.com";
             vsNotExpired:Math.max(h.vsNotExpired||0,s.vsNotExpired||0),
             vsNoData:    Math.max(h.vsNoData||0,    s.vsNoData||0),
             // os Amount: خذ من Firebase إذا موجود، وإلا من SEED — لا Math.max لأنه ينخفض عند السداد
-            ctExpat_os:  (h.ctExpat_os>0) ? h.ctExpat_os : (s.ctExpat_os||0),
-            ctOman_os:   (h.ctOman_os>0)  ? h.ctOman_os  : (s.ctOman_os||0),
-            ctEnterprise_os:(h.ctEnterprise_os>0) ? h.ctEnterprise_os : (s.ctEnterprise_os||0),
-            vsExpired_os:   (h.vsExpired_os>0)    ? h.vsExpired_os    : (s.vsExpired_os||0),
-            vsNotExpired_os:(h.vsNotExpired_os>0)  ? h.vsNotExpired_os : (s.vsNotExpired_os||0),
-            vsNoData_os:    (h.vsNoData_os>0)      ? h.vsNoData_os     : (s.vsNoData_os||0),
+            // os: SEED دائماً يفوز في Fix (لأنه محدَّث يدوياً بآخر بيانات)
+            // بعد رفع ملف من الداشبورد، Firebase يحدَّث بالقيم الجديدة مباشرة
+            ctExpat_os:  s.ctExpat_os||h.ctExpat_os||0,
+            ctOman_os:   s.ctOman_os||h.ctOman_os||0,
+            ctEnterprise_os:s.ctEnterprise_os||h.ctEnterprise_os||0,
+            vsExpired_os:   s.vsExpired_os||h.vsExpired_os||0,
+            vsNotExpired_os:s.vsNotExpired_os||h.vsNotExpired_os||0,
+            vsNoData_os:    s.vsNoData_os||h.vsNoData_os||0,
           });
         });
         // أضف أي محصّل في SEED غير موجود في Firebase
@@ -10409,14 +10411,14 @@ export default function Dashboard() {
         // فقط أضف os من SEED إذا لم تكن موجودة
         if (hasOwn && hasOs) return h;
         if (hasOwn) {
-          // ct/vs موجودة لكن os غير موجودة — أضف os من SEED فقط
+          // ct/vs موجودة — SEED os يفوز دائماً (لأنه محدَّث بآخر ملف)
           return Object.assign({},h,{
-            ctExpat_os:h.ctExpat_os||s.ctExpat_os||0,
-            ctOman_os:h.ctOman_os||s.ctOman_os||0,
-            ctEnterprise_os:h.ctEnterprise_os||s.ctEnterprise_os||0,
-            vsExpired_os:h.vsExpired_os||s.vsExpired_os||0,
-            vsNotExpired_os:h.vsNotExpired_os||s.vsNotExpired_os||0,
-            vsNoData_os:h.vsNoData_os||s.vsNoData_os||0
+            ctExpat_os:s.ctExpat_os||h.ctExpat_os||0,
+            ctOman_os:s.ctOman_os||h.ctOman_os||0,
+            ctEnterprise_os:s.ctEnterprise_os||h.ctEnterprise_os||0,
+            vsExpired_os:s.vsExpired_os||h.vsExpired_os||0,
+            vsNotExpired_os:s.vsNotExpired_os||h.vsNotExpired_os||0,
+            vsNoData_os:s.vsNoData_os||h.vsNoData_os||0
           });
         }
         // Firebase فارغ — خذ كل شيء من SEED
