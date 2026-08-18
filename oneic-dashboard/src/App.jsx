@@ -6553,61 +6553,69 @@ const FIREBASE_URL = "https://oneic-dashboard-default-rtdb.firebaseio.com";
       var hasValidBase = existDC.some(function(c){ return c.name==='Matrix Debt Collection'||c.name==='National Center'; });
       var hasAllRequired = REQUIRED_DC.every(function(nm){ return existDC.some(function(c){ return c.name===nm; }); });
       var existHO = (existing && existing.headOffice)||[];
-      var hoIL = existHO.find(function(h){ return h.name==='Initial Loss'; });
-      var hoDoc = existHO.find(function(h){ return h.name==='Documentation- Omantel'; });
-      // تحقق هل CT/VS موجودة في Firebase
-      var hasCTVS = hoIL && (hoIL.ctExpat||hoIL.vsExpired||hoIL.vsNoData||hoIL.vsNotExpired);
 
-      if (hasValidBase && hasAllRequired && existing && existing.regions && existing.regions.length > 0 && hasCTVS) {
-        // كل شيء موجود بما فيه CT/VS — فقط حدّث localStorage
-        try { localStorage.setItem('oneic_data_fixed_v11','1'); } catch(e) {}
-        try { localStorage.setItem('oneic_dashboard_data', JSON.stringify(existing)); } catch(e) {}
-        return;
-      }
-
-      // يوجد شركات ناقصة أو بيانات خاطئة — أصلح Firebase
-      var fixData;
-      if (hasValidBase && existing && existing.regions && existing.regions.length > 0) {
-        // البيانات أساسًا صحيحة — أضف الشركات الناقصة وحدّث CT/VS في headOffice
-        var mergedDC = existDC.slice();
+      if (hasValidBase && hasAllRequired && existing && existing.regions && existing.regions.length > 0) {
+        // البيانات صحيحة — لكن دائماً حدّث CT/VS من SEED (قد تكون قيم جديدة)
+        var mergedDC2 = existDC.slice();
         SEED.debtCompanies.forEach(function(seedCo) {
-          var exists = mergedDC.some(function(c){ return c.name===seedCo.name; });
-          if (!exists) mergedDC.push(seedCo);
+          var exists = mergedDC2.some(function(c){ return c.name===seedCo.name; });
+          if (!exists) mergedDC2.push(seedCo);
         });
-        // دمج CT/VS من SEED إلى headOffice الموجود
-        var mergedHOFix = (existing.headOffice||[]).map(function(h) {
-          var seedH = (SEED.headOffice||[]).find(function(s){ return s.name===h.name; });
-          if (!seedH) return h;
+        // استخدم SEED للـ CT/VS دائماً كـ fallback محدّث
+        var mergedHO2 = (existing.headOffice||[]).map(function(h) {
+          var s = (SEED.headOffice||[]).find(function(x){ return x.name===h.name; });
+          if (!s) return h;
+          // الأولوية: إذا Firebase أكبر من SEED → من الملف المرفوع → احتفظ
+          // إذا SEED أكبر → SEED أحدث → استخدم SEED
           return Object.assign({}, h, {
-            ctExpat:     h.ctExpat     || seedH.ctExpat     || 0,
-            ctOman:      h.ctOman      || seedH.ctOman      || 0,
-            ctEnterprise:h.ctEnterprise|| seedH.ctEnterprise|| 0,
-            vsExpired:   h.vsExpired   || seedH.vsExpired   || 0,
-            vsNotExpired:h.vsNotExpired|| seedH.vsNotExpired|| 0,
-            vsNoData:    h.vsNoData    || seedH.vsNoData    || 0,
+            ctExpat:     Math.max(h.ctExpat||0,     s.ctExpat||0),
+            ctOman:      Math.max(h.ctOman||0,      s.ctOman||0),
+            ctEnterprise:Math.max(h.ctEnterprise||0,s.ctEnterprise||0),
+            vsExpired:   Math.max(h.vsExpired||0,   s.vsExpired||0),
+            vsNotExpired:Math.max(h.vsNotExpired||0,s.vsNotExpired||0),
+            vsNoData:    Math.max(h.vsNoData||0,    s.vsNoData||0),
+            ctExpat_os:  h.ctExpat_os||s.ctExpat_os||0,
+            ctOman_os:   h.ctOman_os||s.ctOman_os||0,
+            ctEnterprise_os:h.ctEnterprise_os||s.ctEnterprise_os||0,
+            vsExpired_os:h.vsExpired_os||s.vsExpired_os||0,
+            vsNotExpired_os:h.vsNotExpired_os||s.vsNotExpired_os||0,
+            vsNoData_os: h.vsNoData_os||s.vsNoData_os||0,
           });
         });
-        fixData = Object.assign({}, existing, {
-          debtCompanies: mergedDC,
-          headOffice: mergedHOFix,
+        // أضف أي محصّل في SEED غير موجود في Firebase
+        SEED.headOffice.forEach(function(s) {
+          var ex = mergedHO2.find(function(h){ return h.name===s.name; });
+          if (!ex) mergedHO2.push(s);
+        });
+        var fixData2 = Object.assign({}, existing, {
+          debtCompanies: mergedDC2, headOffice: mergedHO2,
           lastUpdated: now, _updatedAt: now,
         });
-      } else {
-        // البيانات خاطئة — استخدم SEED كاملاً
-        fixData = Object.assign({}, SEED, {
-          lastUpdated: now, _updatedAt: now,
-          totalPortfolio: SEED.totalPortfolio,
-          history: (existing && existing.history && existing.history.length > 0) ? existing.history : [],
-          uploadCount: (existing && existing.uploadCount && existing.uploadCount > 1) ? existing.uploadCount : (SEED.uploadCount||1),
+        try { localStorage.setItem('oneic_dashboard_data', JSON.stringify(fixData2)); } catch(e) {}
+        fetch('https://oneic-dashboard-default-rtdb.firebaseio.com/main.json', {
+          method:'PUT', headers:{'Content-Type':'application/json'}, body:JSON.stringify(fixData2)
+        }).then(function(){
+          try { localStorage.setItem('oneic_data_fixed_v11','1'); } catch(e) {}
+          console.log('[ONEIC] Fix v11: CT/VS synced from SEED');
+        }).catch(function(){
+          try { localStorage.setItem('oneic_data_fixed_v11','1'); } catch(e) {}
         });
+        return;
       }
+      // البيانات خاطئة — استخدم SEED كاملاً
+      var fixData = Object.assign({}, SEED, {
+        lastUpdated: now, _updatedAt: now,
+        totalPortfolio: SEED.totalPortfolio,
+        history: (existing && existing.history && existing.history.length > 0) ? existing.history : [],
+        uploadCount: (existing && existing.uploadCount && existing.uploadCount > 1) ? existing.uploadCount : (SEED.uploadCount||1),
+      });
       try { localStorage.setItem('oneic_dashboard_data', JSON.stringify(fixData)); } catch(e) {}
       fetch('https://oneic-dashboard-default-rtdb.firebaseio.com/main.json', {
         method: 'PUT', headers: {'Content-Type':'application/json'}, body: JSON.stringify(fixData)
       }).then(function() {
         try { localStorage.setItem('oneic_data_fixed_v11','1'); } catch(e) {}
-        console.log('[ONEIC] Fix v8: DC companies updated, Eemad added');
-      }).catch(function(e) { console.warn('[ONEIC] Fix v8 failed:', e.message); });
+        console.log('[ONEIC] Fix v11: SEED written to Firebase');
+      }).catch(function(e) { console.warn('[ONEIC] Fix v11 failed:', e.message); });
     }).catch(function() {
       try { localStorage.setItem('oneic_dashboard_data', JSON.stringify(SEED)); } catch(e) {}
       try { localStorage.setItem('oneic_data_fixed_v11','1'); } catch(e) {}
