@@ -6543,7 +6543,7 @@ const FIREBASE_URL = "https://oneic-dashboard-default-rtdb.firebaseio.com";
 // يُصلح Firebase: يُحافظ على history/uploadCount + يُضيف شركات جديدة (Eemad)
 (function() {
   if (typeof window === 'undefined') return;
-  if (localStorage.getItem('oneic_data_fixed_v11')) return;
+  if (localStorage.getItem('oneic_data_fixed_v12')) return;
   var REQUIRED_DC = ['Matrix Debt Collection','National Center','Compass Risk Support Services','Ejada','Tahseel United','High Speed Company','Eemad'];
   var now = new Date().toISOString();
   fetch('https://oneic-dashboard-default-rtdb.firebaseio.com/main.json')
@@ -6574,12 +6574,13 @@ const FIREBASE_URL = "https://oneic-dashboard-default-rtdb.firebaseio.com";
             vsExpired:   Math.max(h.vsExpired||0,   s.vsExpired||0),
             vsNotExpired:Math.max(h.vsNotExpired||0,s.vsNotExpired||0),
             vsNoData:    Math.max(h.vsNoData||0,    s.vsNoData||0),
-            ctExpat_os:  h.ctExpat_os||s.ctExpat_os||0,
-            ctOman_os:   h.ctOman_os||s.ctOman_os||0,
-            ctEnterprise_os:h.ctEnterprise_os||s.ctEnterprise_os||0,
-            vsExpired_os:h.vsExpired_os||s.vsExpired_os||0,
-            vsNotExpired_os:h.vsNotExpired_os||s.vsNotExpired_os||0,
-            vsNoData_os: h.vsNoData_os||s.vsNoData_os||0,
+            // os Amount: خذ من Firebase إذا موجود، وإلا من SEED — لا Math.max لأنه ينخفض عند السداد
+            ctExpat_os:  (h.ctExpat_os>0) ? h.ctExpat_os : (s.ctExpat_os||0),
+            ctOman_os:   (h.ctOman_os>0)  ? h.ctOman_os  : (s.ctOman_os||0),
+            ctEnterprise_os:(h.ctEnterprise_os>0) ? h.ctEnterprise_os : (s.ctEnterprise_os||0),
+            vsExpired_os:   (h.vsExpired_os>0)    ? h.vsExpired_os    : (s.vsExpired_os||0),
+            vsNotExpired_os:(h.vsNotExpired_os>0)  ? h.vsNotExpired_os : (s.vsNotExpired_os||0),
+            vsNoData_os:    (h.vsNoData_os>0)      ? h.vsNoData_os     : (s.vsNoData_os||0),
           });
         });
         // أضف أي محصّل في SEED غير موجود في Firebase
@@ -6595,10 +6596,10 @@ const FIREBASE_URL = "https://oneic-dashboard-default-rtdb.firebaseio.com";
         fetch('https://oneic-dashboard-default-rtdb.firebaseio.com/main.json', {
           method:'PUT', headers:{'Content-Type':'application/json'}, body:JSON.stringify(fixData2)
         }).then(function(){
-          try { localStorage.setItem('oneic_data_fixed_v11','1'); } catch(e) {}
+          try { localStorage.setItem('oneic_data_fixed_v12','1'); } catch(e) {}
           console.log('[ONEIC] Fix v11: CT/VS synced from SEED');
         }).catch(function(){
-          try { localStorage.setItem('oneic_data_fixed_v11','1'); } catch(e) {}
+          try { localStorage.setItem('oneic_data_fixed_v12','1'); } catch(e) {}
         });
         return;
       }
@@ -6613,12 +6614,12 @@ const FIREBASE_URL = "https://oneic-dashboard-default-rtdb.firebaseio.com";
       fetch('https://oneic-dashboard-default-rtdb.firebaseio.com/main.json', {
         method: 'PUT', headers: {'Content-Type':'application/json'}, body: JSON.stringify(fixData)
       }).then(function() {
-        try { localStorage.setItem('oneic_data_fixed_v11','1'); } catch(e) {}
+        try { localStorage.setItem('oneic_data_fixed_v12','1'); } catch(e) {}
         console.log('[ONEIC] Fix v11: SEED written to Firebase');
       }).catch(function(e) { console.warn('[ONEIC] Fix v11 failed:', e.message); });
     }).catch(function() {
       try { localStorage.setItem('oneic_dashboard_data', JSON.stringify(SEED)); } catch(e) {}
-      try { localStorage.setItem('oneic_data_fixed_v11','1'); } catch(e) {}
+      try { localStorage.setItem('oneic_data_fixed_v12','1'); } catch(e) {}
     });
 })();
 // ══════════════════════════════════════════════════════════
