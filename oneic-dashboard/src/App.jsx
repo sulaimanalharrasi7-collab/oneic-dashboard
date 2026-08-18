@@ -381,12 +381,12 @@ const SEED = {
   ],
   headOffice: [
     { name:"Legal - DR. Sarhaan",    paid:102755.525, adj:20792.517, portAmt:3229651.681, portCnt:3973, count:3973, closed:135,  active:3838, principalAmt:3229651.681 },
-    { name:"Documentation- Omantel", paid:118.650,    adj:1527.216,  portAmt:471756.070,  portCnt:5906, count:5906, closed:0,    active:5906, principalAmt:471756.070, ctExpat:5906, ctOman:0, ctEnterprise:0, vsNotExpired:5888, vsExpired:18, vsNoData:0 },
+    { name:"Documentation- Omantel", paid:118.650,    adj:1527.216,  portAmt:471756.070,  portCnt:5906, count:5906, closed:0,    active:5906, principalAmt:471756.070, ctExpat:5906, ctOman:0, ctEnterprise:0, vsNotExpired:5888, vsExpired:18, vsNoData:0, ctExpat_os:867519.155, ctOman_os:0, ctEnterprise_os:0, vsNotExpired_os:864900.630, vsExpired_os:2618.525, vsNoData_os:0 },
     { name:"Non-due accounts",       paid:98.741,     adj:0.127,     portAmt:0,           portCnt:252,  count:252,  closed:252,  active:0,    principalAmt:0           },
     { name:"Legal -Oneic",           paid:26573.783,  adj:4863.010,  portAmt:64528.164,   portCnt:101,  count:101,  closed:101,  active:0,    principalAmt:64528.164   },
     { name:"Refund - before legal",  paid:400.680,    adj:152.552,   portAmt:0,           portCnt:520,  count:520,  closed:0,    active:520,  principalAmt:0           },
     { name:"Omantel Communication",  paid:110.934,    adj:254.075,   portAmt:0,           portCnt:177,  count:177,  closed:0,    active:177,  principalAmt:0           },
-    { name:"Initial Loss",           paid:222.157,    adj:1554.546,  portAmt:1437597.544, portCnt:12044, count:12044, closed:0,    active:12044, principalAmt:1437597.544, ctExpat:12044, ctOman:0, ctEnterprise:0, vsExpired:10744, vsNotExpired:0, vsNoData:1300 },
+    { name:"Initial Loss",           paid:222.157,    adj:1554.546,  portAmt:1437597.544, portCnt:12044, count:12044, closed:0,    active:12044, principalAmt:1437597.544, ctExpat:12044, ctOman:0, ctEnterprise:0, vsExpired:10744, vsNotExpired:0, vsNoData:1300, ctExpat_os:1721271.268, ctOman_os:0, ctEnterprise_os:0, vsExpired_os:1517597.515, vsNotExpired_os:0, vsNoData_os:203673.753 },
   ],
 };
 
@@ -6417,17 +6417,18 @@ async function parseXLS(file) {
       else if (colL.includes('saif')) key = 'Legal -Oneic';
       else if (col.trim() === '')     key = 'Legal -Oneic';
       else                            key = col.trim() || 'Legal -Oneic';
-      if (!hoMap[key]) hoMap[key] = { paid:0, adj:0, count:0, closed:0, active:0, principalAmt:0, ctExpat:0, ctOman:0, ctEnterprise:0, vsExpired:0, vsNotExpired:0, vsNoData:0 };
+      if (!hoMap[key]) hoMap[key] = { paid:0, adj:0, count:0, closed:0, active:0, principalAmt:0, ctExpat:0, ctOman:0, ctEnterprise:0, vsExpired:0, vsNotExpired:0, vsNoData:0, ctExpat_os:0, ctOman_os:0, ctEnterprise_os:0, vsExpired_os:0, vsNotExpired_os:0, vsNoData_os:0 };
       hoMap[key].paid += paid; hoMap[key].adj += adj; hoMap[key].count++; hoMap[key].principalAmt += n(row['Principal Amount']||0);
-      // Customer Type & Visa Status
+      // Customer Type & Visa Status + O/S Amount
       var ct = (row['Customer Type']||'').trim().toLowerCase();
       var vs = (row['Visa Status']||'').trim().toLowerCase();
-      if (ct.includes('expat')) hoMap[key].ctExpat++;
-      else if (ct.includes('enterprise')||ct.includes('company')) hoMap[key].ctEnterprise++;
-      else if (ct.includes('oman')) hoMap[key].ctOman++;
-      if (vs.includes('not expired')||vs.includes('valid')) hoMap[key].vsNotExpired++;
-      else if (vs.includes('expired')) hoMap[key].vsExpired++;
-      else if (vs) hoMap[key].vsNoData++;
+      var rowOs = n(row['O/S Amount']||0);
+      if (ct.includes('expat')) { hoMap[key].ctExpat++; hoMap[key].ctExpat_os+=rowOs; }
+      else if (ct.includes('enterprise')||ct.includes('company')) { hoMap[key].ctEnterprise++; hoMap[key].ctEnterprise_os+=rowOs; }
+      else if (ct.includes('oman')) { hoMap[key].ctOman++; hoMap[key].ctOman_os+=rowOs; }
+      if (vs.includes('not expired')||vs.includes('valid')) { hoMap[key].vsNotExpired++; hoMap[key].vsNotExpired_os+=rowOs; }
+      else if (vs.includes('expired')) { hoMap[key].vsExpired++; hoMap[key].vsExpired_os+=rowOs; }
+      else if (vs) { hoMap[key].vsNoData++; hoMap[key].vsNoData_os+=rowOs; }
       const _hoTracked = ['Legal -Oneic','Documentation- Omantel','Legal - DR. Sarhaan','HO','Refund - before legal','Refund - after legal','Omantel Communication','Initial Loss'];
       if (_hoTracked.includes(key)) { if (osAmt<=0) hoMap[key].closed++; else hoMap[key].active++; }
 
@@ -6507,9 +6508,10 @@ async function parseXLS(file) {
     return {name:HO_DISPLAY_MAP[nm]||nm, paid:d.paid, adj:d.adj, count:d.count||0,
       closed:d.closed||0, active:d.active||0,
       portAmt:finalPortAmt, portCnt:finalPortCnt, principalAmt:finalPortAmt,
-      // Customer Type & Visa Status — من الملف مباشرة
       ctExpat:d.ctExpat||0, ctOman:d.ctOman||0, ctEnterprise:d.ctEnterprise||0,
-      vsExpired:d.vsExpired||0, vsNotExpired:d.vsNotExpired||0, vsNoData:d.vsNoData||0};
+      vsExpired:d.vsExpired||0, vsNotExpired:d.vsNotExpired||0, vsNoData:d.vsNoData||0,
+      ctExpat_os:d.ctExpat_os||0, ctOman_os:d.ctOman_os||0, ctEnterprise_os:d.ctEnterprise_os||0,
+      vsExpired_os:d.vsExpired_os||0, vsNotExpired_os:d.vsNotExpired_os||0, vsNoData_os:d.vsNoData_os||0};
   });
   const HO_DN={"HO":"Non-due accounts","Non-due accounts":"Non-due accounts"};
   Object.keys(hoMap).forEach(k => {
@@ -6867,7 +6869,7 @@ function SectionHeader({title,paid,adj,color,small,portAmt,portCnt}) {
 }
 
 // -- EntityCard -------------------------------------------------------------
-function EntityCard({name,paid,adj,color,rank,small,cnt,cBranch,portAmt,portCnt,principalAmt,osAmt,closed,active,refundAmt,ctExpat,ctOman,ctEnterprise,vsExpired,vsNotExpired,vsNoData}) {
+function EntityCard({name,paid,adj,color,rank,small,cnt,cBranch,portAmt,portCnt,principalAmt,osAmt,closed,active,refundAmt,ctExpat,ctOman,ctEnterprise,vsExpired,vsNotExpired,vsNoData,ctExpat_os,ctOman_os,ctEnterprise_os,vsExpired_os,vsNotExpired_os,vsNoData_os}) {
   const { lang } = useLang();
   var effClosed=closed||0;var effActive=(active)||Math.max(0,(portCnt||0)-(closed||0));
   const bKey = Object.keys(cBranch||{}).find(k => k.trim()===name?.trim() || name?.includes(k) || k.includes(name||'__'));
@@ -7054,14 +7056,14 @@ function EntityCard({name,paid,adj,color,rank,small,cnt,cBranch,portAmt,portCnt,
         {(name==="Initial Loss"||name==="Documentation- Omantel") && (ctExpat||ctOman||ctEnterprise||vsExpired||vsNotExpired||vsNoData) ? (()=>{
           // بناء القائمة ديناميكياً — كل قيمة غير صفر تظهر تلقائياً
           var ctBoxes = [
-            ctExpat>0      && {label:lang==='ar'?"وافد":"Expat",      val:ctExpat,      color:"#2563eb", bg:"#dbeafe"},
-            ctOman>0       && {label:lang==='ar'?"عُماني":"Omani",     val:ctOman,       color:"#16a34a", bg:"#dcfce7"},
-            ctEnterprise>0 && {label:lang==='ar'?"شركات":"Enterprise", val:ctEnterprise, color:"#d97706", bg:"#fef3c7"},
+            ctExpat>0      && {label:lang==='ar'?"وافد":"Expat",      val:ctExpat,      os:ctExpat_os||0,      color:"#2563eb", bg:"#dbeafe"},
+            ctOman>0       && {label:lang==='ar'?"عُماني":"Omani",     val:ctOman,       os:ctOman_os||0,       color:"#16a34a", bg:"#dcfce7"},
+            ctEnterprise>0 && {label:lang==='ar'?"شركات":"Enterprise", val:ctEnterprise, os:ctEnterprise_os||0, color:"#d97706", bg:"#fef3c7"},
           ].filter(Boolean);
           var vsBoxes = [
-            vsNotExpired>0 && {label:lang==='ar'?"سارية":"Valid Visa",      val:vsNotExpired, color:"#16a34a", bg:"#dcfce7"},
-            vsExpired>0    && {label:lang==='ar'?"منتهية":"Expired",    val:vsExpired,    color:"#dc2626", bg:"#fee2e2"},
-            vsNoData>0     && {label:lang==='ar'?"لا توجد بيانات":"No Data", val:vsNoData,     color:"#6b7280", bg:"#f3f4f6"},
+            vsNotExpired>0 && {label:lang==='ar'?"سارية":"Valid Visa",      val:vsNotExpired, os:vsNotExpired_os||0, color:"#16a34a", bg:"#dcfce7"},
+            vsExpired>0    && {label:lang==='ar'?"منتهية":"Expired",    val:vsExpired,    os:vsExpired_os||0,    color:"#dc2626", bg:"#fee2e2"},
+            vsNoData>0     && {label:lang==='ar'?"لا توجد بيانات":"No Data", val:vsNoData, os:vsNoData_os||0,    color:"#6b7280", bg:"#f3f4f6"},
           ].filter(Boolean);
           var allBoxes = ctBoxes.concat(vsBoxes);
           if (!allBoxes.length) return null;
@@ -7077,7 +7079,11 @@ function EntityCard({name,paid,adj,color,rank,small,cnt,cBranch,portAmt,portCnt,
                       <div key={bi} style={{background:box.bg,borderRadius:7,padding:small?"4px 3px":"6px 5px",textAlign:"center",border:"1px solid "+box.color+"40"}}>
                         <div style={{fontSize:small?9:11,color:box.color,fontWeight:800,marginBottom:1}}>{box.label}</div>
                         <div style={{fontSize:small?13:16,fontWeight:900,color:box.color}}>{(box.val||0).toLocaleString()}</div>
-                        <div style={{fontSize:small?8:9,color:"#111",fontWeight:700}}>{lang==='ar'?"حساب":"acc."}</div>
+                        <div style={{fontSize:small?8:9,color:"#111",fontWeight:700,marginBottom:3}}>{"حساب"}</div>
+                        {(box.os||0)>0 && <div style={{borderTop:"1px solid "+box.color+"30",paddingTop:3,marginTop:1}}>
+                          <div style={{fontSize:small?13:16,fontWeight:900,color:box.color}}>{new Intl.NumberFormat('en-US',{minimumFractionDigits:0,maximumFractionDigits:0}).format(box.os||0)}</div>
+                          <div style={{fontSize:small?8:9,color:"#111",fontWeight:700}}>OMR</div>
+                        </div>}
                       </div>
                     );})}
                   </div>
@@ -7092,7 +7098,11 @@ function EntityCard({name,paid,adj,color,rank,small,cnt,cBranch,portAmt,portCnt,
                       <div key={bi} style={{background:box.bg,borderRadius:7,padding:small?"4px 3px":"6px 5px",textAlign:"center",border:"1px solid "+box.color+"40"}}>
                         <div style={{fontSize:small?9:11,color:box.color,fontWeight:800,marginBottom:1}}>{box.label}</div>
                         <div style={{fontSize:small?13:16,fontWeight:900,color:box.color}}>{(box.val||0).toLocaleString()}</div>
-                        <div style={{fontSize:small?8:9,color:"#111",fontWeight:700}}>{lang==='ar'?"حساب":"acc."}</div>
+                        <div style={{fontSize:small?8:9,color:"#111",fontWeight:700,marginBottom:3}}>{"حساب"}</div>
+                        {(box.os||0)>0 && <div style={{borderTop:"1px solid "+box.color+"30",paddingTop:3,marginTop:1}}>
+                          <div style={{fontSize:small?13:16,fontWeight:900,color:box.color}}>{new Intl.NumberFormat('en-US',{minimumFractionDigits:0,maximumFractionDigits:0}).format(box.os||0)}</div>
+                          <div style={{fontSize:small?8:9,color:"#111",fontWeight:700}}>OMR</div>
+                        </div>}
                       </div>
                     );})}
                   </div>
@@ -9921,12 +9931,13 @@ function handlePrint(data, lang='ar') {
     // أضف صف CT/VS للـ Initial Loss و Documentation- Omantel
     if ((c.name==='Initial Loss'||c.name==='Documentation- Omantel') && (c.ctExpat||c.ctOman||c.ctEnterprise||c.vsExpired||c.vsNotExpired||c.vsNoData)) {
       var ctParts = []; var vsParts = [];
-      if (c.ctExpat>0)      ctParts.push('<span style="background:#dbeafe;color:#1d4ed8;padding:3px 10px;border-radius:6px;font-size:9pt;font-weight:700">'+T('وافد','Expat')+': '+(c.ctExpat||0).toLocaleString()+'</span>');
-      if (c.ctOman>0)       ctParts.push('<span style="background:#dcfce7;color:#166534;padding:3px 10px;border-radius:6px;font-size:9pt;font-weight:700">'+T('عُماني','Omani')+': '+(c.ctOman||0).toLocaleString()+'</span>');
-      if (c.ctEnterprise>0) ctParts.push('<span style="background:#fef3c7;color:#92400e;padding:3px 10px;border-radius:6px;font-size:9pt;font-weight:700">'+T('شركات','Enterprise')+': '+(c.ctEnterprise||0).toLocaleString()+'</span>');
-      if (c.vsNotExpired>0) vsParts.push('<span style="background:#dcfce7;color:#166534;padding:3px 10px;border-radius:6px;font-size:9pt;font-weight:700">'+T('سارية','Valid Visa')+': '+(c.vsNotExpired||0).toLocaleString()+'</span>');
-      if (c.vsExpired>0)    vsParts.push('<span style="background:#fee2e2;color:#991b1b;padding:3px 10px;border-radius:6px;font-size:9pt;font-weight:700">'+T('التأشيرة منتهية','Expired Visa')+': '+(c.vsExpired||0).toLocaleString()+'</span>');
-      if (c.vsNoData>0)     vsParts.push('<span style="background:#f3f4f6;color:#374151;padding:3px 10px;border-radius:6px;font-size:9pt;font-weight:700">'+T('لا توجد بيانات','No Data')+': '+(c.vsNoData||0).toLocaleString()+'</span>');
+      var fmtOs = function(v){ return v>0 ? ' &nbsp;<small style="color:#6b7280;font-size:8pt">('+new Intl.NumberFormat('en-US',{maximumFractionDigits:0}).format(v)+' OMR)</small>' : ''; };
+      if (c.ctExpat>0)      ctParts.push('<span style="background:#dbeafe;color:#1d4ed8;padding:3px 10px;border-radius:6px;font-size:9pt;font-weight:700">'+T('وافد','Expat')+': '+(c.ctExpat||0).toLocaleString()+' '+T('حساب','acc.')+fmtOs(c.ctExpat_os||0)+'</span>');
+      if (c.ctOman>0)       ctParts.push('<span style="background:#dcfce7;color:#166534;padding:3px 10px;border-radius:6px;font-size:9pt;font-weight:700">'+T('عُماني','Omani')+': '+(c.ctOman||0).toLocaleString()+' '+T('حساب','acc.')+fmtOs(c.ctOman_os||0)+'</span>');
+      if (c.ctEnterprise>0) ctParts.push('<span style="background:#fef3c7;color:#92400e;padding:3px 10px;border-radius:6px;font-size:9pt;font-weight:700">'+T('شركات','Enterprise')+': '+(c.ctEnterprise||0).toLocaleString()+' '+T('حساب','acc.')+fmtOs(c.ctEnterprise_os||0)+'</span>');
+      if (c.vsNotExpired>0) vsParts.push('<span style="background:#dcfce7;color:#166534;padding:3px 10px;border-radius:6px;font-size:9pt;font-weight:700">'+T('سارية','Valid')+': '+(c.vsNotExpired||0).toLocaleString()+' '+T('حساب','acc.')+fmtOs(c.vsNotExpired_os||0)+'</span>');
+      if (c.vsExpired>0)    vsParts.push('<span style="background:#fee2e2;color:#991b1b;padding:3px 10px;border-radius:6px;font-size:9pt;font-weight:700">'+T('منتهية','Expired')+': '+(c.vsExpired||0).toLocaleString()+' '+T('حساب','acc.')+fmtOs(c.vsExpired_os||0)+'</span>');
+      if (c.vsNoData>0)     vsParts.push('<span style="background:#f3f4f6;color:#374151;padding:3px 10px;border-radius:6px;font-size:9pt;font-weight:700">'+T('لا توجد بيانات','No Data')+': '+(c.vsNoData||0).toLocaleString()+' '+T('حساب','acc.')+fmtOs(c.vsNoData_os||0)+'</span>');
       if (ctParts.length||vsParts.length) {
         var ctSec = ctParts.length ? '<div style="margin-bottom:5px"><b style="font-size:9pt;color:#111">'+T('نوع العميل','Customer Type')+':</b> '+ctParts.join(' ')+'</div>' : '';
         var vsSec = vsParts.length ? '<div><b style="font-size:9pt;color:#111">'+T('حالة التأشيرة','Visa Status')+':</b> '+vsParts.join(' ')+'</div>' : '';
@@ -10384,10 +10395,22 @@ export default function Dashboard() {
         var s = (SEED.headOffice||[]).find(function(x){ return x.name===h.name; });
         if (!s) return h;
         var hasOwn = h.ctExpat||h.vsExpired||h.vsNotExpired||h.vsNoData;
-        if (hasOwn) return h;
+        var hasOs  = h.ctExpat_os||h.vsExpired_os||h.vsNotExpired_os||h.vsNoData_os;
+        // دائماً أضف os من SEED إذا لم تكن موجودة، حتى لو كانت ct/vs موجودة
+        if (hasOwn && hasOs) return h;
         return Object.assign({},h,{
-          ctExpat:s.ctExpat||0, ctOman:s.ctOman||0, ctEnterprise:s.ctEnterprise||0,
-          vsExpired:s.vsExpired||0, vsNotExpired:s.vsNotExpired||0, vsNoData:s.vsNoData||0
+          ctExpat:hasOwn?(h.ctExpat||0):(s.ctExpat||0),
+          ctOman:hasOwn?(h.ctOman||0):(s.ctOman||0),
+          ctEnterprise:hasOwn?(h.ctEnterprise||0):(s.ctEnterprise||0),
+          vsExpired:hasOwn?(h.vsExpired||0):(s.vsExpired||0),
+          vsNotExpired:hasOwn?(h.vsNotExpired||0):(s.vsNotExpired||0),
+          vsNoData:hasOwn?(h.vsNoData||0):(s.vsNoData||0),
+          ctExpat_os:h.ctExpat_os||s.ctExpat_os||0,
+          ctOman_os:h.ctOman_os||s.ctOman_os||0,
+          ctEnterprise_os:h.ctEnterprise_os||s.ctEnterprise_os||0,
+          vsExpired_os:h.vsExpired_os||s.vsExpired_os||0,
+          vsNotExpired_os:h.vsNotExpired_os||s.vsNotExpired_os||0,
+          vsNoData_os:h.vsNoData_os||s.vsNoData_os||0
         });
       });
     }
@@ -10885,7 +10908,13 @@ export default function Dashboard() {
         ctEnterprise:fromNew.ctEnterprise||(fromExisting&&fromExisting.ctEnterprise)||0,
         vsExpired:fromNew.vsExpired||(fromExisting&&fromExisting.vsExpired)||0,
         vsNotExpired:fromNew.vsNotExpired||(fromExisting&&fromExisting.vsNotExpired)||0,
-        vsNoData:fromNew.vsNoData||(fromExisting&&fromExisting.vsNoData)||0 };
+        vsNoData:fromNew.vsNoData||(fromExisting&&fromExisting.vsNoData)||0,
+        ctExpat_os:fromNew.ctExpat_os||(fromExisting&&fromExisting.ctExpat_os)||0,
+        ctOman_os:fromNew.ctOman_os||(fromExisting&&fromExisting.ctOman_os)||0,
+        ctEnterprise_os:fromNew.ctEnterprise_os||(fromExisting&&fromExisting.ctEnterprise_os)||0,
+        vsExpired_os:fromNew.vsExpired_os||(fromExisting&&fromExisting.vsExpired_os)||0,
+        vsNotExpired_os:fromNew.vsNotExpired_os||(fromExisting&&fromExisting.vsNotExpired_os)||0,
+        vsNoData_os:fromNew.vsNoData_os||(fromExisting&&fromExisting.vsNoData_os)||0 };
       if (fromExisting) return { ...fromExisting, portAmt: fromExisting.portAmt||portInfo.portAmt||0, portCnt: fromExisting.portCnt||portInfo.portCnt||0 };
       return { name:displayNm, paid:0, adj:0, count:0, portAmt:portInfo.portAmt||0, portCnt:portInfo.portCnt||0 };
     });
@@ -12604,7 +12633,7 @@ export default function Dashboard() {
             <SectionHeader title={t("🏛 المكتب الرئيسي",lang)} paid={hPd} adj={hAd} color="#6c3fa0" small={small} portAmt={hPortAmt||0} portCnt={hPortCnt||hCnt||complaintsCounts.ho||0}/>
             <div style={{ padding: small?"10px":"14px 16px", display:"flex", flexDirection:"column", gap: small?8:10 }}>
               {[...(data.headOffice||[])].filter(c=>c.name&&c.name!=='HO'&&c.name!=='Blanks').sort((a,b)=>{return ((b.paid||0)+(b.adj||0))-((a.paid||0)+(a.adj||0));}).map((c,i) => (
-                <EntityCard key={c.name} name={c.name} paid={c.paid} adj={c.adj} cBranch={complaintsBranchMap} color="#6c3fa0" rank={i+1} closed={c.closed||0} active={c.active||0} small={small} portAmt={c.portAmt||0} portCnt={c.portCnt||0} principalAmt={c.principalAmt||0} refundAmt={c.refundAmt||0} ctExpat={c.ctExpat||0} ctOman={c.ctOman||0} ctEnterprise={c.ctEnterprise||0} vsExpired={c.vsExpired||0} vsNotExpired={c.vsNotExpired||0} vsNoData={c.vsNoData||0}/>
+                <EntityCard key={c.name} name={c.name} paid={c.paid} adj={c.adj} cBranch={complaintsBranchMap} color="#6c3fa0" rank={i+1} closed={c.closed||0} active={c.active||0} small={small} portAmt={c.portAmt||0} portCnt={c.portCnt||0} principalAmt={c.principalAmt||0} refundAmt={c.refundAmt||0} ctExpat={c.ctExpat||0} ctOman={c.ctOman||0} ctEnterprise={c.ctEnterprise||0} vsExpired={c.vsExpired||0} vsNotExpired={c.vsNotExpired||0} vsNoData={c.vsNoData||0} ctExpat_os={c.ctExpat_os||0} ctOman_os={c.ctOman_os||0} ctEnterprise_os={c.ctEnterprise_os||0} vsExpired_os={c.vsExpired_os||0} vsNotExpired_os={c.vsNotExpired_os||0} vsNoData_os={c.vsNoData_os||0}/>
               ))}
             </div>
           </div>
