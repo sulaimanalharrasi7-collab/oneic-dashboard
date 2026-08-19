@@ -255,6 +255,7 @@ const LOGO = "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAABKgAAAfQCAMAAADRmpcm
 
 const SEED = {
   uploadDate: "2026-08-19",
+  uploadCount: 14,
   complaintsDate: "2026-08-02",
   totalRecords: 47963,
   totalDiscount: 1749.473,
@@ -6423,12 +6424,12 @@ async function parseXLS(file) {
       var ct = (row['Customer Type']||'').trim().toLowerCase();
       var vs = (row['Visa Status']||'').trim().toLowerCase();
       var rowOs = n(row['O/S Amount']||0);
-      if (ct.includes('expat')) { hoMap[key].ctExpat++; hoMap[key].ctExpat_os+=rowOs; }
+      if (ct.includes('expat')) { hoMap[key].ctExpat++; hoMap[key].ctExpat_os=Math.round((hoMap[key].ctExpat_os+rowOs)*1000)/1000; }
       else if (ct.includes('enterprise')||ct.includes('company')) { hoMap[key].ctEnterprise++; hoMap[key].ctEnterprise_os+=rowOs; }
       else if (ct.includes('oman')) { hoMap[key].ctOman++; hoMap[key].ctOman_os+=rowOs; }
-      if (vs.includes('not expired')||vs.includes('valid')) { hoMap[key].vsNotExpired++; hoMap[key].vsNotExpired_os+=rowOs; }
-      else if (vs.includes('expired')) { hoMap[key].vsExpired++; hoMap[key].vsExpired_os+=rowOs; }
-      else if (vs) { hoMap[key].vsNoData++; hoMap[key].vsNoData_os+=rowOs; }
+      if (vs.includes('not expired')||vs.includes('valid')) { hoMap[key].vsNotExpired++; hoMap[key].vsNotExpired_os=Math.round((hoMap[key].vsNotExpired_os+rowOs)*1000)/1000; }
+      else if (vs.includes('expired')) { hoMap[key].vsExpired++; hoMap[key].vsExpired_os=Math.round((hoMap[key].vsExpired_os+rowOs)*1000)/1000; }
+      else if (vs) { hoMap[key].vsNoData++; hoMap[key].vsNoData_os=Math.round((hoMap[key].vsNoData_os+rowOs)*1000)/1000; }
       const _hoTracked = ['Legal -Oneic','Documentation- Omantel','Legal - DR. Sarhaan','HO','Refund - before legal','Refund - after legal','Omantel Communication','Initial Loss'];
       if (_hoTracked.includes(key)) { if (osAmt<=0) hoMap[key].closed++; else hoMap[key].active++; }
 
@@ -7097,7 +7098,7 @@ function EntityCard({name,paid,adj,color,rank,small,cnt,cBranch,portAmt,portCnt,
                         <div style={{fontSize:small?13:16,fontWeight:900,color:box.color}}>{(box.val||0).toLocaleString()}</div>
                         <div style={{fontSize:small?8:9,color:"#111",fontWeight:700,marginBottom:3}}>{"حساب"}</div>
                         {(box.os||0)>0 && <div style={{borderTop:"1px solid "+box.color+"30",paddingTop:3,marginTop:1}}>
-                          <div style={{fontSize:small?13:16,fontWeight:900,color:box.color}}>{new Intl.NumberFormat('en-US',{minimumFractionDigits:3,maximumFractionDigits:3}).format(box.os||0)}</div>
+                          <div style={{fontSize:small?13:16,fontWeight:900,color:box.color}}>{(function(v){var r=Math.round(v*1000)/1000;return new Intl.NumberFormat('en-US',{minimumFractionDigits:3,maximumFractionDigits:3}).format(r);})(box.os||0)}</div>
                           <div style={{fontSize:small?8:9,color:"#111",fontWeight:700}}>OMR</div>
                         </div>}
                       </div>
@@ -7116,7 +7117,7 @@ function EntityCard({name,paid,adj,color,rank,small,cnt,cBranch,portAmt,portCnt,
                         <div style={{fontSize:small?13:16,fontWeight:900,color:box.color}}>{(box.val||0).toLocaleString()}</div>
                         <div style={{fontSize:small?8:9,color:"#111",fontWeight:700,marginBottom:3}}>{"حساب"}</div>
                         {(box.os||0)>0 && <div style={{borderTop:"1px solid "+box.color+"30",paddingTop:3,marginTop:1}}>
-                          <div style={{fontSize:small?13:16,fontWeight:900,color:box.color}}>{new Intl.NumberFormat('en-US',{minimumFractionDigits:3,maximumFractionDigits:3}).format(box.os||0)}</div>
+                          <div style={{fontSize:small?13:16,fontWeight:900,color:box.color}}>{(function(v){var r=Math.round(v*1000)/1000;return new Intl.NumberFormat('en-US',{minimumFractionDigits:3,maximumFractionDigits:3}).format(r);})(box.os||0)}</div>
                           <div style={{fontSize:small?8:9,color:"#111",fontWeight:700}}>OMR</div>
                         </div>}
                       </div>
@@ -9730,12 +9731,12 @@ async function parseComplaints(file) {
               branchMap[hoColKey].paid += paidAmt;
               branchMap[hoColKey].adj += adjAmt;
               // CT/VS tracking
-              if (ct2.includes('expat')) { branchMap[hoColKey].ctExpat++; branchMap[hoColKey].ctExpat_os+=osAmt; }
+              if (ct2.includes('expat')) { branchMap[hoColKey].ctExpat++; branchMap[hoColKey].ctExpat_os=Math.round((branchMap[hoColKey].ctExpat_os+osAmt)*1000)/1000; }
               else if (ct2.includes('enterprise')||ct2.includes('company')) { branchMap[hoColKey].ctEnterprise++; branchMap[hoColKey].ctEnterprise_os+=osAmt; }
               else if (ct2.includes('oman')) { branchMap[hoColKey].ctOman++; branchMap[hoColKey].ctOman_os+=osAmt; }
-              if (vs2.includes('not expired')||vs2.includes('valid')) { branchMap[hoColKey].vsNotExpired++; branchMap[hoColKey].vsNotExpired_os+=osAmt; }
-              else if (vs2.includes('expired')) { branchMap[hoColKey].vsExpired++; branchMap[hoColKey].vsExpired_os+=osAmt; }
-              else if (vs2) { branchMap[hoColKey].vsNoData++; branchMap[hoColKey].vsNoData_os+=osAmt; }
+              if (vs2.includes('not expired')||vs2.includes('valid')) { branchMap[hoColKey].vsNotExpired++; branchMap[hoColKey].vsNotExpired_os=Math.round((branchMap[hoColKey].vsNotExpired_os+osAmt)*1000)/1000; }
+              else if (vs2.includes('expired')) { branchMap[hoColKey].vsExpired++; branchMap[hoColKey].vsExpired_os=Math.round((branchMap[hoColKey].vsExpired_os+osAmt)*1000)/1000; }
+              else if (vs2) { branchMap[hoColKey].vsNoData++; branchMap[hoColKey].vsNoData_os=Math.round((branchMap[hoColKey].vsNoData_os+osAmt)*1000)/1000; }
               if (osAmt <= 0) branchMap[hoColKey].closed++; else branchMap[hoColKey].active++;
               if (hoColKey==='Refund - before legal') {
                 branchMap[hoColKey].refundAmt += (osAmt>0 ? osAmt*0.26 : 0);
@@ -10321,7 +10322,13 @@ export default function Dashboard() {
       const saved = localStorage.getItem('oneic_dashboard_data');
       if (saved) {
         const parsed = JSON.parse(saved);
-        if (parsed && parsed.regions && parsed.regions.length > 0) return parsed;
+        if (parsed && parsed.regions && parsed.regions.length > 0) {
+          // احتفظ دائماً بـ uploadCount الأعلى (من localStorage أو SEED)
+          if ((SEED.uploadCount||0) > (parsed.uploadCount||0)) {
+            parsed.uploadCount = SEED.uploadCount;
+          }
+          return parsed;
+        }
       }
     } catch(e) {}
     return SEED;
@@ -10476,10 +10483,9 @@ export default function Dashboard() {
           row = Object.assign({}, SEED, {
             lastUpdated: new Date().toISOString(),
             _updatedAt: new Date().toISOString(),
-            uploadCount: 1,
-            history: []
+            uploadCount: (row && row.uploadCount > 1) ? row.uploadCount : (SEED.uploadCount||1),
+            history: (row && row.history && row.history.length > 0) ? row.history : []
           });
-          // Trigger fix again with correct flag name
           fetch('https://oneic-dashboard-default-rtdb.firebaseio.com/main.json',{method:'PUT',headers:{'Content-Type':'application/json'},body:JSON.stringify(row)}).catch(function(){});
           try { localStorage.setItem('oneic_data_fixed_v4','1'); } catch(e) {}
         }
