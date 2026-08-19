@@ -6562,27 +6562,30 @@ const FIREBASE_URL = "https://oneic-dashboard-default-rtdb.firebaseio.com";
           if (!exists) mergedDC2.push(seedCo);
         });
         // استخدم SEED للـ CT/VS دائماً كـ fallback محدّث
-        var mergedHO2 = (existing.headOffice||[]).map(function(h) {
+                var mergedHO2 = (existing.headOffice||[]).map(function(h) {
           var s = (SEED.headOffice||[]).find(function(x){ return x.name===h.name; });
           if (!s) return h;
-          // الأولوية: إذا Firebase أكبر من SEED → من الملف المرفوع → احتفظ
-          // إذا SEED أكبر → SEED أحدث → استخدم SEED
-          return Object.assign({}, h, {
-            ctExpat:     Math.max(h.ctExpat||0,     s.ctExpat||0),
-            ctOman:      Math.max(h.ctOman||0,      s.ctOman||0),
-            ctEnterprise:Math.max(h.ctEnterprise||0,s.ctEnterprise||0),
-            vsExpired:   Math.max(h.vsExpired||0,   s.vsExpired||0),
-            vsNotExpired:Math.max(h.vsNotExpired||0,s.vsNotExpired||0),
-            vsNoData:    Math.max(h.vsNoData||0,    s.vsNoData||0),
-            // os Amount: خذ من Firebase إذا موجود، وإلا من SEED — لا Math.max لأنه ينخفض عند السداد
-            // os: SEED دائماً يفوز في Fix (لأنه محدَّث يدوياً بآخر بيانات)
-            // بعد رفع ملف من الداشبورد، Firebase يحدَّث بالقيم الجديدة مباشرة
-            ctExpat_os:  s.ctExpat_os||h.ctExpat_os||0,
-            ctOman_os:   s.ctOman_os||h.ctOman_os||0,
-            ctEnterprise_os:s.ctEnterprise_os||h.ctEnterprise_os||0,
-            vsExpired_os:   s.vsExpired_os||h.vsExpired_os||0,
-            vsNotExpired_os:s.vsNotExpired_os||h.vsNotExpired_os||0,
-            vsNoData_os:    s.vsNoData_os||h.vsNoData_os||0,
+          var hasOwn = h.ctExpat||h.vsExpired||h.vsNotExpired||h.vsNoData||h.ctOman||h.ctEnterprise;
+          var hasOs  = h.ctExpat_os>0||h.vsExpired_os>0||h.vsNotExpired_os>0;
+          // Firebase يحتوي بيانات من رفع ملف → احتفظ بها
+          if (hasOwn && hasOs) return h;
+          // Firebase يحتوي أعداد لكن بدون os → أضف os من SEED
+          if (hasOwn) {
+            return Object.assign({},h,{
+              ctExpat_os: h.ctExpat_os||s.ctExpat_os||0,
+              ctOman_os:  h.ctOman_os||s.ctOman_os||0,
+              ctEnterprise_os:h.ctEnterprise_os||s.ctEnterprise_os||0,
+              vsExpired_os:   h.vsExpired_os||s.vsExpired_os||0,
+              vsNotExpired_os:h.vsNotExpired_os||s.vsNotExpired_os||0,
+              vsNoData_os:    h.vsNoData_os||s.vsNoData_os||0
+            });
+          }
+          // Firebase فارغ → خذ من SEED
+          return Object.assign({},h,{
+            ctExpat:s.ctExpat||0, ctOman:s.ctOman||0, ctEnterprise:s.ctEnterprise||0,
+            vsExpired:s.vsExpired||0, vsNotExpired:s.vsNotExpired||0, vsNoData:s.vsNoData||0,
+            ctExpat_os:s.ctExpat_os||0, ctOman_os:s.ctOman_os||0, ctEnterprise_os:s.ctEnterprise_os||0,
+            vsExpired_os:s.vsExpired_os||0, vsNotExpired_os:s.vsNotExpired_os||0, vsNoData_os:s.vsNoData_os||0
           });
         });
         // أضف أي محصّل في SEED غير موجود في Firebase
@@ -10405,27 +10408,26 @@ export default function Dashboard() {
       return (hoArr||[]).map(function(h) {
         var s = (SEED.headOffice||[]).find(function(x){ return x.name===h.name; });
         if (!s) return h;
-        var hasOwn = h.ctExpat||h.vsExpired||h.vsNotExpired||h.vsNoData;
+        var hasOwn = h.ctExpat||h.vsExpired||h.vsNotExpired||h.vsNoData||h.ctOman||h.ctEnterprise;
         var hasOs  = h.ctExpat_os>0||h.vsExpired_os>0||h.vsNotExpired_os>0||h.vsNoData_os>0;
-        // إذا كان Firebase يحتوي ct/vs — لا تُبدّل الأرقام (من الملف المرفوع)
-        // فقط أضف os من SEED إذا لم تكن موجودة
+        // Firebase يحتوي بيانات من رفع ملف → يفوز دائماً (لا تستبدل)
         if (hasOwn && hasOs) return h;
+        // Firebase يحتوي أعداد لكن بدون os → أضف os من SEED كـ fallback
         if (hasOwn) {
-          // ct/vs موجودة — SEED os يفوز دائماً (لأنه محدَّث بآخر ملف)
           return Object.assign({},h,{
-            ctExpat_os:s.ctExpat_os||h.ctExpat_os||0,
-            ctOman_os:s.ctOman_os||h.ctOman_os||0,
-            ctEnterprise_os:s.ctEnterprise_os||h.ctEnterprise_os||0,
-            vsExpired_os:s.vsExpired_os||h.vsExpired_os||0,
-            vsNotExpired_os:s.vsNotExpired_os||h.vsNotExpired_os||0,
-            vsNoData_os:s.vsNoData_os||h.vsNoData_os||0
+            ctExpat_os: h.ctExpat_os||s.ctExpat_os||0,
+            ctOman_os:  h.ctOman_os||s.ctOman_os||0,
+            ctEnterprise_os: h.ctEnterprise_os||s.ctEnterprise_os||0,
+            vsExpired_os:    h.vsExpired_os||s.vsExpired_os||0,
+            vsNotExpired_os: h.vsNotExpired_os||s.vsNotExpired_os||0,
+            vsNoData_os:     h.vsNoData_os||s.vsNoData_os||0
           });
         }
-        // Firebase فارغ — خذ كل شيء من SEED
+        // Firebase فارغ تماماً → خذ من SEED (لم يُرفع ملف بعد)
         return Object.assign({},h,{
           ctExpat:s.ctExpat||0, ctOman:s.ctOman||0, ctEnterprise:s.ctEnterprise||0,
           vsExpired:s.vsExpired||0, vsNotExpired:s.vsNotExpired||0, vsNoData:s.vsNoData||0,
-          ctExpat_os:s.ctExpat_os||0, ctOman_os:s.ctOman_os||0, ctEnterprise_os:s.ctEnterprise_os||0,
+          ctExpat_os: s.ctExpat_os||0, ctOman_os:s.ctOman_os||0, ctEnterprise_os:s.ctEnterprise_os||0,
           vsExpired_os:s.vsExpired_os||0, vsNotExpired_os:s.vsNotExpired_os||0, vsNoData_os:s.vsNoData_os||0
         });
       });
