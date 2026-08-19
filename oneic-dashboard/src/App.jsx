@@ -7092,7 +7092,7 @@ function EntityCard({name,paid,adj,color,rank,small,cnt,cBranch,portAmt,portCnt,
                         <div style={{fontSize:small?13:16,fontWeight:900,color:box.color}}>{(box.val||0).toLocaleString()}</div>
                         <div style={{fontSize:small?8:9,color:"#111",fontWeight:700,marginBottom:3}}>{"حساب"}</div>
                         {(box.os||0)>0 && <div style={{borderTop:"1px solid "+box.color+"30",paddingTop:3,marginTop:1}}>
-                          <div style={{fontSize:small?13:16,fontWeight:900,color:box.color}}>{new Intl.NumberFormat('en-US',{minimumFractionDigits:0,maximumFractionDigits:0}).format(box.os||0)}</div>
+                          <div style={{fontSize:small?13:16,fontWeight:900,color:box.color}}>{new Intl.NumberFormat('en-US',{minimumFractionDigits:3,maximumFractionDigits:3}).format(box.os||0)}</div>
                           <div style={{fontSize:small?8:9,color:"#111",fontWeight:700}}>OMR</div>
                         </div>}
                       </div>
@@ -7111,7 +7111,7 @@ function EntityCard({name,paid,adj,color,rank,small,cnt,cBranch,portAmt,portCnt,
                         <div style={{fontSize:small?13:16,fontWeight:900,color:box.color}}>{(box.val||0).toLocaleString()}</div>
                         <div style={{fontSize:small?8:9,color:"#111",fontWeight:700,marginBottom:3}}>{"حساب"}</div>
                         {(box.os||0)>0 && <div style={{borderTop:"1px solid "+box.color+"30",paddingTop:3,marginTop:1}}>
-                          <div style={{fontSize:small?13:16,fontWeight:900,color:box.color}}>{new Intl.NumberFormat('en-US',{minimumFractionDigits:0,maximumFractionDigits:0}).format(box.os||0)}</div>
+                          <div style={{fontSize:small?13:16,fontWeight:900,color:box.color}}>{new Intl.NumberFormat('en-US',{minimumFractionDigits:3,maximumFractionDigits:3}).format(box.os||0)}</div>
                           <div style={{fontSize:small?8:9,color:"#111",fontWeight:700}}>OMR</div>
                         </div>}
                       </div>
