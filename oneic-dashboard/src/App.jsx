@@ -9663,7 +9663,9 @@ async function parseComplaints(file) {
         let totalDiscount = 0;
         let totalOverRecovery = 0;
         let totalOverRecoveryCount = 0;
-        if (regionIdx < 0) { reject(new Error('عمود Region غير موجود')); return; }
+        // Customer Type & Visa Status column indices
+        const ctIdx2 = headers.findIndex(h => h === 'Customer Type');
+        const vsIdx2 = headers.findIndex(h => h === 'Visa Status');
 
         // خريطة التجميع الدقيقة
         const DC_REGION = 'Debt Collection Company';
@@ -9695,6 +9697,8 @@ async function parseComplaints(file) {
           if (overPaidAmt > 0) totalOverRecoveryCount++;
           totalDiscount += discIdx>=0 ? (parseFloat(row[discIdx])||0) : 0;
           const collector2= collectorIdx>=0 ? (row[collectorIdx]||'').replace(/\r/g,'').trim() : '';
+          const ct2 = ctIdx2>=0 ? (row[ctIdx2]||'').trim().toLowerCase() : '';
+          const vs2 = vsIdx2>=0 ? (row[vsIdx2]||'').trim().toLowerCase() : '';
           total++;
           
           if (region === DC_REGION) {
@@ -9720,11 +9724,19 @@ async function parseComplaints(file) {
               else if (cLow.indexOf('refund')>=0&&cLow.indexOf('after')>=0) hoColKey='Refund - after legal';
               else if (cLow.indexOf('refund')>=0) hoColKey='Refund - before legal';
               else hoColKey='Legal -Oneic';
-              if (!branchMap[hoColKey]) branchMap[hoColKey]={count:0,amt:0,paid:0,adj:0,closed:0,active:0,refundAmt:0};
+              if (!branchMap[hoColKey]) branchMap[hoColKey]={count:0,amt:0,paid:0,adj:0,closed:0,active:0,refundAmt:0,ctExpat:0,ctOman:0,ctEnterprise:0,vsExpired:0,vsNotExpired:0,vsNoData:0,ctExpat_os:0,ctOman_os:0,ctEnterprise_os:0,vsExpired_os:0,vsNotExpired_os:0,vsNoData_os:0};
               branchMap[hoColKey].count++;
               branchMap[hoColKey].amt  += amt;
               branchMap[hoColKey].paid += paidAmt;
               branchMap[hoColKey].adj += adjAmt;
+              // CT/VS tracking
+              if (ct2.includes('expat')) { branchMap[hoColKey].ctExpat++; branchMap[hoColKey].ctExpat_os+=osAmt; }
+              else if (ct2.includes('enterprise')||ct2.includes('company')) { branchMap[hoColKey].ctEnterprise++; branchMap[hoColKey].ctEnterprise_os+=osAmt; }
+              else if (ct2.includes('oman')) { branchMap[hoColKey].ctOman++; branchMap[hoColKey].ctOman_os+=osAmt; }
+              if (vs2.includes('not expired')||vs2.includes('valid')) { branchMap[hoColKey].vsNotExpired++; branchMap[hoColKey].vsNotExpired_os+=osAmt; }
+              else if (vs2.includes('expired')) { branchMap[hoColKey].vsExpired++; branchMap[hoColKey].vsExpired_os+=osAmt; }
+              else if (vs2) { branchMap[hoColKey].vsNoData++; branchMap[hoColKey].vsNoData_os+=osAmt; }
+              if (osAmt <= 0) branchMap[hoColKey].closed++; else branchMap[hoColKey].active++;
               if (hoColKey==='Refund - before legal') {
                 branchMap[hoColKey].refundAmt += (osAmt>0 ? osAmt*0.26 : 0);
               }
@@ -10858,15 +10870,16 @@ export default function Dashboard() {
             }
           }
           var _tF=new Date().toISOString();var _tFd=_tF.split("T")[0];
-          // دمج CT/VS من XLS parser (window._pendingHOCTVS) في newHO
-          var _pctv = (typeof window !== 'undefined' && window._pendingHOCTVS) || {};
+          // CT/VS من branchMap مباشرة (parseComplaints يتتبعها الآن)
           var finalHO = newHO.map(function(nh) {
-            var src = _pctv[nh.name] || (base.headOffice||[]).find(function(s){ return s.name===nh.name; }) || {};
+            var bm2 = branchMap[nh.name] || {};
+            var hasFresh = bm2.ctExpat||bm2.vsExpired||bm2.vsNotExpired||bm2.vsNoData||bm2.ctOman||bm2.ctEnterprise;
+            var src = hasFresh ? bm2 : ((base.headOffice||[]).find(function(s){ return s.name===nh.name; }) || {});
             return Object.assign({},nh,{
-              ctExpat:src.ctExpat||nh.ctExpat||0, ctOman:src.ctOman||nh.ctOman||0, ctEnterprise:src.ctEnterprise||nh.ctEnterprise||0,
-              vsExpired:src.vsExpired||nh.vsExpired||0, vsNotExpired:src.vsNotExpired||nh.vsNotExpired||0, vsNoData:src.vsNoData||nh.vsNoData||0,
-              ctExpat_os:src.ctExpat_os||nh.ctExpat_os||0, ctOman_os:src.ctOman_os||nh.ctOman_os||0, ctEnterprise_os:src.ctEnterprise_os||nh.ctEnterprise_os||0,
-              vsExpired_os:src.vsExpired_os||nh.vsExpired_os||0, vsNotExpired_os:src.vsNotExpired_os||nh.vsNotExpired_os||0, vsNoData_os:src.vsNoData_os||nh.vsNoData_os||0,
+              ctExpat:src.ctExpat||0, ctOman:src.ctOman||0, ctEnterprise:src.ctEnterprise||0,
+              vsExpired:src.vsExpired||0, vsNotExpired:src.vsNotExpired||0, vsNoData:src.vsNoData||0,
+              ctExpat_os:src.ctExpat_os||0, ctOman_os:src.ctOman_os||0, ctEnterprise_os:src.ctEnterprise_os||0,
+              vsExpired_os:src.vsExpired_os||0, vsNotExpired_os:src.vsNotExpired_os||0, vsNoData_os:src.vsNoData_os||0,
             });
           });
           var _gp2=newRegions.reduce(function(s,r){return s+(r.paid||0);},0)+newDC.reduce(function(s,r){return s+(r.paid||0);},0)+finalHO.reduce(function(s,r){return s+(r.paid||0);},0);var _ga2=newRegions.reduce(function(s,r){return s+(r.adj||0);},0)+newDC.reduce(function(s,r){return s+(r.adj||0);},0)+finalHO.reduce(function(s,r){return s+(r.adj||0);},0);var _he={date:_tFd,savedAt:_tF,totalRecords:base.totalRecords||0,grandPaid:_gp2,grandAdj:_ga2,grandTotal:_gp2+_ga2};var _prevHist=base.history||[];var _flHist=_prevHist.filter(function(h){return h.date!==_he.date;});var _nh=[_he].concat(_flHist).slice(0,90);var mg=Object.assign({},base,{regions:newRegions,debtCompanies:newDC,headOffice:finalHO,totalPortfolio:{amt:dcAmt+hoAmt+govAmt,cnt:total,outstanding:totalOS},totalDiscount:totalDiscount||base.totalDiscount||0,overRecovery:totalOverRecovery||0,overRecoveryCount:totalOverRecoveryCount||0,_updatedAt:_tF,lastUpdated:_tF,uploadDate:_tFd,complaintsDate:_tFd,uploadCount:(base.uploadCount||0)+1,history:_nh});lastSyncRef.current=_tF;window._noSyncUntil=Date.now()+300000;try{localStorage.setItem('oneic_dashboard_data',JSON.stringify(mg));}catch(e){}try{localStorage.setItem('oneic_complaints_region_map',JSON.stringify(regionMap||{}));}catch(e){}try{localStorage.setItem('oneic_complaints_branch_map',JSON.stringify(branchMap||{}));}catch(e){}try{localStorage.setItem('oneic_history',JSON.stringify(_nh));}catch(e){}sbUpsert('oneic_data',{payload:mg}).then(function(){console.log('Complaints saved size='+JSON.stringify(mg).length);}).catch(function(e){console.error('Complaints save FAILED:',e&&e.message||e);try{fetch(FIREBASE_URL+'/main/uploadCount.json',{method:'PUT',headers:{'Content-Type':'application/json'},body:JSON.stringify(mg.uploadCount)});fetch(FIREBASE_URL+'/main/uploadDate.json',{method:'PUT',headers:{'Content-Type':'application/json'},body:JSON.stringify(mg.uploadDate)});fetch(FIREBASE_URL+'/main/history.json',{method:'PUT',headers:{'Content-Type':'application/json'},body:JSON.stringify(_nh)});}catch(e2){}});setHistory(function(prev){return (_nh.length>=(prev||[]).length)?_nh:prev;});return mg;
