@@ -6513,6 +6513,8 @@ async function parseXLS(file) {
       ctExpat_os:d.ctExpat_os||0, ctOman_os:d.ctOman_os||0, ctEnterprise_os:d.ctEnterprise_os||0,
       vsExpired_os:d.vsExpired_os||0, vsNotExpired_os:d.vsNotExpired_os||0, vsNoData_os:d.vsNoData_os||0};
   });
+  // خزّن CT/VS في window للاستخدام في مسار الـ complaints
+  try { window._pendingHOCTVS = {}; headOffice.forEach(function(h){ window._pendingHOCTVS[h.name] = { ctExpat:h.ctExpat||0, ctOman:h.ctOman||0, ctEnterprise:h.ctEnterprise||0, vsExpired:h.vsExpired||0, vsNotExpired:h.vsNotExpired||0, vsNoData:h.vsNoData||0, ctExpat_os:h.ctExpat_os||0, ctOman_os:h.ctOman_os||0, ctEnterprise_os:h.ctEnterprise_os||0, vsExpired_os:h.vsExpired_os||0, vsNotExpired_os:h.vsNotExpired_os||0, vsNoData_os:h.vsNoData_os||0 }; }); } catch(e) {}
   const HO_DN={"HO":"Non-due accounts","Non-due accounts":"Non-due accounts"};
   Object.keys(hoMap).forEach(k => {
     if (!HO_KEYS.includes(k))
@@ -10856,18 +10858,17 @@ export default function Dashboard() {
             }
           }
           var _tF=new Date().toISOString();var _tFd=_tF.split("T")[0];
-          // دمج CT/VS من mergedHO في newHO قبل الحفظ
-          var finalHO = (mergedHO||[]).map(function(mh) {
-            var nh = newHO.find(function(n){ return n.name===mh.name; });
-            if (!nh) return mh;
+          // دمج CT/VS من XLS parser (window._pendingHOCTVS) في newHO
+          var _pctv = (typeof window !== 'undefined' && window._pendingHOCTVS) || {};
+          var finalHO = newHO.map(function(nh) {
+            var src = _pctv[nh.name] || (base.headOffice||[]).find(function(s){ return s.name===nh.name; }) || {};
             return Object.assign({},nh,{
-              ctExpat:mh.ctExpat||nh.ctExpat||0, ctOman:mh.ctOman||nh.ctOman||0, ctEnterprise:mh.ctEnterprise||nh.ctEnterprise||0,
-              vsExpired:mh.vsExpired||nh.vsExpired||0, vsNotExpired:mh.vsNotExpired||nh.vsNotExpired||0, vsNoData:mh.vsNoData||nh.vsNoData||0,
-              ctExpat_os:mh.ctExpat_os||nh.ctExpat_os||0, ctOman_os:mh.ctOman_os||nh.ctOman_os||0, ctEnterprise_os:mh.ctEnterprise_os||nh.ctEnterprise_os||0,
-              vsExpired_os:mh.vsExpired_os||nh.vsExpired_os||0, vsNotExpired_os:mh.vsNotExpired_os||nh.vsNotExpired_os||0, vsNoData_os:mh.vsNoData_os||nh.vsNoData_os||0,
+              ctExpat:src.ctExpat||nh.ctExpat||0, ctOman:src.ctOman||nh.ctOman||0, ctEnterprise:src.ctEnterprise||nh.ctEnterprise||0,
+              vsExpired:src.vsExpired||nh.vsExpired||0, vsNotExpired:src.vsNotExpired||nh.vsNotExpired||0, vsNoData:src.vsNoData||nh.vsNoData||0,
+              ctExpat_os:src.ctExpat_os||nh.ctExpat_os||0, ctOman_os:src.ctOman_os||nh.ctOman_os||0, ctEnterprise_os:src.ctEnterprise_os||nh.ctEnterprise_os||0,
+              vsExpired_os:src.vsExpired_os||nh.vsExpired_os||0, vsNotExpired_os:src.vsNotExpired_os||nh.vsNotExpired_os||0, vsNoData_os:src.vsNoData_os||nh.vsNoData_os||0,
             });
           });
-          newHO.forEach(function(nh){ if (!finalHO.find(function(m){return m.name===nh.name;})) finalHO.push(nh); });
           var _gp2=newRegions.reduce(function(s,r){return s+(r.paid||0);},0)+newDC.reduce(function(s,r){return s+(r.paid||0);},0)+finalHO.reduce(function(s,r){return s+(r.paid||0);},0);var _ga2=newRegions.reduce(function(s,r){return s+(r.adj||0);},0)+newDC.reduce(function(s,r){return s+(r.adj||0);},0)+finalHO.reduce(function(s,r){return s+(r.adj||0);},0);var _he={date:_tFd,savedAt:_tF,totalRecords:base.totalRecords||0,grandPaid:_gp2,grandAdj:_ga2,grandTotal:_gp2+_ga2};var _prevHist=base.history||[];var _flHist=_prevHist.filter(function(h){return h.date!==_he.date;});var _nh=[_he].concat(_flHist).slice(0,90);var mg=Object.assign({},base,{regions:newRegions,debtCompanies:newDC,headOffice:finalHO,totalPortfolio:{amt:dcAmt+hoAmt+govAmt,cnt:total,outstanding:totalOS},totalDiscount:totalDiscount||base.totalDiscount||0,overRecovery:totalOverRecovery||0,overRecoveryCount:totalOverRecoveryCount||0,_updatedAt:_tF,lastUpdated:_tF,uploadDate:_tFd,complaintsDate:_tFd,uploadCount:(base.uploadCount||0)+1,history:_nh});lastSyncRef.current=_tF;window._noSyncUntil=Date.now()+300000;try{localStorage.setItem('oneic_dashboard_data',JSON.stringify(mg));}catch(e){}try{localStorage.setItem('oneic_complaints_region_map',JSON.stringify(regionMap||{}));}catch(e){}try{localStorage.setItem('oneic_complaints_branch_map',JSON.stringify(branchMap||{}));}catch(e){}try{localStorage.setItem('oneic_history',JSON.stringify(_nh));}catch(e){}sbUpsert('oneic_data',{payload:mg}).then(function(){console.log('Complaints saved size='+JSON.stringify(mg).length);}).catch(function(e){console.error('Complaints save FAILED:',e&&e.message||e);try{fetch(FIREBASE_URL+'/main/uploadCount.json',{method:'PUT',headers:{'Content-Type':'application/json'},body:JSON.stringify(mg.uploadCount)});fetch(FIREBASE_URL+'/main/uploadDate.json',{method:'PUT',headers:{'Content-Type':'application/json'},body:JSON.stringify(mg.uploadDate)});fetch(FIREBASE_URL+'/main/history.json',{method:'PUT',headers:{'Content-Type':'application/json'},body:JSON.stringify(_nh)});}catch(e2){}});setHistory(function(prev){return (_nh.length>=(prev||[]).length)?_nh:prev;});return mg;
         });
         // احفظ complaints في localStorage
