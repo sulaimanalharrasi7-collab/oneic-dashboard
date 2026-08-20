@@ -6653,7 +6653,7 @@ async function sbUpsert(table, obj) {
   return await res.json();
 }
 
-const omr = n => new Intl.NumberFormat("en-US",{minimumFractionDigits:3,maximumFractionDigits:3}).format(n||0);
+const omr = n => new Intl.NumberFormat("en-US",{minimumFractionDigits:3,maximumFractionDigits:3}).format(Math.round((n||0)*1000)/1000);
 
 
 
@@ -6667,7 +6667,7 @@ function handleBulkPrint(d, filterFrom, filterTo) {
   // طباعة Bulk Payment Report
   const w = window.open('','_blank','width=900,height=700');
   if (!w) return;
-  const omr = n => new Intl.NumberFormat('en-US',{minimumFractionDigits:3,maximumFractionDigits:3}).format(n||0)+' OMR';
+  const omr = n => new Intl.NumberFormat('en-US',{minimumFractionDigits:3,maximumFractionDigits:3}).format(Math.round((n||0)*1000)/1000)+' OMR';
   const totalPaid = (d.totalPaid||0);
   const totalAdj  = (d.totalAdj||0);
   const html = '<!DOCTYPE html><html dir="rtl"><head><meta charset="UTF-8">'+
@@ -7788,7 +7788,7 @@ function AnalyticsModal({ bulk, onClose, small }) {
 
   // طباعة اللوحة الكاملة -- جميع التبويبات
   const handlePrintChart = () => {
-    const omrP = n => new Intl.NumberFormat("en-US",{minimumFractionDigits:3,maximumFractionDigits:3}).format(n||0);
+    const omrP = n => new Intl.NumberFormat("en-US",{minimumFractionDigits:3,maximumFractionDigits:3}).format(Math.round((n||0)*1000)/1000);
     const fmtKP = n => n>=1000?(n/1000).toFixed(1)+'K':n.toFixed(1);
     const periodLabel = filterFrom||filterTo
       ? `${filterFrom||daily[0]?.date||''} → ${filterTo||daily[daily.length-1]?.date||''}`
@@ -9273,7 +9273,7 @@ function HistoryModal({ history, onClose, small }) {
   const [compareA, setCompareA] = useState(0);
   const [compareB, setCompareB] = useState(1);
 
-  const omr = n => new Intl.NumberFormat("en-US",{minimumFractionDigits:3,maximumFractionDigits:3}).format(n||0);
+  const omr = n => new Intl.NumberFormat("en-US",{minimumFractionDigits:3,maximumFractionDigits:3}).format(Math.round((n||0)*1000)/1000);
   const sorted = [...(history||[])].sort((a,b)=>new Date(b.date)-new Date(a.date));
 
   // --- عرض رسالة إذا لا يوجد سجل كافٍ ----------------------------------------
