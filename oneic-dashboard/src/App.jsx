@@ -382,12 +382,12 @@ const SEED = {
   ],
   headOffice: [
     { name:"Legal - DR. Sarhaan",    paid:102755.525, adj:20792.517, portAmt:3229651.681, portCnt:3973, count:3973, closed:135,  active:3838, principalAmt:3229651.681 },
-    { name:"Documentation- Omantel", paid:118.650,    adj:1527.216,  portAmt:471756.070,  portCnt:5875, count:5875, closed:0,    active:5875, principalAmt:471756.070, ctExpat:5875, ctOman:0, ctEnterprise:0, vsNotExpired:5856, vsExpired:19, vsNoData:0, ctExpat_os:863363.444, ctOman_os:0, ctEnterprise_os:0, vsNotExpired_os:861055.930, vsExpired_os:2307.514, vsNoData_os:0 },
+    { name:"Documentation- Omantel", paid:118.650,    adj:1527.216,  portAmt:471756.070,  portCnt:5875, count:5875, closed:3,    active:5872, principalAmt:471756.070, ctExpat:5875, ctOman:0, ctEnterprise:0, vsNotExpired:5856, vsExpired:19, vsNoData:0, ctExpat_os:863363.444, ctOman_os:0, ctEnterprise_os:0, vsNotExpired_os:861055.930, vsExpired_os:2307.514, vsNoData_os:0 },
     { name:"Non-due accounts",       paid:98.741,     adj:0.127,     portAmt:0,           portCnt:252,  count:252,  closed:252,  active:0,    principalAmt:0           },
     { name:"Legal -Oneic",           paid:26573.783,  adj:4863.010,  portAmt:64528.164,   portCnt:101,  count:101,  closed:101,  active:0,    principalAmt:64528.164   },
     { name:"Refund - before legal",  paid:400.680,    adj:152.552,   portAmt:0,           portCnt:520,  count:520,  closed:0,    active:520,  principalAmt:0           },
     { name:"Omantel Communication",  paid:110.934,    adj:254.075,   portAmt:0,           portCnt:177,  count:177,  closed:0,    active:177,  principalAmt:0           },
-    { name:"Initial Loss",           paid:233.157,    adj:1554.546,  portAmt:1437597.544, portCnt:12075, count:12075, closed:0,    active:12075, principalAmt:1437597.544, ctExpat:12075, ctOman:0, ctEnterprise:0, vsExpired:10775, vsNotExpired:0, vsNoData:1300, ctExpat_os:1725415.979, ctOman_os:0, ctEnterprise_os:0, vsExpired_os:1521240.225, vsNotExpired_os:0, vsNoData_os:204175.754 },
+    { name:"Initial Loss",           paid:233.157,    adj:1554.546,  portAmt:1437597.544, portCnt:12075, count:12075, closed:3,    active:12072, principalAmt:1437597.544, ctExpat:12075, ctOman:0, ctEnterprise:0, vsExpired:10775, vsNotExpired:0, vsNoData:1300, ctExpat_os:1725415.979, ctOman_os:0, ctEnterprise_os:0, vsExpired_os:1521240.225, vsNotExpired_os:0, vsNoData_os:204175.754 },
   ],
 };
 
@@ -9740,9 +9740,6 @@ async function parseComplaints(file) {
               if (osAmt <= 0) branchMap[hoColKey].closed++; else branchMap[hoColKey].active++;
               if (hoColKey==='Refund - before legal') {
                 branchMap[hoColKey].refundAmt += (osAmt>0 ? osAmt*0.26 : 0);
-              }
-              if (hoColKey==='Legal -Oneic'||hoColKey==='Documentation- Omantel'||hoColKey==='Legal - DR. Sarhaan'||hoColKey==='Non-due accounts'||hoColKey==='Refund - before legal'||hoColKey==='Refund - after legal'||hoColKey==='Omantel Communication'||hoColKey==='Initial Loss') {
-                if (osAmt<=0) branchMap[hoColKey].closed++; else branchMap[hoColKey].active++;
               }
             }
             const hoKey = 'HEAD_OFFICE_TOTAL';
