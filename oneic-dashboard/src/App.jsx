@@ -8941,19 +8941,26 @@ function BulkPaymentSection({ bulk, small, onBulkUpdate, requireUploadAuth }) {
         </div>
 
         {/* إجماليات */}
-        <div style={{display:"grid",gridTemplateColumns:"repeat(3,1fr)",gap:10,marginTop:14}}>
-          {[[t("إجمالي المدفوع",lang),fmt(d.totalPaid),"#86efac","#16a34a"],
-            [t("إجمالي التسويات",lang),fmt(d.totalAdj),"#fde68a","#d97706"],
-            [t("الإجمالي الكلي",lang),fmt(d.totalPaid+d.totalAdj),"#fff","#fff"]].map(([l,v,c,b])=>(
-            <div key={l} style={{
-              background:"rgba(255,255,255,0.1)",
-              border:"1px solid rgba(255,255,255,0.15)",
-              borderRadius:12,padding:"12px 10px",textAlign:"center"
-            }}>
+        <div style={{display:"grid",gridTemplateColumns:"repeat(4,1fr)",gap:10,marginTop:14}}>
+          {[[t("إجمالي المدفوع",lang),fmt(d.totalPaid),"#86efac"],
+            [t("التسويات",lang),fmt(d.totalAdj),"#fde68a"],
+          ].map(([l,v,c])=>(
+            <div key={l} style={{background:"rgba(255,255,255,0.1)",border:"1px solid rgba(255,255,255,0.15)",borderRadius:12,padding:"12px 10px",textAlign:"center"}}>
               <div style={{fontSize:small?10:12,color:"rgba(255,255,255,0.65)",fontWeight:700,marginBottom:6}}>{l}</div>
               <div style={{fontSize:small?14:18,fontWeight:900,color:c,lineHeight:1,fontFamily:"'IBM Plex Mono',monospace"}}>{v}</div>
               <div style={{fontSize:10,color:"rgba(255,255,255,0.4)",marginTop:3}}>OMR</div>
-            </div>))}
+            </div>
+          ))}
+          {/* مربع الإجمالي الكلي — بارز */}
+          <div style={{background:"rgba(255,255,255,0.18)",border:"2px solid rgba(255,255,255,0.4)",borderRadius:12,padding:"12px 10px",textAlign:"center",gridColumn:"span 2"}}>
+            <div style={{fontSize:small?10:11,color:"rgba(255,255,255,0.7)",fontWeight:700,marginBottom:4}}>
+              {t("إجمالي المدفوع","Total Paid")} + {t("التسويات","Settlements")} = {t("الإجمالي الكلي","Grand Total")}
+            </div>
+            <div style={{fontSize:small?16:22,fontWeight:900,color:"#fff",lineHeight:1,fontFamily:"'IBM Plex Mono',monospace"}}>
+              {fmt(d.totalPaid+d.totalAdj)}
+            </div>
+            <div style={{fontSize:10,color:"rgba(255,255,255,0.5)",marginTop:3}}>OMR</div>
+          </div>
         </div>
 
         {/* إحصاءات ذكية */}
@@ -9785,9 +9792,20 @@ function parseBulkPayment(file) {
 
         // التحقق من الأعمدة المطلوبة (مرن للأسماء المختلفة)
         const firstRow = rows[0];
-        const adjCol = ['Adjustment Amount','Adjustment','Adj Amount','Adj','Settlement Amount','التسويات'].find(c=>c in firstRow) || 'Adjustment Amount';
-        const paidCol = ['Paid Amount','Paid','Payment Amount','المدفوع'].find(c=>c in firstRow) || 'Paid Amount';
-        const requiredCols = ['Region','Collector',paidCol,'Date'];
+        // كشف عمود التسويات بمرونة كاملة
+        const allCols = Object.keys(firstRow);
+        const adjCol = allCols.find(c => {
+          const cl = c.toLowerCase().replace(/\s+/g,' ').trim();
+          return cl==='adjustment amount'||cl==='adjustment'||cl==='adj amount'||cl==='adj'||
+                 cl==='settlement amount'||cl==='settlement'||cl==='تسويات'||cl==='التسويات'||
+                 cl==='تسوية'||cl.includes('adjust')||cl.includes('settlement')||cl.includes('تسوي');
+        }) || null;
+        const paidCol = allCols.find(c => {
+          const cl = c.toLowerCase().trim();
+          return cl==='paid amount'||cl==='paid'||cl==='payment amount'||cl==='payment'||
+                 cl==='المدفوع'||cl.includes('paid');
+        }) || 'Paid Amount';
+        const requiredCols = ['Region','Collector','Date'];
         const missing = requiredCols.filter(c => !(c in firstRow));
         if (missing.length > 0) {
           return reject(new Error(`أعمدة مفقودة: ${missing.join(', ')}`));
@@ -9816,7 +9834,7 @@ function parseBulkPayment(file) {
 
         rows.forEach(row => {
           const paid = g(row[paidCol]||0);
-          const adj  = g(row[adjCol]||0);
+          const adj  = adjCol ? g(row[adjCol]||0) : 0;
           const region    = String(row['Region']||'').trim();
           const collector = String(row['Collector']||'').trim();
           const branch    = String(row['Branch']||'').trim();
