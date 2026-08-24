@@ -6663,47 +6663,71 @@ const omr = n => new Intl.NumberFormat("en-US",{minimumFractionDigits:3,maximumF
 
 // -- Bulk Payment Print --------------------------------------------------------
 
-function handleBulkPrint(d, filterFrom, filterTo) {
+function handleBulkPrint(d, filterFrom, filterTo, lang) {
   // طباعة Bulk Payment Report
-  const w = window.open('','_blank','width=900,height=700');
+  const ar = (lang||'ar') !== 'en';
+  const w = window.open('','_blank','width=1000,height=750');
   if (!w) return;
   const omr = n => new Intl.NumberFormat('en-US',{minimumFractionDigits:3,maximumFractionDigits:3}).format(Math.round((n||0)*1000)/1000)+' OMR';
   const totalPaid = (d.totalPaid||0);
   const totalAdj  = (d.totalAdj||0);
-  const html = '<!DOCTYPE html><html dir="rtl"><head><meta charset="UTF-8">'+
+  const html = '<!DOCTYPE html><html dir="'+(ar?'rtl':'ltr')+'"><head><meta charset="UTF-8">'+
     '<title>Bulk Payment Report</title>'+
     '<link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;700;800;900&display=swap" rel="stylesheet">'+
-    '<style>body{font-family:Cairo,sans-serif;direction:rtl;padding:20px;background:#f5f0eb}'+
-    '.page{background:#fff;padding:20px;border-radius:12px;max-width:900px;margin:0 auto}'+
+    '<style>body{font-family:Cairo,sans-serif;direction:'+(ar?'rtl':'ltr')+';padding:20px;background:#f5f0eb}'+
+    '.page{background:#fff;padding:20px;border-radius:12px;max-width:940px;margin:0 auto}'+
     'table{width:100%;border-collapse:collapse;margin-top:16px}'+
-    'th{background:#1e3a5f;color:#fff;padding:8px 12px}'+
-    'td{padding:7px 12px;border-bottom:1px solid #f0ece8}'+
+    'th{background:#1e3a5f;color:#fff;padding:8px 12px;text-align:center}'+
+    'td{padding:7px 12px;border-bottom:1px solid #f0ece8;text-align:center}'+
     'tr:nth-child(even){background:#f8f4f1}'+
-    '@media print{body{background:#fff}.no-print{display:none}}'+
+    '.adj-badge{display:inline-block;background:#fef3c7;border:1px solid #f59e0b;border-radius:20px;padding:2px 8px;font-size:9px;font-weight:800;color:#d97706}'+
+    '@media print{body{background:#fff}.no-print{display:none}@page{size:A4 landscape;margin:10mm}}'+
     '</style></head><body>'+
     '<div class="page">'+
+    // Header
     '<div style="display:flex;justify-content:space-between;align-items:center;border-bottom:2px solid #1e3a5f;padding-bottom:12px;margin-bottom:16px">'+
     '<div><div style="font-size:20px;font-weight:900;color:#1e3a5f">ONEIC</div>'+
-    '<div style="font-size:13px;color:#555">Bulk Payment Report</div></div>'+
-    '<div style="text-align:left;font-size:12px;color:#888">'+
-    '<div>'+(filterFrom||d.dateRange?.from||'')+' → '+(filterTo||d.dateRange?.to||'')+'</div>'+
-    '<div>'+new Date().toLocaleDateString(lang==='en'?'en-GB':'ar-OM')+'</div></div></div>'+
-    '<div style="display:flex;gap:16px;margin-bottom:16px">'+
-    ['المدفوع|'+omr(totalPaid)+'|#16a34a','التسويات|'+omr(totalAdj)+'|#d97706','الإجمالي|'+omr(totalPaid+totalAdj)+'|#1e3a5f'].map(s=>{
-      const [l,v,c]=s.split('|');
-      return '<div style="flex:1;background:#f8f4f1;border-radius:8px;padding:12px;text-align:center">'+
-        '<div style="font-size:11px;color:#888">'+l+'</div>'+
-        '<div style="font-size:16px;font-weight:900;color:'+c+'">'+v+'</div></div>';
-    }).join('')+'</div>'+
-    '<table><thead><tr><th>#</th><th>التاريخ</th><th>المدفوع</th><th>التسويات</th><th>الإجمالي</th><th>دفعات</th></tr></thead>'+
-    '<tbody>'+(d.daily||[]).map((day,i)=>
-      '<tr><td>'+(i+1)+'</td><td>'+day.date+'</td>'+
-      '<td style="color:#16a34a;font-weight:700">'+omr(day.paid)+'</td>'+
-      '<td style="color:#d97706;font-weight:700">'+omr(day.adj||0)+'</td>'+
-      '<td style="font-weight:900">'+omr(day.paid+(day.adj||0))+'</td>'+
-      '<td>'+day.count+'</td></tr>'
-    ).join('')+'</tbody></table>'+
-    '<button class="no-print" onclick="window.print()" style="margin-top:16px;background:#1e3a5f;color:#fff;border:none;border-radius:8px;padding:10px 24px;font-family:Cairo,sans-serif;font-size:14px;font-weight:700;cursor:pointer">طباعة / PDF</button>'+
+    '<div style="font-size:13px;color:#555">'+( ar?'تقرير Bulk Payment':'Bulk Payment Report')+'</div></div>'+
+    '<div style="text-align:'+(ar?'left':'right')+';font-size:12px;color:#888">'+
+    '<div>'+(filterFrom||d.dateRange&&d.dateRange.from||'')+' → '+(filterTo||d.dateRange&&d.dateRange.to||'')+'</div>'+
+    '<div>'+new Date().toLocaleDateString(ar?'ar-OM':'en-GB')+'</div></div></div>'+
+    // Summary boxes — 3 cols
+    '<div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:12px;margin-bottom:16px">'+
+    [
+      [(ar?'إجمالي المدفوع':'Total Paid'),omr(totalPaid),'#16a34a','#f0fdf4'],
+      [(ar?'📊 التسويات':'📊 Settlements'),omr(totalAdj),'#d97706','#fef3c7'],
+      [(ar?'الإجمالي الكلي':'Grand Total'),omr(totalPaid+totalAdj),'#1e3a5f','#e0e7ff'],
+    ].map(function(x){return '<div style="background:'+x[3]+';border-radius:8px;padding:12px;text-align:center;border:1px solid '+x[2]+'33">'+
+      '<div style="font-size:11px;color:#888;font-weight:700;margin-bottom:4px">'+x[0]+'</div>'+
+      '<div style="font-size:16px;font-weight:900;color:'+x[2]+'">'+x[1]+'</div></div>';}).join('')+'</div>'+
+    // Daily table
+    '<div style="font-size:13px;font-weight:900;color:#1e3a5f;margin-bottom:8px">'+(ar?'ملخص الأداء اليومي':'Daily Performance Summary')+'</div>'+
+    '<table><thead><tr>'+
+    '<th>#</th><th>'+(ar?'التاريخ':'Date')+'</th>'+
+    '<th>'+(ar?'المدفوع':'Paid')+'</th>'+
+    '<th>'+(ar?'📊 التسويات':'📊 Settlements')+'</th>'+
+    '<th>'+(ar?'الإجمالي':'Total')+'</th>'+
+    '<th>'+(ar?'دفعات':'Payments')+'</th></tr></thead>'+
+    '<tbody>'+(d.daily||[]).map(function(day,i){
+      var hasAdj = (day.adj||0)>0;
+      return '<tr>'+
+        '<td>'+(i+1)+'</td>'+
+        '<td style="font-weight:700">'+day.date+'</td>'+
+        '<td style="color:#16a34a;font-weight:700">'+omr(day.paid)+'</td>'+
+        '<td style="color:#d97706;font-weight:700">'+(hasAdj?'<span class="adj-badge">📊 '+omr(day.adj)+'</span>':omr(0))+'</td>'+
+        '<td style="font-weight:900;color:#1e3a5f">'+omr(day.paid+(day.adj||0))+'</td>'+
+        '<td>'+day.count+'</td></tr>';
+    }).join('')+
+    '<tr style="background:#1e3a5f;color:#fff;font-weight:900">'+
+    '<td colspan="2">'+(ar?'الإجمالي':'Total')+'</td>'+
+    '<td>'+omr(totalPaid)+'</td>'+
+    '<td>'+omr(totalAdj)+'</td>'+
+    '<td>'+omr(totalPaid+totalAdj)+'</td>'+
+    '<td>'+(d.daily||[]).reduce(function(s,x){return s+(x.count||0);},0)+'</td></tr>'+
+    '</tbody></table>'+
+    '<div style="margin-top:16px;font-size:9px;color:#9ca3af;text-align:center;border-top:1px solid #e5e7eb;padding-top:8px">'+
+    'Programming and design by Sulaiman Al-Harrasi — 16296 · ONEIC © 2026</div>'+
+    '<button class="no-print" onclick="window.print()" style="margin-top:12px;background:#1e3a5f;color:#fff;border:none;border-radius:8px;padding:10px 24px;font-family:Cairo,sans-serif;font-size:14px;font-weight:700;cursor:pointer">🖨️ '+(ar?'طباعة / PDF':'Print / PDF')+'</button>'+
     '</div></body></html>';
   w.document.write(html);
   w.document.close();
@@ -7648,7 +7672,18 @@ function DayDetail({ date, day, collectors, regions, fmt, small, onClose, REG_CO
                   <div style={{fontSize:13,fontWeight:800,color:"#16a34a"}}>{fmt(deb.paid)}</div>
                   <div style={{position:"relative"}}>
                     <div style={{fontSize:14,fontWeight:900,color:"#e85d20"}}>{fmt(deb.paid+deb.adj)}</div>
-                    {/* ✅ أيقونة الدفع الكامل — عندما O/S = 0 */}
+                    {/* 📊 تنبيه التسوية */}
+                    {(deb.adj>0)&&(
+                      <div style={{display:"inline-flex",alignItems:"center",gap:3,
+                        marginTop:2,background:"#fef3c7",border:"1px solid #f59e0b",
+                        borderRadius:20,padding:"2px 8px"}}>
+                        <span style={{fontSize:11}}>📊</span>
+                        <span style={{fontSize:9,fontWeight:800,color:"#d97706"}}>
+                          {lang==='en'?'Settlement':'تسوية'}: {fmt(deb.adj)}
+                        </span>
+                      </div>
+                    )}
+                    {/* ✅ أيقونة الدفع الكامل */}
                     {(deb.os===0||(deb.os!=null&&deb.os<=0))&&(deb.paid>0)&&(
                       <div style={{display:"inline-flex",alignItems:"center",gap:3,
                         marginTop:2,background:"#dcfce7",border:"1px solid #86efac",
@@ -7673,8 +7708,8 @@ function DayDetail({ date, day, collectors, regions, fmt, small, onClose, REG_CO
 
 
 // -- AnalyticsModal -- لوحة التحليل البياني ------------------------------------
-function AnalyticsModal({ bulk, onClose, small }) {
-  const { lang } = useLang();
+function AnalyticsModal({ bulk, onClose, small, langProp }) {
+  const lang = langProp || 'ar';
   const [activeChart, setActiveChart] = useState('trend');
   const [filterYear,  setFilterYear]  = useState('all');
   const [filterMonth, setFilterMonth] = useState('all');
@@ -7931,6 +7966,8 @@ function AnalyticsModal({ bulk, onClose, small }) {
     setTimeout(()=>w.print(), 2000);
   };
 
+  const [isFullscreen, setIsFullscreen] = useState(false);
+
   const tabs = [
     {id:'trend', label:t('📈 الاتجاه اليومي',lang)},
     {id:'region', label:t('🗺 المناطق',lang)},
@@ -7943,10 +7980,11 @@ function AnalyticsModal({ bulk, onClose, small }) {
       display:"flex",alignItems:"center",justifyContent:"center",
       zIndex:9999,padding:16,direction:"rtl"}}>
       <div style={{
-        background:"#fff",borderRadius:20,width:"100%",
-        maxWidth:small?400:960,maxHeight:"92vh",
+        background:"#fff",borderRadius:isFullscreen?0:20,width:"100%",
+        maxWidth:isFullscreen?"100vw":small?400:960,
+        maxHeight:isFullscreen?"100vh":"92vh",height:isFullscreen?"100vh":undefined,
         overflow:"hidden",display:"flex",flexDirection:"column",
-        boxShadow:"0 24px 80px rgba(0,0,0,0.5)"
+        boxShadow:"0 24px 80px rgba(0,0,0,0.5)",transition:"all 0.25s ease"
       }}>
 
         {/* ── Header ── */}
@@ -7973,6 +8011,10 @@ function AnalyticsModal({ bulk, onClose, small }) {
                 borderRadius:10,padding:"8px 16px",fontSize:13,fontWeight:800,
                 cursor:"pointer",fontFamily:"'Cairo',sans-serif"
               }}>{t("🖨️ تصدير PDF",lang)}</button>
+              <button onClick={function(){setIsFullscreen(function(f){return !f;});}} style={{
+                background:"rgba(255,255,255,0.15)",color:"#fff",border:"none",
+                borderRadius:10,padding:"8px 14px",fontSize:16,cursor:"pointer",fontWeight:700
+              }}>{isFullscreen?"⊡":"⊞"}</button>
               <button onClick={onClose} style={{
                 background:"rgba(255,255,255,0.15)",color:"#fff",border:"none",
                 borderRadius:10,padding:"8px 14px",fontSize:16,cursor:"pointer",fontWeight:700
@@ -8051,25 +8093,29 @@ function AnalyticsModal({ bulk, onClose, small }) {
           {/* KPI شريط — 5 مربعات */}
           <div style={{display:"grid",gridTemplateColumns:"1fr 1fr 2fr",gap:8,marginTop:10,borderTop:"1px solid rgba(255,255,255,0.15)",paddingTop:10}}>
             <div style={{textAlign:"center",padding:"10px",background:"rgba(255,255,255,0.08)",border:"1px solid rgba(255,255,255,0.12)",borderRadius:10}}>
-              <div style={{fontSize:10,color:"rgba(255,255,255,0.6)",fontWeight:700,marginBottom:4}}>{t("إجمالي المدفوع",lang)}</div>
+              <div style={{fontSize:10,color:"rgba(255,255,255,0.6)",fontWeight:700,marginBottom:4}}>{lang==='ar'?"إجمالي المدفوع":"Total Paid"}</div>
               <div style={{fontSize:small?13:16,fontWeight:900,color:"#86efac",fontFamily:"'IBM Plex Mono',monospace"}}>{fmt(totalPaid)}</div>
             </div>
             <div style={{textAlign:"center",padding:"10px",background:"rgba(255,255,255,0.08)",border:"1px solid rgba(255,255,255,0.12)",borderRadius:10}}>
-              <div style={{fontSize:10,color:"rgba(255,255,255,0.6)",fontWeight:700,marginBottom:4}}>{"📊 "}{t("التسويات",lang)}</div>
+              <div style={{fontSize:10,color:"rgba(255,255,255,0.6)",fontWeight:700,marginBottom:4}}>{"📊 "}{lang==='ar'?"التسويات":"Settlements"}</div>
               <div style={{fontSize:small?13:16,fontWeight:900,color:"#fde68a",fontFamily:"'IBM Plex Mono',monospace"}}>{fmt(totalAdj)}</div>
             </div>
             <div style={{textAlign:"center",padding:"10px 14px",background:"rgba(255,255,255,0.18)",border:"2px solid rgba(255,255,255,0.4)",borderRadius:10}}>
-              <div style={{fontSize:small?9:10,color:"rgba(255,255,255,0.7)",fontWeight:700,marginBottom:4}}>{t("إجمالي المدفوع","Total")} + {"📊 "}{t("التسويات","Adj.")} = {t("الإجمالي الكلي","Grand Total")}</div>
+              <div style={{fontSize:small?9:10,color:"rgba(255,255,255,0.7)",fontWeight:700,marginBottom:4}}>
+                {lang==='ar'
+                  ? "إجمالي المدفوع + 📊 التسويات = الإجمالي الكلي"
+                  : "Total Paid + 📊 Adj. = Grand Total"}
+              </div>
               <div style={{fontSize:small?16:20,fontWeight:900,color:"#fff",fontFamily:"'IBM Plex Mono',monospace"}}>{fmt(totalPaid+totalAdj)}</div>
             </div>
           </div>
           <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:8,marginTop:6}}>
             <div style={{textAlign:"center",padding:"10px",background:"rgba(255,255,255,0.08)",border:"1px solid rgba(255,255,255,0.12)",borderRadius:10}}>
-              <div style={{fontSize:10,color:"rgba(255,255,255,0.6)",fontWeight:700,marginBottom:4}}>{"📈 "}{t("متوسط يومي",lang)}</div>
+              <div style={{fontSize:10,color:"rgba(255,255,255,0.6)",fontWeight:700,marginBottom:4}}>{"📈 "}{lang==='ar'?"متوسط يومي":"Daily Avg."}</div>
               <div style={{fontSize:small?13:16,fontWeight:900,color:"#e9d5ff",fontFamily:"'IBM Plex Mono',monospace"}}>{fmt(avgDaily)}</div>
             </div>
             <div style={{textAlign:"center",padding:"10px",background:"rgba(255,255,255,0.08)",border:"1px solid rgba(255,255,255,0.12)",borderRadius:10}}>
-              <div style={{fontSize:10,color:"rgba(255,255,255,0.6)",fontWeight:700,marginBottom:4}}>{"🏆 "}{t("أفضل يوم",lang)}</div>
+              <div style={{fontSize:10,color:"rgba(255,255,255,0.6)",fontWeight:700,marginBottom:4}}>{"🏆 "}{lang==='ar'?"أفضل يوم":"Best Day"}</div>
               <div style={{fontSize:small?12:14,fontWeight:900,color:"#fff",fontFamily:"'IBM Plex Mono',monospace"}}>{(bestDay.date||'').slice(5)+' · '+fmtK(bestDay.paid+bestDay.adj||0)}</div>
             </div>
           </div>
@@ -8113,7 +8159,7 @@ function AnalyticsModal({ bulk, onClose, small }) {
                 const CW=Math.max(daily.length*STEP+160,900);
                 const CH=700, CPX=88, CPY=40, CPB=90;
                 const cw=CW-CPX-24, ch=CH-CPY-CPB;
-                const maxVal=Math.max(...daily.map(d=>d.paid+d.adj),1);
+                const maxVal=Math.max(...daily.map(function(d){return d.paid+(d.adj||0);}),1);
 
                 // -- Fixed intervals (0→100, 100→200, …) ---------------
                 const interval = (() => {
@@ -8128,6 +8174,15 @@ function AnalyticsModal({ bulk, onClose, small }) {
 
                 const xOf = i => CPX+(daily.length>1?(i/(daily.length-1))*cw:cw/2);
                 const yOf = v => CPY + ch - (v/topVal)*ch;
+                // مسار التسويات (بعد تعريف xOf/yOf)
+                const adjPts = daily.map(function(d,i){return {x:xOf(i),y:yOf(d.adj||0),v:d.adj||0};});
+                const adjSmooth = adjPts.map(function(p,i,a){
+                  if(i===0) return 'M'+p.x+','+p.y;
+                  var pv=a[i-1],c1x=pv.x+(p.x-pv.x)*0.4,c2x=pv.x+(p.x-pv.x)*0.6;
+                  return 'C'+c1x+','+pv.y+' '+c2x+','+p.y+' '+p.x+','+p.y;
+                }).join(' ');
+                // مسار المدفوع فقط
+                const paidPts = daily.map(function(d,i){return {x:xOf(i),y:yOf(d.paid),v:d.paid};});
                 const cpts = daily.map((d,i)=>({x:xOf(i),y:yOf(d.paid+d.adj),d}));
                 const smooth = cpts.map((p,i,a)=>{
                   if(i===0) return `M${p.x},${p.y}`;
@@ -8350,6 +8405,10 @@ function AnalyticsModal({ bulk, onClose, small }) {
                       {area&&<path d={area} fill="url(#aGradB)"/>}
                       {smooth&&<path d={smooth} fill="none" stroke="#e85d2044" strokeWidth="8" strokeLinejoin="round" strokeLinecap="round"/>}
                       {smooth&&<path d={smooth} fill="none" stroke="url(#lineGB)" strokeWidth="3" strokeLinejoin="round" strokeLinecap="round"/>}
+                      {/* مسار المدفوع (أخضر منقط) */}
+                      {paidPts.length>1&&<path d={paidPts.map(function(p,i){return (i===0?'M':'L')+p.x+','+p.y;}).join(' ')} fill="none" stroke="#22c55e" strokeWidth="1.5" strokeDasharray="4 3" strokeLinejoin="round" opacity="0.7"/>}
+                      {/* مسار التسوية (أصفر) */}
+                      {adjSmooth&&totalAdj>0&&<path d={adjSmooth} fill="none" stroke="#f59e0b" strokeWidth="2" strokeLinejoin="round" strokeLinecap="round"/>}
 
                       {cpts.map((pt,i)=>{
                         const total=pt.d.paid+pt.d.adj;
@@ -8392,6 +8451,26 @@ function AnalyticsModal({ bulk, onClose, small }) {
                   </div>
                 </div>);
               })()}
+
+              {/* أسطورة الرسم البياني */}
+              <div style={{display:"flex",gap:16,flexWrap:"wrap",marginBottom:10,marginTop:-4,padding:"6px 8px",background:"#f8f4f1",borderRadius:8}}>
+                <div style={{display:"flex",alignItems:"center",gap:5,fontSize:11,fontWeight:700,color:"#374151"}}>
+                  <svg width="20" height="8"><path d="M0,4 L20,4" stroke="#e85d20" strokeWidth="2.5"/></svg>
+                  {lang==='ar'?"الإجمالي الكلي":"Grand Total"}
+                </div>
+                <div style={{display:"flex",alignItems:"center",gap:5,fontSize:11,fontWeight:700,color:"#374151"}}>
+                  <svg width="20" height="8"><path d="M0,4 L5,4 M8,4 L13,4 M16,4 L20,4" stroke="#22c55e" strokeWidth="1.5"/></svg>
+                  {lang==='ar'?"المدفوع":"Paid"}
+                </div>
+                {totalAdj>0&&<div style={{display:"flex",alignItems:"center",gap:5,fontSize:11,fontWeight:700,color:"#374151"}}>
+                  <svg width="20" height="8"><path d="M0,4 L20,4" stroke="#f59e0b" strokeWidth="2"/></svg>
+                  {"📊 "}{lang==='ar'?"التسويات":"Settlements"}
+                </div>}
+                <div style={{marginRight:"auto",fontSize:11,fontWeight:900,color:"#1e3a5f"}}>
+                  {lang==='ar'?"الإجمالي الكلي للفترة:":"Period Grand Total:"} <span style={{color:"#e85d20"}}>{fmt(totalPaid+totalAdj)}</span> OMR
+                  {totalAdj>0&&<span style={{marginRight:8,color:"#d97706"}}> | 📊 {fmt(totalAdj)} OMR</span>}
+                </div>
+              </div>
 
               {/* ملخص أسبوعي */}
               <div style={{display:"grid",gridTemplateColumns:"repeat(3,1fr)",gap:12,marginBottom:16}}>
@@ -8699,8 +8778,9 @@ function AnalyticsModal({ bulk, onClose, small }) {
   );
 }
 
-function BulkPaymentSection({ bulk, small, onBulkUpdate, requireUploadAuth }) {
-  const { lang } = useLang();
+function BulkPaymentSection({ bulk, small, onBulkUpdate, requireUploadAuth, langOverride }) {
+  const { lang: ctxLangB } = useLang();
+  const lang = langOverride || ctxLangB;
   const [activeTab, setActiveTab]       = useState('daily');
   const [selectedDate, setSelectedDate] = useState(null);
   const [filterFrom, setFilterFrom]     = useState('');
@@ -8710,6 +8790,7 @@ function BulkPaymentSection({ bulk, small, onBulkUpdate, requireUploadAuth }) {
   const [bulkError, setBulkError]       = useState(null);
   const [bulkData, setBulkData]         = useState(bulk);
   const [showAnalytics, setShowAnalytics] = useState(false);
+  const [bulkPending, setBulkPending]   = useState(null); // بطاقة التأكيد
   const fileRef = useRef(null);
 
   const handleBulkFile = async (file) => {
@@ -8795,19 +8876,69 @@ function BulkPaymentSection({ bulk, small, onBulkUpdate, requireUploadAuth }) {
         };
       }
 
-      // -- حفظ محلي ---------------------------------------------------------
-      try { localStorage.setItem('oneic_bulk_data', JSON.stringify(final)); } catch(e){}
+      // -- عرض بطاقة التأكيد قبل الحفظ --
+      setBulkPending({ parsed, fileName: file.name });
+      setBulkUploading(false);
+    } catch(e) { setBulkError(e.message); }
+    finally { setBulkUploading(false); }
+  };
 
-      // -- رفع لـ Firebase ---------------------------------------------------------
+  const confirmBulkUpload = async () => {
+    if (!bulkPending) return;
+    const { parsed } = bulkPending;
+    setBulkPending(null);
+    setBulkUploading(true);
+    try {
+      // -- قراءة البيانات المحفوظة (Firebase ← localStorage ← state) ----------
+      let existing = null;
       try {
-        await sbUpsert('oneic_bulk', { payload: final });
-      } catch(e) { console.warn('Firebase bulk upload failed:', e); }
+        const fbData = await sbGet('oneic_bulk');
+        if (fbData && fbData.daily && fbData.daily.length > 0) {
+          existing = fbData;
+          try { localStorage.setItem('oneic_bulk_data', JSON.stringify(fbData)); } catch(e) {}
+        }
+      } catch(e) {}
+      if (!existing) {
+        try {
+          const saved = localStorage.getItem('oneic_bulk_data');
+          if (saved) { const p = JSON.parse(saved); if (p && p.daily && p.daily.length > 0) existing = p; }
+        } catch(e) {}
+      }
+      if (!existing && bulkData && bulkData.daily && bulkData.daily.length > 0 && bulkData !== BULK_SEED) existing = bulkData;
 
+      let final = parsed;
+      if (existing && existing.daily && existing.daily.length > 0) {
+        const dayMap = {};
+        (existing.daily||[]).forEach(function(d){dayMap[d.date]={...d};});
+        (parsed.daily||[]).forEach(function(d){dayMap[d.date]={...d};});
+        const mergedDaily = Object.values(dayMap).sort(function(a,b){return a.date.localeCompare(b.date);});
+        const regMap = {};
+        (existing.byRegion||[]).forEach(function(r){regMap[r.nameEn||r.nameAr]={...r};});
+        (parsed.byRegion||[]).forEach(function(r){const k=r.nameEn||r.nameAr;if(regMap[k]){regMap[k].paid+=r.paid;regMap[k].adj+=r.adj;regMap[k].count+=r.count;}else regMap[k]={...r};});
+        const colMap = {};
+        (existing.topCollectors||[]).forEach(function(c){colMap[c.name+'|'+(c.region||'')]={...c};});
+        (parsed.topCollectors||[]).forEach(function(c){const k=c.name+'|'+(c.region||'');if(colMap[k]){colMap[k].paid+=c.paid;colMap[k].adj+=c.adj;colMap[k].count+=c.count;}else colMap[k]={...c};});
+        const detailMap={...(existing.dailyDetail||{})};
+        Object.entries(parsed.dailyDetail||{}).forEach(function([date,cols]){detailMap[date]=cols;});
+        const totalPaid=mergedDaily.reduce(function(s,d){return s+d.paid;},0);
+        const totalAdj=mergedDaily.reduce(function(s,d){return s+d.adj;},0);
+        const allDates=mergedDaily.map(function(d){return d.date;}).sort();
+        const avgDaily=mergedDaily.length?totalPaid/mergedDaily.length:0;
+        const bestDay=mergedDaily.reduce(function(a,b){return(a.paid+a.adj)>(b.paid+b.adj)?a:b;},mergedDaily[0]||{});
+        final={fileName:(existing.fileName||'')+' + '+(parsed.fileName||''),uploadedAt:new Date().toISOString(),
+          dateRange:{from:allDates[0]||'',to:allDates[allDates.length-1]||''},totalPaid,totalAdj,
+          totalRecords:mergedDaily.reduce(function(s,d){return s+d.count;},0),daily:mergedDaily,
+          byRegion:Object.values(regMap).sort(function(a,b){return(b.paid+b.adj)-(a.paid+a.adj);}),
+          topCollectors:Object.values(colMap).sort(function(a,b){return(b.paid+b.adj)-(a.paid+a.adj);}).slice(0,30),
+          dailyDetail:detailMap,stats:{avgDaily,bestDay,activeDays:mergedDaily.length,totalCollectors:Object.keys(colMap).length}};
+      }
+      try { localStorage.setItem('oneic_bulk_data', JSON.stringify(final)); } catch(e){}
+      try { await sbUpsert('oneic_bulk', { payload: final }); } catch(e) {}
       setBulkData(final);
       if (onBulkUpdate) onBulkUpdate(final);
       setSelectedDate(null);
       setBulkSuccess(true);
-      setTimeout(()=>setBulkSuccess(false), 4000);
+      setTimeout(function(){setBulkSuccess(false);}, 4000);
     } catch(e) { setBulkError(e.message); }
     finally { setBulkUploading(false); }
   };
@@ -8907,7 +9038,7 @@ function BulkPaymentSection({ bulk, small, onBulkUpdate, requireUploadAuth }) {
             display:"flex",alignItems:"center",gap:6,
             whiteSpace:"nowrap",boxShadow:"0 2px 8px rgba(0,0,0,0.2)"
           }}>📊 {small?t("تحليل",lang):t("التحليل البياني",lang)}</button>
-          <button onClick={()=>handleBulkPrint(bulkData,filterFrom,filterTo)} style={{
+          <button onClick={()=>handleBulkPrint(bulkData,filterFrom,filterTo,lang)} style={{
             background:"rgba(255,255,255,0.15)",color:"#fff",
             border:"1.5px solid rgba(255,255,255,0.3)",
             borderRadius:10,padding:"8px 16px",
@@ -8962,7 +9093,7 @@ function BulkPaymentSection({ bulk, small, onBulkUpdate, requireUploadAuth }) {
             <div style={{fontSize:10,color:"rgba(255,255,255,0.4)",marginTop:3}}>OMR</div>
           </div>
           <div style={{background:"rgba(255,255,255,0.18)",border:"2px solid rgba(255,255,255,0.4)",borderRadius:12,padding:"14px",textAlign:"center"}}>
-            <div style={{fontSize:small?9:11,color:"rgba(255,255,255,0.7)",fontWeight:700,marginBottom:6}}>{t("إجمالي المدفوع","Total")} + {"📊 "}{t("التسويات","Adj.")} = {t("الإجمالي الكلي","Grand Total")}</div>
+            <div style={{fontSize:small?9:11,color:"rgba(255,255,255,0.7)",fontWeight:700,marginBottom:6}}>{lang==='ar'?"إجمالي المدفوع + 📊 التسويات = الإجمالي الكلي":"Total Paid + 📊 Adj. = Grand Total"}</div>
             <div style={{fontSize:small?18:24,fontWeight:900,color:"#fff",fontFamily:"'IBM Plex Mono',monospace"}}>{fmt(d.totalPaid+d.totalAdj)}</div>
             <div style={{fontSize:10,color:"rgba(255,255,255,0.5)",marginTop:4}}>OMR</div>
           </div>
@@ -8974,7 +9105,7 @@ function BulkPaymentSection({ bulk, small, onBulkUpdate, requireUploadAuth }) {
             <div style={{fontSize:10,color:"rgba(255,255,255,0.4)",marginTop:2}}>OMR</div>
           </div>
           <div style={{background:"rgba(255,255,255,0.08)",border:"1px solid rgba(255,255,255,0.12)",borderRadius:10,padding:"10px 8px",textAlign:"center"}}>
-            <div style={{fontSize:10,color:"rgba(255,255,255,0.6)",fontWeight:700,marginBottom:4}}>{"🏆 "}{t("أفضل يوم",lang)}</div>
+            <div style={{fontSize:10,color:"rgba(255,255,255,0.6)",fontWeight:700,marginBottom:4}}>{"🏆 "}{lang==='ar'?"أفضل يوم":"Best Day"}</div>
             <div style={{fontSize:small?13:15,fontWeight:900,color:"#fde68a"}}>{d.stats&&d.stats.bestDay&&d.stats.bestDay.date?d.stats.bestDay.date.slice(5):"—"}</div>
             <div style={{fontSize:small?10:11,color:"#86efac",fontWeight:700,marginTop:2}}>{fmt(d.stats&&d.stats.bestDay&&d.stats.bestDay.paid||0)} OMR</div>
           </div>
@@ -9260,7 +9391,55 @@ function BulkPaymentSection({ bulk, small, onBulkUpdate, requireUploadAuth }) {
 
       </div>
     </div>
-    {showAnalytics&&<AnalyticsModal bulk={bulkData} onClose={()=>setShowAnalytics(false)} small={small}/>}
+    {showAnalytics&&<AnalyticsModal bulk={bulkData} onClose={()=>setShowAnalytics(false)} small={small} langProp={lang}/>}
+
+    {/* ══ بطاقة تأكيد رفع Bulk Payment ══ */}
+    {bulkPending&&(
+      <div style={{position:"fixed",top:0,left:0,right:0,bottom:0,background:"rgba(0,0,0,0.75)",
+        display:"flex",alignItems:"center",justifyContent:"center",zIndex:99999,direction:"rtl"}}>
+        <div style={{background:"#fff",borderRadius:20,padding:28,width:380,maxWidth:"90vw",
+          boxShadow:"0 24px 80px rgba(0,0,0,0.4)"}}>
+          {/* Header */}
+          <div style={{display:"flex",alignItems:"center",gap:12,marginBottom:20,borderBottom:"2px solid #f0ece8",paddingBottom:14}}>
+            <div style={{width:44,height:44,borderRadius:12,background:"#1e3a5f",display:"flex",alignItems:"center",justifyContent:"center",fontSize:22}}>📦</div>
+            <div>
+              <div style={{fontSize:15,fontWeight:900,color:"#1e3a5f"}}>{lang==='ar'?"تأكيد رفع الملف":"Confirm File Upload"}</div>
+              <div style={{fontSize:11,color:"#6b7280",marginTop:2}}>{bulkPending.fileName}</div>
+            </div>
+          </div>
+          {/* Stats */}
+          <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:10,marginBottom:20}}>
+            {[
+              {label:lang==='ar'?"📋 عدد الحسابات":"📋 Accounts",value:(bulkPending.parsed.totalRecords||0).toLocaleString(),color:"#1e3a5f",bg:"#e0e7ff"},
+              {label:lang==='ar'?"💰 المدفوعات":"💰 Payments",value:new Intl.NumberFormat('en-US',{minimumFractionDigits:3}).format(bulkPending.parsed.totalPaid||0)+" OMR",color:"#16a34a",bg:"#dcfce7"},
+              {label:lang==='ar'?"📊 التسويات":"📊 Settlements",value:new Intl.NumberFormat('en-US',{minimumFractionDigits:3}).format(bulkPending.parsed.totalAdj||0)+" OMR",color:"#d97706",bg:"#fef3c7"},
+              {label:lang==='ar'?"🔢 الإجمالي":"🔢 Grand Total",value:new Intl.NumberFormat('en-US',{minimumFractionDigits:3}).format((bulkPending.parsed.totalPaid||0)+(bulkPending.parsed.totalAdj||0))+" OMR",color:"#e85d20",bg:"#fff7f3"},
+            ].map(function(s){return(
+              <div key={s.label} style={{background:s.bg,borderRadius:12,padding:"12px 14px"}}>
+                <div style={{fontSize:10,color:"#6b7280",fontWeight:700,marginBottom:4}}>{s.label}</div>
+                <div style={{fontSize:13,fontWeight:900,color:s.color}}>{s.value}</div>
+              </div>
+            );})}
+          </div>
+          {/* Period */}
+          {bulkPending.parsed.dateRange&&<div style={{textAlign:"center",fontSize:11,color:"#6b7280",marginBottom:16}}>
+            📅 {bulkPending.parsed.dateRange.from} → {bulkPending.parsed.dateRange.to}
+            &nbsp;·&nbsp; {(bulkPending.parsed.daily||[]).length} {lang==='ar'?"يوم":"days"}
+          </div>}
+          {/* Buttons */}
+          <div style={{display:"flex",gap:10}}>
+            <button onClick={confirmBulkUpload} style={{flex:1,background:"#1e3a5f",color:"#fff",border:"none",
+              borderRadius:12,padding:"13px",fontSize:14,fontWeight:800,cursor:"pointer",fontFamily:"Cairo,sans-serif"}}>
+              ✅ {lang==='ar'?"تأكيد الرفع":"Confirm Upload"}
+            </button>
+            <button onClick={function(){setBulkPending(null);}} style={{flex:0,background:"#f0f4f9",color:"#555",
+              border:"1px solid #ddd",borderRadius:12,padding:"13px 16px",fontSize:14,fontWeight:700,cursor:"pointer",fontFamily:"Cairo,sans-serif"}}>
+              {lang==='ar'?"إلغاء":"Cancel"}
+            </button>
+          </div>
+        </div>
+      </div>
+    )}
     </>
   );
 }
@@ -12407,7 +12586,7 @@ export default function Dashboard() {
       {/* ══ BODY ══ */}
       <div style={{ padding:pad, flex:1, overflowY:"auto", overflowX:"hidden" }}>
 
-        {showBulkReport && <BulkPaymentSection bulk={bulkData} small={small} onBulkUpdate={function(d){setBulkDataMain(d);try{localStorage.setItem('oneic_bulk_data',JSON.stringify(d));}catch(e){}}} requireUploadAuth={requireUploadAuth}/>}
+        {showBulkReport && <BulkPaymentSection bulk={bulkData} small={small} onBulkUpdate={function(d){setBulkDataMain(d);try{localStorage.setItem('oneic_bulk_data',JSON.stringify(d));}catch(e){}}} requireUploadAuth={requireUploadAuth} langOverride={lang}/>}
 
         
       {/* ══ Section 1 ══ */}
