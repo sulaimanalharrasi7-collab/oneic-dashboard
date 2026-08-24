@@ -9783,9 +9783,11 @@ function parseBulkPayment(file) {
 
         if (!rows.length) return reject(new Error('الملف فارغ'));
 
-        // التحقق من الأعمدة المطلوبة
-        const requiredCols = ['Region','Collector','Paid Amount','Adjustment Amount','Date'];
+        // التحقق من الأعمدة المطلوبة (مرن للأسماء المختلفة)
         const firstRow = rows[0];
+        const adjCol = ['Adjustment Amount','Adjustment','Adj Amount','Adj','Settlement Amount','التسويات'].find(c=>c in firstRow) || 'Adjustment Amount';
+        const paidCol = ['Paid Amount','Paid','Payment Amount','المدفوع'].find(c=>c in firstRow) || 'Paid Amount';
+        const requiredCols = ['Region','Collector',paidCol,'Date'];
         const missing = requiredCols.filter(c => !(c in firstRow));
         if (missing.length > 0) {
           return reject(new Error(`أعمدة مفقودة: ${missing.join(', ')}`));
@@ -9813,8 +9815,8 @@ function parseBulkPayment(file) {
         let minDate=null, maxDate=null;
 
         rows.forEach(row => {
-          const paid = g(row['Paid Amount']);
-          const adj  = g(row['Adjustment Amount']);
+          const paid = g(row[paidCol]||0);
+          const adj  = g(row[adjCol]||0);
           const region    = String(row['Region']||'').trim();
           const collector = String(row['Collector']||'').trim();
           const branch    = String(row['Branch']||'').trim();
