@@ -8940,23 +8940,23 @@ function BulkPaymentSection({ bulk, small, onBulkUpdate, requireUploadAuth }) {
           </div>
         </div>
 
-        {/* إجماليات */}
-        <div style={{display:"grid",gridTemplateColumns:"repeat(4,1fr)",gap:10,marginTop:14}}>
-          {[[t("إجمالي المدفوع",lang),fmt(d.totalPaid),"#86efac"],
-            [t("التسويات",lang),fmt(d.totalAdj),"#fde68a"],
-          ].map(([l,v,c])=>(
-            <div key={l} style={{background:"rgba(255,255,255,0.1)",border:"1px solid rgba(255,255,255,0.15)",borderRadius:12,padding:"12px 10px",textAlign:"center"}}>
-              <div style={{fontSize:small?10:12,color:"rgba(255,255,255,0.65)",fontWeight:700,marginBottom:6}}>{l}</div>
-              <div style={{fontSize:small?14:18,fontWeight:900,color:c,lineHeight:1,fontFamily:"'IBM Plex Mono',monospace"}}>{v}</div>
-              <div style={{fontSize:10,color:"rgba(255,255,255,0.4)",marginTop:3}}>OMR</div>
-            </div>
-          ))}
-          {/* مربع الإجمالي الكلي — بارز */}
-          <div style={{background:"rgba(255,255,255,0.18)",border:"2px solid rgba(255,255,255,0.4)",borderRadius:12,padding:"12px 10px",textAlign:"center",gridColumn:"span 2"}}>
-            <div style={{fontSize:small?10:11,color:"rgba(255,255,255,0.7)",fontWeight:700,marginBottom:4}}>
+        {/* إجماليات — Layout جديد: مدفوع | تسويات | الإجمالي الكلي */}
+        <div style={{display:"grid",gridTemplateColumns:"1fr 1fr 2fr",gap:10,marginTop:14}}>
+          <div style={{background:"rgba(255,255,255,0.1)",border:"1px solid rgba(255,255,255,0.15)",borderRadius:12,padding:"12px 10px",textAlign:"center"}}>
+            <div style={{fontSize:small?10:12,color:"rgba(255,255,255,0.65)",fontWeight:700,marginBottom:6}}>{t("إجمالي المدفوع",lang)}</div>
+            <div style={{fontSize:small?14:18,fontWeight:900,color:"#86efac",lineHeight:1,fontFamily:"'IBM Plex Mono',monospace"}}>{fmt(d.totalPaid)}</div>
+            <div style={{fontSize:10,color:"rgba(255,255,255,0.4)",marginTop:3}}>OMR</div>
+          </div>
+          <div style={{background:"rgba(255,255,255,0.1)",border:"1px solid rgba(255,255,255,0.15)",borderRadius:12,padding:"12px 10px",textAlign:"center"}}>
+            <div style={{fontSize:small?10:12,color:"rgba(255,255,255,0.65)",fontWeight:700,marginBottom:6}}>{t("التسويات",lang)}</div>
+            <div style={{fontSize:small?14:18,fontWeight:900,color:"#fde68a",lineHeight:1,fontFamily:"'IBM Plex Mono',monospace"}}>{fmt(d.totalAdj)}</div>
+            <div style={{fontSize:10,color:"rgba(255,255,255,0.4)",marginTop:3}}>OMR</div>
+          </div>
+          <div style={{background:"rgba(255,255,255,0.18)",border:"2px solid rgba(255,255,255,0.4)",borderRadius:12,padding:"12px 14px",textAlign:"center"}}>
+            <div style={{fontSize:small?9:11,color:"rgba(255,255,255,0.7)",fontWeight:700,marginBottom:5}}>
               {t("إجمالي المدفوع","Total Paid")} + {t("التسويات","Settlements")} = {t("الإجمالي الكلي","Grand Total")}
             </div>
-            <div style={{fontSize:small?16:22,fontWeight:900,color:"#fff",lineHeight:1,fontFamily:"'IBM Plex Mono',monospace"}}>
+            <div style={{fontSize:small?18:24,fontWeight:900,color:"#fff",lineHeight:1,fontFamily:"'IBM Plex Mono',monospace"}}>
               {fmt(d.totalPaid+d.totalAdj)}
             </div>
             <div style={{fontSize:10,color:"rgba(255,255,255,0.5)",marginTop:3}}>OMR</div>
