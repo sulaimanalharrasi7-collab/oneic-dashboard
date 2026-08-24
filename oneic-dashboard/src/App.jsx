@@ -8985,6 +8985,27 @@ function BulkPaymentSection({ bulk, small, onBulkUpdate, requireUploadAuth }) {
               </div>))}
           </div>
         )}
+
+        {/* مربع الإجمالي الكلي أسفل الإحصاءات */}
+        <div style={{display:"grid",gridTemplateColumns:"1fr 1fr 2fr",gap:8,marginTop:10}}>
+          <div style={{background:"rgba(255,255,255,0.08)",border:"1px solid rgba(255,255,255,0.12)",borderRadius:10,padding:"10px 8px",textAlign:"center"}}>
+            <div style={{fontSize:10,color:"rgba(255,255,255,0.6)",fontWeight:700,marginBottom:4}}>{t("إجمالي المدفوع",lang)}</div>
+            <div style={{fontSize:small?14:17,fontWeight:900,color:"#86efac",fontFamily:"'IBM Plex Mono',monospace"}}>{fmt(d.totalPaid)}</div>
+            <div style={{fontSize:10,color:"rgba(255,255,255,0.4)",marginTop:2}}>OMR</div>
+          </div>
+          <div style={{background:"rgba(255,255,255,0.08)",border:"1px solid rgba(255,255,255,0.12)",borderRadius:10,padding:"10px 8px",textAlign:"center"}}>
+            <div style={{fontSize:10,color:"rgba(255,255,255,0.6)",fontWeight:700,marginBottom:4}}>{t("التسويات",lang)}</div>
+            <div style={{fontSize:small?14:17,fontWeight:900,color:"#fde68a",fontFamily:"'IBM Plex Mono',monospace"}}>{fmt(d.totalAdj)}</div>
+            <div style={{fontSize:10,color:"rgba(255,255,255,0.4)",marginTop:2}}>OMR</div>
+          </div>
+          <div style={{background:"rgba(255,255,255,0.18)",border:"2px solid rgba(255,255,255,0.4)",borderRadius:10,padding:"10px 14px",textAlign:"center"}}>
+            <div style={{fontSize:10,color:"rgba(255,255,255,0.7)",fontWeight:700,marginBottom:4}}>
+              {t("إجمالي المدفوع","Total")} + {t("التسويات","Adj.")} = {t("الإجمالي الكلي","Grand Total")}
+            </div>
+            <div style={{fontSize:small?16:20,fontWeight:900,color:"#fff",fontFamily:"'IBM Plex Mono',monospace"}}>{fmt(d.totalPaid+d.totalAdj)}</div>
+            <div style={{fontSize:10,color:"rgba(255,255,255,0.5)",marginTop:2}}>OMR</div>
+          </div>
+        </div>
       </div>
 
       {/* ══ TABS ══ */}
