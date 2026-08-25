@@ -8155,9 +8155,9 @@ function AnalyticsModal({ bulk, onClose, small, langProp }) {
 
               {/* ── Bulk SVG Chart ── */}
               {(() => {
-                const STEP=Math.max(48,Math.min(72,1400/Math.max(daily.length,1)));
+                const STEP=Math.max(36,Math.min(56,1100/Math.max(daily.length,1)));
                 const CW=Math.max(daily.length*STEP+160,900);
-                const CH=420, CPX=88, CPY=30, CPB=70;
+                const CH=280, CPX=72, CPY=24, CPB=55;
                 const cw=CW-CPX-24, ch=CH-CPY-CPB;
                 const maxVal=Math.max(...daily.map(function(d){return d.paid+(d.adj||0);}),1);
 
@@ -8242,104 +8242,129 @@ function AnalyticsModal({ bulk, onClose, small, langProp }) {
 
                       const w = window.open('','_blank','width=1400,height=950');
                       w.document.write(`<!DOCTYPE html>
-<html><head>
+<html dir="${lang==='en'?'ltr':'rtl'}"><head>
 <meta charset="UTF-8">
-<title>ONEIC - Daily Trend Chart</title>
+<title>ONEIC - ${chartTitleStr}</title>
+<link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;600;700;800;900&display=swap" rel="stylesheet">
 <style>
-  *{box-sizing:border-box;margin:0;padding:0;font-family:Arial,sans-serif}
-  html,body{height:100%;background:#0f172a;color:#fff}
-  body{display:flex;flex-direction:column;padding:10px 14px;gap:8px;min-height:100vh}
+  *{box-sizing:border-box;margin:0;padding:0}
+  html,body{height:100%;background:#f8fafc;font-family:Cairo,Arial,sans-serif;color:#1e293b}
+  body{display:flex;flex-direction:column;padding:16px 20px;gap:10px;min-height:100vh}
 
-  /* ── Top strip ── */
-  .top{display:flex;justify-content:space-between;align-items:center;
-    background:#1e293b;border-radius:10px;padding:8px 16px;flex-shrink:0;
-    border:1px solid rgba(255,255,255,0.08)}
-  .logo{font-size:18px;font-weight:900;color:#e85d20}
-  .logo span{font-size:10px;color:#64748b;margin-left:8px;font-weight:400}
-  .period{font-size:13px;font-weight:800;color:#fff}
-  .period span{font-size:10px;color:#94a3b8;margin-left:6px}
-  .meta-txt{font-size:10px;color:#475569;text-align:right}
+  /* ── Header ── */
+  .hdr{display:flex;justify-content:space-between;align-items:center;
+    background:#fff;border-radius:14px;padding:12px 20px;
+    border:1.5px solid #e2e8f0;box-shadow:0 2px 8px rgba(0,0,0,0.06)}
+  .brand{display:flex;align-items:center;gap:10px}
+  .brand-name{font-size:22px;font-weight:900;color:#e85d20;letter-spacing:-0.5px}
+  .brand-sub{font-size:10px;color:#94a3b8;font-weight:600;margin-top:1px}
+  .hdr-mid{text-align:center}
+  .hdr-title{font-size:15px;font-weight:900;color:#1e3a5f}
+  .hdr-sub{font-size:10px;color:#64748b;margin-top:3px}
+  .hdr-right{text-align:${lang==='en'?'right':'left'};font-size:10px;color:#94a3b8;line-height:1.6}
 
-  /* ── KPI strip ── */
-  .kpis{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;flex-shrink:0}
-  .kpi{background:#1e293b;border-radius:8px;padding:8px 12px;text-align:center;
-    border:1px solid rgba(255,255,255,0.06)}
-  .kpi-lbl{font-size:8px;color:#64748b;font-weight:700;text-transform:uppercase;margin-bottom:3px}
-  .kpi-val{font-size:18px;font-weight:900}
+  /* ── KPI bar ── */
+  .kpis{display:grid;grid-template-columns:repeat(5,1fr);gap:8px}
+  .kpi{background:#fff;border-radius:12px;padding:10px 14px;text-align:center;
+    border:1.5px solid #e2e8f0;box-shadow:0 1px 4px rgba(0,0,0,0.04)}
+  .kpi-lbl{font-size:8px;color:#94a3b8;font-weight:700;letter-spacing:0.5px;margin-bottom:4px;text-transform:uppercase}
+  .kpi-val{font-size:17px;font-weight:900;line-height:1.1}
+  .kpi-unit{font-size:9px;color:#94a3b8;margin-top:2px;font-weight:600}
 
-  /* ── Chart — fills all remaining space ── */
-  .chart-wrap{flex:1;background:linear-gradient(135deg,#0f172a,#1e293b);
-    border-radius:14px;padding:12px;border:1px solid rgba(255,255,255,0.07);
+  /* ── Legend pills ── */
+  .legend-bar{display:flex;gap:12px;align-items:center;justify-content:center;
+    background:#fff;border-radius:10px;padding:7px 16px;
+    border:1px solid #fed7aa;flex-shrink:0}
+  .leg{display:flex;align-items:center;gap:5px;font-size:10px;font-weight:700;color:#374151}
+
+  /* ── Chart container ── */
+  .chart-wrap{flex:1;background:#fff;border-radius:16px;padding:16px 12px 10px;
+    border:1.5px solid #e2e8f0;box-shadow:0 4px 16px rgba(0,0,0,0.06);
     display:flex;flex-direction:column;min-height:0;overflow:hidden}
   .chart-hdr{display:flex;justify-content:space-between;align-items:center;
-    margin-bottom:8px;flex-shrink:0}
-  .chart-hdr-t{font-size:13px;font-weight:800;color:rgba(255,255,255,0.9)}
-  .chart-hdr-s{font-size:10px;color:rgba(255,255,255,0.35)}
+    margin-bottom:10px;border-bottom:1px solid #f1f5f9;padding-bottom:8px}
+  .chart-hdr-t{font-size:13px;font-weight:900;color:#1e3a5f}
+  .chart-hdr-s{font-size:10px;color:#94a3b8}
   .svg-wrap{flex:1;min-height:0;display:flex;align-items:stretch}
   .svg-wrap svg{width:100%;height:100%;display:block}
 
-  /* ── Legend + footer ── */
-  .bottom{display:flex;justify-content:space-between;align-items:center;
-    flex-shrink:0;padding-top:4px}
-  .legend{display:flex;gap:14px}
-  .leg{display:flex;align-items:center;gap:4px;font-size:9px;color:rgba(255,255,255,0.5)}
-  .dot{width:8px;height:8px;border-radius:50%;flex-shrink:0}
-  .footer-txt{font-size:9px;color:#334155;text-align:right}
+  /* ── Footer ── */
+  .footer{display:flex;justify-content:space-between;align-items:center;
+    font-size:9px;color:#94a3b8;padding:2px 4px}
 
-  /* ── Print ── */
-  @page{size:A4 landscape;margin:5mm 8mm}
+  @page{size:A4 landscape;margin:6mm 10mm}
   @media print{
-    html,body{height:100vh!important}
-    body{padding:6px 10px!important;-webkit-print-color-adjust:exact!important;print-color-adjust:exact!important}
+    html,body{height:100vh!important;background:#f8fafc!important}
+    body{padding:10px 14px!important;-webkit-print-color-adjust:exact!important;print-color-adjust:exact!important}
     .print-btn{display:none!important}
-    .chart-wrap{flex:1!important;background:linear-gradient(135deg,#0f172a,#1e293b)!important}
-    .svg-wrap svg{width:100%!important;height:100%!important}
-    .top,.kpi{background:#1e293b!important;border-color:#334155!important}
   }
 </style>
 </head><body>
 
-<!-- Top strip -->
-<div class="top">
-  <div><span class="logo">ONEIC<span>Omantel Portfolio 1</span></span></div>
-  <div class="period">${reportTitleStr} <span>${pLabel}</span></div>
-  <div class="meta-txt">${printDateLbl}: ${printDate} ${printTime}</div>
+<!-- Header -->
+<div class="hdr">
+  <div class="brand">
+    <div style="width:38px;height:38px;background:linear-gradient(135deg,#e85d20,#f97316);border-radius:10px;display:flex;align-items:center;justify-content:center;color:#fff;font-size:18px;font-weight:900">O</div>
+    <div><div class="brand-name">ONEIC</div><div class="brand-sub">Omantel Portfolio 1</div></div>
+  </div>
+  <div class="hdr-mid">
+    <div class="hdr-title">📈 ${chartTitleStr}</div>
+    <div class="hdr-sub">${pLabel}</div>
+  </div>
+  <div class="hdr-right">
+    <div>${printDateLbl}: <strong>${printDate}</strong></div>
+    <div style="color:#64748b">${printTime}</div>
+  </div>
 </div>
 
-<!-- KPI strip -->
+<!-- KPI bar -->
 <div class="kpis">
-  <div class="kpi"><div class="kpi-lbl">${activeDaysStr}</div><div class="kpi-val" style="color:#60a5fa">${daily.length}</div></div>
-  <div class="kpi"><div class="kpi-lbl">${totalStr}</div><div class="kpi-val" style="color:#e85d20">${fmtK(daily.reduce((s,x)=>s+x.paid+x.adj,0))} OMR</div></div>
-  <div class="kpi"><div class="kpi-lbl">${peakDayStr}</div><div class="kpi-val" style="color:#16a34a">${fmtK(Math.max(...daily.map(x=>x.paid+x.adj)))} OMR</div></div>
-  <div class="kpi"><div class="kpi-lbl">${avgStr}</div><div class="kpi-val" style="color:#94a3b8">${fmtK(daily.reduce((s,x)=>s+x.paid+x.adj,0)/Math.max(daily.length,1))} OMR</div></div>
+  <div class="kpi"><div class="kpi-lbl">${activeDaysStr}</div><div class="kpi-val" style="color:#1e3a5f">${daily.length}</div><div class="kpi-unit">${daysStr}</div></div>
+  <div class="kpi"><div class="kpi-lbl">${lang==='en'?'Total Paid':'المدفوع'}</div><div class="kpi-val" style="color:#16a34a">${fmtK(daily.reduce(function(s,x){return s+x.paid;},0))}</div><div class="kpi-unit">OMR</div></div>
+  <div class="kpi"><div class="kpi-lbl">${lang==='en'?'📊 Settlements':'📊 التسويات'}</div><div class="kpi-val" style="color:#d97706">${fmtK(daily.reduce(function(s,x){return s+(x.adj||0);},0))}</div><div class="kpi-unit">OMR</div></div>
+  <div class="kpi"><div class="kpi-lbl">${totalStr}</div><div class="kpi-val" style="color:#e85d20">${fmtK(daily.reduce(function(s,x){return s+x.paid+(x.adj||0);},0))}</div><div class="kpi-unit">OMR</div></div>
+  <div class="kpi"><div class="kpi-lbl">${avgStr}</div><div class="kpi-val" style="color:#6366f1">${fmtK(daily.reduce(function(s,x){return s+x.paid+(x.adj||0);},0)/Math.max(daily.length,1))}</div><div class="kpi-unit">OMR</div></div>
 </div>
 
-<!-- Chart — fills remaining space -->
+<!-- Legend -->
+<div class="legend-bar">
+  <div class="leg">
+    <svg width="24" height="8"><rect x="0" y="2.5" width="24" height="3" rx="1.5" fill="#e85d20"/></svg>
+    ${lang==='en'?'Grand Total':'الإجمالي الكلي'}
+  </div>
+  <div class="leg">
+    <svg width="24" height="8"><path d="M0,4 L5,4 M9,4 L14,4 M18,4 L23,4" stroke="#15803d" stroke-width="2"/></svg>
+    ${lang==='en'?'Paid':'المدفوع'}
+  </div>
+  <div class="leg">
+    <svg width="24" height="8"><rect x="0" y="3" width="24" height="2" rx="1" fill="#d97706"/></svg>
+    ${lang==='en'?'📊 Settlements':'📊 التسويات'}
+  </div>
+  <span style="font-size:10px;color:#94a3b8;margin-${lang==='en'?'left':'right'}:auto">${intervalStr}: ${fmtK(interval)} OMR</span>
+</div>
+
+<!-- Chart -->
 <div class="chart-wrap">
   <div class="chart-hdr">
-    <span class="chart-hdr-t">${chartTitleStr}</span>
-    <span class="chart-hdr-s">${daily.length} ${daysStr} &nbsp;&#183;&nbsp; ${intervalStr}: ${fmtK(interval)} OMR</span>
+    <span class="chart-hdr-t">📈 ${lang==='en'?'Daily Payments':'الدفعات اليومية'} — ${pLabel}</span>
+    <span class="chart-hdr-s">${daily.length} ${daysStr} &nbsp;·&nbsp; ${lang==='en'?'Peak':'أعلى'}: ${fmtK(maxVal)} OMR</span>
   </div>
   <div class="svg-wrap">
     ${svgData}
   </div>
 </div>
 
-<!-- Legend + footer -->
-<div class="bottom">
-  <div class="legend">
-    <div class="leg"><div class="dot" style="background:#f97316"></div> ${peakDayStr}</div>
-    <div class="leg"><div class="dot" style="background:#60a5fa"></div> ${latestStr}</div>
-    <div class="leg"><div class="dot" style="background:#64748b"></div> ${lowestStr}</div>
-    <div class="leg"><div class="dot" style="background:#e2e8f0"></div> ${regularStr}</div>
-  </div>
-  <div class="footer-txt">ONEIC &copy; 2026 &nbsp;&#183;&nbsp; ${confStr}</div>
+<!-- Footer -->
+<div class="footer">
+  <span>ONEIC © 2026 &nbsp;·&nbsp; Programming and design by Sulaiman Al-Harrasi — 16296</span>
+  <span>${confStr}</span>
 </div>
 
 <div style="text-align:center;margin-top:8px" class="print-btn">
-  <button onclick="window.print()" style="background:#e85d20;color:#fff;border:none;border-radius:8px;
-    padding:10px 32px;font-size:13px;font-weight:700;cursor:pointer">
-    ${printBtnStr}
+  <button onclick="window.print()" style="background:linear-gradient(135deg,#e85d20,#f97316);color:#fff;border:none;
+    border-radius:10px;padding:12px 36px;font-size:14px;font-weight:800;cursor:pointer;
+    font-family:Cairo,Arial,sans-serif;box-shadow:0 4px 12px rgba(232,93,32,0.4)">
+    🖨️ ${printBtnStr}
   </button>
 </div>
 
@@ -8391,18 +8416,31 @@ function AnalyticsModal({ bulk, onClose, small, langProp }) {
                     <svg id={chartId} width={CW} height={CH} style={{display:"block",overflow:"visible"}}>
                       <defs>
                         <linearGradient id="aGradB" x1="0" y1="0" x2="0" y2="1">
-                          <stop offset="0%" stopColor="#e85d20" stopOpacity="0.18"/>
+                          <stop offset="0%" stopColor="#e85d20" stopOpacity="0.28"/>
+                          <stop offset="45%" stopColor="#f97316" stopOpacity="0.12"/>
                           <stop offset="100%" stopColor="#e85d20" stopOpacity="0"/>
                         </linearGradient>
                         <linearGradient id="lineGB" x1="0" y1="0" x2="1" y2="0">
-                          <stop offset="0%" stopColor="#e85d20"/>
+                          <stop offset="0%" stopColor="#dc2626"/>
+                          <stop offset="40%" stopColor="#e85d20"/>
                           <stop offset="100%" stopColor="#f97316"/>
                         </linearGradient>
-                        <filter id="dotGlowB"><feDropShadow dx="0" dy="0" stdDeviation="2" floodColor="#e85d20" floodOpacity="0.5"/></filter>
+                        <linearGradient id="gridFade" x1="0" y1="0" x2="1" y2="0">
+                          <stop offset="0%" stopColor="#f1f5f9" stopOpacity="1"/>
+                          <stop offset="100%" stopColor="#f8fafc" stopOpacity="1"/>
+                        </linearGradient>
+                        <filter id="dotGlowB">
+                          <feDropShadow dx="0" dy="0" stdDeviation="3" floodColor="#e85d20" floodOpacity="0.6"/>
+                          <feDropShadow dx="0" dy="2" stdDeviation="1" floodColor="#000" floodOpacity="0.1"/>
+                        </filter>
+                        <filter id="shadowLine">
+                          <feDropShadow dx="0" dy="1" stdDeviation="2" floodColor="#e85d20" floodOpacity="0.2"/>
+                        </filter>
                       </defs>
 
-                      {/* Background white */}
+                      {/* Background — clean white with subtle alt rows */}
                       <rect x={0} y={0} width={CW} height={CH} fill="#fff"/>
+                      <rect x={CPX} y={CPY} width={CW-CPX-24} height={CH-CPY-CPB} fill="url(#gridFade)" rx="4" opacity="0.5"/>
 
                       {/* ── Y-axis grid lines (white bg style) ── */}
                       {gridLines.map(function(v,gi){return(
@@ -8420,12 +8458,15 @@ function AnalyticsModal({ bulk, onClose, small, langProp }) {
 
 
                       {area&&<path d={area} fill="url(#aGradB)"/>}
-                      {smooth&&<path d={smooth} fill="none" stroke="#e85d2044" strokeWidth="8" strokeLinejoin="round" strokeLinecap="round"/>}
-                      {smooth&&<path d={smooth} fill="none" stroke="url(#lineGB)" strokeWidth="3" strokeLinejoin="round" strokeLinecap="round"/>}
+                      {/* Glow halo */}
+                      {smooth&&<path d={smooth} fill="none" stroke="#e85d20" strokeWidth="12" strokeLinejoin="round" strokeLinecap="round" opacity="0.06"/>}
+                      {smooth&&<path d={smooth} fill="none" stroke="#e85d20" strokeWidth="6" strokeLinejoin="round" strokeLinecap="round" opacity="0.12" filter="url(#shadowLine)"/>}
+                      {/* Main line */}
+                      {smooth&&<path d={smooth} fill="none" stroke="url(#lineGB)" strokeWidth="2.5" strokeLinejoin="round" strokeLinecap="round"/>}
                       {/* مسار المدفوع (أخضر منقط) */}
-                      {paidPts.length>1&&<path d={paidPts.map(function(p,i){return (i===0?'M':'L')+p.x+','+p.y;}).join(' ')} fill="none" stroke="#22c55e" strokeWidth="1.5" strokeDasharray="4 3" strokeLinejoin="round" opacity="0.7"/>}
+                      {paidPts.length>1&&<path d={paidPts.map(function(p,i){return (i===0?'M':'L')+p.x+','+p.y;}).join(' ')} fill="none" stroke="#15803d" strokeWidth="1.8" strokeDasharray="5 3" strokeLinejoin="round" opacity="0.85"/>}
                       {/* مسار التسوية (أصفر) */}
-                      {adjSmooth&&totalAdj>0&&<path d={adjSmooth} fill="none" stroke="#f59e0b" strokeWidth="2" strokeLinejoin="round" strokeLinecap="round"/>}
+                      {adjSmooth&&totalAdj>0&&<path d={adjSmooth} fill="none" stroke="#d97706" strokeWidth="2" strokeLinejoin="round" strokeLinecap="round" strokeDasharray="6 2"/>}
 
                       {cpts.map((pt,i)=>{
                         const total=pt.d.paid+pt.d.adj;
@@ -8470,9 +8511,9 @@ function AnalyticsModal({ bulk, onClose, small, langProp }) {
               })()}
 
               {/* أسطورة الرسم البياني */}
-              <div style={{display:"flex",gap:16,flexWrap:"wrap",marginBottom:10,marginTop:-4,padding:"6px 8px",background:"#f8f4f1",borderRadius:8}}>
+              <div style={{display:"flex",gap:16,flexWrap:"wrap",marginBottom:10,marginTop:0,padding:"8px 14px",background:"linear-gradient(135deg,#fef7f0,#fff9f5)",borderRadius:10,border:"1px solid #fed7aa"}}>
                 <div style={{display:"flex",alignItems:"center",gap:5,fontSize:11,fontWeight:700,color:"#374151"}}>
-                  <svg width="20" height="8"><path d="M0,4 L20,4" stroke="#e85d20" strokeWidth="2.5"/></svg>
+                  <svg width="24" height="10"><rect x="0" y="3.5" width="24" height="3" rx="1.5" fill="url(#lgGrad)"/><defs><linearGradient id="lgGrad"><stop offset="0%" stopColor="#dc2626"/><stop offset="100%" stopColor="#f97316"/></linearGradient></defs></svg>
                   {lang==='ar'?"الإجمالي الكلي":"Grand Total"}
                 </div>
                 <div style={{display:"flex",alignItems:"center",gap:5,fontSize:11,fontWeight:700,color:"#374151"}}>
@@ -8483,7 +8524,7 @@ function AnalyticsModal({ bulk, onClose, small, langProp }) {
                   <svg width="20" height="8"><path d="M0,4 L20,4" stroke="#f59e0b" strokeWidth="2"/></svg>
                   {"📊 "}{lang==='ar'?"التسويات":"Settlements"}
                 </div>}
-                <div style={{marginRight:"auto",fontSize:11,fontWeight:900,color:"#1e3a5f"}}>
+                <div style={{marginRight:"auto",fontSize:11,fontWeight:900,color:"#1e3a5f",background:"#fff",borderRadius:8,padding:"3px 10px",border:"1.5px solid #e85d2033"}}>
                   {lang==='ar'?"الإجمالي الكلي للفترة:":"Period Grand Total:"} <span style={{color:"#e85d20"}}>{fmt(totalPaid+totalAdj)}</span> OMR
                   {totalAdj>0&&<span style={{marginRight:8,color:"#d97706"}}> | 📊 {fmt(totalAdj)} OMR</span>}
                 </div>
