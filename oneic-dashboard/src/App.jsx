@@ -8093,7 +8093,7 @@ function AnalyticsModal({ bulk, onClose, small, langProp }) {
           {/* KPI شريط — 5 مربعات */}
           <div style={{display:"grid",gridTemplateColumns:"1fr 1fr 2fr",gap:8,marginTop:10,borderTop:"1px solid rgba(255,255,255,0.15)",paddingTop:10}}>
             <div style={{textAlign:"center",padding:"10px",background:"rgba(255,255,255,0.08)",border:"1px solid rgba(255,255,255,0.12)",borderRadius:10}}>
-              <div style={{fontSize:10,color:"rgba(255,255,255,0.6)",fontWeight:700,marginBottom:4}}>{lang==='ar'?"إجمالي المدفوع":"Total Paid"}</div>
+              <div style={{fontSize:10,color:"rgba(255,255,255,0.8)",fontWeight:800,marginBottom:4}}>{lang==='ar'?"إجمالي المدفوع":"Total Paid"}</div>
               <div style={{fontSize:small?13:16,fontWeight:900,color:"#86efac",fontFamily:"'IBM Plex Mono',monospace"}}>{fmt(totalPaid)}</div>
             </div>
             <div style={{textAlign:"center",padding:"10px",background:"rgba(255,255,255,0.08)",border:"1px solid rgba(255,255,255,0.12)",borderRadius:10}}>
@@ -8304,7 +8304,13 @@ function AnalyticsModal({ bulk, onClose, small, langProp }) {
 <!-- Header -->
 <div class="hdr">
   <div class="brand">
-    <div style="width:38px;height:38px;background:linear-gradient(135deg,#e85d20,#f97316);border-radius:10px;display:flex;align-items:center;justify-content:center;color:#fff;font-size:18px;font-weight:900">O</div>
+    <div style="width:44px;height:44px;background:linear-gradient(135deg,#1e3a5f,#2d5a8e);border-radius:10px;display:flex;align-items:center;justify-content:center;border:2px solid #e85d20">
+      <svg width="28" height="28" viewBox="0 0 40 40">
+        <circle cx="20" cy="20" r="18" fill="none" stroke="#e85d20" stroke-width="3"/>
+        <text x="20" y="26" text-anchor="middle" font-size="18" font-weight="900" fill="#fff" font-family="Arial">O</text>
+        <circle cx="20" cy="20" r="5" fill="none" stroke="#f97316" stroke-width="1.5"/>
+      </svg>
+    </div>
     <div><div class="brand-name">ONEIC</div><div class="brand-sub">Omantel Portfolio 1</div></div>
   </div>
   <div class="hdr-mid">
@@ -8510,23 +8516,41 @@ function AnalyticsModal({ bulk, onClose, small, langProp }) {
                 </div>);
               })()}
 
-              {/* أسطورة الرسم البياني */}
-              <div style={{display:"flex",gap:16,flexWrap:"wrap",marginBottom:10,marginTop:0,padding:"8px 14px",background:"linear-gradient(135deg,#fef7f0,#fff9f5)",borderRadius:10,border:"1px solid #fed7aa"}}>
-                <div style={{display:"flex",alignItems:"center",gap:5,fontSize:11,fontWeight:700,color:"#374151"}}>
-                  <svg width="24" height="10"><rect x="0" y="3.5" width="24" height="3" rx="1.5" fill="url(#lgGrad)"/><defs><linearGradient id="lgGrad"><stop offset="0%" stopColor="#dc2626"/><stop offset="100%" stopColor="#f97316"/></linearGradient></defs></svg>
-                  {lang==='ar'?"الإجمالي الكلي":"Grand Total"}
+              {/* أسطورة الرسم البياني — بيانات منظمة */}
+              <div style={{display:"grid",gridTemplateColumns:"1fr 1fr 1fr",gap:8,marginBottom:10,marginTop:4}}>
+                {/* الإجمالي الكلي */}
+                <div style={{display:"flex",alignItems:"center",gap:10,background:"linear-gradient(135deg,#fff7f3,#fff)",borderRadius:10,padding:"8px 14px",border:"1.5px solid #fed7aa",boxShadow:"0 1px 4px rgba(232,93,32,0.08)"}}>
+                  <svg width="26" height="10" style={{flexShrink:0}}>
+                    <defs><linearGradient id="lgGrad2"><stop offset="0%" stopColor="#dc2626"/><stop offset="100%" stopColor="#f97316"/></linearGradient></defs>
+                    <rect x="0" y="3" width="26" height="4" rx="2" fill="url(#lgGrad2)"/>
+                  </svg>
+                  <div>
+                    <div style={{fontSize:9,color:"#111",fontWeight:800,marginBottom:1}}>{lang==='ar'?"الإجمالي الكلي":"Grand Total"}</div>
+                    <div style={{fontSize:13,fontWeight:900,color:"#111",fontFamily:"'IBM Plex Mono',monospace"}}>{fmt(totalPaid+totalAdj)}</div>
+                    <div style={{fontSize:8,color:"#111",fontWeight:800}}>OMR</div>
+                  </div>
                 </div>
-                <div style={{display:"flex",alignItems:"center",gap:5,fontSize:11,fontWeight:700,color:"#374151"}}>
-                  <svg width="20" height="8"><path d="M0,4 L5,4 M8,4 L13,4 M16,4 L20,4" stroke="#22c55e" strokeWidth="1.5"/></svg>
-                  {lang==='ar'?"المدفوع":"Paid"}
+                {/* المدفوع */}
+                <div style={{display:"flex",alignItems:"center",gap:10,background:"linear-gradient(135deg,#f0fdf4,#fff)",borderRadius:10,padding:"8px 14px",border:"1.5px solid #bbf7d0",boxShadow:"0 1px 4px rgba(21,128,61,0.06)"}}>
+                  <svg width="26" height="10" style={{flexShrink:0}}>
+                    <path d="M0,5 L5,5 M9,5 L14,5 M18,5 L23,5" stroke="#15803d" strokeWidth="2.5" strokeLinecap="round"/>
+                  </svg>
+                  <div>
+                    <div style={{fontSize:9,color:"#111",fontWeight:800,marginBottom:1}}>{lang==='ar'?"المدفوع":"Paid"}</div>
+                    <div style={{fontSize:13,fontWeight:900,color:"#111",fontFamily:"'IBM Plex Mono',monospace"}}>{fmt(totalPaid)}</div>
+                    <div style={{fontSize:8,color:"#111",fontWeight:800}}>OMR</div>
+                  </div>
                 </div>
-                {totalAdj>0&&<div style={{display:"flex",alignItems:"center",gap:5,fontSize:11,fontWeight:700,color:"#374151"}}>
-                  <svg width="20" height="8"><path d="M0,4 L20,4" stroke="#f59e0b" strokeWidth="2"/></svg>
-                  {"📊 "}{lang==='ar'?"التسويات":"Settlements"}
-                </div>}
-                <div style={{marginRight:"auto",fontSize:11,fontWeight:900,color:"#1e3a5f",background:"#fff",borderRadius:8,padding:"3px 10px",border:"1.5px solid #e85d2033"}}>
-                  {lang==='ar'?"الإجمالي الكلي للفترة:":"Period Grand Total:"} <span style={{color:"#e85d20"}}>{fmt(totalPaid+totalAdj)}</span> OMR
-                  {totalAdj>0&&<span style={{marginRight:8,color:"#d97706"}}> | 📊 {fmt(totalAdj)} OMR</span>}
+                {/* التسويات */}
+                <div style={{display:"flex",alignItems:"center",gap:10,background:totalAdj>0?"linear-gradient(135deg,#fffbeb,#fff)":"#f9fafb",borderRadius:10,padding:"8px 14px",border:"1.5px solid "+(totalAdj>0?"#fde68a":"#e5e7eb"),boxShadow:totalAdj>0?"0 1px 4px rgba(217,119,6,0.06)":"none",opacity:totalAdj>0?1:0.5}}>
+                  <svg width="26" height="10" style={{flexShrink:0}}>
+                    <rect x="0" y="3" width="26" height="3" rx="1.5" fill={totalAdj>0?"#d97706":"#9ca3af"}/>
+                  </svg>
+                  <div>
+                    <div style={{fontSize:9,color:"#111",fontWeight:800,marginBottom:1}}>{"📊 "}{lang==='ar'?"التسويات":"Settlements"}</div>
+                    <div style={{fontSize:13,fontWeight:900,color:"#111",fontFamily:"'IBM Plex Mono',monospace"}}>{fmt(totalAdj)}</div>
+                    <div style={{fontSize:8,color:"#111",fontWeight:800}}>OMR</div>
+                  </div>
                 </div>
               </div>
 
@@ -8538,8 +8562,8 @@ function AnalyticsModal({ bulk, onClose, small, langProp }) {
                   ["📉 أدنى يوم", (worstDay.date||'').slice(5)+" · "+fmt(worstDay.paid+worstDay.adj||0), "#888"],
                 ].map(([l,v,c])=>(
                   <div key={l} style={{background:"#f8f4f1",borderRadius:12,padding:"14px",textAlign:"center",border:"1px solid #f0ece8"}}>
-                    <div style={{fontSize:11,color:"#888",fontWeight:700,marginBottom:6}}>{l}</div>
-                    <div style={{fontSize:14,fontWeight:900,color:c}}>{v}</div>
+                    <div style={{fontSize:11,color:"#111",fontWeight:800,marginBottom:6}}>{l}</div>
+                    <div style={{fontSize:14,fontWeight:900,color:"#111"}}>{v}</div>
                   </div>
                 ))}
               </div>
