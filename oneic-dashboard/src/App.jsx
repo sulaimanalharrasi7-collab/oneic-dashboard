@@ -8867,6 +8867,11 @@ function BulkPaymentSection({ bulk, small, onBulkUpdate, requireUploadAuth, lang
   const [bulkData, setBulkData]         = useState(bulk);
   const [showAnalytics, setShowAnalytics] = useState(false);
   const [bulkPending, setBulkPending]   = useState(null); // بطاقة التأكيد
+  const [bLevel, setBLevel]             = useState('region');
+  const [bPeriod, setBPeriod]           = useState('monthly');
+  const [bPeriodVal, setBPeriodVal]     = useState('');
+  const [bFrom, setBFrom]               = useState('');
+  const [bTo, setBTo]                   = useState('');
   const fileRef = useRef(null);
 
   const handleBulkFile = async (file) => {
@@ -9074,7 +9079,12 @@ function BulkPaymentSection({ bulk, small, onBulkUpdate, requireUploadAuth, lang
     'Musandam, Al Burimai and Al Dahirah':'مسندم والبريمي','Dhofar':'ظفار','Dhofar ':'ظفار',
   };
 
-  const tabs = [{id:'daily',label:t('📅 يومي',lang)},{id:'region',label:t('🗺 المناطق',lang)},{id:'collector',label:t('👤 المحصّلون',lang)}];
+  const tabs = [
+    {id:'daily',   label:t('📅 يومي',lang)},
+    {id:'region',  label:t('🗺 المناطق',lang)},
+    {id:'collector',label:t('👤 المحصّلون',lang)},
+    {id:'breakdown',label:t('📊 التقارير',lang)},
+  ];
 
   return (
     <>
@@ -9464,6 +9474,159 @@ function BulkPaymentSection({ bulk, small, onBulkUpdate, requireUploadAuth, lang
               </div>);})}
           </div>
         )}
+
+        {/* ══ تاب التقارير — Region / Collector + period ══ */}
+        {activeTab==='breakdown'&&(function(){
+          var daily = d.daily||[];
+          var byMonth={}, byYear={}, allDays={};
+          daily.forEach(function(row){
+            var m=row.date.slice(0,7), y=row.date.slice(0,4);
+            allDays[row.date]=row;
+            if(!byMonth[m]) byMonth[m]={period:m,paid:0,adj:0,count:0};
+            byMonth[m].paid+=row.paid; byMonth[m].adj+=row.adj||0; byMonth[m].count+=row.count||0;
+            if(!byYear[y]) byYear[y]={period:y,paid:0,adj:0,count:0};
+            byYear[y].paid+=row.paid; byYear[y].adj+=row.adj||0; byYear[y].count+=row.count||0;
+          });
+          var days=Object.keys(allDays).sort();
+          var months=Object.keys(byMonth).sort();
+          var years=Object.keys(byYear).sort();
+          var filteredDaily=daily;
+          if(bFrom&&bTo&&bFrom<=bTo) filteredDaily=daily.filter(function(r){return r.date>=bFrom&&r.date<=bTo;});
+          else if(bFrom&&!bTo) filteredDaily=daily.filter(function(r){return r.date>=bFrom;});
+          else if(!bFrom&&bTo) filteredDaily=daily.filter(function(r){return r.date<=bTo;});
+          var levelMap={};
+          if(bLevel==='region'){
+            (d.byRegion||[]).forEach(function(r){levelMap[r.nameEn]={name:r.nameAr||r.nameEn,paid:r.paid,adj:r.adj||0,count:r.count};});
+          } else if(bLevel==='branch'){
+            (d.topCollectors||[]).forEach(function(c){var k=c.branch||c.regionEn||c.region||'Other';if(!levelMap[k])levelMap[k]={name:k,sub:c.region||'',paid:0,adj:0,count:0};levelMap[k].paid+=c.paid;levelMap[k].adj+=c.adj||0;levelMap[k].count+=c.count;});
+          } else {
+            (d.topCollectors||[]).slice(0,20).forEach(function(c){levelMap[c.name]={name:c.name,sub:c.region||'',paid:c.paid,adj:c.adj||0,count:c.count};});
+          }
+          if(bPeriod!=='all'&&bPeriodVal&&filteredDaily.length>0){
+            levelMap={};
+            filteredDaily.forEach(function(row){
+              var detail=(d.dailyDetail&&d.dailyDetail[row.date])||[];
+              if(detail.length){
+                detail.forEach(function(c){
+                  if(bLevel==='region'){var k=c.region||'Other';if(!levelMap[k])levelMap[k]={name:k,paid:0,adj:0,count:0};levelMap[k].paid+=c.paid||0;levelMap[k].adj+=c.adj||0;levelMap[k].count+=c.count||0;}
+                  else if(bLevel==='branch'){var k=c.branch||c.regionEn||c.region||'Other';if(!levelMap[k])levelMap[k]={name:k,sub:c.region||'',paid:0,adj:0,count:0};levelMap[k].paid+=c.paid||0;levelMap[k].adj+=c.adj||0;levelMap[k].count+=c.count||0;}
+                  else{var k=c.name||c.nameEn||'Unknown';if(!levelMap[k])levelMap[k]={name:k,sub:c.branch||c.region||'',paid:0,adj:0,count:0};levelMap[k].paid+=c.paid||0;levelMap[k].adj+=c.adj||0;levelMap[k].count+=c.count||0;}
+                });
+              } else {
+                var k='Total';if(!levelMap[k])levelMap[k]={name:k,paid:0,adj:0,count:0};
+                levelMap[k].paid+=row.paid||0;levelMap[k].adj+=row.adj||0;levelMap[k].count+=row.count||0;
+              }
+            });
+          }
+          var levelData=Object.values(levelMap).sort(function(a,b){return(b.paid+b.adj)-(a.paid+a.adj);});
+          var maxVal=Math.max.apply(null,levelData.map(function(x){return x.paid+(x.adj||0);})||[1]);
+          var sumPaid=levelData.reduce(function(s,x){return s+x.paid;},0);
+          var sumAdj=levelData.reduce(function(s,x){return s+(x.adj||0);},0);
+          return (
+            <div style={{padding:"12px 16px 16px"}}>
+              <div style={{background:"#fff",borderRadius:14,padding:"14px 16px",marginBottom:10,border:"1.5px solid #e5e7eb",boxShadow:"0 2px 8px rgba(0,0,0,0.04)"}}>
+                <div style={{display:"flex",alignItems:"center",gap:8,marginBottom:12}}>
+                  <div style={{width:28,height:28,borderRadius:8,background:"linear-gradient(135deg,#1e3a5f,#2d5a8e)",display:"flex",alignItems:"center",justifyContent:"center",fontSize:14}}>📅</div>
+                  <div style={{fontSize:12,fontWeight:800,color:"#1e3a5f"}}>{lang==='ar'?"الفترة الزمنية":"Date Range"}</div>
+                  {(bFrom||bTo)&&<button onClick={function(){setBFrom('');setBTo('');}} style={{marginRight:"auto",padding:"3px 10px",borderRadius:8,border:"1px solid #e5e7eb",background:"#f9fafb",fontSize:10,fontWeight:700,color:"#6b7280",cursor:"pointer"}}>✕ {lang==='ar'?"مسح":"Clear"}</button>}
+                </div>
+                <div style={{display:"flex",alignItems:"center",gap:10,flexWrap:"wrap"}}>
+                  <div style={{display:"flex",alignItems:"center",gap:8,flex:1,minWidth:180}}>
+                    <span style={{fontSize:11,fontWeight:700,color:"#374151",whiteSpace:"nowrap"}}>{lang==='ar'?"من":"From"}</span>
+                    <input type="date" value={bFrom} onChange={function(e){setBFrom(e.target.value);}}
+                      min={days[0]||''} max={days[days.length-1]||''} style={{
+                        flex:1,padding:"8px 12px",borderRadius:10,
+                        border:"1.5px solid "+(bFrom?"#1e3a5f":"#e5e7eb"),
+                        fontSize:12,fontWeight:700,color:"#1e3a5f",
+                        background:bFrom?"#f0f7ff":"#fff",cursor:"pointer",
+                        outline:"none",direction:"ltr"
+                    }}/>
+                  </div>
+                  <span style={{fontSize:18,color:"#9ca3af",fontWeight:300}}>→</span>
+                  <div style={{display:"flex",alignItems:"center",gap:8,flex:1,minWidth:180}}>
+                    <span style={{fontSize:11,fontWeight:700,color:"#374151",whiteSpace:"nowrap"}}>{lang==='ar'?"إلى":"To"}</span>
+                    <input type="date" value={bTo} onChange={function(e){setBTo(e.target.value);}}
+                      min={days[0]||''} max={days[days.length-1]||''} style={{
+                        flex:1,padding:"8px 12px",borderRadius:10,
+                        border:"1.5px solid "+(bTo?"#e85d20":"#e5e7eb"),
+                        fontSize:12,fontWeight:700,color:"#e85d20",
+                        background:bTo?"#fff7f3":"#fff",cursor:"pointer",
+                        outline:"none",direction:"ltr"
+                    }}/>
+                  </div>
+                </div>
+                {bFrom&&bTo&&bFrom<=bTo&&(
+                  <div style={{marginTop:10,padding:"6px 12px",background:"#f0fdf4",borderRadius:8,border:"1px solid #bbf7d0",display:"inline-flex",alignItems:"center",gap:6}}>
+                    <span style={{fontSize:12}}>✅</span>
+                    <span style={{fontSize:10,fontWeight:700,color:"#15803d"}}>{bFrom} → {bTo}</span>
+                    <span style={{fontSize:10,color:"#6b7280"}}>·</span>
+                    <span style={{fontSize:10,fontWeight:800,color:"#1e3a5f"}}>{days.filter(function(d){return d>=bFrom&&d<=bTo;}).length} {lang==='ar'?"يوم":"days"}</span>
+                  </div>
+                )}
+                {bFrom&&bTo&&bFrom>bTo&&(
+                  <div style={{marginTop:10,padding:"6px 12px",background:"#fef2f2",borderRadius:8,border:"1px solid #fecaca",display:"inline-flex",alignItems:"center",gap:6}}>
+                    <span>⚠️</span>
+                    <span style={{fontSize:10,fontWeight:700,color:"#dc2626"}}>{lang==='ar'?"تاريخ البداية بعد تاريخ النهاية":"Start date is after end date"}</span>
+                  </div>
+                )}
+              </div>
+              <div style={{background:"#fff",borderRadius:14,padding:"14px 16px",marginBottom:12,border:"1.5px solid #e5e7eb",boxShadow:"0 2px 8px rgba(0,0,0,0.04)"}}>
+                <div style={{display:"flex",alignItems:"center",gap:8,marginBottom:12}}>
+                  <div style={{width:28,height:28,borderRadius:8,background:"linear-gradient(135deg,#e85d20,#f97316)",display:"flex",alignItems:"center",justifyContent:"center",fontSize:14}}>🔍</div>
+                  <div style={{fontSize:12,fontWeight:800,color:"#e85d20"}}>{lang==='ar'?"عرض النتائج حسب":"Group Results by"}</div>
+                </div>
+                <div style={{display:"flex",gap:8,flexWrap:"wrap"}}>
+                  {[{id:'region',l:lang==='ar'?"🗺 المنطقة":"🗺 Region"},{id:'branch',l:lang==='ar'?"🏢 الفرع":"🏢 Branch"},{id:'collector',l:lang==='ar'?"👤 المحصّل":"👤 Collector"}].map(function(o){return(
+                    <button key={o.id} onClick={function(){setBLevel(o.id);}} style={{
+                      padding:"8px 20px",borderRadius:22,border:"1.5px solid",fontSize:11,fontWeight:700,cursor:"pointer",
+                      background:bLevel===o.id?"#e85d20":"#fff",
+                      color:bLevel===o.id?"#fff":"#374151",
+                      borderColor:bLevel===o.id?"#e85d20":"#e5e7eb",
+                      boxShadow:bLevel===o.id?"0 2px 8px rgba(232,93,32,0.3)":"none"
+                    }}>{o.l}</button>
+                  );})}
+                </div>
+              </div>
+              <div style={{background:"#fff",borderRadius:12,border:"1.5px solid #e5e7eb",overflow:"hidden",boxShadow:"0 2px 8px rgba(0,0,0,0.05)"}}>
+                <div style={{display:"grid",gridTemplateColumns:"2fr 1fr 1fr 1fr 80px",padding:"9px 14px",background:"linear-gradient(135deg,#1e3a5f,#2d5a8e)",gap:8,fontSize:10,fontWeight:800,color:"#fff"}}>
+                  <div>{bLevel==='region'?lang==='ar'?"🗺 المنطقة":"🗺 Region":lang==='ar'?"👤 المحصّل":"👤 Collector"}</div>
+                  <div style={{textAlign:"center"}}>{lang==='ar'?"المدفوع":"Paid"}</div>
+                  <div style={{textAlign:"center"}}>{"📊 "}{lang==='ar'?"التسويات":"Adj."}</div>
+                  <div style={{textAlign:"center"}}>{lang==='ar'?"الإجمالي":"Total"}</div>
+                  <div style={{textAlign:"center"}}>{lang==='ar'?"نسبة":"Share"}</div>
+                </div>
+                {levelData.length===0&&<div style={{padding:24,textAlign:"center",color:"#9ca3af",fontSize:12}}>{lang==='ar'?"لا توجد بيانات":"No data"}</div>}
+                {levelData.slice(0,30).map(function(row,i){
+                  var total=row.paid+(row.adj||0);
+                  var pct=maxVal>0?(total/maxVal*100):0;
+                  var share=(sumPaid+sumAdj)>0?(total/(sumPaid+sumAdj)*100).toFixed(1):0;
+                  return(
+                    <div key={i} style={{borderBottom:"1px solid #f0f4f8",padding:"9px 14px",display:"grid",gridTemplateColumns:"2fr 1fr 1fr 1fr 80px",gap:8,background:i%2===0?"#fff":"#fafafa"}}>
+                      <div>
+                        <div style={{fontSize:11,fontWeight:800,color:"#111",marginBottom:2}}>{row.name}</div>
+                        {row.sub&&<div style={{fontSize:9,color:"#9ca3af"}}>{row.sub}</div>}
+                        <div style={{height:4,background:"#f0f4f8",borderRadius:2,marginTop:4}}>
+                          <div style={{height:4,background:"linear-gradient(90deg,#e85d20,#f97316)",borderRadius:2,width:Math.max(pct,1)+"%"}}/>
+                        </div>
+                      </div>
+                      <div style={{textAlign:"center",fontSize:11,fontWeight:800,color:"#15803d",alignSelf:"center"}}>{fmt(row.paid)}</div>
+                      <div style={{textAlign:"center",fontSize:11,fontWeight:800,color:(row.adj||0)>0?"#d97706":"#d1d5db",alignSelf:"center"}}>{(row.adj||0)>0?fmt(row.adj):"—"}</div>
+                      <div style={{textAlign:"center",fontSize:12,fontWeight:900,color:"#111",alignSelf:"center"}}>{fmt(total)}</div>
+                      <div style={{textAlign:"center",alignSelf:"center"}}><span style={{background:"#f0f4f8",borderRadius:20,padding:"2px 8px",fontSize:10,fontWeight:800,color:"#1e3a5f"}}>{share}%</span></div>
+                    </div>
+                  );
+                })}
+                <div style={{display:"grid",gridTemplateColumns:"2fr 1fr 1fr 1fr 80px",gap:8,padding:"10px 14px",background:"#1e3a5f"}}>
+                  <div style={{fontSize:11,fontWeight:900,color:"#fff"}}>{lang==='ar'?"الإجمالي الكلي":"Grand Total"}</div>
+                  <div style={{textAlign:"center",fontSize:11,fontWeight:900,color:"#86efac"}}>{fmt(sumPaid)}</div>
+                  <div style={{textAlign:"center",fontSize:11,fontWeight:900,color:"#fde68a"}}>{sumAdj>0?fmt(sumAdj):"—"}</div>
+                  <div style={{textAlign:"center",fontSize:12,fontWeight:900,color:"#fff"}}>{fmt(sumPaid+sumAdj)}</div>
+                  <div style={{textAlign:"center",fontSize:10,color:"rgba(255,255,255,0.5)"}}>100%</div>
+                </div>
+              </div>
+            </div>
+          );
+        })()}
 
       </div>
     </div>
@@ -10054,6 +10217,11 @@ function parseBulkPayment(file) {
           return cl==='paid amount'||cl==='paid'||cl==='payment amount'||cl==='payment'||
                  cl==='المدفوع'||cl.includes('paid');
         }) || 'Paid Amount';
+        // كشف عمود Branch بمرونة (العمود الرابع أو بالاسم)
+        const branchCol = allCols.find(c => {
+          const cl = c.toLowerCase().trim();
+          return cl==='branch'||cl==='branch name'||cl==='فرع'||cl==='الفرع'||cl.includes('branch');
+        }) || allCols[3] || null; // fallback للعمود الرابع
         const requiredCols = ['Region','Collector','Date'];
         const missing = requiredCols.filter(c => !(c in firstRow));
         if (missing.length > 0) {
@@ -10086,7 +10254,7 @@ function parseBulkPayment(file) {
           const adj  = adjCol ? g(row[adjCol]||0) : 0;
           const region    = String(row['Region']||'').trim();
           const collector = String(row['Collector']||'').trim();
-          const branch    = String(row['Branch']||'').trim();
+          const branch    = branchCol ? String(row[branchCol]||'').trim() : '';
           const debtor    = String(row['Debtor']||'').trim();
           const agreementNo = String(row['Agreement No']||'');
           const osAmt2  = g(row['O/S Amount']||row['Outstanding']||0);
@@ -11577,7 +11745,7 @@ export default function Dashboard() {
   <div class="kpi"><div class="kpi-icon">📊</div><div class="kpi-val" style="color:#111">129.125</div><div class="kpi-lbl">${ar?'متوسط الرصيد / حساب':'Avg Balance / Account'} OMR</div></div>
 </div>
 <div class="purchase-bar">
-  <div><div class="lbl">💡 ${ar?'قيمة شراء المديونية':'Debt Purchase Value'}</div><div class="formula">13,595,235.153 OMR × 16%</div></div>
+  <div><div class="lbl">🎯 ${ar?'نسبة شراء المحفظة':'Portfolio Purchase Rate'}</div><div class="formula">13,595,235.153 OMR × 16%</div></div>
   <div style="text-align:${ar?'left':'right'}"><div class="val">2,175,237.624</div><div class="omr">OMR</div></div>
 </div>
 <div class="grid2">
