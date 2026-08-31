@@ -216,7 +216,7 @@ const TRANS = {
   "محفوظ على السيرفر": { en: "Saved to server" },
   "تسويات عُمانتل": { en: "Omantel Settlements" },
   "دفعات زائدة (Over Recovery)": { en: "Over Recovery" },
-  "🎯 نسبة الإنجاز الكلي من المحفظة": { en: "🎯 Overall Achievement Rate from Portfolio" },
+  "🎯 نسبة الإنجاز الكلي من المحفظة": { en: "🎯 Portfolio Purchase Rate" },
   "🗺 مكاتب أونك": { en: "🗺 ONEIC Offices" },
   "🏢 شركات التحصيل": { en: "🏢 Debt Collection Companies" },
   "🏛 المكتب الرئيسي": { en: "🏛 Head Office" },
@@ -10305,24 +10305,25 @@ function handlePrint(data, lang='ar') {
       +'</div>'
     +'</div>'
 
-    // ── KPI Cards ──
+    // ── KPI Cards ── الترتيب الجديد
     +'<div class="kpi-grid">'
-      +'<div class="kpi"><div class="kpi-label">'+T('المدفوع','Paid')+'</div><div class="kpi-value" style="color:#16a34a">'+omrN(grandPaid)+'</div><div style="font-size:8pt;color:#9ca3af">OMR</div></div>'
-      +'<div class="kpi"><div class="kpi-label">'+T('التسويات','Adjustments')+'</div><div class="kpi-value" style="color:#d97706">'+omrN(grandAdj)+'</div><div style="font-size:8pt;color:#9ca3af">OMR</div></div>'
-      +'<div class="kpi"><div class="kpi-label">'+T('الإجمالي','Grand Total')+'</div><div class="kpi-value" style="color:#1e3a5f">'+omrN(grandTotal)+'</div><div style="font-size:8pt;color:#9ca3af">OMR</div></div>'
-      +'<div class="kpi"><div class="kpi-label">'+T('قيمة المحفظة','Portfolio Value')+'</div><div class="kpi-value" style="color:#e85d20">'+omrN(portAmt)+'</div><div style="font-size:8pt;color:#9ca3af">OMR</div></div>'
-      +'<div class="kpi"><div class="kpi-label">'+T('المتبقي','Remaining')+'</div><div class="kpi-value" style="color:#dc2626">'+omrN(remaining)+'</div><div style="font-size:8pt;color:#9ca3af">OMR</div></div>'
+      +'<div class="kpi"><div class="kpi-label">'+T('المدفوع','Paid')+'</div><div class="kpi-value" style="color:#111">'+omrN(grandPaid)+'</div><div style="font-size:8pt;color:#6b7280">OMR</div></div>'
+      +'<div class="kpi"><div class="kpi-label">'+T('تسويات عُمانتل','Adjustments')+'</div><div class="kpi-value" style="color:#111">'+omrN(grandAdj)+'</div><div style="font-size:8pt;color:#6b7280">OMR</div></div>'
+      +'<div class="kpi"><div class="kpi-label">'+T('الإجمالي','Grand Total')+'</div><div class="kpi-value" style="color:#111">'+omrN(grandTotal)+'</div><div style="font-size:8pt;color:#6b7280">OMR</div></div>'
+      +'<div class="kpi"><div class="kpi-label">'+T('المتبقي من المحفظة','Remaining')+'</div><div class="kpi-value" style="color:#111">'+omrN(remaining)+'</div><div style="font-size:8pt;color:#6b7280">OMR</div></div>'
+      +'<div class="kpi"><div class="kpi-label">'+T('دفعات زائدة (Over Recovery)','Over Recovery')+'</div><div class="kpi-value" style="color:#111">'+omrN(data.overRecovery||0)+'</div><div style="font-size:8pt;color:#6b7280">OMR</div></div>'
+      +'<div class="kpi"><div class="kpi-label">'+T('خصومات أونك','ONEIC Discounts')+'</div><div class="kpi-value" style="color:#111">'+omrN(data.totalDiscount||ONEIC_DISCOUNT||0)+'</div><div style="font-size:8pt;color:#6b7280">OMR</div></div>'
     +'</div>'
 
     // ── نسبة الإنجاز ──
     +'<div class="prog-bar-container">'
       +'<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px">'
-        +'<span style="font-weight:900;font-size:12pt;color:#1e3a5f">🎯 '+T('نسبة الإنجاز الكلي من المحفظة','Overall Achievement Rate')+'</span>'
+        +'<span style="font-weight:900;font-size:12pt;color:#1e3a5f">🎯 '+T('نسبة شراء المحفظة','Portfolio Purchase Rate')+'</span>'
         +'<span style="font-size:18pt;font-weight:900;color:#1e3a5f">'+pctDone+'%</span>'
       +'</div>'
       +'<div class="prog-bar-wrap"><div class="prog-bar-fill" style="width:'+pctDone+'%"></div></div>'
       +'<div style="display:flex;justify-content:space-between;font-size:9pt;color:#6b7280;margin-top:4px">'
-        +'<span>'+T('الإجمالي المحصّل: ','Total Collected: ')+omrN(grandTotal)+' OMR</span>'
+        +'<span>'+T('إجمالي المحصّل: ','Total Collected: ')+omrN(grandTotal)+' OMR</span>'
         +'<span>'+T('قيمة المحفظة: ','Portfolio Value: ')+omrN(portAmt)+' OMR</span>'
       +'</div>'
     +'</div>'
@@ -11723,7 +11724,7 @@ export default function Dashboard() {
                 </div>
                 <div style={{marginTop:6}}>
                   <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:3}}>
-                    <span style={{fontSize:13,color:"rgba(255,255,255,0.85)",fontWeight:800}}>{ar?"نسبة الشراء من المحفظة":"Purchase rate of portfolio"}</span>
+                    <span style={{fontSize:13,color:"rgba(255,255,255,0.85)",fontWeight:800}}>{ar?"نسبة شراء المحفظة":"Portfolio Purchase Rate"}</span>
                     <span style={{fontSize:15,color:"#fff",fontWeight:900}}>16%</span>
                   </div>
                   <div style={{background:"rgba(255,255,255,0.15)",borderRadius:6,height:8,width:"100%"}}>
@@ -12714,7 +12715,7 @@ export default function Dashboard() {
               </div>
               <div style={{marginTop:10}}>
                 <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:3}}>
-                  <span style={{fontSize:small?11:13,color:"#60a5fa",fontWeight:800}}>{lang==='en'?"Purchase rate of portfolio":"نسبة الشراء من المحفظة"}</span>
+                  <span style={{fontSize:small?11:13,color:"#60a5fa",fontWeight:800}}>{lang==='en'?"Portfolio Purchase Rate":"نسبة شراء المحفظة"}</span>
                   <span style={{fontSize:small?12:15,color:"#1e3a5f",fontWeight:900}}>26%</span>
                 </div>
                 <div style={{background:"#bfdbfe",borderRadius:6,height:8}}>
@@ -12761,12 +12762,12 @@ export default function Dashboard() {
                 const s1Tot  = s1Paid + s1Adj;
                 const s1Rem  = (data.totalPortfolio&&data.totalPortfolio.outstanding!=null) ? data.totalPortfolio.outstanding : (s1Port - s1Tot - ONEIC_DISCOUNT);
                 return [
-                  [t("المدفوع",lang),            s1Paid,   "#16a34a"],
-                  [t("تسويات عُمانتل",lang),     s1Adj,    "#d97706"],
-                  [t("دفعات زائدة (Over Recovery)",lang), s1OverRec, "#0891b2"],
-                  [t("خصومات أونك",lang),        ONEIC_DISCOUNT, "#7c3aed"],
-                  [t("الإجمالي",lang),           s1Tot,    "#1e3a5f"],
-                  [t("المتبقي من المحفظة",lang), s1Rem,    "#e85d20"],
+                  [t("المدفوع",lang),                          s1Paid,        "#16a34a"],
+                  [t("تسويات عُمانتل",lang),                   s1Adj,         "#d97706"],
+                  [t("الإجمالي",lang),                          s1Tot,         "#1e3a5f"],
+                  [t("المتبقي من المحفظة",lang),               s1Rem,         "#e85d20"],
+                  [t("دفعات زائدة (Over Recovery)",lang),      s1OverRec,     "#0891b2"],
+                  [t("خصومات أونك",lang),                      ONEIC_DISCOUNT,"#7c3aed"],
                 ];
               })().map(([lbl,val,clr])=>(
                 <div key={lbl} style={{display:"flex",justifyContent:"space-between",alignItems:"center",padding:"11px 14px",borderRadius:10,background:"#fafafa",border:"1px solid #f0ece8"}}>
