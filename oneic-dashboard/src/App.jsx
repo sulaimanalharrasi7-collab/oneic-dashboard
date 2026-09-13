@@ -6587,13 +6587,22 @@ const FIREBASE_URL = "https://oneic-dashboard-default-rtdb.firebaseio.com";
                 var mergedHO2 = (existing.headOffice||[]).map(function(h) {
           var s = (SEED.headOffice||[]).find(function(x){ return x.name===h.name; });
           if (!s) return h;
-          // دائماً خذ CT/VS من SEED — هي القيم الصحيحة الكاملة للمحفظة
-          // (لا نثق ببيانات Firebase لأنها قد تكون من ملف جزئي)
+          // ذكي: إذا Firebase يحتوي CT/VS كاملة (>50 حساب) → استخدمها، وإلا → SEED
+          var _fCT = (h.ctExpat||0)+(h.ctOman||0)+(h.ctEnterprise||0);
+          var _fVS = (h.vsExpired||0)+(h.vsNotExpired||0)+(h.vsNoData||0);
           return Object.assign({},h,{
-            ctExpat:s.ctExpat||0, ctOman:s.ctOman||0, ctEnterprise:s.ctEnterprise||0,
-            vsExpired:s.vsExpired||0, vsNotExpired:s.vsNotExpired||0, vsNoData:s.vsNoData||0,
-            ctExpat_os:s.ctExpat_os||0, ctOman_os:s.ctOman_os||0, ctEnterprise_os:s.ctEnterprise_os||0,
-            vsExpired_os:s.vsExpired_os||0, vsNotExpired_os:s.vsNotExpired_os||0, vsNoData_os:s.vsNoData_os||0
+            ctExpat:      _fCT>50?(h.ctExpat||0)     :(s.ctExpat||0),
+            ctOman:       _fCT>50?(h.ctOman||0)      :(s.ctOman||0),
+            ctEnterprise: _fCT>50?(h.ctEnterprise||0):(s.ctEnterprise||0),
+            vsExpired:    _fVS>50?(h.vsExpired||0)   :(s.vsExpired||0),
+            vsNotExpired: _fVS>50?(h.vsNotExpired||0):(s.vsNotExpired||0),
+            vsNoData:     _fVS>50?(h.vsNoData||0)    :(s.vsNoData||0),
+            ctExpat_os:      _fCT>50?(h.ctExpat_os||0)     :(s.ctExpat_os||0),
+            ctOman_os:       _fCT>50?(h.ctOman_os||0)      :(s.ctOman_os||0),
+            ctEnterprise_os: _fCT>50?(h.ctEnterprise_os||0):(s.ctEnterprise_os||0),
+            vsExpired_os:    _fVS>50?(h.vsExpired_os||0)   :(s.vsExpired_os||0),
+            vsNotExpired_os: _fVS>50?(h.vsNotExpired_os||0):(s.vsNotExpired_os||0),
+            vsNoData_os:     _fVS>50?(h.vsNoData_os||0)    :(s.vsNoData_os||0),
           });
         });
         // أضف أي محصّل في SEED غير موجود في Firebase
@@ -10920,16 +10929,28 @@ export default function Dashboard() {
   useEffect(() => {
     // ── مساعد دمج CT/VS من SEED في كل مسارات الـ sync ───────
     function mergeCTVS(hoArr) {
-      // CT/VS دائماً من SEED — هي القيم الصحيحة الكاملة للمحفظة
-      // بيانات Firebase قد تكون من ملف جزئي فتعطي أرقاماً غلط
+      // القاعدة: إذا الملف يحتوي CT/VS كاملة (أكثر من 50 حساب) → استخدمها
+      //          وإلا → خذ من SEED (المحفظة الكاملة)
       return (hoArr||[]).map(function(h) {
         var s = (SEED.headOffice||[]).find(function(x){ return x.name===h.name; });
         if (!s) return h;
+        var fileCtTotal = (h.ctExpat||0)+(h.ctOman||0)+(h.ctEnterprise||0);
+        var fileVsTotal = (h.vsExpired||0)+(h.vsNotExpired||0)+(h.vsNoData||0);
+        var fileHasCT   = fileCtTotal > 50;
+        var fileHasVS   = fileVsTotal > 50;
         return Object.assign({},h,{
-          ctExpat:s.ctExpat||0, ctOman:s.ctOman||0, ctEnterprise:s.ctEnterprise||0,
-          vsExpired:s.vsExpired||0, vsNotExpired:s.vsNotExpired||0, vsNoData:s.vsNoData||0,
-          ctExpat_os: s.ctExpat_os||0, ctOman_os:s.ctOman_os||0, ctEnterprise_os:s.ctEnterprise_os||0,
-          vsExpired_os:s.vsExpired_os||0, vsNotExpired_os:s.vsNotExpired_os||0, vsNoData_os:s.vsNoData_os||0
+          ctExpat:      fileHasCT ? (h.ctExpat||0)      : (s.ctExpat||0),
+          ctOman:       fileHasCT ? (h.ctOman||0)       : (s.ctOman||0),
+          ctEnterprise: fileHasCT ? (h.ctEnterprise||0) : (s.ctEnterprise||0),
+          vsExpired:    fileHasVS ? (h.vsExpired||0)    : (s.vsExpired||0),
+          vsNotExpired: fileHasVS ? (h.vsNotExpired||0) : (s.vsNotExpired||0),
+          vsNoData:     fileHasVS ? (h.vsNoData||0)     : (s.vsNoData||0),
+          ctExpat_os:      fileHasCT ? (h.ctExpat_os||0)      : (s.ctExpat_os||0),
+          ctOman_os:       fileHasCT ? (h.ctOman_os||0)        : (s.ctOman_os||0),
+          ctEnterprise_os: fileHasCT ? (h.ctEnterprise_os||0)  : (s.ctEnterprise_os||0),
+          vsExpired_os:    fileHasVS ? (h.vsExpired_os||0)     : (s.vsExpired_os||0),
+          vsNotExpired_os: fileHasVS ? (h.vsNotExpired_os||0)  : (s.vsNotExpired_os||0),
+          vsNoData_os:     fileHasVS ? (h.vsNoData_os||0)      : (s.vsNoData_os||0),
         });
       });
     }
@@ -11334,13 +11355,29 @@ export default function Dashboard() {
                 refundAmt: (c.name==='Refund - before legal') ? (bm.refundAmt||0) : (c.refundAmt||0),
                 closed: hasClosedData ? (bm.closed||0) : (c.closed||0),
                 active: hasClosedData ? (bm.active||0) : (c.active||0),
-                // Customer Type & Visa Status من الملف الجديد
-                ctExpat:     bm.ctExpat||c.ctExpat||0,
-                ctOman:      bm.ctOman||c.ctOman||0,
-                ctEnterprise:bm.ctEnterprise||c.ctEnterprise||0,
-                vsExpired:   bm.vsExpired||c.vsExpired||0,
-                vsNotExpired:bm.vsNotExpired||c.vsNotExpired||0,
-                vsNoData:    bm.vsNoData||c.vsNoData||0,
+                // CT/VS: إذا الملف يحتوي بيانات كاملة (>50 حساب) → استخدمها
+                //         وإلا → خذ من SEED (المحفظة الكاملة الصحيحة)
+                ...(function(){
+                  var _s = (SEED.headOffice||[]).find(function(x){return x.name===c.name;}) || {};
+                  var _bmCT = (bm.ctExpat||0)+(bm.ctOman||0)+(bm.ctEnterprise||0);
+                  var _bmVS = (bm.vsExpired||0)+(bm.vsNotExpired||0)+(bm.vsNoData||0);
+                  var useBmCT = _bmCT > 50;
+                  var useBmVS = _bmVS > 50;
+                  return {
+                    ctExpat:      useBmCT ? (bm.ctExpat||0)      : (_s.ctExpat||0),
+                    ctOman:       useBmCT ? (bm.ctOman||0)       : (_s.ctOman||0),
+                    ctEnterprise: useBmCT ? (bm.ctEnterprise||0) : (_s.ctEnterprise||0),
+                    vsExpired:    useBmVS ? (bm.vsExpired||0)    : (_s.vsExpired||0),
+                    vsNotExpired: useBmVS ? (bm.vsNotExpired||0) : (_s.vsNotExpired||0),
+                    vsNoData:     useBmVS ? (bm.vsNoData||0)     : (_s.vsNoData||0),
+                    ctExpat_os:      useBmCT ? (bm.ctExpat_os||0)      : (_s.ctExpat_os||0),
+                    ctOman_os:       useBmCT ? (bm.ctOman_os||0)       : (_s.ctOman_os||0),
+                    ctEnterprise_os: useBmCT ? (bm.ctEnterprise_os||0) : (_s.ctEnterprise_os||0),
+                    vsExpired_os:    useBmVS ? (bm.vsExpired_os||0)    : (_s.vsExpired_os||0),
+                    vsNotExpired_os: useBmVS ? (bm.vsNotExpired_os||0) : (_s.vsNotExpired_os||0),
+                    vsNoData_os:     useBmVS ? (bm.vsNoData_os||0)     : (_s.vsNoData_os||0),
+                  };
+                })(),
               });
             }
             return c;
