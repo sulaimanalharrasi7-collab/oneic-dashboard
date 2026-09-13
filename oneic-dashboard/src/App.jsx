@@ -12997,13 +12997,21 @@ export default function Dashboard() {
                 </div>
               </div>
               <div style={{marginTop:10}}>
-                <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:3}}>
-                  <span style={{fontSize:small?11:13,color:"#60a5fa",fontWeight:800}}>{lang==='en'?"Portfolio Purchase Rate":"نسبة شراء المحفظة"}</span>
-                  <span style={{fontSize:small?12:15,color:"#1e3a5f",fontWeight:900}}>26%</span>
-                </div>
-                <div style={{background:"#bfdbfe",borderRadius:6,height:8}}>
-                  <div style={{width:"26%",background:"#1e3a5f",height:"100%",borderRadius:6}}/>
-                </div>
+                {(()=>{
+                  const _pp=gPd+dPd+hPd, _pa=gAd+dAd+hAd;
+                  const _pm=data.totalPortfolio?.amt||9414256.834;
+                  const _pct=_pm>0?Math.min(100,((_pp+_pa)/_pm*100)):0;
+                  const _pctStr=_pct.toFixed(1)+'%';
+                  return (<>
+                    <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:3}}>
+                      <span style={{fontSize:small?11:13,color:"#60a5fa",fontWeight:800}}>{lang==='en'?"Portfolio Purchase Rate":"نسبة شراء المحفظة"}</span>
+                      <span style={{fontSize:small?12:15,color:"#1e3a5f",fontWeight:900}}>{_pctStr}</span>
+                    </div>
+                    <div style={{background:"#bfdbfe",borderRadius:6,height:8}}>
+                      <div style={{width:_pctStr,background:"#1e3a5f",height:"100%",borderRadius:6}}/>
+                    </div>
+                  </>);
+                })()}
               </div>
             </div>
             <div style={{display:"flex",justifyContent:"center",paddingTop:4}}>
