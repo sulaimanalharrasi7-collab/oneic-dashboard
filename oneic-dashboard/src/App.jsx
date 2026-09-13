@@ -378,6 +378,7 @@ const SEED = {
     { name:"Ejada",                         paid:234768.002, adj:26578.195, portAmt:261235.418,  portCnt:1938,  count:1938,  osAmt:0,           principalAmt:261235.418,  paidCount:987,  adjCount:143  },
     { name:"Tahseel United",                paid:8362.595,   adj:433.130,   portAmt:0,           portCnt:108,   count:109,   osAmt:0,           principalAmt:8796.192,    paidCount:67,   adjCount:12   },
     { name:"High Speed Company",            paid:5927.788,   adj:67.577,    portAmt:0,           portCnt:35,    count:35,    osAmt:0,           principalAmt:5995.160,    paidCount:28,   adjCount:5    },
+    { name:"Muhanned Al Amri Law Firm",    paid:0,          adj:0,          portAmt:0,           portCnt:0,     count:0,     osAmt:0,           principalAmt:0,           paidCount:0,    adjCount:0    },
     { name:"Eemad",                           paid:10.000,     adj:0.000,     portAmt:0,           portCnt:2683,  count:2683,  osAmt:0,           principalAmt:0,           paidCount:1,    adjCount:0    },
   ],
   headOffice: [
@@ -6547,7 +6548,7 @@ const FIREBASE_URL = "https://oneic-dashboard-default-rtdb.firebaseio.com";
 (function() {
   if (typeof window === 'undefined') return;
   if (localStorage.getItem('oneic_data_fixed_v13')) return;
-  var REQUIRED_DC = ['Matrix Debt Collection','National Center','Compass Risk Support Services','Ejada','Tahseel United','High Speed Company','Eemad'];
+  var REQUIRED_DC = ['Matrix Debt Collection','National Center','Compass Risk Support Services','Ejada','Tahseel United','High Speed Company','Eemad','Muhanned Al Amri Law Firm'];
   var now = new Date().toISOString();
   fetch('https://oneic-dashboard-default-rtdb.firebaseio.com/main.json')
     .then(function(r){ return r.json(); })
