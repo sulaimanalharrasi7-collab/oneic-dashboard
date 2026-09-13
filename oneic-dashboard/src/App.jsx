@@ -10439,7 +10439,8 @@ function handlePrint(data, lang='ar') {
 
   // Build DC rows
   var inactive = ['Tahseel United','High Speed Company','High Speed company'];
-  var dcRows = (data.debtCompanies||[]).filter(function(c){return (c.paid||0)+(c.adj||0)>0||!inactive.includes(c.name);}).map(function(c,i){
+  // كل الشركات تظهر دائماً (بما فيها Muhanned Al Amri Law Firm حتى لو صفر)
+  var dcRows = (data.debtCompanies||[]).map(function(c,i){
     return eRow(c.name, c.paid||0, c.adj||0, c.portAmt||c.principalAmt||0, c.portCnt||c.count||0, c.closed||0, c.active||0, i, '#1a7a6b');
   }).join('');
 
