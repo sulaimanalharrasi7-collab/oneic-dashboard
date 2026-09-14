@@ -6587,23 +6587,8 @@ const FIREBASE_URL = "https://oneic-dashboard-default-rtdb.firebaseio.com";
                 var mergedHO2 = (existing.headOffice||[]).map(function(h) {
           var s = (SEED.headOffice||[]).find(function(x){ return x.name===h.name; });
           if (!s) return h;
-          // ذكي: إذا Firebase يحتوي CT/VS كاملة (>50 حساب) → استخدمها، وإلا → SEED
-          var _fCT = (h.ctExpat||0)+(h.ctOman||0)+(h.ctEnterprise||0);
-          var _fVS = (h.vsExpired||0)+(h.vsNotExpired||0)+(h.vsNoData||0);
-          return Object.assign({},h,{
-            ctExpat:      _fCT>50?(h.ctExpat||0)     :(s.ctExpat||0),
-            ctOman:       _fCT>50?(h.ctOman||0)      :(s.ctOman||0),
-            ctEnterprise: _fCT>50?(h.ctEnterprise||0):(s.ctEnterprise||0),
-            vsExpired:    _fVS>50?(h.vsExpired||0)   :(s.vsExpired||0),
-            vsNotExpired: _fVS>50?(h.vsNotExpired||0):(s.vsNotExpired||0),
-            vsNoData:     _fVS>50?(h.vsNoData||0)    :(s.vsNoData||0),
-            ctExpat_os:      _fCT>50?(h.ctExpat_os||0)     :(s.ctExpat_os||0),
-            ctOman_os:       _fCT>50?(h.ctOman_os||0)      :(s.ctOman_os||0),
-            ctEnterprise_os: _fCT>50?(h.ctEnterprise_os||0):(s.ctEnterprise_os||0),
-            vsExpired_os:    _fVS>50?(h.vsExpired_os||0)   :(s.vsExpired_os||0),
-            vsNotExpired_os: _fVS>50?(h.vsNotExpired_os||0):(s.vsNotExpired_os||0),
-            vsNoData_os:     _fVS>50?(h.vsNoData_os||0)    :(s.vsNoData_os||0),
-          });
+          // Firebase يحتوي CT/VS المحفوظة من الملف — مرّرها كما هي
+          return h;
         });
         // أضف أي محصّل في SEED غير موجود في Firebase
         SEED.headOffice.forEach(function(s) {
@@ -7107,9 +7092,8 @@ function EntityCard({name,paid,adj,color,rank,small,cnt,cBranch,portAmt,portCnt,
           </div>
         )}
 
-        {/* ══ Customer Type & Visa Status — ديناميكي ══ */}
+        {/* ══ Customer Type & Visa Status — ديناميكي من الملف ══ */}
         {(name==="Initial Loss"||name==="Documentation- Omantel") && (ctExpat||ctOman||ctEnterprise||vsExpired||vsNotExpired||vsNoData) ? (()=>{
-          // بناء القائمة ديناميكياً — كل قيمة غير صفر تظهر تلقائياً
           var ctBoxes = [
             ctExpat>0      && {label:lang==='ar'?"وافد":"Expat",      val:ctExpat,      os:ctExpat_os||0,      color:"#2563eb", bg:"#dbeafe"},
             ctOman>0       && {label:lang==='ar'?"عُماني":"Omani",     val:ctOman,       os:ctOman_os||0,       color:"#16a34a", bg:"#dcfce7"},
@@ -10929,30 +10913,8 @@ export default function Dashboard() {
   useEffect(() => {
     // ── مساعد دمج CT/VS من SEED في كل مسارات الـ sync ───────
     function mergeCTVS(hoArr) {
-      // القاعدة: إذا الملف يحتوي CT/VS كاملة (أكثر من 50 حساب) → استخدمها
-      //          وإلا → خذ من SEED (المحفظة الكاملة)
-      return (hoArr||[]).map(function(h) {
-        var s = (SEED.headOffice||[]).find(function(x){ return x.name===h.name; });
-        if (!s) return h;
-        var fileCtTotal = (h.ctExpat||0)+(h.ctOman||0)+(h.ctEnterprise||0);
-        var fileVsTotal = (h.vsExpired||0)+(h.vsNotExpired||0)+(h.vsNoData||0);
-        var fileHasCT   = fileCtTotal > 50;
-        var fileHasVS   = fileVsTotal > 50;
-        return Object.assign({},h,{
-          ctExpat:      fileHasCT ? (h.ctExpat||0)      : (s.ctExpat||0),
-          ctOman:       fileHasCT ? (h.ctOman||0)       : (s.ctOman||0),
-          ctEnterprise: fileHasCT ? (h.ctEnterprise||0) : (s.ctEnterprise||0),
-          vsExpired:    fileHasVS ? (h.vsExpired||0)    : (s.vsExpired||0),
-          vsNotExpired: fileHasVS ? (h.vsNotExpired||0) : (s.vsNotExpired||0),
-          vsNoData:     fileHasVS ? (h.vsNoData||0)     : (s.vsNoData||0),
-          ctExpat_os:      fileHasCT ? (h.ctExpat_os||0)      : (s.ctExpat_os||0),
-          ctOman_os:       fileHasCT ? (h.ctOman_os||0)        : (s.ctOman_os||0),
-          ctEnterprise_os: fileHasCT ? (h.ctEnterprise_os||0)  : (s.ctEnterprise_os||0),
-          vsExpired_os:    fileHasVS ? (h.vsExpired_os||0)     : (s.vsExpired_os||0),
-          vsNotExpired_os: fileHasVS ? (h.vsNotExpired_os||0)  : (s.vsNotExpired_os||0),
-          vsNoData_os:     fileHasVS ? (h.vsNoData_os||0)      : (s.vsNoData_os||0),
-        });
-      });
+      // مرّر بيانات Firebase كما هي — CT/VS محفوظة بشكل صحيح من الملف
+      return (hoArr||[]).map(function(h){ return h; });
     }
     async function load() {
       // == منطق مبسّط وموحّد ومضمون: Firebase هو مصدر الحقيقة الوحيد (single source of truth) ==
@@ -11042,11 +11004,12 @@ export default function Dashboard() {
         var HO_KEYS3 = ["Legal - DR. Sarhaan","Documentation- Omantel","Non-due accounts","Legal -Oneic","Refund - before legal","Refund - after legal","Omantel Communication","Initial Loss"];
         var HO_DEF3 = {"Legal - DR. Sarhaan":{portAmt:3229651.681,portCnt:3973,closed:135,active:3838},"Documentation- Omantel":{portAmt:471756.070,portCnt:0,closed:0,active:0},"Non-due accounts":{portAmt:0,portCnt:252,closed:252,active:0},"Legal -Oneic":{portAmt:64528.164,portCnt:101,closed:101,active:0},"Refund - before legal":{portAmt:0,portCnt:0,closed:0,active:0},"Refund - after legal":{portAmt:0,portCnt:0,closed:0,active:0},"Omantel Communication":{portAmt:0,portCnt:177,closed:0,active:177},"Initial Loss":{portAmt:1437597.544,portCnt:11185,closed:1,active:11184}};
         var eHO3 = row.headOffice||[];
-        var fullHO3 = HO_KEYS3.map(function(nm){var seedH=(SEED.headOffice||[]).find(function(s){return s.name===nm;});var ctVS=seedH?{ctExpat:seedH.ctExpat||0,ctOman:seedH.ctOman||0,ctEnterprise:seedH.ctEnterprise||0,vsExpired:seedH.vsExpired||0,vsNotExpired:seedH.vsNotExpired||0,vsNoData:seedH.vsNoData||0}:{};
+        var fullHO3 = HO_KEYS3.map(function(nm){
           var f=eHO3.find(function(c){return c.name===nm;})||(nm==='Non-due accounts'?eHO3.find(function(c){return c.name==='HO';}):null);
           var p=HO_DEF3[nm]||{};
+          // f يحتوي CT/VS الصحيحة المحفوظة من الملف — لا تستبدلها
           if(f) return Object.assign({},p,f,{name:nm,closed:(f.closed!==undefined&&f.closed!==null)?f.closed:(p.closed||0),active:(f.active!==undefined&&f.active!==null)?f.active:(p.active||0)});
-          return {name:nm,paid:0,adj:0,count:0,portAmt:p.portAmt||0,portCnt:p.portCnt||0,closed:0,active:0};
+          return {name:nm,paid:0,adj:0,count:0,portAmt:p.portAmt||0,portCnt:p.portCnt||0,closed:0,active:0,ctExpat:0,ctOman:0,ctEnterprise:0,vsExpired:0,vsNotExpired:0,vsNoData:0,ctExpat_os:0,ctOman_os:0,ctEnterprise_os:0,vsExpired_os:0,vsNotExpired_os:0,vsNoData_os:0};
         });
         // == Firebase يحتوي البيانات الكاملة والنهائية الصحيحة - لا حاجة لأي دمج إضافي من localStorage ==
         var dSync = {};
@@ -11075,7 +11038,13 @@ export default function Dashboard() {
         var HO_KEYS4=["Legal - DR. Sarhaan","Documentation- Omantel","Non-due accounts","Legal -Oneic","Refund - before legal","Refund - after legal","Omantel Communication","Initial Loss"];
         var HO_P4={"Legal - DR. Sarhaan":{portAmt:3229651.681,portCnt:3973,closed:135,active:3838},"Documentation- Omantel":{portAmt:471756.070,portCnt:0,closed:0,active:0},"Non-due accounts":{portAmt:0,portCnt:252,closed:252,active:0},"Legal -Oneic":{portAmt:64528.164,portCnt:101,closed:101,active:0},"Refund - before legal":{portAmt:0,portCnt:0,closed:0,active:0},"Refund - after legal":{portAmt:0,portCnt:0,closed:0,active:0},"Omantel Communication":{portAmt:0,portCnt:177,closed:0,active:177},"Initial Loss":{portAmt:1437597.544,portCnt:11185,closed:1,active:11184}};
         var eHO4=row.headOffice||[];
-        var fullHO4=HO_KEYS4.map(function(nm){var f=eHO4.find(function(c){return c.name===nm;})||(nm==='Non-due accounts'?eHO4.find(function(c){return c.name==='HO';}):null);var p=HO_P4[nm]||{};if(f)return Object.assign({},p,f,{name:nm,closed:(f.closed!==undefined&&f.closed!==null)?f.closed:(p.closed||0),active:(f.active!==undefined&&f.active!==null)?f.active:(p.active||0)});return {name:nm,paid:0,adj:0,count:0,portAmt:p.portAmt||0,portCnt:p.portCnt||0,closed:0,active:0};});
+        var fullHO4=HO_KEYS4.map(function(nm){
+          var f=eHO4.find(function(c){return c.name===nm;})||(nm==='Non-due accounts'?eHO4.find(function(c){return c.name==='HO';}):null);
+          var p=HO_P4[nm]||{};
+          // f يحتوي CT/VS الصحيحة من الملف — احتفظ بها
+          if(f) return Object.assign({},p,f,{name:nm,closed:(f.closed!==undefined&&f.closed!==null)?f.closed:(p.closed||0),active:(f.active!==undefined&&f.active!==null)?f.active:(p.active||0)});
+          return {name:nm,paid:0,adj:0,count:0,portAmt:p.portAmt||0,portCnt:p.portCnt||0,closed:0,active:0,ctExpat:0,ctOman:0,ctEnterprise:0,vsExpired:0,vsNotExpired:0,vsNoData:0,ctExpat_os:0,ctOman_os:0,ctEnterprise_os:0,vsExpired_os:0,vsNotExpired_os:0,vsNoData_os:0};
+        });
         // == Firebase يحتوي البيانات الكاملة والنهائية الصحيحة - لا حاجة لأي دمج إضافي من localStorage ==
         var dSync4={headOffice:mergeCTVS(fullHO4),_updatedAt:row._updatedAt||row.lastUpdated||''};
         var rk=Object.keys(row); for(var ki4=0;ki4<rk.length;ki4++){if(rk[ki4]!=='headOffice')dSync4[rk[ki4]]=row[rk[ki4]];}
@@ -11360,29 +11329,12 @@ export default function Dashboard() {
                 refundAmt: (c.name==='Refund - before legal') ? (bm.refundAmt||0) : (c.refundAmt||0),
                 closed: hasClosedData ? (bm.closed||0) : (c.closed||0),
                 active: hasClosedData ? (bm.active||0) : (c.active||0),
-                // CT/VS: إذا الملف يحتوي بيانات كاملة (>50 حساب) → استخدمها
-                //         وإلا → خذ من SEED (المحفظة الكاملة الصحيحة)
-                ...(function(){
-                  var _s = (SEED.headOffice||[]).find(function(x){return x.name===c.name;}) || {};
-                  var _bmCT = (bm.ctExpat||0)+(bm.ctOman||0)+(bm.ctEnterprise||0);
-                  var _bmVS = (bm.vsExpired||0)+(bm.vsNotExpired||0)+(bm.vsNoData||0);
-                  var useBmCT = _bmCT > 50;
-                  var useBmVS = _bmVS > 50;
-                  return {
-                    ctExpat:      useBmCT ? (bm.ctExpat||0)      : (_s.ctExpat||0),
-                    ctOman:       useBmCT ? (bm.ctOman||0)       : (_s.ctOman||0),
-                    ctEnterprise: useBmCT ? (bm.ctEnterprise||0) : (_s.ctEnterprise||0),
-                    vsExpired:    useBmVS ? (bm.vsExpired||0)    : (_s.vsExpired||0),
-                    vsNotExpired: useBmVS ? (bm.vsNotExpired||0) : (_s.vsNotExpired||0),
-                    vsNoData:     useBmVS ? (bm.vsNoData||0)     : (_s.vsNoData||0),
-                    ctExpat_os:      useBmCT ? (bm.ctExpat_os||0)      : (_s.ctExpat_os||0),
-                    ctOman_os:       useBmCT ? (bm.ctOman_os||0)       : (_s.ctOman_os||0),
-                    ctEnterprise_os: useBmCT ? (bm.ctEnterprise_os||0) : (_s.ctEnterprise_os||0),
-                    vsExpired_os:    useBmVS ? (bm.vsExpired_os||0)    : (_s.vsExpired_os||0),
-                    vsNotExpired_os: useBmVS ? (bm.vsNotExpired_os||0) : (_s.vsNotExpired_os||0),
-                    vsNoData_os:     useBmVS ? (bm.vsNoData_os||0)     : (_s.vsNoData_os||0),
-                  };
-                })(),
+                // CT/VS مباشرة من الملف — ما في الملف هو الصحيح
+                ctExpat:      bm.ctExpat||0,      ctOman:bm.ctOman||0,       ctEnterprise:bm.ctEnterprise||0,
+                vsExpired:    bm.vsExpired||0,    vsNotExpired:bm.vsNotExpired||0, vsNoData:bm.vsNoData||0,
+                ctExpat_os:   bm.ctExpat_os||0,   ctOman_os:bm.ctOman_os||0,
+                ctEnterprise_os:bm.ctEnterprise_os||0,
+                vsExpired_os: bm.vsExpired_os||0, vsNotExpired_os:bm.vsNotExpired_os||0, vsNoData_os:bm.vsNoData_os||0,
               });
             }
             return c;
