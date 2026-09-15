@@ -6519,7 +6519,7 @@ async function parseXLS(file) {
   const debtCompanies = dcList.sort((a,b)=>((b.paid||0)+(b.adj||0))-((a.paid||0)+(a.adj||0)));
 
   // -- المكتب الرئيسي ----------------------------------------------------
-  const HO_KEYS = ["Legal - DR. Sarhaan","Documentation- Omantel","HO","Legal -Oneic","Initial Loss","LOSS"];
+  const HO_KEYS = ["Legal - DR. Sarhaan","Documentation- Omantel","HO","Legal -Oneic","Initial Loss","LOSS","Refund - after legal"];
   const HO_DISPLAY_MAP = {"HO":"Non-due accounts","Non-due accounts":"Non-due accounts","Documentation- Omantel":"Documentation- Omantel","Legal - DR. Sarhaan":"Legal - DR. Sarhaan","Legal -Oneic":"Legal -Oneic","Initial Loss":"Initial Loss","LOSS":"LOSS"};
   const headOffice = HO_KEYS.map(nm => {
     const d = hoMap[nm]||{paid:0,adj:0,count:0,principalAmt:0,closed:0,active:0,ctExpat:0,ctOman:0,ctEnterprise:0,vsExpired:0,vsNotExpired:0,vsNoData:0};
@@ -10956,7 +10956,7 @@ export default function Dashboard() {
           try { localStorage.setItem('oneic_data_fixed_v4','1'); } catch(e) {}
         }
         // ── ────────────────────────────────────────────────────────
-        const HO_REQ = ["Legal - DR. Sarhaan","Documentation- Omantel","Non-due accounts","Legal -Oneic","Refund - before legal","Refund - after legal","Omantel Communication","Initial Loss","LOSS"];
+        const HO_REQ = ["Legal - DR. Sarhaan","Documentation- Omantel","Non-due accounts","Legal -Oneic","Refund - before legal","Omantel Communication","Initial Loss","LOSS","Refund - after legal"];
         const HO_P = {
           "Legal - DR. Sarhaan":{portAmt:3229651.681,portCnt:3973,closed:135,active:3838,principalAmt:3229651.681},
           "Documentation- Omantel":{portAmt:471756.070,portCnt:0,closed:0,active:0},
@@ -11004,7 +11004,7 @@ export default function Dashboard() {
         var fbTime = new Date(row._updatedAt||row.lastUpdated||0).getTime();
         var myTime = lastSyncRef.current ? new Date(lastSyncRef.current).getTime() : 0;
         if (fbTime > 0 && myTime > 0 && fbTime <= myTime) return;
-        var HO_KEYS3 = ["Legal - DR. Sarhaan","Documentation- Omantel","Non-due accounts","Legal -Oneic","Refund - before legal","Refund - after legal","Omantel Communication","Initial Loss","LOSS"];
+        var HO_KEYS3 = ["Legal - DR. Sarhaan","Documentation- Omantel","Non-due accounts","Legal -Oneic","Refund - before legal","Omantel Communication","Initial Loss","LOSS","Refund - after legal"];
         var HO_DEF3 = {"Legal - DR. Sarhaan":{portAmt:3229651.681,portCnt:3973,closed:135,active:3838},"Documentation- Omantel":{portAmt:471756.070,portCnt:0,closed:0,active:0},"Non-due accounts":{portAmt:0,portCnt:252,closed:252,active:0},"Legal -Oneic":{portAmt:64528.164,portCnt:101,closed:101,active:0},"Refund - before legal":{portAmt:0,portCnt:0,closed:0,active:0},"Refund - after legal":{portAmt:0,portCnt:0,closed:0,active:0},"Omantel Communication":{portAmt:0,portCnt:177,closed:0,active:177},"Initial Loss":{portAmt:1437597.544,portCnt:11185,closed:1,active:11184},"LOSS":{portAmt:0,portCnt:0,closed:0,active:0}};
         var eHO3 = row.headOffice||[];
         var fullHO3 = HO_KEYS3.map(function(nm){
@@ -11038,7 +11038,7 @@ export default function Dashboard() {
         var fbTime = new Date(row._updatedAt||row.lastUpdated||0).getTime();
         var myTime = lastSyncRef.current ? new Date(lastSyncRef.current).getTime() : 0;
         if (fbTime > 0 && myTime > 0 && fbTime <= myTime) return;
-        var HO_KEYS4=["Legal - DR. Sarhaan","Documentation- Omantel","Non-due accounts","Legal -Oneic","Refund - before legal","Refund - after legal","Omantel Communication","Initial Loss","LOSS"];
+        var HO_KEYS4=["Legal - DR. Sarhaan","Documentation- Omantel","Non-due accounts","Legal -Oneic","Refund - before legal","Omantel Communication","Initial Loss","LOSS","Refund - after legal"];
         var HO_P4={"Legal - DR. Sarhaan":{portAmt:3229651.681,portCnt:3973,closed:135,active:3838},"Documentation- Omantel":{portAmt:471756.070,portCnt:0,closed:0,active:0},"Non-due accounts":{portAmt:0,portCnt:252,closed:252,active:0},"Legal -Oneic":{portAmt:64528.164,portCnt:101,closed:101,active:0},"Refund - before legal":{portAmt:0,portCnt:0,closed:0,active:0},"Refund - after legal":{portAmt:0,portCnt:0,closed:0,active:0},"Omantel Communication":{portAmt:0,portCnt:177,closed:0,active:177},"Initial Loss":{portAmt:1437597.544,portCnt:11185,closed:1,active:11184},"LOSS":{portAmt:0,portCnt:0,closed:0,active:0}};
         var eHO4=row.headOffice||[];
         var fullHO4=HO_KEYS4.map(function(nm){
@@ -11413,7 +11413,7 @@ export default function Dashboard() {
     var DC_ALWAYS=[{name:"Tahseel United",portAmt:0,principalAmt:0,portCnt:108,paid:0,adj:0,count:0},{name:"High Speed Company",portAmt:0,principalAmt:0,portCnt:35,paid:0,adj:0,count:0}];
     DC_ALWAYS.forEach(function(dc){if(!mergedCompanies.find(function(c){return c.name===dc.name;})){var pdc=(data.debtCompanies||[]).find(function(c){return c.name===dc.name;});mergedCompanies.push(Object.assign({},dc,pdc||{}));}});
     // ضمان وجود كل أقسام المكتب الرئيسي دائماً
-    const HO_REQUIRED = ["Legal - DR. Sarhaan","Documentation- Omantel","HO","Legal -Oneic","Refund - before legal","Omantel Communication","Initial Loss","LOSS"];
+    const HO_REQUIRED = ["Legal - DR. Sarhaan","Documentation- Omantel","HO","Legal -Oneic","Refund - before legal","Omantel Communication","Initial Loss","LOSS","Refund - after legal"];
     const HO_PORT_DATA = {
       "Legal - DR. Sarhaan": { portAmt: 3229651.681, portCnt: 3662, principalAmt: 3301711.348 },
       "Documentation- Omantel":  { portAmt: 471756.070,  portCnt: 1099, closed:8, active:1091 },
