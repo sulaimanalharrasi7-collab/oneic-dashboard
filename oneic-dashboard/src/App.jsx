@@ -20,6 +20,7 @@ const TRANS = {
   "دفعات":                     { en: "Payments" },
   "دفعات زائدة":               { en: "Over Recovery" },
   "خصومات أونك":               { en: "ONEIC Discounts" },
+  "تسويات عُمانتل 26%":          { en: "Omantel Adj. 26%" },
   "تسويات غمانتل":             { en: "Omantel Settlements" },
   "إجمالي المدفوع":            { en: "Total Paid" },
   "الإجمالي الكلي":             { en: "Grand Total" },
@@ -13056,6 +13057,7 @@ export default function Dashboard() {
                   [t("المتبقي من المحفظة",lang),               s1Rem,         "#e85d20"],
                   [t("دفعات زائدة (Over Recovery)",lang),      s1OverRec,     "#0891b2"],
                   [t("خصومات أونك",lang),                      ONEIC_DISCOUNT,"#7c3aed"],
+                  [t("تسويات عُمانتل 26%",lang),                   s1Adj*0.26,    "#b45309"],
                 ];
               })().map(([lbl,val,clr])=>(
                 <div key={lbl} style={{display:"flex",justifyContent:"space-between",alignItems:"center",padding:"11px 14px",borderRadius:10,background:"#fafafa",border:"1px solid #f0ece8"}}>
