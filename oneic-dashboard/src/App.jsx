@@ -12933,7 +12933,7 @@ export default function Dashboard() {
     const inputStyle={width:'100%',padding:'10px 12px',border:'1.5px solid #e2e8f0',borderRadius:10,fontSize:14,fontFamily:"'Cairo',sans-serif",outline:'none',textAlign:'center',direction:'ltr'};
 
     return (
-      <div style={{minHeight:"100vh",background:"linear-gradient(160deg,#f0f4f8 0%,#e8f5f0 100%)",fontFamily:"'Cairo','Tajawal',sans-serif",direction:ar?"rtl":"ltr",paddingBottom:80}}>
+      <div style={{height:"100vh",display:"flex",flexDirection:"column",overflow:"hidden",fontFamily:"'Cairo','Tajawal',sans-serif",direction:ar?"rtl":"ltr",background:"linear-gradient(160deg,#f0f4f8 0%,#e8f5f0 100%)"}}>
         <style>{`
           @keyframes scaleSwing {
             0%   { transform: rotate(0deg) scale(1); }
@@ -12984,7 +12984,7 @@ export default function Dashboard() {
         {lPrintModal && (
           <div style={{position:"fixed",inset:0,zIndex:99996,background:"rgba(0,0,0,0.7)",display:"flex",flexDirection:"column",alignItems:"center",justifyContent:"flex-start",overflowY:"auto",padding:"20px 16px"}}>
             {/* Toolbar */}
-            <div className="no-print" style={{background:"#1e3a5f",borderRadius:12,padding:"12px 20px",display:"flex",gap:12,alignItems:"center",marginBottom:16,boxShadow:"0 4px 20px rgba(0,0,0,0.4)",position:"sticky",top:0,zIndex:1}}>
+            <div className="no-print" style={{background:"#1e3a5f",borderRadius:12,padding:"12px 20px",display:"flex",gap:12,alignItems:"center",marginBottom:16,boxShadow:"0 4px 20px rgba(0,0,0,0.4)",zIndex:1}}>
               <button onClick={()=>window.print()} style={{background:"#16a34a",color:"#fff",border:"none",borderRadius:10,padding:"10px 22px",fontSize:14,fontWeight:900,cursor:"pointer",display:"flex",alignItems:"center",gap:8,fontFamily:"'Cairo',sans-serif"}}>
                 🖨️ {ar?"طباعة / PDF":"Print / PDF"}
               </button>
@@ -13187,7 +13187,7 @@ export default function Dashboard() {
         )}
 
         {/* ─── Header ─── */}
-        <div style={{background:"linear-gradient(120deg,#1e3a5f,#16a34a)",padding:"14px 24px",display:"flex",justifyContent:"space-between",alignItems:"center",position:"sticky",top:0,zIndex:100,boxShadow:"0 4px 20px rgba(0,0,0,0.3)"}}>
+        <div style={{background:"linear-gradient(120deg,#1e3a5f,#16a34a)",padding:"14px 24px",display:"flex",justifyContent:"space-between",alignItems:"center",zIndex:100,boxShadow:"0 4px 20px rgba(0,0,0,0.3)"}}>
           <div style={{display:"flex",alignItems:"center",gap:14}}>
             <div style={{width:52,height:52,background:"rgba(255,255,255,0.18)",borderRadius:14,display:"flex",alignItems:"center",justifyContent:"center",fontSize:30,boxShadow:"0 2px 12px rgba(0,0,0,0.2)"}}><span className="legal-scale-icon">⚖️</span></div>
             <div>
@@ -13255,7 +13255,7 @@ export default function Dashboard() {
           .legal-tab-btn { transition: all 0.2s ease; }
           .legal-tab-btn:hover { background: rgba(22,163,74,0.06) !important; }
         `}</style>
-        <div style={{background:"#fff",position:"sticky",top:62,zIndex:90,boxShadow:"0 3px 12px rgba(0,0,0,0.08)",borderBottom:"1px solid #e8f5e9",WebkitTransform:"translateZ(0)"}}>
+        <div style={{background:"#fff",zIndex:90,boxShadow:"0 3px 12px rgba(0,0,0,0.08)",borderBottom:"1px solid #e8f5e9"}}>
           <div style={{display:"flex",padding:"0 16px",gap:4}}>
             {[
               {key:'new',   icon:"🔔", label:ar?"الجديد":"New",          badge:lNewBadge, activeCol:"#dc2626", activeBg:"#fef2f2"},
@@ -13290,6 +13290,9 @@ export default function Dashboard() {
             })}
           </div>
         </div>
+
+        {/* ═══ SCROLLABLE CONTENT AREA ═══ */}
+        <div style={{flex:1,overflowY:"auto",WebkitOverflowScrolling:"touch",overscrollBehavior:"contain"}}>
 
         {/* ─── Tab: الجديد ─── */}
         {lTab==='new' && (
@@ -13616,6 +13619,7 @@ export default function Dashboard() {
           </div>
         )}
 
+        </div>{/* end scrollable content */}
       </div>
     );
   }
