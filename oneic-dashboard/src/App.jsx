@@ -10919,8 +10919,15 @@ export default function Dashboard() {
 
 
   // ── Omantel 2 file upload state ──────────────────────────
-  const [p2FileData, setP2FileData] = useState(null);
-  const [p2FileName, setP2FileName] = useState('');
+  const [p2FileData, setP2FileData] = useState(()=>{
+    try { const s=localStorage.getItem('oneic_p2data'); return s?JSON.parse(s):null; } catch(e){return null;}
+  });
+  const [p2FileName, setP2FileName] = useState(()=>{
+    try { return localStorage.getItem('oneic_p2filename')||''; } catch(e){return '';}
+  });
+  const [p2UploadDate, setP2UploadDate] = useState(()=>{
+    try { return localStorage.getItem('oneic_p2date')||''; } catch(e){return '';}
+  });
   const [p2Syncing, setP2Syncing] = useState(false);
   const [p2PwModal, setP2PwModal] = useState(false);
   const [p2PwInput, setP2PwInput] = useState('');
@@ -11865,6 +11872,11 @@ export default function Dashboard() {
               <div style={{fontSize:11,color:"#93c5fd"}}>
                 {p2FileName ? `📋 ${p2FileName}` : (ar?"Omantel Debt Collection Portfolio":"Omantel Debt Collection Portfolio")}
               </div>
+              {p2UploadDate && (
+                <div style={{fontSize:10,color:"#bae6fd",marginTop:2,fontWeight:700}}>
+                  🕐 {ar?"آخر رفع:":"Last upload:"} {p2UploadDate}
+                </div>
+              )}
             </div>
           </div>
           <div style={{display:"flex",gap:8,alignItems:"center"}}>
@@ -11915,6 +11927,13 @@ export default function Dashboard() {
                       setP2Syncing(false);
                       if(err){ alert('خطأ: '+err); return; }
                       setP2FileData(result);
+                      try {
+                        localStorage.setItem('oneic_p2data', JSON.stringify(result));
+                        localStorage.setItem('oneic_p2filename', file.name);
+                        const _d2=new Date().toLocaleDateString('en-GB');
+                        localStorage.setItem('oneic_p2date', _d2);
+                        setP2UploadDate(_d2);
+                      } catch(e){}
                     });
                   } catch(ex){ setP2Syncing(false); alert('خطأ: '+ex.message); }
                 };
@@ -11970,6 +11989,14 @@ export default function Dashboard() {
                   </button>
                 </div>
               </div>
+            )}
+            {p2FileData && (
+              <button onClick={()=>{
+                setP2FileData(null); setP2FileName(''); setP2UploadDate('');
+                try{localStorage.removeItem('oneic_p2data');localStorage.removeItem('oneic_p2filename');localStorage.removeItem('oneic_p2date');}catch(e){}
+              }} style={{background:"rgba(239,68,68,0.15)",color:"#fca5a5",border:"1px solid rgba(239,68,68,0.3)",borderRadius:10,padding:"7px 14px",fontSize:12,fontWeight:700,cursor:"pointer"}}>
+                🗑️ {ar?"مسح الملف":"Clear"}
+              </button>
             )}
             <button onClick={()=>setProjectChoice(null)} style={{background:"rgba(255,255,255,0.1)",color:"#fff",border:"1px solid rgba(255,255,255,0.2)",borderRadius:10,padding:"7px 16px",fontSize:12,fontWeight:700,cursor:"pointer"}}>← {ar?"اختيار المشروع":"Projects"}</button>
             <button onClick={()=>{const n=lang==='ar'?'en':'ar';setLang(n);try{localStorage.setItem('oneic_lang',n);}catch(e){}; document.documentElement.dir=n==='ar'?'rtl':'ltr';}} style={{background:ar?"#1a7a6b":"#6c3fa0",color:"#fff",border:"none",borderRadius:10,padding:"7px 16px",fontSize:12,fontWeight:700,cursor:"pointer"}}>🌐 {ar?"English":"عربي"}</button>
