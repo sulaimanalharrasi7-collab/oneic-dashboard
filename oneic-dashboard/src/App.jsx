@@ -10608,7 +10608,7 @@ function handlePrint(data, lang='ar') {
         +'<span style="font-size:11pt;color:#1f2937;font-weight:600">47,963 '+T('حساب','accounts')+' &middot; 9,414,256.834 OMR</span>'
       +'</div>'
       +'<table style="margin-bottom:0">'
-        +'<thead><tr style="background:#f3f4f6"><th style="padding:7px 12px;font-weight:700;text-align:right">'+T('النوع','Type')+'</th>'
+        +'<thead><tr style="background:#f3f4f6"><th style="padding:7px 12px;font-weight:700;text-align:right">'+T('النوع',ar?'النوع':'Type')+'</th>'
         +'<th style="padding:7px;text-align:center;font-weight:700">'+T('الحسابات','Accounts')+'</th>'
         +'<th style="padding:7px;text-align:center;font-weight:700">'+T('النسبة','%')+'</th>'
         +'<th style="padding:7px;text-align:center;font-weight:700">'+T('قيمة المديونية (OMR)','Debt Value (OMR)')+'</th>'
@@ -10950,6 +10950,7 @@ export default function Dashboard() {
   const [lNewBadge,   setLNewBadge]   = useState(0);
   const [lUploadDate, setLUploadDate] = useState(()=>{ try{return localStorage.getItem('oneic_legal_uploaddate')||'';}catch(e){return '';} });
   const [lPrintModal, setLPrintModal] = useState(false);
+  const [lNameEdit, setLNameEdit] = useState({}); // {id: editingValue}
 
   const [syncing, setSyncing] = useState(false);
   const [showUploadAuth, setShowUploadAuth] = useState(false);
@@ -12791,7 +12792,8 @@ export default function Dashboard() {
   if (projectChoice === 'legal') {
     const ar = lang === 'ar';
     const omrL = v => typeof v==='number' ? v.toLocaleString('en',{minimumFractionDigits:3,maximumFractionDigits:3}) : '0.000';
-    const LEGAL_PW = 'Sulaiman1992';
+    const LEGAL_UPLOAD_PW = 'Sulaiman1992';  // رفع الملف فقط
+    const LEGAL_PW = '1122';                  // حفظ / تعديل / حذف
 
     const saveRecords = (recs) => {
       setLRecords(recs);
@@ -12861,7 +12863,7 @@ export default function Dashboard() {
         name:acc.name, principal:acc.principal, osAmount:acc.osAmount, adjustment:acc.adjustment,
         isFull:acc.isFull, legalExpenses:parseFloat(inp.legalExpenses)||0,
         translate:parseFloat(inp.translate)||0, attorneyFees:parseFloat(inp.attorneyFees)||0,
-        savedAt:new Date().toLocaleDateString('en-GB') };
+        savedAt:new Date().toLocaleString('en-GB',{day:'2-digit',month:'2-digit',year:'numeric',hour:'2-digit',minute:'2-digit',hour12:false}).replace(',','') };
       saveRecords([...lRecords, newRec]);
       setLNewAccounts(prev=>prev.filter(a=>a.agreementNo!==acc.agreementNo));
       setLNewBadge(prev=>Math.max(0,prev-1));
@@ -12875,10 +12877,11 @@ export default function Dashboard() {
     const saveEdit = () => {
       if(!lEditModal) return;
       saveRecords(lRecords.map(r=>r.id===lEditModal.id?{...r,
+        name:lEditInputs.name!==undefined?lEditInputs.name:r.name,
         legalExpenses:parseFloat(lEditInputs.legalExpenses)||0,
         translate:parseFloat(lEditInputs.translate)||0,
         attorneyFees:parseFloat(lEditInputs.attorneyFees)||0,
-        savedAt:new Date().toLocaleDateString('en-GB')}:r));
+        savedAt:new Date().toLocaleString('en-GB',{day:'2-digit',month:'2-digit',year:'numeric',hour:'2-digit',minute:'2-digit',hour12:false}).replace(',','')}:r));
       setLEditModal(null); showToast(ar?'✅ تم التعديل':'✅ Updated');
     };
 
@@ -12900,17 +12903,17 @@ export default function Dashboard() {
         return s.includes(',') || s.includes('"') || s.includes('\n') ? `"${s.replace(/"/g,'""')}"` : s;
       };
       const rows = [
-        ['#','رقم الاتفاقية','الاسم','المبلغ الأصلي','المتبقي','التسوية','Legal Expenses','Translate','Attorney Fees','النوع','تاريخ الحفظ'],
-        ...fullRecs.map((r,i)=>[i+1,r.agreementNo,r.name||'',r.principal,r.osAmount||0,r.adjustment,r.legalExpenses||0,r.translate||0,r.attorneyFees||0,'تسوية كاملة ✅',r.savedAt||'']),
+        [ar?'#':'#',ar?'رقم الاتفاقية':'Agreement No',ar?'الاسم':'Name',ar?'المبلغ الأصلي':'Principal',ar?'المتبقي':'OS Amount',ar?'التسوية':'Adjustment',ar?'المصاريف القانونية':'Legal Expenses',ar?'ترجمة':'Translate',ar?'أتعاب المحامي':'Attorney Fees',ar?'النوع':'Type',ar?'تاريخ الحفظ':ar?'تاريخ الحفظ':'Saved Date'],
+        ...fullRecs.map((r,i)=>[i+1,r.agreementNo,r.name||'',r.principal,r.osAmount||0,r.adjustment,r.legalExpenses||0,r.translate||0,r.attorneyFees||0,(ar?'تسوية كاملة ✅':'Full Settlement ✅'),r.savedAt||'']),
         ['','','','','','','','','','',''],
-        ...partialRecs.map((r,i)=>[fullRecs.length+i+1,r.agreementNo,r.name||'',r.principal,r.osAmount||0,r.adjustment,r.legalExpenses||0,r.translate||0,r.attorneyFees||0,'تسوية جزئية ⏳',r.savedAt||'']),
+        ...partialRecs.map((r,i)=>[fullRecs.length+i+1,r.agreementNo,r.name||'',r.principal,r.osAmount||0,r.adjustment,r.legalExpenses||0,r.translate||0,r.attorneyFees||0,(ar?'تسوية جزئية ⏳':'Partial Settlement ⏳'),r.savedAt||'']),
       ];
       const csv = rows.map(r=>r.map(esc).join(',')).join('\n');
       const blob = new Blob(['\uFEFF'+csv],{type:'text/csv;charset=utf-8'});
       const url = URL.createObjectURL(blob);
       const a = document.createElement('a');
       a.href=url;
-      a.download=`legal_settlements_${new Date().toLocaleDateString('en-GB').replace(/\//g,'-')}.csv`;
+      a.download=`${ar?'خصومات_قانونية':'legal_settlements'}_${new Date().toLocaleDateString('en-GB').replace(/\//g,'-')}.csv`;
       document.body.appendChild(a); a.click(); document.body.removeChild(a);
       setTimeout(()=>URL.revokeObjectURL(url),1000);
     };
@@ -12918,7 +12921,7 @@ export default function Dashboard() {
     const inputStyle={width:'100%',padding:'10px 12px',border:'1.5px solid #e2e8f0',borderRadius:10,fontSize:14,fontFamily:"'Cairo',sans-serif",outline:'none',textAlign:'center',direction:'ltr'};
 
     return (
-      <div style={{minHeight:"100vh",background:"linear-gradient(160deg,#f0f4f8 0%,#e8f5f0 100%)",fontFamily:"'Cairo','Tajawal',sans-serif",direction:ar?"rtl":"ltr"}}>
+      <div style={{minHeight:"100vh",background:"linear-gradient(160deg,#f0f4f8 0%,#e8f5f0 100%)",fontFamily:"'Cairo','Tajawal',sans-serif",direction:ar?"rtl":"ltr",overflowX:"hidden",paddingBottom:60}}>
         <style>{`
           @keyframes scaleSwing {
             0%   { transform: rotate(0deg) scale(1); }
@@ -12976,7 +12979,7 @@ export default function Dashboard() {
               <button onClick={()=>setLPrintModal(false)} style={{background:"rgba(255,255,255,0.1)",color:"#fff",border:"1px solid rgba(255,255,255,0.2)",borderRadius:10,padding:"10px 18px",fontSize:13,fontWeight:700,cursor:"pointer",fontFamily:"'Cairo',sans-serif"}}>
                 ✕ {ar?"إغلاق":"Close"}
               </button>
-              <span style={{color:"rgba(255,255,255,0.6)",fontSize:11}}>{ar?"معاينة قبل الطباعة — اضغط طباعة للحفظ كـ PDF":"Print Preview — click Print to save as PDF"}</span>
+              <span style={{color:"rgba(255,255,255,0.6)",fontSize:11}}>{ar?'معاينة قبل الطباعة — اضغط طباعة للحفظ كـ PDF':'Print Preview — click Print to save as PDF'}</span>
             </div>
             {/* Print Content */}
             <div id="legal-print-area" style={{background:"#fff",borderRadius:12,padding:"24px",width:"100%",maxWidth:900,boxShadow:"0 8px 40px rgba(0,0,0,0.3)",fontFamily:"Arial,sans-serif",direction:"rtl",fontSize:11}}>
@@ -12984,20 +12987,20 @@ export default function Dashboard() {
               <div style={{background:"linear-gradient(135deg,#1e3a5f,#16a34a)",borderRadius:10,padding:"16px 20px",color:"#fff",marginBottom:14,display:"flex",justifyContent:"space-between",alignItems:"center"}}>
                 <div>
                   <div style={{fontSize:20,fontWeight:900,color:"#e85d20"}}>ONEIC ⚖️</div>
-                  <div style={{fontSize:10,color:"#93c5fd"}}>خصومات القانونية — Legal DR. Sarhaan</div>
+                  <div style={{fontSize:10,color:"#93c5fd"}}>{ar?'خصومات القانونية':'Legal Discounts'} — Legal DR. Sarhaan</div>
                 </div>
                 <div style={{textAlign:"left",fontSize:10,color:"#93c5fd",lineHeight:1.8}}>
                   <strong style={{fontSize:13,color:"#fff",display:"block"}}>تقرير الخصومات القانونية</strong>
-                  {new Date().toLocaleDateString('ar-OM')}
+                  {new Date().toLocaleDateString(ar?'ar-OM':'en-GB')}
                 </div>
               </div>
               {/* KPIs */}
               <div style={{display:"grid",gridTemplateColumns:"repeat(4,1fr)",gap:8,marginBottom:14}}>
                 {[
-                  {lbl:"إجمالي الحسابات",val:lRecords.length,col:"#1e3a5f"},
-                  {lbl:"إجمالي التسوية OMR",val:omrL(totalAdj),col:"#16a34a"},
-                  {lbl:"تسوية كاملة ✅",val:fullRecs.length,col:"#166534"},
-                  {lbl:"تسوية جزئية ⏳",val:partialRecs.length,col:"#92400e"},
+                  {lbl:ar?"إجمالي الحسابات":"Total Accounts",val:lRecords.length,col:"#1e3a5f"},
+                  {lbl:ar?"إجمالي التسوية":"Total Adjustment",val:omrL(totalAdj),col:"#16a34a"},
+                  {lbl:ar?"تسوية كاملة ✅":"Full ✅",val:fullRecs.length,col:"#166534"},
+                  {lbl:ar?"تسوية جزئية ⏳":"Partial ⏳",val:partialRecs.length,col:"#92400e"},
                 ].map((k,i)=>(
                   <div key={i} style={{background:"#f8faff",borderRadius:8,padding:"10px",textAlign:"center",border:"1px solid #e2e8f0"}}>
                     <div style={{fontSize:20,fontWeight:900,color:k.col,marginBottom:3}}>{k.val}</div>
@@ -13007,12 +13010,12 @@ export default function Dashboard() {
               </div>
               {/* Full table */}
               <div style={{background:"#064e3b",borderRadius:"6px 6px 0 0",padding:"7px 12px",color:"#fff",fontSize:11,fontWeight:900,marginTop:10}}>
-                ✅ {ar?"تسوية كاملة":"Full Settlements"} — {fullRecs.length} {ar?"حساب":"accts"} · {omrL(totalFull)} OMR
+                {ar?"✅ تسوية كاملة":"✅ Full Settlements"} — {fullRecs.length} {ar?"حساب":"accounts"} · {omrL(totalFull)} OMR
               </div>
               <div style={{overflowX:"auto"}}>
               <table style={{width:"100%",minWidth:650,borderCollapse:"collapse",marginBottom:14,background:"#fff"}}>
                 <thead><tr style={{background:"#f0f4f8"}}>
-                  {["#",ar?"رقم الاتفاقية / التاريخ":"Agreement / Date",ar?"الاسم / النوع":"Name / Type",ar?"المبلغ الأصلي":"Principal",ar?"التسوية":"Adjustment","Legal Exp.","Translate","Attorney"].map((h,i)=>(
+                  {["#",ar?"رقم الاتفاقية":"Agreement No",ar?"الاسم / النوع":"Name / Type",ar?"المبلغ الأصلي":"Principal",ar?"التسوية":"Adjustment",ar?"المصاريف القانونية":"Legal Exp.",ar?"ترجمة":"Translate",ar?"أتعاب المحامي":"Attorney"].map((h,i)=>(
                     <th key={i} style={{padding:"7px 10px",fontSize:10,fontWeight:900,color:"#374151",textAlign:"center",borderBottom:"2px solid #dcfce7",whiteSpace:"nowrap",background:"#f0fdf4"}}>{h}</th>
                   ))}
                 </tr></thead>
@@ -13026,7 +13029,7 @@ export default function Dashboard() {
                       </td>
                       <td style={{padding:"7px 10px",textAlign:"center"}}>
                         <div style={{fontSize:12,fontWeight:700,color:"#111"}}>{r.name||"-"}</div>
-                        <span style={{background:"#dcfce7",color:"#166534",borderRadius:20,padding:"2px 10px",fontSize:9,fontWeight:800}}>✅ {ar?"تسوية كاملة":"Full Settlement"}</span>
+                        <span style={{background:"#dcfce7",color:"#166534",borderRadius:20,padding:"2px 10px",fontSize:9,fontWeight:800}}>{ar?"✅ تسوية كاملة":"✅ Full Settlement"}</span>
                       </td>
                       <td style={{padding:"7px 10px",fontSize:11,textAlign:"center",color:"#6b7280"}}>{omrL(r.principal)}</td>
                       <td style={{padding:"7px 10px",textAlign:"center"}}>
@@ -13043,12 +13046,12 @@ export default function Dashboard() {
               </div>
               {/* Partial table */}
               <div style={{background:"#78350f",borderRadius:"6px 6px 0 0",padding:"7px 12px",color:"#fff",fontSize:11,fontWeight:900}}>
-                ⏳ {ar?"تسوية جزئية":"Partial Settlements"} — {partialRecs.length} {ar?"حساب":"accts"} · {omrL(totalPartial)} OMR
+                {ar?"⏳ تسوية جزئية":"⏳ Partial Settlements"} — {partialRecs.length} {ar?"حساب":"accounts"} · {omrL(totalPartial)} OMR
               </div>
               <div style={{overflowX:"auto"}}>
               <table style={{width:"100%",minWidth:700,borderCollapse:"collapse",background:"#fff"}}>
                 <thead><tr style={{background:"#fffbeb"}}>
-                  {["#",ar?"رقم الاتفاقية / التاريخ":"Agreement / Date",ar?"الاسم / النوع":"Name / Type",ar?"المبلغ الأصلي":"Principal","OS Amount",ar?"التسوية":"Adjustment","Legal Exp.","Translate","Attorney"].map((h,i)=>(
+                  {["#",ar?"رقم الاتفاقية":"Agreement No",ar?"الاسم / النوع":"Name / Type",ar?"المبلغ الأصلي":"Principal",ar?"المتبقي":"OS Amount",ar?"التسوية":"Adjustment",ar?"المصاريف القانونية":"Legal Exp.",ar?"ترجمة":"Translate",ar?"أتعاب المحامي":"Attorney"].map((h,i)=>(
                     <th key={i} style={{padding:"7px 10px",fontSize:10,fontWeight:900,color:"#374151",textAlign:"center",borderBottom:"2px solid #fde68a",whiteSpace:"nowrap",background:"#fffbeb"}}>{h}</th>
                   ))}
                 </tr></thead>
@@ -13062,7 +13065,7 @@ export default function Dashboard() {
                       </td>
                       <td style={{padding:"7px 10px",textAlign:"center"}}>
                         <div style={{fontSize:12,fontWeight:700,color:"#111"}}>{r.name||"-"}</div>
-                        <span style={{background:"#fef3c7",color:"#92400e",borderRadius:20,padding:"2px 10px",fontSize:9,fontWeight:800}}>⏳ {ar?"تسوية جزئية":"Partial Settlement"}</span>
+                        <span style={{background:"#fef3c7",color:"#92400e",borderRadius:20,padding:"2px 10px",fontSize:9,fontWeight:800}}>{ar?"⏳ تسوية جزئية":"⏳ Partial Settlement"}</span>
                       </td>
                       <td style={{padding:"7px 10px",fontSize:11,textAlign:"center",color:"#6b7280"}}>{omrL(r.principal)}</td>
                       <td style={{padding:"7px 10px",textAlign:"center"}}>
@@ -13083,7 +13086,7 @@ export default function Dashboard() {
               </div>
               {/* Footer */}
               <div style={{marginTop:14,borderTop:"1px solid #e2e8f0",paddingTop:8,display:"flex",justifyContent:"space-between",fontSize:9,color:"#9ca3af"}}>
-                <span>ONEIC — نظام إدارة تحصيل الديون</span>
+                <span>{ar?"ONEIC — نظام إدارة تحصيل الديون":"ONEIC — Debt Collection System"}</span>
                 <span>Legal DR. Sarhaan · {new Date().getFullYear()}</span>
               </div>
             </div>
@@ -13113,7 +13116,8 @@ export default function Dashboard() {
                 onChange={e=>{setLPwInput(e.target.value);setLPwError(false);}}
                 onKeyDown={e=>{
                   if(e.key==='Enter'){
-                    if(lPwInput==='Sulaiman1992'){setLPwModal(false);setLPwInput('');setLPwError(false);lPwAction&&lPwAction();}
+                    const _okPw = lPwModal==='upload' ? lPwInput===LEGAL_UPLOAD_PW : lPwInput===LEGAL_PW;
+                    if(_okPw){setLPwModal(false);setLPwInput('');setLPwError(false);lPwAction&&lPwAction();}
                     else{setLPwError(true);setLPwInput('');}
                   }
                 }}
@@ -13144,7 +13148,7 @@ export default function Dashboard() {
             onClick={()=>setLEditModal(null)}>
             <div style={{background:"#fff",borderRadius:20,padding:"28px 24px",width:380,boxShadow:"0 20px 60px rgba(0,0,0,0.4)"}}
               onClick={e=>e.stopPropagation()}>
-              <div style={{fontSize:15,fontWeight:900,color:"#1e3a5f",marginBottom:4}}>✏️ {ar?"تعديل الحساب":"Edit Account"}</div>
+              <div style={{fontSize:15,fontWeight:900,color:"#1e3a5f",marginBottom:4}}>✏️ {ar?ar?"تعديل الحساب":"Edit Account":"Edit Account"}</div>
               <div style={{fontSize:12,color:"#888",marginBottom:18}}>{lEditModal.agreementNo} — {lEditModal.name||'-'}</div>
               {[
                 {label:"Legal Expenses (OMR)", key:"legalExpenses"},
@@ -13184,7 +13188,7 @@ export default function Dashboard() {
           <div style={{display:"flex",gap:8,alignItems:"center",flexWrap:"wrap",justifyContent:"flex-end"}}>
             {/* رفع ملف يومي */}
             <label style={{background:"linear-gradient(120deg,#16a34a,#15803d)",color:"#fff",borderRadius:10,padding:"7px 14px",fontSize:12,fontWeight:700,cursor:"pointer",display:"flex",alignItems:"center",gap:6}}
-              onClick={ev=>{ev.preventDefault();askPw(()=>document.getElementById('legalFileInput').click());}}>
+              onClick={ev=>{ev.preventDefault();setLPwInput('');setLPwError(false);setLPwAction(()=>()=>document.getElementById('legalFileInput').click());setLPwModal('upload');}}>
               📂 {ar?"رفع ملف يومي":"Daily Upload"}
             </label>
             <input id="legalFileInput" type="file" accept=".xls,.xlsx,.csv,.tsv" style={{display:"none"}}
@@ -13205,7 +13209,7 @@ export default function Dashboard() {
         </div>
 
         {/* ─── KPI Summary ─── */}
-        <div style={{display:"grid",gridTemplateColumns:"repeat(4,1fr)",gap:14,padding:"20px 24px 0"}}>
+        <div style={{display:"grid",gridTemplateColumns:"repeat(4,1fr)",gap:14,padding:"16px 20px 0"}}>
           {[
             {icon:"📁",val:lRecords.length,lbl:ar?"إجمالي الحسابات":"Total Accounts",col:"#1e40af",grad:"linear-gradient(135deg,#1e40af,#3b82f6)",bg:"linear-gradient(135deg,#eff6ff,#dbeafe)"},
             {icon:"💰",val:omrL(totalAdj),sub:"OMR",lbl:ar?"إجمالي التسوية":"Total Adjustment",col:"#065f46",grad:"linear-gradient(135deg,#065f46,#16a34a)",bg:"linear-gradient(135deg,#ecfdf5,#d1fae5)"},
@@ -13227,23 +13231,52 @@ export default function Dashboard() {
         </div>
 
         {/* ─── Tabs ─── */}
-        <div style={{display:"flex",gap:0,padding:"16px 24px 0",borderBottom:"2px solid #e2e8f0",marginTop:16}}>
-          {[
-            {key:'new',   label:ar?"🔔 الجديد":"🔔 New",   badge:lNewBadge},
-            {key:'prev',  label:ar?"📑 التسويات السابقة":"📑 Settlements",badge:0},
-            {key:'chart', label:ar?"📊 الرسم البياني":"📊 Charts",badge:0},
-          ].map(tab=>(
-            <button key={tab.key} onClick={()=>setLTab(tab.key)}
-              style={{padding:"10px 22px",fontSize:13,fontWeight:700,cursor:"pointer",border:"none",
-                borderBottom:lTab===tab.key?"3px solid #16a34a":"3px solid transparent",
-                background:"transparent",color:lTab===tab.key?"#16a34a":"#6b7280",
-                display:"flex",alignItems:"center",gap:6,position:"relative"}}>
-              {tab.label}
-              {tab.badge>0 && (
-                <span style={{background:"#ef4444",color:"#fff",borderRadius:20,padding:"1px 7px",fontSize:10,fontWeight:900}}>{tab.badge}</span>
-              )}
-            </button>
-          ))}
+        <style>{`
+          @keyframes pulse-badge {
+            0%,100% { transform:scale(1); box-shadow:0 0 0 0 rgba(239,68,68,0.7); }
+            50%      { transform:scale(1.15); box-shadow:0 0 0 6px rgba(239,68,68,0); }
+          }
+          @keyframes tab-glow {
+            0%,100% { box-shadow: 0 0 0 0 rgba(22,163,74,0); }
+            50%      { box-shadow: 0 0 12px 2px rgba(22,163,74,0.3); }
+          }
+          .legal-tab-btn { transition: all 0.2s ease; }
+          .legal-tab-btn:hover { background: rgba(22,163,74,0.06) !important; }
+        `}</style>
+        <div style={{background:"#fff",position:"sticky",top:62,zIndex:90,boxShadow:"0 3px 12px rgba(0,0,0,0.08)",borderBottom:"1px solid #e8f5e9"}}>
+          <div style={{display:"flex",padding:"0 16px",gap:4}}>
+            {[
+              {key:'new',   icon:"🔔", label:ar?"الجديد":"New",          badge:lNewBadge, activeCol:"#dc2626", activeBg:"#fef2f2"},
+              {key:'prev',  icon:"📋", label:ar?"التسويات السابقة":"Settlements", badge:0, activeCol:"#16a34a", activeBg:"#f0fdf4"},
+              {key:'chart', icon:"📊", label:ar?"الرسم البياني":"Charts", badge:0, activeCol:"#6366f1", activeBg:"#eef2ff"},
+            ].map(tab=>{
+              const isActive = lTab===tab.key;
+              return (
+                <button key={tab.key} className="legal-tab-btn"
+                  onClick={()=>setLTab(tab.key)}
+                  style={{
+                    padding:"14px 20px",fontSize:13,fontWeight:isActive?900:600,
+                    cursor:"pointer",border:"none",background:isActive?tab.activeBg:"transparent",
+                    color:isActive?tab.activeCol:"#6b7280",
+                    borderBottom:isActive?`3px solid ${tab.activeCol}`:"3px solid transparent",
+                    borderRadius:isActive?"8px 8px 0 0":"0",
+                    display:"flex",alignItems:"center",gap:8,position:"relative",
+                    animation:isActive&&tab.key==='new'?"tab-glow 2s infinite":undefined,
+                  }}>
+                  <span style={{fontSize:18,lineHeight:1}}>{tab.icon}</span>
+                  <span>{tab.label}</span>
+                  {tab.badge>0 && (
+                    <span style={{
+                      background:"#ef4444",color:"#fff",borderRadius:20,
+                      padding:"2px 8px",fontSize:10,fontWeight:900,
+                      animation:"pulse-badge 1.4s ease-in-out infinite",
+                      display:"inline-block",minWidth:20,textAlign:"center"
+                    }}>{tab.badge}</span>
+                  )}
+                </button>
+              );
+            })}
+          </div>
         </div>
 
         {/* ─── Tab: الجديد ─── */}
@@ -13262,13 +13295,48 @@ export default function Dashboard() {
                 </div>
                 {lNewAccounts.map(acc=>(
                   <div key={acc.agreementNo} style={{background:"#fff",borderRadius:16,padding:"20px",boxShadow:"0 2px 14px rgba(0,0,0,0.08)",border:`2px solid ${acc.isFull?'#16a34a':'#d97706'}30`}}>
-                    <div style={{display:"flex",justifyContent:"space-between",alignItems:"flex-start",marginBottom:14}}>
-                      <div>
-                        <div style={{fontSize:16,fontWeight:900,color:"#1e3a5f"}}>{acc.name||(ar?"(بدون اسم)":"(No Name)")}</div>
-                        <div style={{fontSize:12,color:"#888",direction:"ltr",textAlign:"right"}}>{acc.agreementNo}</div>
+                    {/* ── Card Header: Name + Badge ── */}
+                    <div style={{display:"flex",justifyContent:"space-between",alignItems:"flex-start",marginBottom:16,gap:12}}>
+                      {/* Name + Agreement */}
+                      <div style={{flex:1,minWidth:0}}>
+                        <div style={{display:"flex",alignItems:"center",gap:8,marginBottom:6}}>
+                          <div style={{width:38,height:38,borderRadius:12,background:acc.isFull?"linear-gradient(135deg,#16a34a,#4ade80)":"linear-gradient(135deg,#d97706,#fbbf24)",display:"flex",alignItems:"center",justifyContent:"center",fontSize:18,flexShrink:0}}>
+                            {acc.isFull?"✅":"⏳"}
+                          </div>
+                          <div style={{minWidth:0}}>
+                            {lNameEdit[acc.agreementNo]!==undefined ? (
+                              <div style={{display:"flex",gap:6,alignItems:"center"}}>
+                                <input value={lNameEdit[acc.agreementNo]} autoFocus
+                                  onChange={e=>setLNameEdit(p=>({...p,[acc.agreementNo]:e.target.value}))}
+                                  onKeyDown={e=>{
+                                    if(e.key==='Enter'){ setLNewAccounts(prev=>prev.map(a=>a.agreementNo===acc.agreementNo?{...a,name:lNameEdit[acc.agreementNo]}:a)); setLNameEdit(p=>{const n={...p};delete n[acc.agreementNo];return n;}); }
+                                    if(e.key==='Escape'){ setLNameEdit(p=>{const n={...p};delete n[acc.agreementNo];return n;}); }
+                                  }}
+                                  style={{fontSize:15,fontWeight:900,color:"#1e3a5f",border:"2px solid #16a34a",borderRadius:8,padding:"4px 10px",outline:"none",fontFamily:"'Cairo',sans-serif",width:"100%"}}/>
+                                <button onClick={()=>{ setLNewAccounts(prev=>prev.map(a=>a.agreementNo===acc.agreementNo?{...a,name:lNameEdit[acc.agreementNo]}:a)); setLNameEdit(p=>{const n={...p};delete n[acc.agreementNo];return n;}); }}
+                                  style={{background:"#16a34a",color:"#fff",border:"none",borderRadius:8,padding:"5px 12px",fontSize:12,fontWeight:700,cursor:"pointer",whiteSpace:"nowrap"}}>✓</button>
+                                <button onClick={()=>setLNameEdit(p=>{const n={...p};delete n[acc.agreementNo];return n;})}
+                                  style={{background:"#f3f4f6",color:"#6b7280",border:"none",borderRadius:8,padding:"5px 10px",fontSize:12,fontWeight:700,cursor:"pointer"}}>✕</button>
+                              </div>
+                            ) : (
+                              <div style={{display:"flex",alignItems:"center",gap:6}}>
+                                <div style={{fontSize:16,fontWeight:900,color:"#1e3a5f",overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{acc.name||(ar?"(بدون اسم)":"(No Name)")}</div>
+                                <button onClick={()=>setLNameEdit(p=>({...p,[acc.agreementNo]:acc.name||''}))}
+                                  style={{background:"#dbeafe",color:"#1e40af",border:"none",borderRadius:6,padding:"3px 8px",fontSize:11,fontWeight:700,cursor:"pointer",flexShrink:0}}>✏️</button>
+                              </div>
+                            )}
+                            <div style={{fontSize:11,color:"#6b7280",fontWeight:600,direction:"ltr",marginTop:2}}>{acc.agreementNo}</div>
+                          </div>
+                        </div>
                       </div>
-                      <span style={{background:acc.isFull?"#dcfce7":"#fef3c7",color:acc.isFull?"#16a34a":"#d97706",borderRadius:20,padding:"4px 14px",fontSize:11,fontWeight:800}}>
-                        {acc.isFull?(ar?"تسوية كاملة ✅":"Full ✅"):(ar?"تسوية جزئية ⏳":"Partial ⏳")}
+                      {/* Type Badge */}
+                      <span style={{
+                        background:acc.isFull?"linear-gradient(135deg,#16a34a,#22c55e)":"linear-gradient(135deg,#d97706,#f59e0b)",
+                        color:"#fff",borderRadius:12,padding:"6px 16px",fontSize:11,fontWeight:900,
+                        flexShrink:0,boxShadow:acc.isFull?"0 2px 8px rgba(22,163,74,0.3)":"0 2px 8px rgba(217,119,6,0.3)",
+                        display:"flex",alignItems:"center",gap:4
+                      }}>
+                        {acc.isFull?(ar?"تسوية كاملة":"Full Settlement"):(ar?"تسوية جزئية":"Partial Settlement")}
                       </span>
                     </div>
                     <div style={{display:"grid",gridTemplateColumns:"repeat(3,1fr)",gap:10,marginBottom:16}}>
@@ -13311,7 +13379,7 @@ export default function Dashboard() {
 
         {/* ─── Tab: التسويات السابقة ─── */}
         {lTab==='prev' && (
-          <div style={{padding:"20px 24px"}}>
+          <div style={{padding:"20px 24px",minHeight:400}}>
             {/* ✅ تسوية كاملة */}
             <div style={{marginBottom:24}}>
               <div style={{background:"linear-gradient(120deg,#064e3b,#16a34a)",borderRadius:"12px 12px 0 0",padding:"12px 20px",display:"flex",justifyContent:"space-between",alignItems:"center"}}>
@@ -13320,11 +13388,11 @@ export default function Dashboard() {
                   {fullRecs.length} {ar?"حساب":"accounts"} · {omrL(totalFull)} OMR
                 </span>
               </div>
-              <div style={{background:"#fff",borderRadius:"0 0 12px 12px",overflow:"hidden",boxShadow:"0 2px 14px rgba(0,0,0,0.06)"}}><div style={{overflowX:"auto",WebkitOverflowScrolling:"touch"}}>
+              <div style={{background:"#fff",borderRadius:"0 0 12px 12px",overflowX:"visible",overflowY:"visible",boxShadow:"0 2px 14px rgba(0,0,0,0.06)"}}><div style={{overflowX:"auto",WebkitOverflowScrolling:"touch",width:"100%"}}>
                 <table style={{width:"100%",minWidth:750,borderCollapse:"collapse"}}>
                   <thead>
                     <tr style={{background:"#f0fdf4"}}>
-                      {[ar?"#":"#",ar?"رقم الاتفاقية":"Agreement No",ar?"الاسم":"Name",ar?"المبلغ الأصلي":"Principal",ar?"التسوية":"Adjustment","Legal Exp.","Translate","Attorney",ar?"التاريخ":"Date",""].map((h,i)=>(
+                      {[ar?"#":"#",ar?"رقم الاتفاقية":"Agreement No",ar?"الاسم":"Name",ar?"المبلغ الأصلي":"Principal",ar?"التسوية":"Adjustment",ar?"المصاريف القانونية":"Legal Exp.",ar?"ترجمة":"Translate",ar?"أتعاب المحامي":"Attorney",ar?"التاريخ":"Date",""].map((h,i)=>(
                         <th key={i} style={{padding:"10px 8px",fontSize:11,fontWeight:900,color:"#374151",textAlign:"center",borderBottom:"1px solid #dcfce7",whiteSpace:"nowrap"}}>{h}</th>
                       ))}
                     </tr>
@@ -13334,7 +13402,7 @@ export default function Dashboard() {
                       <tr key={r.id} style={{borderBottom:"1px solid #f0fdf4",background:i%2===0?"#fff":"#f9fffe",transition:"background 0.15s"}}>
                         <td style={{padding:"10px 8px",fontSize:12,color:"#9ca3af",textAlign:"center",fontWeight:600}}>{i+1}</td>
                         <td style={{padding:"10px 8px",fontSize:12,fontWeight:800,textAlign:"center",direction:"ltr",letterSpacing:0.3}}>{r.agreementNo}</td>
-                        <td style={{padding:"10px 8px",fontSize:12,textAlign:"center",fontWeight:600,color:"#374151"}}>{r.name||"-"}</td>
+                        <td style={{padding:"10px 8px",fontSize:11,textAlign:"center",fontWeight:600,color:"#374151"}}>{r.name||"-"}</td>
                         <td style={{padding:"10px 8px",fontSize:12,textAlign:"center",direction:"ltr",color:"#6b7280"}}>{omrL(r.principal)}</td>
                         <td style={{padding:"10px 8px",fontSize:13,fontWeight:900,color:"#16a34a",textAlign:"center",direction:"ltr"}}>{omrL(r.adjustment)}</td>
                         <td style={{padding:"10px 8px",fontSize:12,textAlign:"center",direction:"ltr",color:"#4f46e5"}}>{omrL(r.legalExpenses||0)}</td>
@@ -13343,9 +13411,13 @@ export default function Dashboard() {
                         <td style={{padding:"10px 8px",fontSize:11,color:"#9ca3af",textAlign:"center"}}>{r.savedAt||"-"}</td>
                         <td style={{padding:"6px 8px",textAlign:"center"}}>
                           <div style={{display:"flex",gap:6,justifyContent:"center"}}>
-                            <button onClick={()=>{setLEditModal(r);setLEditInputs({legalExpenses:r.legalExpenses||0,translate:r.translate||0,attorneyFees:r.attorneyFees||0});}}
+                            <button onClick={()=>{setLEditModal(r);setLEditInputs({name:r.name||'',legalExpenses:r.legalExpenses||0,translate:r.translate||0,attorneyFees:r.attorneyFees||0});}}
                               style={{background:"#dbeafe",color:"#1e40af",border:"none",borderRadius:8,padding:"4px 10px",fontSize:11,fontWeight:700,cursor:"pointer"}}>✏️</button>
-                            <button onClick={()=>askPw(()=>deleteRecord(r.id))}
+                            <button onClick={()=>{
+                              setLPwInput('');setLPwError(false);
+                              setLPwAction(()=>()=>deleteRecord(r.id));
+                              setLPwModal('delete');
+                            }}
                               style={{background:"#fee2e2",color:"#dc2626",border:"none",borderRadius:8,padding:"4px 10px",fontSize:11,fontWeight:700,cursor:"pointer"}}>🗑️</button>
                           </div>
                         </td>
@@ -13353,6 +13425,24 @@ export default function Dashboard() {
                     ))}
                   </tbody>
                 </table>
+              </div>
+              {/* ── إجمالي تسوية كاملة ── */}
+              <div style={{background:"linear-gradient(135deg,#064e3b,#065f46)",borderRadius:"0 0 12px 12px",padding:"12px 20px"}}>
+                <div style={{display:"flex",justifyContent:"space-around",alignItems:"center",gap:8,flexWrap:"wrap"}}>
+                  {[
+                    {lbl:ar?"عدد الحسابات":"Accounts",   val:String(fullRecs.length),          col:"#a7f3d0"},
+                    {lbl:ar?"المبلغ الأصلي":"Principal",  val:omrL(fullRecs.reduce((s,r)=>s+r.principal,0)),  col:"#fff"},
+                    {lbl:ar?"التسوية":"Adjustment",       val:omrL(fullRecs.reduce((s,r)=>s+r.adjustment,0)), col:"#4ade80"},
+                    {lbl:ar?"المصاريف":"Legal Exp.",      val:omrL(fullRecs.reduce((s,r)=>s+(r.legalExpenses||0),0)), col:"#c4b5fd"},
+                    {lbl:ar?"ترجمة":"Translate",          val:omrL(fullRecs.reduce((s,r)=>s+(r.translate||0),0)),     col:"#7dd3fc"},
+                    {lbl:ar?"أتعاب المحامي":"Attorney",   val:omrL(fullRecs.reduce((s,r)=>s+(r.attorneyFees||0),0)),  col:"#fca5a5"},
+                  ].map((item,i)=>(
+                    <div key={i} style={{textAlign:"center",padding:"4px 12px",borderRight:i<5?"1px solid rgba(255,255,255,0.15)":undefined}}>
+                      <div style={{fontSize:9,color:"rgba(255,255,255,0.6)",fontWeight:700,marginBottom:4,letterSpacing:0.5,textTransform:"uppercase"}}>{item.lbl}</div>
+                      <div style={{fontSize:i===0?18:13,fontWeight:900,color:item.col,direction:"ltr",lineHeight:1}}>{item.val}</div>
+                    </div>
+                  ))}
+                </div>
               </div>
               </div>
             </div>
@@ -13365,11 +13455,11 @@ export default function Dashboard() {
                   {partialRecs.length} {ar?"حساب":"accounts"} · {omrL(totalPartial)} OMR
                 </span>
               </div>
-              <div style={{background:"#fff",borderRadius:"0 0 12px 12px",overflow:"hidden",boxShadow:"0 2px 14px rgba(0,0,0,0.06)"}}><div style={{overflowX:"auto",WebkitOverflowScrolling:"touch"}}>
+              <div style={{background:"#fff",borderRadius:"0 0 12px 12px",overflowX:"visible",overflowY:"visible",boxShadow:"0 2px 14px rgba(0,0,0,0.06)"}}><div style={{overflowX:"auto",WebkitOverflowScrolling:"touch",width:"100%"}}>
                 <table style={{width:"100%",minWidth:750,borderCollapse:"collapse"}}>
                   <thead>
                     <tr style={{background:"#fffbeb"}}>
-                      {["#",ar?"رقم الاتفاقية":"Agreement No",ar?"الاسم":"Name",ar?"المبلغ الأصلي":"Principal",ar?"المتبقي":"OS Amount",ar?"التسوية":"Adjustment","Legal Exp.","Translate","Attorney",ar?"التاريخ":"Date",""].map((h,i)=>(
+                      {["#",ar?"رقم الاتفاقية":"Agreement No",ar?"الاسم":"Name",ar?"المبلغ الأصلي":"Principal",ar?"المتبقي":"OS Amount",ar?"التسوية":"Adjustment",ar?"المصاريف القانونية":"Legal Exp.",ar?"ترجمة":"Translate",ar?"أتعاب المحامي":"Attorney",ar?"التاريخ":"Date",""].map((h,i)=>(
                         <th key={i} style={{padding:"10px 8px",fontSize:11,fontWeight:900,color:"#374151",textAlign:"center",borderBottom:"1px solid #fde68a",whiteSpace:"nowrap"}}>{h}</th>
                       ))}
                     </tr>
@@ -13379,7 +13469,7 @@ export default function Dashboard() {
                       <tr key={r.id} style={{borderBottom:"1px solid #fffbeb",background:i%2===0?"#fff":"#fffef5",transition:"background 0.15s"}}>
                         <td style={{padding:"10px 8px",fontSize:12,color:"#9ca3af",textAlign:"center",fontWeight:600}}>{i+1}</td>
                         <td style={{padding:"10px 8px",fontSize:12,fontWeight:800,textAlign:"center",direction:"ltr",letterSpacing:0.3}}>{r.agreementNo}</td>
-                        <td style={{padding:"10px 8px",fontSize:12,textAlign:"center",fontWeight:600,color:"#374151"}}>{r.name||"-"}</td>
+                        <td style={{padding:"10px 8px",fontSize:11,textAlign:"center",fontWeight:600,color:"#374151"}}>{r.name||"-"}</td>
                         <td style={{padding:"10px 8px",fontSize:12,textAlign:"center",direction:"ltr",color:"#6b7280"}}>{omrL(r.principal)}</td>
                         <td style={{padding:"10px 8px",fontSize:12,fontWeight:700,color:"#e85d20",textAlign:"center",direction:"ltr"}}>{omrL(r.osAmount||0)}</td>
                         <td style={{padding:"10px 8px",fontSize:13,fontWeight:900,color:"#d97706",textAlign:"center",direction:"ltr"}}>{omrL(r.adjustment)}</td>
@@ -13389,9 +13479,13 @@ export default function Dashboard() {
                         <td style={{padding:"10px 8px",fontSize:11,color:"#9ca3af",textAlign:"center"}}>{r.savedAt||"-"}</td>
                         <td style={{padding:"6px 8px",textAlign:"center"}}>
                           <div style={{display:"flex",gap:6,justifyContent:"center"}}>
-                            <button onClick={()=>{setLEditModal(r);setLEditInputs({legalExpenses:r.legalExpenses||0,translate:r.translate||0,attorneyFees:r.attorneyFees||0});}}
+                            <button onClick={()=>{setLEditModal(r);setLEditInputs({name:r.name||'',legalExpenses:r.legalExpenses||0,translate:r.translate||0,attorneyFees:r.attorneyFees||0});}}
                               style={{background:"#dbeafe",color:"#1e40af",border:"none",borderRadius:8,padding:"4px 10px",fontSize:11,fontWeight:700,cursor:"pointer"}}>✏️</button>
-                            <button onClick={()=>askPw(()=>deleteRecord(r.id))}
+                            <button onClick={()=>{
+                              setLPwInput('');setLPwError(false);
+                              setLPwAction(()=>()=>deleteRecord(r.id));
+                              setLPwModal('delete');
+                            }}
                               style={{background:"#fee2e2",color:"#dc2626",border:"none",borderRadius:8,padding:"4px 10px",fontSize:11,fontWeight:700,cursor:"pointer"}}>🗑️</button>
                           </div>
                         </td>
@@ -13400,6 +13494,25 @@ export default function Dashboard() {
                   </tbody>
                 </table>
               </div>
+              {/* ── إجمالي تسوية جزئية ── */}
+              <div style={{background:"linear-gradient(135deg,#78350f,#92400e)",borderRadius:"0 0 12px 12px",padding:"12px 20px"}}>
+                <div style={{display:"flex",justifyContent:"space-around",alignItems:"center",gap:8,flexWrap:"wrap"}}>
+                  {[
+                    {lbl:ar?"عدد الحسابات":"Accounts",   val:String(partialRecs.length),              col:"#fde68a"},
+                    {lbl:ar?"المبلغ الأصلي":"Principal",  val:omrL(partialRecs.reduce((s,r)=>s+r.principal,0)),    col:"#fff"},
+                    {lbl:ar?"المتبقي":"OS Amount",         val:omrL(partialRecs.reduce((s,r)=>s+(r.osAmount||0),0)),col:"#fca5a5"},
+                    {lbl:ar?"التسوية":"Adjustment",        val:omrL(partialRecs.reduce((s,r)=>s+r.adjustment,0)),   col:"#fde68a"},
+                    {lbl:ar?"المصاريف":"Legal Exp.",       val:omrL(partialRecs.reduce((s,r)=>s+(r.legalExpenses||0),0)), col:"#c4b5fd"},
+                    {lbl:ar?"ترجمة":"Translate",           val:omrL(partialRecs.reduce((s,r)=>s+(r.translate||0),0)),     col:"#7dd3fc"},
+                    {lbl:ar?"أتعاب المحامي":"Attorney",    val:omrL(partialRecs.reduce((s,r)=>s+(r.attorneyFees||0),0)),  col:"#fca5a5"},
+                  ].map((item,i)=>(
+                    <div key={i} style={{textAlign:"center",padding:"4px 12px",borderRight:i<6?"1px solid rgba(255,255,255,0.15)":undefined}}>
+                      <div style={{fontSize:9,color:"rgba(255,255,255,0.6)",fontWeight:700,marginBottom:4,letterSpacing:0.5,textTransform:"uppercase"}}>{item.lbl}</div>
+                      <div style={{fontSize:i===0?18:13,fontWeight:900,color:item.col,direction:"ltr",lineHeight:1}}>{item.val}</div>
+                    </div>
+                  ))}
+                </div>
+              </div>
               </div>
             </div>
           </div>
@@ -13407,7 +13520,7 @@ export default function Dashboard() {
 
         {/* ─── Tab: الرسم البياني ─── */}
         {lTab==='chart' && (
-          <div style={{padding:"20px 24px"}}>
+          <div style={{padding:"20px 24px",minHeight:400}}>
             <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:20,marginBottom:20}}>
               {/* Donut Chart */}
               <div style={{background:"#fff",borderRadius:16,padding:"24px",boxShadow:"0 2px 14px rgba(0,0,0,0.06)"}}>
