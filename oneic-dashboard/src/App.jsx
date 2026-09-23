@@ -10906,7 +10906,7 @@ export default function Dashboard() {
   const [unlocked, setUnlocked] = useState(false);
   const [pwInput, setPwInput] = useState('');
   const [pwError, setPwError] = useState(false);
-  const [projectChoice, setProjectChoice] = useState(null); // null | 'p1' | 'p2'
+  const [projectChoice, setProjectChoice] = useState(null); // null | 'p1' | 'p2' | 'legal'
   const [showBulkReport, setShowBulkReport] = useState(false);
   const [lastSync, setLastSync] = useState(null);
   const [lang, setLang] = useState(() => { try { return localStorage.getItem('oneic_lang')||'ar'; } catch(e){return 'ar';} });
@@ -10933,6 +10933,22 @@ export default function Dashboard() {
   const [p2PwInput, setP2PwInput] = useState('');
   const [p2PwError, setP2PwError] = useState(false);
   const [p2PendingFile, setP2PendingFile] = useState(null);
+
+  // ── Legal Settlements States ──────────────────────────────────────────
+  const LEGAL_SEED = [{"id":"seed_113367442","agreementNo":"113367442","name":"ZAINAB JUMA AL SINANI","principal":18226.528,"osAmount":10120.347,"adjustment":8106.181,"legalExpenses":10.0,"translate":0.0,"attorneyFees":0.0,"isFull":false,"savedAt":"2026-09-23"},{"id":"seed_116456565","agreementNo":"116456565","name":"MAJID KHAMIS AO","principal":3387.445,"osAmount":1960.698,"adjustment":1426.747,"legalExpenses":0.0,"translate":0.0,"attorneyFees":0.0,"isFull":false,"savedAt":"2026-09-23"},{"id":"seed_113724032","agreementNo":"113724032","name":"ISSA JUMA AL","principal":1931.609,"osAmount":0,"adjustment":1931.609,"legalExpenses":0.0,"translate":0.0,"attorneyFees":0.0,"isFull":true,"savedAt":"2026-09-23"},{"id":"seed_112552328","agreementNo":"112552328","name":"FATEMA ALI AL","principal":1262.635,"osAmount":0,"adjustment":1262.635,"legalExpenses":10.0,"translate":0.0,"attorneyFees":100.0,"isFull":true,"savedAt":"2026-09-23"},{"id":"seed_114073181","agreementNo":"114073181","name":"KHALID KHALFAN WALDW","principal":1208.603,"osAmount":0,"adjustment":1208.603,"legalExpenses":10.0,"translate":0.0,"attorneyFees":0.0,"isFull":true,"savedAt":"2026-09-23"},{"id":"seed_114612067","agreementNo":"114612067","name":"GHAITH SAID AL","principal":1160.895,"osAmount":0,"adjustment":1160.895,"legalExpenses":10.0,"translate":0.0,"attorneyFees":0.0,"isFull":true,"savedAt":"2026-09-23"},{"id":"seed_116259176","agreementNo":"116259176","name":"ali khamis alsaadi","principal":1079.87,"osAmount":0,"adjustment":1079.87,"legalExpenses":10.0,"translate":6.0,"attorneyFees":50.0,"isFull":true,"savedAt":"2026-09-23"},{"id":"seed_100236017","agreementNo":"100236017","name":"حمدان للصرافة","principal":1069.559,"osAmount":0,"adjustment":1069.559,"legalExpenses":10.0,"translate":0.0,"attorneyFees":0.0,"isFull":true,"savedAt":"2026-09-23"},{"id":"seed_109088153","agreementNo":"109088153","name":"Sultan Rashid Abdull","principal":1275.828,"osAmount":415.809,"adjustment":860.019,"legalExpenses":60.0,"translate":6.0,"attorneyFees":0.0,"isFull":false,"savedAt":"2026-09-23"},{"id":"seed_110578399","agreementNo":"110578399","name":"SALH MOHAMMED AL KAM","principal":584.33,"osAmount":0,"adjustment":584.33,"legalExpenses":10.0,"translate":3.0,"attorneyFees":0.0,"isFull":true,"savedAt":"2026-09-23"},{"id":"seed_113129610","agreementNo":"113129610","name":"MASHAL MOHAMMED AL","principal":692.78,"osAmount":150.06,"adjustment":522.72,"legalExpenses":10.0,"translate":6.0,"attorneyFees":200.0,"isFull":false,"savedAt":"2026-09-23"},{"id":"seed_116113388","agreementNo":"116113388","name":"eiman said sfygfh sa","principal":503.66,"osAmount":0,"adjustment":503.66,"legalExpenses":10.0,"translate":6.0,"attorneyFees":0.0,"isFull":true,"savedAt":"2026-09-23"},{"id":"seed_97414517","agreementNo":"97414517","name":"RASHID AHMED AL-HART","principal":897.844,"osAmount":573.679,"adjustment":324.166,"legalExpenses":10.0,"translate":0.0,"attorneyFees":100.0,"isFull":false,"savedAt":"2026-09-23"},{"id":"seed_117660875","agreementNo":"117660875","name":"Sog Kmr Nss","principal":276.46,"osAmount":0,"adjustment":276.46,"legalExpenses":10.0,"translate":9.0,"attorneyFees":0.0,"isFull":true,"savedAt":"2026-09-23"},{"id":"seed_107669006","agreementNo":"107669006","name":"omran salim alshuhai","principal":357.6,"osAmount":0,"adjustment":255.485,"legalExpenses":10.0,"translate":3.0,"attorneyFees":0.0,"isFull":true,"savedAt":"2026-09-23"},{"id":"seed_117903449","agreementNo":"117903449","name":"AHMED SUHAIL BA","principal":249.85,"osAmount":0,"adjustment":249.85,"legalExpenses":10.0,"translate":0.0,"attorneyFees":0.0,"isFull":true,"savedAt":"2026-09-23"},{"id":"seed_55731545","agreementNo":"55731545","name":"othman musabah al sa","principal":729.783,"osAmount":0,"adjustment":214.14,"legalExpenses":10.0,"translate":9.0,"attorneyFees":100.0,"isFull":true,"savedAt":"2026-09-23"},{"id":"seed_116476813","agreementNo":"116476813","name":"Sogith Comar Ban nis","principal":206.625,"osAmount":0,"adjustment":206.625,"legalExpenses":10.0,"translate":9.0,"attorneyFees":0.0,"isFull":true,"savedAt":"2026-09-23"},{"id":"seed_115611216","agreementNo":"115611216","name":"ABDULLAH SAID ALKHAY","principal":559.415,"osAmount":0,"adjustment":193.505,"legalExpenses":10.0,"translate":6.0,"attorneyFees":0.0,"isFull":true,"savedAt":"2026-09-23"},{"id":"seed_63063657","agreementNo":"63063657","name":"ISMAIL HARIB AL","principal":502.235,"osAmount":333.526,"adjustment":168.709,"legalExpenses":10.0,"translate":3.0,"attorneyFees":0.0,"isFull":false,"savedAt":"2026-09-23"},{"id":"seed_102281737","agreementNo":"102281737","name":"","principal":357.6,"osAmount":0,"adjustment":125.0,"legalExpenses":10.0,"translate":0.0,"attorneyFees":0.0,"isFull":true,"savedAt":"2026-09-23"},{"id":"seed_105600970","agreementNo":"105600970","name":"","principal":1173.673,"osAmount":1052.973,"adjustment":120.7,"legalExpenses":10.0,"translate":0.0,"attorneyFees":0.0,"isFull":false,"savedAt":"2026-09-23"},{"id":"seed_106505506","agreementNo":"106505506","name":"ESSNAD INTERNATIONAL","principal":691.441,"osAmount":593.105,"adjustment":98.336,"legalExpenses":10.0,"translate":0.0,"attorneyFees":0.0,"isFull":false,"savedAt":"2026-09-23"},{"id":"seed_115627182","agreementNo":"115627182","name":"SALIM BAKHIT RIYAS","principal":971.443,"osAmount":0,"adjustment":75.0,"legalExpenses":0.0,"translate":0.0,"attorneyFees":0.0,"isFull":true,"savedAt":"2026-09-23"},{"id":"seed_104906327","agreementNo":"104906327","name":"","principal":430.486,"osAmount":370.113,"adjustment":60.373,"legalExpenses":0.0,"translate":0.0,"attorneyFees":0.0,"isFull":false,"savedAt":"2026-09-23"},{"id":"seed_117222641","agreementNo":"117222641","name":"MOHAMMED YAQOOB ABDO","principal":480.932,"osAmount":431.954,"adjustment":48.978,"legalExpenses":0.0,"translate":0.0,"attorneyFees":0.0,"isFull":false,"savedAt":"2026-09-23"},{"id":"seed_108517421","agreementNo":"108517421","name":"MOHAMMED AHMED BAIT","principal":350.181,"osAmount":282.944,"adjustment":47.237,"legalExpenses":0.0,"translate":0.0,"attorneyFees":0.0,"isFull":false,"savedAt":"2026-09-23"},{"id":"seed_100262375","agreementNo":"100262375","name":"","principal":349.866,"osAmount":309.001,"adjustment":40.865,"legalExpenses":0.0,"translate":0.0,"attorneyFees":0.0,"isFull":false,"savedAt":"2026-09-23"},{"id":"seed_105847641","agreementNo":"105847641","name":"KAMIL SALIM AL HASSN","principal":406.255,"osAmount":373.359,"adjustment":32.896,"legalExpenses":0.0,"translate":0.0,"attorneyFees":0.0,"isFull":false,"savedAt":"2026-09-23"},{"id":"seed_109610519","agreementNo":"109610519","name":"Mahmood Fareed Mahmo","principal":429.99,"osAmount":404.075,"adjustment":25.915,"legalExpenses":0.0,"translate":0.0,"attorneyFees":0.0,"isFull":false,"savedAt":"2026-09-23"},{"id":"seed_74273255","agreementNo":"74273255","name":"WARD KHAMIS AL BALUS","principal":129.912,"osAmount":110.746,"adjustment":19.166,"legalExpenses":10.0,"translate":3.0,"attorneyFees":0.0,"isFull":false,"savedAt":"2026-09-23"},{"id":"seed_68122068","agreementNo":"68122068","name":"HILAL MOHAMMED AL BU","principal":1187.432,"osAmount":1168.432,"adjustment":19.0,"legalExpenses":0.0,"translate":0.0,"attorneyFees":0.0,"isFull":false,"savedAt":"2026-09-23"},{"id":"seed_105415376","agreementNo":"105415376","name":"HAMOD HAMED KAMIS","principal":623.0,"osAmount":604.8,"adjustment":18.2,"legalExpenses":10.0,"translate":9.0,"attorneyFees":0.0,"isFull":false,"savedAt":"2026-09-23"},{"id":"seed_96173403","agreementNo":"96173403","name":"GANESAMOORTHY SELLA","principal":114.158,"osAmount":102.784,"adjustment":11.374,"legalExpenses":0.0,"translate":0.0,"attorneyFees":0.0,"isFull":false,"savedAt":"2026-09-23"},{"id":"seed_97854372","agreementNo":"97854372","name":"","principal":204.406,"osAmount":200.536,"adjustment":3.87,"legalExpenses":10.0,"translate":0.0,"attorneyFees":0.0,"isFull":false,"savedAt":"2026-09-23"},{"id":"seed_5502410","agreementNo":"5502410","name":"MOHAMMED HUMAID AL A","principal":966.105,"osAmount":0,"adjustment":1.5,"legalExpenses":0.0,"translate":0.0,"attorneyFees":0.0,"isFull":true,"savedAt":"2026-09-23"},{"id":"seed_98185743","agreementNo":"98185743","name":"","principal":326.561,"osAmount":325.564,"adjustment":0.997,"legalExpenses":0.0,"translate":0.0,"attorneyFees":0.0,"isFull":false,"savedAt":"2026-09-23"},{"id":"seed_92917641","agreementNo":"92917641","name":"","principal":14596.649,"osAmount":14596.45,"adjustment":0.199,"legalExpenses":0.0,"translate":0.0,"attorneyFees":0.0,"isFull":false,"savedAt":"2026-09-23"},{"id":"seed_76218521","agreementNo":"76218521","name":"RASHID SALIM AL-JABR","principal":493.744,"osAmount":493.646,"adjustment":0.098,"legalExpenses":0.0,"translate":0.0,"attorneyFees":0.0,"isFull":false,"savedAt":"2026-09-23"}];
+  const [lRecords,    setLRecords]    = useState(()=>{ try{ const s=localStorage.getItem('oneic_legal_records'); return s?JSON.parse(s):LEGAL_SEED; }catch(e){ return LEGAL_SEED; } });
+  const [lTab,        setLTab]        = useState('prev');
+  const [lNewAccounts,setLNewAccounts]= useState([]);
+  const [lPwModal,    setLPwModal]    = useState(false);
+  const [lPwInput,    setLPwInput]    = useState('');
+  const [lPwError,    setLPwError]    = useState(false);
+  const [lPwAction,   setLPwAction]   = useState(null);
+  const [lEditModal,  setLEditModal]  = useState(null);
+  const [lEditInputs, setLEditInputs] = useState({legalExpenses:0,translate:0,attorneyFees:0});
+  const [lNewInputs,  setLNewInputs]  = useState({});
+  const [lToast,      setLToast]      = useState('');
+  const [lNewBadge,   setLNewBadge]   = useState(0);
+  const [lUploadDate, setLUploadDate] = useState(()=>{ try{return localStorage.getItem('oneic_legal_uploaddate')||'';}catch(e){return '';} });
 
   const [syncing, setSyncing] = useState(false);
   const [showUploadAuth, setShowUploadAuth] = useState(false);
@@ -11673,6 +11689,21 @@ export default function Dashboard() {
             <div style={{fontSize:10,color:"#374151"}}>{lang==='ar'?"تحليل ما قبل الإطلاق":"Pre-Launch Analysis"}</div>
             <div style={{background:"#d97706",color:"#fff",borderRadius:20,padding:"3px 12px",fontSize:10,fontWeight:700}}>⏳ {lang==='ar'?"قيد التحضير":"Pending"}</div>
           </button>
+          {/* كرت تسويات القانوني */}
+          <button onClick={()=>setProjectChoice('legal')} style={{
+            background:"#fff",backdropFilter:"blur(12px)",
+            border:"2px solid rgba(22,163,74,0.5)",borderRadius:18,
+            padding:"24px 32px",cursor:"pointer",width:240,
+            display:"flex",flexDirection:"column",alignItems:"center",gap:10,
+            boxShadow:"0 4px 20px rgba(0,0,0,0.2)",transition:"all 0.2s"}}
+            onMouseEnter={e=>{e.currentTarget.style.transform="translateY(-3px)";e.currentTarget.style.boxShadow="0 8px 30px rgba(0,0,0,0.3)"}}
+            onMouseLeave={e=>{e.currentTarget.style.transform="translateY(0)";e.currentTarget.style.boxShadow="0 4px 20px rgba(0,0,0,0.2)"}}>
+            <div style={{fontSize:40}}>⚖️</div>
+            <div style={{fontSize:17,fontWeight:900,color:"#1e3a5f"}}>{lang==='ar'?"تسويات القانوني":"Legal Settlements"}</div>
+            <div style={{fontSize:10,color:"#374151"}}>{lang==='ar'?"Legal - DR. Sarhaan":"Legal - DR. Sarhaan"}</div>
+            <div style={{background:"#16a34a",color:"#fff",borderRadius:20,padding:"3px 12px",fontSize:10,fontWeight:700}}>✅ {lang==='ar'?"نشط":"Active"}</div>
+          </button>
+
           {/* زر العرض التقديمي */}
           <button onClick={()=>setProjectChoice('presentation')} style={{
             background:"#fff",backdropFilter:"blur(12px)",
@@ -12742,6 +12773,563 @@ export default function Dashboard() {
 
 
 
+
+  // ══════════════════════════════════════════════════════════════════════════
+  // == تسويات القانوني — Legal - DR. Sarhaan ================================
+  // ══════════════════════════════════════════════════════════════════════════
+  if (projectChoice === 'legal') {
+    const ar = lang === 'ar';
+    const omrL = v => typeof v==='number' ? v.toLocaleString('en',{minimumFractionDigits:3,maximumFractionDigits:3}) : '0.000';
+    const LEGAL_PW = 'Sulaiman1992';
+
+    const saveRecords = (recs) => {
+      setLRecords(recs);
+      try { localStorage.setItem('oneic_legal_records', JSON.stringify(recs)); } catch(e){}
+    };
+    const showToast = (msg) => { setLToast(msg); setTimeout(()=>setLToast(''),3000); };
+    const askPw = (action) => { setLPwInput(''); setLPwError(false); setLPwAction(()=>action); setLPwModal(true); };
+
+    const parseLegalFile = (text) => {
+      const lines = text.split('\n').filter(l=>l.trim());
+      if(lines.length < 2) return;
+      const headers = lines[0].split('\t').map(h=>h.trim().replace(/^\uFEFF/,''));
+      const idxAgr  = headers.findIndex(h=>/agreement.no/i.test(h));
+      const idxName = headers.findIndex(h=>/first.name/i.test(h));
+      const idxPrin = headers.findIndex(h=>/principal.amount/i.test(h));
+      const idxOS   = headers.findIndex(h=>/o.?s.amount/i.test(h));
+      const idxAdj  = headers.findIndex(h=>/^adjustment$/i.test(h));
+      const idxCol  = headers.findIndex(h=>/^collector$/i.test(h));
+      const existingIds = new Set(lRecords.map(r=>String(r.agreementNo)));
+      const newAccs = [];
+      for(let i=1;i<lines.length;i++){
+        const row = lines[i].split('\t');
+        if(!row[0]||!row[0].trim()) continue;
+        const collector = (row[idxCol]||'').trim();
+        if(!/legal.*sarhaan/i.test(collector)) continue;
+        const adj = parseFloat(row[idxAdj]||0)||0;
+        if(adj <= 0) continue;
+        const agrNo = String((row[idxAgr]||'').trim());
+        if(existingIds.has(agrNo)) continue;
+        newAccs.push({ agreementNo:agrNo, name:(row[idxName]||'').trim(),
+          principal:parseFloat(row[idxPrin]||0)||0, osAmount:parseFloat(row[idxOS]||0)||0,
+          adjustment:adj, isFull:(parseFloat(row[idxOS]||0)||0)===0 });
+      }
+      setLNewAccounts(newAccs); setLNewBadge(newAccs.length);
+      const d = new Date().toLocaleDateString('en-GB');
+      setLUploadDate(d);
+      try{ localStorage.setItem('oneic_legal_uploaddate',d); }catch(e){}
+      showToast(ar?`تم رفع الملف — ${newAccs.length} حساب جديد`:`Uploaded — ${newAccs.length} new accounts`);
+      if(newAccs.length>0) setLTab('new');
+    };
+
+    const handleLegalUpload = (file) => {
+      const reader = new FileReader();
+      reader.onload = (ev) => {
+        try {
+          const buf=ev.target.result; const bytes=new Uint8Array(buf);
+          let bomPos=-1,bomEnc='utf-16-le';
+          for(let i=0;i<Math.min(10,bytes.length-1);i++){
+            if(bytes[i]===0xFF&&bytes[i+1]===0xFE){bomPos=i;bomEnc='utf-16-le';break;}
+            if(bytes[i]===0xFE&&bytes[i+1]===0xFF){bomPos=i;bomEnc='utf-16-be';break;}
+          }
+          let text='';
+          if(bomPos>=0){ const st=bomPos+2;
+            if(bomEnc==='utf-16-le'){ for(let i=st;i<bytes.length-1;i+=2) text+=String.fromCharCode(bytes[i]|(bytes[i+1]<<8)); }
+            else { for(let i=st;i<bytes.length-1;i+=2) text+=String.fromCharCode((bytes[i]<<8)|bytes[i+1]); }
+          } else { text=new TextDecoder('utf-8').decode(buf); }
+          text=text.replace(/^[\s\uFEFF]+/,'');
+          parseLegalFile(text);
+        } catch(ex){ alert('خطأ: '+ex.message); }
+      };
+      reader.readAsArrayBuffer(file);
+    };
+
+    const saveNewAccount = (acc) => {
+      const inp = lNewInputs[acc.agreementNo]||{};
+      const newRec = { id:'rec_'+Date.now()+'_'+acc.agreementNo, agreementNo:acc.agreementNo,
+        name:acc.name, principal:acc.principal, osAmount:acc.osAmount, adjustment:acc.adjustment,
+        isFull:acc.isFull, legalExpenses:parseFloat(inp.legalExpenses)||0,
+        translate:parseFloat(inp.translate)||0, attorneyFees:parseFloat(inp.attorneyFees)||0,
+        savedAt:new Date().toLocaleDateString('en-GB') };
+      saveRecords([...lRecords, newRec]);
+      setLNewAccounts(prev=>prev.filter(a=>a.agreementNo!==acc.agreementNo));
+      setLNewBadge(prev=>Math.max(0,prev-1));
+      setLNewInputs(prev=>{const n={...prev};delete n[acc.agreementNo];return n;});
+      showToast(ar?'✅ تم حفظ الحساب':'✅ Saved');
+      if(lNewAccounts.length<=1) setLTab('prev');
+    };
+
+    const deleteRecord = (id) => { saveRecords(lRecords.filter(r=>r.id!==id)); showToast(ar?'🗑️ تم الحذف':'🗑️ Deleted'); };
+
+    const saveEdit = () => {
+      if(!lEditModal) return;
+      saveRecords(lRecords.map(r=>r.id===lEditModal.id?{...r,
+        legalExpenses:parseFloat(lEditInputs.legalExpenses)||0,
+        translate:parseFloat(lEditInputs.translate)||0,
+        attorneyFees:parseFloat(lEditInputs.attorneyFees)||0,
+        savedAt:new Date().toLocaleDateString('en-GB')}:r));
+      setLEditModal(null); showToast(ar?'✅ تم التعديل':'✅ Updated');
+    };
+
+    const fullRecs    = [...lRecords.filter(r=>r.isFull||r.osAmount===0)].sort((a,b)=>b.adjustment-a.adjustment);
+    const partialRecs = [...lRecords.filter(r=>!r.isFull&&r.osAmount>0)].sort((a,b)=>b.adjustment-a.adjustment);
+    const totalAdj    = lRecords.reduce((s,r)=>s+r.adjustment,0);
+    const totalFull   = fullRecs.reduce((s,r)=>s+r.adjustment,0);
+    const totalPartial= partialRecs.reduce((s,r)=>s+r.adjustment,0);
+    const totalLE     = lRecords.reduce((s,r)=>s+(r.legalExpenses||0),0);
+    const totalTr     = lRecords.reduce((s,r)=>s+(r.translate||0),0);
+    const totalAtt    = lRecords.reduce((s,r)=>s+(r.attorneyFees||0),0);
+
+    const handleLegalPrint = () => {
+      const w = window.open('','_blank','width=1200,height=900');
+      w.document.write(`<!DOCTYPE html><html dir="rtl" lang="ar"><head><meta charset="UTF-8">
+<title>تسويات القانوني</title><style>
+*{box-sizing:border-box;margin:0;padding:0;font-family:Arial,sans-serif;-webkit-print-color-adjust:exact}
+body{background:#f5f7fa;padding:20px;direction:rtl}@page{size:A4;margin:8mm 10mm}
+@media print{.np{display:none}}
+.hdr{background:linear-gradient(135deg,#1e3a5f,#16a34a);border-radius:12px;padding:18px 24px;color:#fff;margin-bottom:16px;display:flex;justify-content:space-between;align-items:center}
+.kpi-g{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-bottom:14px}
+.kpi{background:#fff;border-radius:10px;padding:12px;text-align:center;border:1px solid #e2e8f0}
+.kv{font-size:16px;font-weight:900;margin-bottom:2px}.kl{font-size:9px;color:#6b7280;font-weight:700}
+.sh{padding:8px 14px;border-radius:8px 8px 0 0;font-size:12px;font-weight:900;margin-top:12px;color:#fff}
+table{width:100%;border-collapse:collapse;background:#fff}
+th{background:#f0f4f8;padding:7px 10px;font-size:9px;font-weight:900;color:#374151;text-align:right;border-bottom:1px solid #e2e8f0}
+td{padding:7px 10px;font-size:10px;border-bottom:1px solid #f5f7fa;color:#111}
+.pb{background:#1e3a5f;color:#fff;border:none;border-radius:8px;padding:8px 20px;font-size:12px;cursor:pointer;display:block;margin:0 auto 14px}
+</style></head><body>
+<button class="np pb" onclick="window.print()">🖨️ طباعة</button>
+<div class="hdr"><div><div style="font-size:22px;font-weight:900;color:#e85d20">ONEIC</div><div style="font-size:11px;color:#93c5fd">تسويات القانوني — Legal DR. Sarhaan</div></div>
+<div style="text-align:left;font-size:10px;color:#93c5fd"><strong style="font-size:13px;color:#fff;display:block">تقرير التسويات القانونية</strong>تاريخ الطباعة: ${new Date().toLocaleDateString('ar-OM')}</div></div>
+<div class="kpi-g">
+<div class="kpi"><div class="kv" style="color:#1e3a5f">${lRecords.length}</div><div class="kl">إجمالي الحسابات</div></div>
+<div class="kpi"><div class="kv" style="color:#16a34a">${omrL(totalAdj)}</div><div class="kl">إجمالي التسوية OMR</div></div>
+<div class="kpi"><div class="kv" style="color:#e85d20">${fullRecs.length}</div><div class="kl">تسوية كاملة ✅</div></div>
+<div class="kpi"><div class="kv" style="color:#d97706">${partialRecs.length}</div><div class="kl">تسوية جزئية ⏳</div></div></div>
+<div class="sh" style="background:#064e3b">✅ تسوية كاملة (${fullRecs.length} حساب)</div>
+<table><tr><th>#</th><th>رقم الاتفاقية</th><th>الاسم</th><th>المبلغ الأصلي</th><th>التسوية</th><th>Legal Exp.</th><th>Translate</th><th>Attorney</th><th>التاريخ</th></tr>
+${fullRecs.map((r,i)=>`<tr><td>${i+1}</td><td>${r.agreementNo}</td><td>${r.name||'-'}</td><td>${omrL(r.principal)}</td><td style="color:#16a34a;font-weight:700">${omrL(r.adjustment)}</td><td>${omrL(r.legalExpenses||0)}</td><td>${omrL(r.translate||0)}</td><td>${omrL(r.attorneyFees||0)}</td><td>${r.savedAt||'-'}</td></tr>`).join('')}
+</table>
+<div class="sh" style="background:#78350f;margin-top:14px">⏳ تسوية جزئية (${partialRecs.length} حساب)</div>
+<table><tr><th>#</th><th>رقم الاتفاقية</th><th>الاسم</th><th>المبلغ الأصلي</th><th>المتبقي</th><th>التسوية</th><th>Legal Exp.</th><th>Translate</th><th>Attorney</th><th>التاريخ</th></tr>
+${partialRecs.map((r,i)=>`<tr><td>${i+1}</td><td>${r.agreementNo}</td><td>${r.name||'-'}</td><td>${omrL(r.principal)}</td><td style="color:#e85d20">${omrL(r.osAmount||0)}</td><td style="color:#d97706;font-weight:700">${omrL(r.adjustment)}</td><td>${omrL(r.legalExpenses||0)}</td><td>${omrL(r.translate||0)}</td><td>${omrL(r.attorneyFees||0)}</td><td>${r.savedAt||'-'}</td></tr>`).join('')}
+</table></body></html>`);
+      w.document.close();
+    };
+
+    const handleLegalExcel = () => {
+      const hdr=['#','Agreement No','Name','Principal','OS Amount','Adjustment','Legal Expenses','Translate','Attorney Fees','Type','Saved At'];
+      const rows2=[...fullRecs.map((r,i)=>[i+1,r.agreementNo,r.name,r.principal,r.osAmount||0,r.adjustment,r.legalExpenses||0,r.translate||0,r.attorneyFees||0,'Full',r.savedAt||'']),
+        ...partialRecs.map((r,i)=>[fullRecs.length+i+1,r.agreementNo,r.name,r.principal,r.osAmount||0,r.adjustment,r.legalExpenses||0,r.translate||0,r.attorneyFees||0,'Partial',r.savedAt||''])];
+      const tsv=[hdr,...rows2].map(r=>r.join('\t')).join('\n');
+      const blob=new Blob(['\uFEFF'+tsv],{type:'text/tab-separated-values;charset=utf-8'});
+      const url=URL.createObjectURL(blob);
+      const a=document.createElement('a');
+      a.href=url; a.download=`legal_settlements_${new Date().toLocaleDateString('en-GB').replace(/\//g,'-')}.xls`;
+      a.click(); URL.revokeObjectURL(url);
+    };
+
+    const inputStyle={width:'100%',padding:'10px 12px',border:'1.5px solid #e2e8f0',borderRadius:10,fontSize:14,fontFamily:"'Cairo',sans-serif",outline:'none',textAlign:'center',direction:'ltr'};
+
+    return (
+      <div style={{minHeight:"100vh",background:"#f0f4f8",fontFamily:"'Cairo','Tajawal',sans-serif",direction:ar?"rtl":"ltr"}}>
+
+        {/* ─── Toast ─── */}
+        {lToast && (
+          <div style={{position:"fixed",top:20,left:"50%",transform:"translateX(-50%)",zIndex:99999,
+            background:"#1e3a5f",color:"#fff",borderRadius:12,padding:"12px 24px",fontSize:14,fontWeight:700,
+            boxShadow:"0 4px 20px rgba(0,0,0,0.3)"}}>
+            {lToast}
+          </div>
+        )}
+
+        {/* ─── Password Modal ─── */}
+        {lPwModal && (
+          <div style={{position:"fixed",inset:0,zIndex:99998,background:"rgba(0,0,0,0.6)",display:"flex",alignItems:"center",justifyContent:"center"}}
+            onClick={()=>{setLPwModal(false);setLPwError(false);setLPwInput('');}}>
+            <div style={{background:"#fff",borderRadius:20,padding:"32px 28px",width:320,boxShadow:"0 20px 60px rgba(0,0,0,0.4)"}}
+              onClick={e=>e.stopPropagation()}>
+              <div style={{textAlign:"center",marginBottom:20}}>
+                <div style={{fontSize:32,marginBottom:8}}>🔐</div>
+                <div style={{fontSize:16,fontWeight:900,color:"#1e3a5f"}}>{ar?"أدخل كلمة المرور":"Enter Password"}</div>
+              </div>
+              <input type="password" value={lPwInput} autoFocus
+                onChange={e=>{setLPwInput(e.target.value);setLPwError(false);}}
+                onKeyDown={e=>{
+                  if(e.key==='Enter'){
+                    if(lPwInput==='Sulaiman1992'){setLPwModal(false);setLPwInput('');setLPwError(false);lPwAction&&lPwAction();}
+                    else{setLPwError(true);setLPwInput('');}
+                  }
+                }}
+                placeholder="Password..."
+                style={{width:"100%",padding:"12px 14px",borderRadius:12,
+                  border:lPwError?"2px solid #ef4444":"2px solid #e2e8f0",
+                  fontSize:15,outline:"none",boxSizing:"border-box",
+                  background:lPwError?"#fef2f2":"#f9fafb",
+                  textAlign:"center",direction:"ltr",letterSpacing:3,marginBottom:8}}/>
+              {lPwError&&<div style={{color:"#ef4444",fontSize:12,fontWeight:700,textAlign:"center",marginBottom:8}}>❌ {ar?"كلمة المرور غير صحيحة":"Incorrect password"}</div>}
+              <button onClick={()=>{
+                if(lPwInput==='Sulaiman1992'){setLPwModal(false);setLPwInput('');setLPwError(false);lPwAction&&lPwAction();}
+                else{setLPwError(true);setLPwInput('');}
+              }} style={{width:"100%",padding:"12px",background:"linear-gradient(120deg,#1e3a5f,#16a34a)",color:"#fff",border:"none",borderRadius:12,fontSize:14,fontWeight:900,cursor:"pointer",marginBottom:8,fontFamily:"'Cairo',sans-serif"}}>
+                ✅ {ar?"تأكيد":"Confirm"}
+              </button>
+              <button onClick={()=>{setLPwModal(false);setLPwError(false);setLPwInput('');}}
+                style={{width:"100%",padding:"10px",background:"#f3f4f6",color:"#6b7280",border:"none",borderRadius:12,fontSize:13,fontWeight:700,cursor:"pointer",fontFamily:"'Cairo',sans-serif"}}>
+                {ar?"إلغاء":"Cancel"}
+              </button>
+            </div>
+          </div>
+        )}
+
+        {/* ─── Edit Modal ─── */}
+        {lEditModal && (
+          <div style={{position:"fixed",inset:0,zIndex:99997,background:"rgba(0,0,0,0.6)",display:"flex",alignItems:"center",justifyContent:"center"}}
+            onClick={()=>setLEditModal(null)}>
+            <div style={{background:"#fff",borderRadius:20,padding:"28px 24px",width:380,boxShadow:"0 20px 60px rgba(0,0,0,0.4)"}}
+              onClick={e=>e.stopPropagation()}>
+              <div style={{fontSize:15,fontWeight:900,color:"#1e3a5f",marginBottom:4}}>✏️ {ar?"تعديل الحساب":"Edit Account"}</div>
+              <div style={{fontSize:12,color:"#888",marginBottom:18}}>{lEditModal.agreementNo} — {lEditModal.name||'-'}</div>
+              {[
+                {label:"Legal Expenses (OMR)", key:"legalExpenses"},
+                {label:"Translate (OMR)",      key:"translate"},
+                {label:"Attorney Fees (OMR)",  key:"attorneyFees"},
+              ].map(f=>(
+                <div key={f.key} style={{marginBottom:14}}>
+                  <div style={{fontSize:12,fontWeight:700,color:"#374151",marginBottom:6}}>{f.label}</div>
+                  <input type="number" value={lEditInputs[f.key]||0} min={0} step={0.001}
+                    onChange={e=>setLEditInputs(p=>({...p,[f.key]:e.target.value}))}
+                    style={{...inputStyle}}/>
+                </div>
+              ))}
+              <div style={{display:"flex",gap:10,marginTop:8}}>
+                <button onClick={()=>askPw(saveEdit)} style={{flex:1,padding:"12px",background:"linear-gradient(120deg,#1e3a5f,#16a34a)",color:"#fff",border:"none",borderRadius:12,fontSize:14,fontWeight:900,cursor:"pointer",fontFamily:"'Cairo',sans-serif"}}>
+                  💾 {ar?"حفظ":"Save"}
+                </button>
+                <button onClick={()=>setLEditModal(null)} style={{flex:1,padding:"12px",background:"#f3f4f6",color:"#6b7280",border:"none",borderRadius:12,fontSize:14,fontWeight:700,cursor:"pointer",fontFamily:"'Cairo',sans-serif"}}>
+                  {ar?"إلغاء":"Cancel"}
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* ─── Header ─── */}
+        <div style={{background:"linear-gradient(120deg,#1e3a5f,#16a34a)",padding:"14px 24px",display:"flex",justifyContent:"space-between",alignItems:"center",position:"sticky",top:0,zIndex:100,boxShadow:"0 4px 20px rgba(0,0,0,0.3)"}}>
+          <div style={{display:"flex",alignItems:"center",gap:14}}>
+            <div style={{width:44,height:44,background:"rgba(255,255,255,0.15)",borderRadius:12,display:"flex",alignItems:"center",justifyContent:"center",fontSize:24}}>⚖️</div>
+            <div>
+              <div style={{fontSize:18,fontWeight:900,color:"#fff"}}>تسويات القانوني</div>
+              <div style={{fontSize:11,color:"rgba(255,255,255,0.7)",fontWeight:600}}>
+                Legal - DR. Sarhaan {lUploadDate?`· آخر رفع: ${lUploadDate}`:''}
+              </div>
+            </div>
+          </div>
+          <div style={{display:"flex",gap:8,alignItems:"center",flexWrap:"wrap",justifyContent:"flex-end"}}>
+            {/* رفع ملف يومي */}
+            <label style={{background:"linear-gradient(120deg,#16a34a,#15803d)",color:"#fff",borderRadius:10,padding:"7px 14px",fontSize:12,fontWeight:700,cursor:"pointer",display:"flex",alignItems:"center",gap:6}}
+              onClick={ev=>{ev.preventDefault();askPw(()=>document.getElementById('legalFileInput').click());}}>
+              📂 {ar?"رفع ملف يومي":"Daily Upload"}
+            </label>
+            <input id="legalFileInput" type="file" accept=".xls,.xlsx,.csv,.tsv" style={{display:"none"}}
+              onChange={e=>{const f=e.target.files[0];if(!f)return;handleLegalUpload(f);e.target.value='';}}/>
+            {/* طباعة */}
+            <button onClick={handleLegalPrint} style={{background:"rgba(255,255,255,0.1)",color:"#fff",border:"1px solid rgba(255,255,255,0.2)",borderRadius:10,padding:"7px 14px",fontSize:12,fontWeight:700,cursor:"pointer"}}>
+              🖨️ {ar?"طباعة":"Print"}
+            </button>
+            {/* تنزيل Excel */}
+            <button onClick={handleLegalExcel} style={{background:"rgba(255,255,255,0.1)",color:"#fff",border:"1px solid rgba(255,255,255,0.2)",borderRadius:10,padding:"7px 14px",fontSize:12,fontWeight:700,cursor:"pointer"}}>
+              📥 Excel
+            </button>
+            {/* رجوع */}
+            <button onClick={()=>setProjectChoice(null)} style={{background:"rgba(255,255,255,0.1)",color:"#fff",border:"1px solid rgba(255,255,255,0.2)",borderRadius:10,padding:"7px 14px",fontSize:12,fontWeight:700,cursor:"pointer"}}>
+              ← {ar?"اختيار المشروع":"Projects"}
+            </button>
+          </div>
+        </div>
+
+        {/* ─── KPI Summary ─── */}
+        <div style={{display:"grid",gridTemplateColumns:"repeat(4,1fr)",gap:14,padding:"20px 24px 0"}}>
+          {[
+            {icon:"📋",val:lRecords.length,lbl:ar?"إجمالي الحسابات":"Total Accounts",col:"#1e3a5f",bg:"#eff6ff"},
+            {icon:"💰",val:omrL(totalAdj)+" OMR",lbl:ar?"إجمالي التسوية":"Total Adjustment",col:"#16a34a",bg:"#f0fdf4"},
+            {icon:"✅",val:fullRecs.length,lbl:ar?"تسوية كاملة":"Full Settlements",col:"#16a34a",bg:"#f0fdf4"},
+            {icon:"⏳",val:partialRecs.length,lbl:ar?"تسوية جزئية":"Partial Settlements",col:"#d97706",bg:"#fefce8"},
+          ].map((k,i)=>(
+            <div key={i} style={{background:k.bg,borderRadius:14,padding:"18px 16px",border:`1px solid ${k.col}22`,boxShadow:"0 2px 10px rgba(0,0,0,0.06)",textAlign:"center"}}>
+              <div style={{fontSize:28,marginBottom:6}}>{k.icon}</div>
+              <div style={{fontSize:i===1?18:26,fontWeight:900,color:k.col,marginBottom:4}}>{k.val}</div>
+              <div style={{fontSize:11,color:"#6b7280",fontWeight:700}}>{k.lbl}</div>
+            </div>
+          ))}
+        </div>
+
+        {/* ─── Tabs ─── */}
+        <div style={{display:"flex",gap:0,padding:"16px 24px 0",borderBottom:"2px solid #e2e8f0",marginTop:16}}>
+          {[
+            {key:'new',   label:ar?"🔔 الجديد":"🔔 New",   badge:lNewBadge},
+            {key:'prev',  label:ar?"📑 التسويات السابقة":"📑 Settlements",badge:0},
+            {key:'chart', label:ar?"📊 الرسم البياني":"📊 Charts",badge:0},
+          ].map(tab=>(
+            <button key={tab.key} onClick={()=>setLTab(tab.key)}
+              style={{padding:"10px 22px",fontSize:13,fontWeight:700,cursor:"pointer",border:"none",
+                borderBottom:lTab===tab.key?"3px solid #16a34a":"3px solid transparent",
+                background:"transparent",color:lTab===tab.key?"#16a34a":"#6b7280",
+                display:"flex",alignItems:"center",gap:6,position:"relative"}}>
+              {tab.label}
+              {tab.badge>0 && (
+                <span style={{background:"#ef4444",color:"#fff",borderRadius:20,padding:"1px 7px",fontSize:10,fontWeight:900}}>{tab.badge}</span>
+              )}
+            </button>
+          ))}
+        </div>
+
+        {/* ─── Tab: الجديد ─── */}
+        {lTab==='new' && (
+          <div style={{padding:"20px 24px"}}>
+            {lNewAccounts.length === 0 ? (
+              <div style={{textAlign:"center",padding:"60px 20px",color:"#888"}}>
+                <div style={{fontSize:48,marginBottom:16}}>📂</div>
+                <div style={{fontSize:16,fontWeight:900,color:"#1e3a5f",marginBottom:8}}>{ar?"لا توجد حسابات جديدة":"No New Accounts"}</div>
+                <div style={{fontSize:13,color:"#888"}}>{ar?"ارفع ملف الشكاوى اليومي للكشف عن الحسابات الجديدة":"Upload daily complaints file to detect new accounts"}</div>
+              </div>
+            ) : (
+              <div style={{display:"flex",flexDirection:"column",gap:14}}>
+                <div style={{fontSize:14,fontWeight:700,color:"#1e3a5f",marginBottom:4}}>
+                  🔔 {lNewAccounts.length} {ar?"حساب جديد تم اكتشافه":"new accounts detected"}
+                </div>
+                {lNewAccounts.map(acc=>(
+                  <div key={acc.agreementNo} style={{background:"#fff",borderRadius:16,padding:"20px",boxShadow:"0 2px 14px rgba(0,0,0,0.08)",border:`2px solid ${acc.isFull?'#16a34a':'#d97706'}30`}}>
+                    <div style={{display:"flex",justifyContent:"space-between",alignItems:"flex-start",marginBottom:14}}>
+                      <div>
+                        <div style={{fontSize:16,fontWeight:900,color:"#1e3a5f"}}>{acc.name||ar?"(بدون اسم)":"(No Name)"}</div>
+                        <div style={{fontSize:12,color:"#888",direction:"ltr",textAlign:"right"}}>{acc.agreementNo}</div>
+                      </div>
+                      <span style={{background:acc.isFull?"#dcfce7":"#fef3c7",color:acc.isFull?"#16a34a":"#d97706",borderRadius:20,padding:"4px 14px",fontSize:11,fontWeight:800}}>
+                        {acc.isFull?(ar?"تسوية كاملة ✅":"Full ✅"):(ar?"تسوية جزئية ⏳":"Partial ⏳")}
+                      </span>
+                    </div>
+                    <div style={{display:"grid",gridTemplateColumns:"repeat(3,1fr)",gap:10,marginBottom:16}}>
+                      {[
+                        {lbl:ar?"المبلغ الأصلي":"Principal",val:omrL(acc.principal)+" OMR",col:"#1e3a5f"},
+                        {lbl:ar?"المتبقي":"OS Amount",  val:omrL(acc.osAmount)+" OMR",col:"#e85d20"},
+                        {lbl:ar?"التسوية":"Adjustment", val:omrL(acc.adjustment)+" OMR",col:"#16a34a"},
+                      ].map((f,i)=>(
+                        <div key={i} style={{background:"#f8f9fc",borderRadius:10,padding:"10px",textAlign:"center"}}>
+                          <div style={{fontSize:15,fontWeight:900,color:f.col}}>{f.val}</div>
+                          <div style={{fontSize:10,color:"#888",fontWeight:700,marginTop:2}}>{f.lbl}</div>
+                        </div>
+                      ))}
+                    </div>
+                    <div style={{display:"grid",gridTemplateColumns:"repeat(3,1fr)",gap:10,marginBottom:16}}>
+                      {[
+                        {lbl:"Legal Expenses (OMR)", key:"legalExpenses"},
+                        {lbl:"Translate (OMR)",      key:"translate"},
+                        {lbl:"Attorney Fees (OMR)",  key:"attorneyFees"},
+                      ].map(f=>(
+                        <div key={f.key}>
+                          <div style={{fontSize:11,fontWeight:700,color:"#374151",marginBottom:6}}>{f.lbl}</div>
+                          <input type="number" min={0} step={0.001} placeholder="0.000"
+                            value={lNewInputs[acc.agreementNo]?.[f.key]||''}
+                            onChange={e=>setLNewInputs(prev=>({...prev,[acc.agreementNo]:{...prev[acc.agreementNo],[f.key]:e.target.value}}))}
+                            style={inputStyle}/>
+                        </div>
+                      ))}
+                    </div>
+                    <button onClick={()=>askPw(()=>saveNewAccount(acc))}
+                      style={{width:"100%",padding:"12px",background:"linear-gradient(120deg,#1e3a5f,#16a34a)",color:"#fff",border:"none",borderRadius:12,fontSize:14,fontWeight:900,cursor:"pointer",fontFamily:"'Cairo',sans-serif"}}>
+                      💾 {ar?"حفظ الحساب":"Save Account"}
+                    </button>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+        )}
+
+        {/* ─── Tab: التسويات السابقة ─── */}
+        {lTab==='prev' && (
+          <div style={{padding:"20px 24px"}}>
+            {/* ✅ تسوية كاملة */}
+            <div style={{marginBottom:24}}>
+              <div style={{background:"linear-gradient(120deg,#064e3b,#16a34a)",borderRadius:"12px 12px 0 0",padding:"12px 20px",display:"flex",justifyContent:"space-between",alignItems:"center"}}>
+                <span style={{fontSize:14,fontWeight:900,color:"#fff"}}>✅ {ar?"تسوية كاملة":"Full Settlements"}</span>
+                <span style={{background:"rgba(255,255,255,0.2)",color:"#fff",borderRadius:20,padding:"3px 14px",fontSize:12,fontWeight:700}}>
+                  {fullRecs.length} {ar?"حساب":"accounts"} · {omrL(totalFull)} OMR
+                </span>
+              </div>
+              <div style={{background:"#fff",borderRadius:"0 0 12px 12px",overflow:"hidden",boxShadow:"0 2px 14px rgba(0,0,0,0.06)"}}>
+                <table style={{width:"100%",borderCollapse:"collapse"}}>
+                  <thead>
+                    <tr style={{background:"#f0fdf4"}}>
+                      {["#","رقم الاتفاقية","الاسم","المبلغ الأصلي","التسوية","Legal Exp.","Translate","Attorney","التاريخ",""].map((h,i)=>(
+                        <th key={i} style={{padding:"10px 12px",fontSize:11,fontWeight:900,color:"#374151",textAlign:"right",borderBottom:"1px solid #dcfce7"}}>{h}</th>
+                      ))}
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {fullRecs.map((r,i)=>(
+                      <tr key={r.id} style={{borderBottom:"1px solid #f0fdf4",background:i%2===0?"#fff":"#f9fffe"}}>
+                        <td style={{padding:"10px 12px",fontSize:12,color:"#888"}}>{i+1}</td>
+                        <td style={{padding:"10px 12px",fontSize:12,fontWeight:700,direction:"ltr"}}>{r.agreementNo}</td>
+                        <td style={{padding:"10px 12px",fontSize:12}}>{r.name||"-"}</td>
+                        <td style={{padding:"10px 12px",fontSize:12,direction:"ltr"}}>{omrL(r.principal)}</td>
+                        <td style={{padding:"10px 12px",fontSize:13,fontWeight:900,color:"#16a34a",direction:"ltr"}}>{omrL(r.adjustment)}</td>
+                        <td style={{padding:"10px 12px",fontSize:12,direction:"ltr"}}>{omrL(r.legalExpenses||0)}</td>
+                        <td style={{padding:"10px 12px",fontSize:12,direction:"ltr"}}>{omrL(r.translate||0)}</td>
+                        <td style={{padding:"10px 12px",fontSize:12,direction:"ltr"}}>{omrL(r.attorneyFees||0)}</td>
+                        <td style={{padding:"10px 12px",fontSize:11,color:"#888"}}>{r.savedAt||"-"}</td>
+                        <td style={{padding:"10px 12px"}}>
+                          <div style={{display:"flex",gap:6}}>
+                            <button onClick={()=>{setLEditModal(r);setLEditInputs({legalExpenses:r.legalExpenses||0,translate:r.translate||0,attorneyFees:r.attorneyFees||0});}}
+                              style={{background:"#dbeafe",color:"#1e40af",border:"none",borderRadius:8,padding:"4px 10px",fontSize:11,fontWeight:700,cursor:"pointer"}}>✏️</button>
+                            <button onClick={()=>askPw(()=>deleteRecord(r.id))}
+                              style={{background:"#fee2e2",color:"#dc2626",border:"none",borderRadius:8,padding:"4px 10px",fontSize:11,fontWeight:700,cursor:"pointer"}}>🗑️</button>
+                          </div>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+
+            {/* ⏳ تسوية جزئية */}
+            <div>
+              <div style={{background:"linear-gradient(120deg,#78350f,#d97706)",borderRadius:"12px 12px 0 0",padding:"12px 20px",display:"flex",justifyContent:"space-between",alignItems:"center"}}>
+                <span style={{fontSize:14,fontWeight:900,color:"#fff"}}>⏳ {ar?"تسوية جزئية":"Partial Settlements"}</span>
+                <span style={{background:"rgba(255,255,255,0.2)",color:"#fff",borderRadius:20,padding:"3px 14px",fontSize:12,fontWeight:700}}>
+                  {partialRecs.length} {ar?"حساب":"accounts"} · {omrL(totalPartial)} OMR
+                </span>
+              </div>
+              <div style={{background:"#fff",borderRadius:"0 0 12px 12px",overflow:"hidden",boxShadow:"0 2px 14px rgba(0,0,0,0.06)"}}>
+                <table style={{width:"100%",borderCollapse:"collapse"}}>
+                  <thead>
+                    <tr style={{background:"#fffbeb"}}>
+                      {["#","رقم الاتفاقية","الاسم","المبلغ الأصلي","المتبقي","التسوية","Legal Exp.","Translate","Attorney","التاريخ",""].map((h,i)=>(
+                        <th key={i} style={{padding:"10px 12px",fontSize:11,fontWeight:900,color:"#374151",textAlign:"right",borderBottom:"1px solid #fde68a"}}>{h}</th>
+                      ))}
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {partialRecs.map((r,i)=>(
+                      <tr key={r.id} style={{borderBottom:"1px solid #fffbeb",background:i%2===0?"#fff":"#fffef5"}}>
+                        <td style={{padding:"10px 12px",fontSize:12,color:"#888"}}>{i+1}</td>
+                        <td style={{padding:"10px 12px",fontSize:12,fontWeight:700,direction:"ltr"}}>{r.agreementNo}</td>
+                        <td style={{padding:"10px 12px",fontSize:12}}>{r.name||"-"}</td>
+                        <td style={{padding:"10px 12px",fontSize:12,direction:"ltr"}}>{omrL(r.principal)}</td>
+                        <td style={{padding:"10px 12px",fontSize:12,color:"#e85d20",direction:"ltr"}}>{omrL(r.osAmount||0)}</td>
+                        <td style={{padding:"10px 12px",fontSize:13,fontWeight:900,color:"#d97706",direction:"ltr"}}>{omrL(r.adjustment)}</td>
+                        <td style={{padding:"10px 12px",fontSize:12,direction:"ltr"}}>{omrL(r.legalExpenses||0)}</td>
+                        <td style={{padding:"10px 12px",fontSize:12,direction:"ltr"}}>{omrL(r.translate||0)}</td>
+                        <td style={{padding:"10px 12px",fontSize:12,direction:"ltr"}}>{omrL(r.attorneyFees||0)}</td>
+                        <td style={{padding:"10px 12px",fontSize:11,color:"#888"}}>{r.savedAt||"-"}</td>
+                        <td style={{padding:"10px 12px"}}>
+                          <div style={{display:"flex",gap:6}}>
+                            <button onClick={()=>{setLEditModal(r);setLEditInputs({legalExpenses:r.legalExpenses||0,translate:r.translate||0,attorneyFees:r.attorneyFees||0});}}
+                              style={{background:"#dbeafe",color:"#1e40af",border:"none",borderRadius:8,padding:"4px 10px",fontSize:11,fontWeight:700,cursor:"pointer"}}>✏️</button>
+                            <button onClick={()=>askPw(()=>deleteRecord(r.id))}
+                              style={{background:"#fee2e2",color:"#dc2626",border:"none",borderRadius:8,padding:"4px 10px",fontSize:11,fontWeight:700,cursor:"pointer"}}>🗑️</button>
+                          </div>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* ─── Tab: الرسم البياني ─── */}
+        {lTab==='chart' && (
+          <div style={{padding:"20px 24px"}}>
+            <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:20,marginBottom:20}}>
+              {/* Donut Chart */}
+              <div style={{background:"#fff",borderRadius:16,padding:"24px",boxShadow:"0 2px 14px rgba(0,0,0,0.06)"}}>
+                <div style={{fontSize:14,fontWeight:900,color:"#1e3a5f",marginBottom:16}}>📊 {ar?"توزيع التسويات":"Settlement Distribution"}</div>
+                {(()=>{
+                  const total = lRecords.length || 1;
+                  const fullPct = Math.round(fullRecs.length/total*100);
+                  const partPct = 100-fullPct;
+                  const r=70,cx=100,cy=100,circ=2*Math.PI*r;
+                  const fullOff=circ-(fullPct/100)*circ;
+                  return (
+                    <div style={{display:"flex",alignItems:"center",gap:24}}>
+                      <svg width={200} height={200} viewBox="0 0 200 200">
+                        <circle cx={cx} cy={cy} r={r} fill="none" stroke="#fde68a" strokeWidth={28}/>
+                        <circle cx={cx} cy={cy} r={r} fill="none" stroke="#16a34a" strokeWidth={28}
+                          strokeDasharray={circ} strokeDashoffset={fullOff} strokeLinecap="butt"
+                          transform={`rotate(-90 ${cx} ${cy})`}/>
+                        <text x={cx} y={cy-8} textAnchor="middle" fontSize={22} fontWeight={900} fill="#1e3a5f">{lRecords.length}</text>
+                        <text x={cx} y={cy+14} textAnchor="middle" fontSize={12} fill="#888">{ar?"حساب":"accounts"}</text>
+                      </svg>
+                      <div style={{display:"flex",flexDirection:"column",gap:12}}>
+                        <div style={{display:"flex",alignItems:"center",gap:8}}>
+                          <div style={{width:14,height:14,borderRadius:4,background:"#16a34a"}}/>
+                          <div>
+                            <div style={{fontSize:13,fontWeight:700,color:"#111"}}>✅ {ar?"تسوية كاملة":"Full"}</div>
+                            <div style={{fontSize:18,fontWeight:900,color:"#16a34a"}}>{fullRecs.length} <span style={{fontSize:12,color:"#888"}}>({fullPct}%)</span></div>
+                          </div>
+                        </div>
+                        <div style={{display:"flex",alignItems:"center",gap:8}}>
+                          <div style={{width:14,height:14,borderRadius:4,background:"#d97706"}}/>
+                          <div>
+                            <div style={{fontSize:13,fontWeight:700,color:"#111"}}>⏳ {ar?"تسوية جزئية":"Partial"}</div>
+                            <div style={{fontSize:18,fontWeight:900,color:"#d97706"}}>{partialRecs.length} <span style={{fontSize:12,color:"#888"}}>({partPct}%)</span></div>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  );
+                })()}
+              </div>
+
+              {/* Summary Stats */}
+              <div style={{background:"#fff",borderRadius:16,padding:"24px",boxShadow:"0 2px 14px rgba(0,0,0,0.06)"}}>
+                <div style={{fontSize:14,fontWeight:900,color:"#1e3a5f",marginBottom:16}}>💰 {ar?"ملخص المبالغ":"Amount Summary"}</div>
+                <div style={{display:"flex",flexDirection:"column",gap:12}}>
+                  {[
+                    {lbl:ar?"إجمالي التسوية":"Total Adjustment",val:omrL(totalAdj),col:"#1e3a5f"},
+                    {lbl:ar?"تسوية كاملة":"Full Adj.",         val:omrL(totalFull),col:"#16a34a"},
+                    {lbl:ar?"تسوية جزئية":"Partial Adj.",      val:omrL(totalPartial),col:"#d97706"},
+                    {lbl:"Legal Expenses",                      val:omrL(totalLE),  col:"#6366f1"},
+                    {lbl:"Translate",                           val:omrL(totalTr),  col:"#0891b2"},
+                    {lbl:"Attorney Fees",                       val:omrL(totalAtt), col:"#e85d20"},
+                  ].map((s,i)=>(
+                    <div key={i} style={{display:"flex",justifyContent:"space-between",padding:"10px 14px",borderRadius:10,background:"#f8f9fc",border:"1px solid #f0ece8"}}>
+                      <span style={{fontSize:13,color:"#555",fontWeight:700}}>{s.lbl}</span>
+                      <span style={{fontSize:14,fontWeight:900,color:s.col,direction:"ltr"}}>{s.val} OMR</span>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            </div>
+
+            {/* Top 10 Bar Chart */}
+            <div style={{background:"#fff",borderRadius:16,padding:"24px",boxShadow:"0 2px 14px rgba(0,0,0,0.06)"}}>
+              <div style={{fontSize:14,fontWeight:900,color:"#1e3a5f",marginBottom:16}}>🏆 {ar?"أعلى 10 حسابات تسوية":"Top 10 Settlements"}</div>
+              {[...lRecords].sort((a,b)=>b.adjustment-a.adjustment).slice(0,10).map((r,i)=>{
+                const pct = totalAdj > 0 ? (r.adjustment/[...lRecords].sort((a,b)=>b.adjustment-a.adjustment)[0].adjustment*100) : 0;
+                return (
+                  <div key={r.id} style={{marginBottom:10}}>
+                    <div style={{display:"flex",justifyContent:"space-between",marginBottom:4}}>
+                      <span style={{fontSize:12,fontWeight:700,color:"#374151"}}>{i+1}. {r.name||r.agreementNo}</span>
+                      <span style={{fontSize:12,fontWeight:900,color:r.isFull?"#16a34a":"#d97706",direction:"ltr"}}>{omrL(r.adjustment)} OMR</span>
+                    </div>
+                    <div style={{background:"#f0f4f8",borderRadius:6,height:10,overflow:"hidden"}}>
+                      <div style={{width:pct+"%",height:"100%",background:r.isFull?"linear-gradient(90deg,#16a34a,#4ade80)":"linear-gradient(90deg,#d97706,#fbbf24)",borderRadius:6,transition:"width 0.5s"}}/>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+        )}
+
+      </div>
+    );
+  }
+
   // == OMANTEL 1 -- MAIN DASHBOARD ======================================
   return (
     <LangContext.Provider value={langCtx}>
@@ -13766,6 +14354,4 @@ export default function Dashboard() {
     </>
     </LangContext.Provider>
   );
-
-
 }
