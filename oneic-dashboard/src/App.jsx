@@ -11892,14 +11892,25 @@ export default function Dashboard() {
                       if(bytes[_i]===0xFF && bytes[_i+1]===0xFE){ bomPos=_i; bomEnc='utf-16-le'; break; }
                       if(bytes[_i]===0xFE && bytes[_i+1]===0xFF){ bomPos=_i; bomEnc='utf-16-be'; break; }
                     }
-                    if(bomPos >= 0){
-                      const start = bomPos + 2;
-                      const view = new Uint8Array(buf, start, bytes.length - start);
-                      text = new TextDecoder(bomEnc).decode(view);
+                    if(bomPos>=0 && bomEnc==='utf-16-le'){
+                      // فك تشفير UTF-16 LE يدوياً — بدون TextDecoder لضمان التوافق مع كل المتصفحات
+                      let _str=''; const _st=bomPos+2;
+                      for(let _i=_st;_i<bytes.length-1;_i+=2){
+                        const _c=bytes[_i]|(bytes[_i+1]<<8);
+                        _str+=String.fromCharCode(_c);
+                      }
+                      text=_str;
+                    } else if(bomPos>=0 && bomEnc==='utf-16-be'){
+                      let _str=''; const _st=bomPos+2;
+                      for(let _i=_st;_i<bytes.length-1;_i+=2){
+                        const _c=(bytes[_i]<<8)|bytes[_i+1];
+                        _str+=String.fromCharCode(_c);
+                      }
+                      text=_str;
                     } else {
-                      text = new TextDecoder('utf-8').decode(buf);
+                      text=new TextDecoder('utf-8').decode(buf);
                     }
-                    text = text.replace(/^[\s\uFEFF\u0020]+/, '');
+                    text=text.replace(/^[\s\uFEFF]+/,'');
                     parseP2File(text,(result,err)=>{
                       setP2Syncing(false);
                       if(err){ alert('خطأ: '+err); return; }
