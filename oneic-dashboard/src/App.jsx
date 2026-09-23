@@ -10390,6 +10390,55 @@ function parseBulkPayment(file) {
 
 
 // -- handlePrint --------------------------------------------------------------
+
+// ══════════════════════════════════════════════════════════════════════
+// parseP2File — يقرأ ملف عُمانتل 2 (نفس تنسيق عُمانتل 1)
+// ══════════════════════════════════════════════════════════════════════
+function parseP2File(rawText, callback) {
+  try {
+    var lines = rawText.split('\n').filter(function(l){ return l.trim(); });
+    if (lines.length < 2) { callback(null,'الملف فارغ'); return; }
+    var headers = lines[0].split('\t').map(function(h){ return h.trim().replace(/^\uFEFF/,''); });
+    var idx = {
+      paid:   headers.findIndex(function(h){ return /paid.amount/i.test(h); }),
+      adj:    headers.findIndex(function(h){ return /^adjustment$/i.test(h); }),
+      over:   headers.findIndex(function(h){ return /overpaid/i.test(h); }),
+      disc:   headers.findIndex(function(h){ return /oneic.discount/i.test(h); }),
+      os:     headers.findIndex(function(h){ return /o.?s.amount/i.test(h); }),
+      prin:   headers.findIndex(function(h){ return /principal.amount/i.test(h); }),
+      ct:     headers.findIndex(function(h){ return /customer.type/i.test(h); }),
+      vs:     headers.findIndex(function(h){ return /visa.status/i.test(h); }),
+      col:    headers.findIndex(function(h){ return /^collector$/i.test(h); }),
+      region: headers.findIndex(function(h){ return /^region$/i.test(h); }),
+    };
+    var totalPaid=0, totalAdj=0, totalOver=0, totalDisc=0, totalOS=0, totalPrin=0, totalCnt=0;
+    for (var i=1; i<lines.length; i++) {
+      var row = lines[i].split('\t');
+      if (!row[0]||!row[0].trim()) continue;
+      totalCnt++;
+      totalPaid += parseFloat(row[idx.paid]||0)||0;
+      totalAdj  += parseFloat(row[idx.adj]||0)||0;
+      totalOver += parseFloat(row[idx.over]||0)||0;
+      totalDisc += parseFloat(row[idx.disc]||0)||0;
+      totalOS   += parseFloat(row[idx.os]||0)||0;
+      totalPrin += parseFloat(row[idx.prin]||0)||0;
+    }
+    callback({
+      cnt:     totalCnt,
+      paid:    totalPaid,
+      adj:     totalAdj,
+      over:    totalOver,
+      disc:    totalDisc,
+      osAmt:   totalOS,
+      portAmt: 13595235.153,   // قيمة المحفظة الثابتة لعُمانتل 2
+      portCnt: 105287,
+      purchaseRate: 0.16,
+    }, null);
+  } catch(e) {
+    callback(null, 'خطأ في قراءة الملف: ' + e.message);
+  }
+}
+
 function handlePrint(data, lang='ar') {
   var w = window.open('','_blank','width=1200,height=900');
   if (!w) return;
@@ -10868,6 +10917,15 @@ export default function Dashboard() {
   }, [lang]);
   const langCtx = { lang, setLang };
 
+
+  // ── Omantel 2 file upload state ──────────────────────────
+  const [p2FileData, setP2FileData] = useState(null);
+  const [p2FileName, setP2FileName] = useState('');
+  const [p2Syncing, setP2Syncing] = useState(false);
+  const [p2PwModal, setP2PwModal] = useState(false);
+  const [p2PwInput, setP2PwInput] = useState('');
+  const [p2PwError, setP2PwError] = useState(false);
+  const [p2PendingFile, setP2PendingFile] = useState(null);
 
   const [syncing, setSyncing] = useState(false);
   const [showUploadAuth, setShowUploadAuth] = useState(false);
@@ -11798,17 +11856,106 @@ export default function Dashboard() {
         background:"#f5f7fa",color:"#111",fontFamily:"'Cairo','Tajawal',Arial,sans-serif",
         direction:ar?"rtl":"ltr"}}>
         {/* Header */}
-        <div style={{background:"linear-gradient(120deg,#1e3a5f,#2d5a8e)",padding:"12px 24px",display:"flex",justifyContent:"space-between",alignItems:"center",position:"sticky",top:0,zIndex:100,boxShadow:"0 4px 20px rgba(0,0,0,0.3)"}}>
+        {/* ── TOP BAR ── */}
+      <div style={{background:"linear-gradient(120deg,#1e3a5f,#2d5a8e)",padding:"12px 24px",display:"flex",justifyContent:"space-between",alignItems:"center",position:"sticky",top:0,zIndex:100,boxShadow:"0 4px 20px rgba(0,0,0,0.3)"}}>
           <div style={{display:"flex",alignItems:"center",gap:14}}>
             <img src={LOGO} alt="ONEIC" style={{height:34,objectFit:"contain"}}/>
             <div>
-              <div style={{fontSize:17,fontWeight:900,color:"#e85d20"}}>{ar?"محفظة عُمانتل 2 — تحليل ما قبل الإطلاق":"Omantel Portfolio 2 — Pre-Launch Analysis"}</div>
-              <div style={{fontSize:11,color:"#93c5fd"}}>{ar?"بيانات نوفمبر 2025 · للمراجعة الداخلية فقط":"Data: Nov 2025 · For internal review only"}</div>
+              <div style={{fontSize:17,fontWeight:900,color:"#e85d20"}}>{ar?"محفظة عُمانتل 2":"Omantel Portfolio 2"}</div>
+              <div style={{fontSize:11,color:"#93c5fd"}}>
+                {p2FileName ? `📋 ${p2FileName}` : (ar?"Omantel Debt Collection Portfolio":"Omantel Debt Collection Portfolio")}
+              </div>
             </div>
           </div>
           <div style={{display:"flex",gap:8,alignItems:"center"}}>
-            <span style={{background:"#d97706",color:"#fff",borderRadius:20,padding:"4px 14px",fontSize:11,fontWeight:700}}>⏳ {ar?"قيد التحضير":"Pending"}</span>
-            <button onClick={()=>setProjectChoice(null)} style={{background:"rgba(255,255,255,0.1)",color:"#fff",border:"1px solid rgba(255,255,255,0.2)",borderRadius:10,padding:"7px 16px",fontSize:12,fontWeight:700,cursor:"pointer",color:"#fff"}}>← {ar?"اختيار المشروع":"Projects"}</button>
+            {/* زر رفع الملف - محمي بكلمة مرور */}
+            <label style={{background:"linear-gradient(120deg,#16a34a,#15803d)",color:"#fff",borderRadius:10,padding:"7px 16px",fontSize:12,fontWeight:700,cursor:"pointer",display:"flex",alignItems:"center",gap:6}}
+              onClick={(ev)=>{ ev.preventDefault(); setP2PwInput(''); setP2PwError(false); setP2PwModal(true); }}>
+              📂 {ar?"رفع ملف":"Upload File"}
+            </label>
+            {/* مربع اختيار الملف المخفي */}
+            <input id="p2FileInput" type="file" accept=".xls,.xlsx,.csv,.tsv" style={{display:"none"}}
+              onChange={(e)=>{
+                const file = e.target.files[0];
+                if (!file) return;
+                setP2Syncing(true);
+                setP2FileName(file.name);
+                const reader = new FileReader();
+                reader.onload = (ev) => {
+                  try {
+                    const buf = ev.target.result;
+                    const bytes = new Uint8Array(buf);
+                    let text;
+                    if (bytes[0]===0xFF&&bytes[1]===0xFE) {
+                      let raw=new TextDecoder('utf-16-le').decode(buf);
+                      let skip=0; while(skip<raw.length&&(raw[skip]===' '||raw[skip]==='﻿'))skip++;
+                      text=raw.slice(skip);
+                    } else if (bytes[0]===0xFE&&bytes[1]===0xFF) {
+                      text=new TextDecoder('utf-16-be').decode(buf);
+                    } else {
+                      text=new TextDecoder('utf-8').decode(buf);
+                    }
+                    parseP2File(text,(result,err)=>{
+                      setP2Syncing(false);
+                      if (err) { alert('خطأ: '+err); return; }
+                      setP2FileData(result);
+                    });
+                  } catch(ex) { setP2Syncing(false); alert('خطأ في قراءة الملف'); }
+                };
+                reader.readAsArrayBuffer(file);
+                e.target.value='';
+              }}/>
+            {/* مودال كلمة المرور */}
+            {p2PwModal && (
+              <div style={{position:"fixed",inset:0,zIndex:99999,background:"rgba(0,0,0,0.55)",display:"flex",alignItems:"center",justifyContent:"center"}}
+                onClick={()=>{setP2PwModal(false);setP2PwError(false);setP2PwInput('');}}>
+                <div style={{background:"#fff",borderRadius:20,padding:"32px 28px",width:320,boxShadow:"0 20px 60px rgba(0,0,0,0.4)"}}
+                  onClick={e=>e.stopPropagation()}>
+                  <div style={{textAlign:"center",marginBottom:20}}>
+                    <div style={{fontSize:32,marginBottom:8}}>🔐</div>
+                    <div style={{fontSize:16,fontWeight:900,color:"#1e3a5f"}}>{ar?"رفع ملف عُمانتل 2":"Upload Omantel 2 File"}</div>
+                    <div style={{fontSize:12,color:"#888",marginTop:4}}>{ar?"أدخل كلمة المرور للمتابعة":"Enter password to continue"}</div>
+                  </div>
+                  <input
+                    type="password"
+                    value={p2PwInput}
+                    autoFocus
+                    onChange={e=>{setP2PwInput(e.target.value);setP2PwError(false);}}
+                    onKeyDown={e=>{
+                      if(e.key==='Enter'){
+                        if(p2PwInput==='Sulaiman1992'){
+                          setP2PwModal(false);setP2PwError(false);setP2PwInput('');
+                          document.getElementById('p2FileInput').click();
+                        } else { setP2PwError(true); setP2PwInput(''); }
+                      }
+                    }}
+                    placeholder={ar?"كلمة المرور...":"Password..."}
+                    style={{width:"100%",padding:"12px 14px",borderRadius:12,
+                      border:p2PwError?"2px solid #ef4444":"2px solid #e2e8f0",
+                      fontSize:15,outline:"none",boxSizing:"border-box",
+                      background:p2PwError?"#fef2f2":"#f9fafb",
+                      textAlign:"center",direction:"ltr",letterSpacing:3,marginBottom:8}}/>
+                  {p2PwError && (
+                    <div style={{color:"#ef4444",fontSize:12,fontWeight:700,textAlign:"center",marginBottom:8}}>
+                      ❌ {ar?"كلمة المرور غير صحيحة":"Incorrect password"}
+                    </div>
+                  )}
+                  <button onClick={()=>{
+                    if(p2PwInput==='Sulaiman1992'){
+                      setP2PwModal(false);setP2PwError(false);setP2PwInput('');
+                      document.getElementById('p2FileInput').click();
+                    } else { setP2PwError(true); setP2PwInput(''); }
+                  }} style={{width:"100%",padding:"12px",background:"linear-gradient(120deg,#16a34a,#15803d)",color:"#fff",border:"none",borderRadius:12,fontSize:14,fontWeight:900,cursor:"pointer",marginBottom:8,fontFamily:"'Cairo',sans-serif"}}>
+                    ✅ {ar?"تأكيد":"Confirm"}
+                  </button>
+                  <button onClick={()=>{setP2PwModal(false);setP2PwError(false);setP2PwInput('');}}
+                    style={{width:"100%",padding:"10px",background:"#f3f4f6",color:"#6b7280",border:"none",borderRadius:12,fontSize:13,fontWeight:700,cursor:"pointer",fontFamily:"'Cairo',sans-serif"}}>
+                    {ar?"إلغاء":"Cancel"}
+                  </button>
+                </div>
+              </div>
+            )}
+            <button onClick={()=>setProjectChoice(null)} style={{background:"rgba(255,255,255,0.1)",color:"#fff",border:"1px solid rgba(255,255,255,0.2)",borderRadius:10,padding:"7px 16px",fontSize:12,fontWeight:700,cursor:"pointer"}}>← {ar?"اختيار المشروع":"Projects"}</button>
             <button onClick={()=>{const n=lang==='ar'?'en':'ar';setLang(n);try{localStorage.setItem('oneic_lang',n);}catch(e){}; document.documentElement.dir=n==='ar'?'rtl':'ltr';}} style={{background:ar?"#1a7a6b":"#6c3fa0",color:"#fff",border:"none",borderRadius:10,padding:"7px 16px",fontSize:12,fontWeight:700,cursor:"pointer"}}>🌐 {ar?"English":"عربي"}</button>
             <button onClick={()=>{
               const printDate2 = new Date().toLocaleDateString(ar?'ar-OM':'en-GB',{year:'numeric',month:'long',day:'numeric'});
@@ -11976,51 +12123,150 @@ export default function Dashboard() {
             }} style={{background:"#1e3a5f",color:"#fff",border:"none",borderRadius:10,padding:"7px 16px",fontSize:12,fontWeight:700,cursor:"pointer"}}>🖨️ {ar?"طباعة":"Print"}</button>
           </div>
         </div>
-        <div style={{padding:"24px 28px",maxWidth:1400,margin:"0 auto"}}>
-          {/* KPIs */}
-          <div style={{display:"grid",gridTemplateColumns:"repeat(4,1fr)",gap:14,marginBottom:24}}>
-            {[{icon:"👥",val:n2(P2.total),lbl:ar?"إجمالي الحسابات":"Total Accounts",sub:ar?"بانتظار التحصيل":"Awaiting Collection",col:"#60a5fa"},
-              {icon:"💰",val:f2(P2.balance),lbl:ar?"إجمالي المحفظة (OMR)":"Total Portfolio (OMR)",sub:ar?"الرصيد المتأخر":"Outstanding",col:"#e85d20"},
-              {icon:"📋",val:n2(P2.bills),lbl:ar?"إجمالي الفواتير":"Total Bills",sub:"Nov 2025",col:"#16a34a"},
-              {icon:"📊",val:f2(P2.avg),lbl:ar?"متوسط الرصيد / حساب":"Avg Balance / Account",sub:"OMR",col:"#d97706"},
-            ].map((k,i)=>(
-              <div key={i} style={{background:"#fff",borderRadius:16,padding:"22px 20px",border:"1px solid #e2e8f0",textAlign:"center",boxShadow:"0 2px 16px rgba(0,0,0,0.07)"}}>
-                <div style={{fontSize:32,marginBottom:8}}>{k.icon}</div>
-                <div style={{fontSize:24,fontWeight:900,color:k.col,marginBottom:6}}>{k.val}</div>
-                <div style={{fontSize:12,color:"#1a1a2e",fontWeight:800,marginBottom:3}}>{k.lbl}</div>
-                <div style={{fontSize:12,color:"#374151",fontWeight:700,marginTop:2}}>{k.sub}</div>
-              </div>
-            ))}
-          </div>
 
-          {/* قيمة شراء المديونية */}
-          <div style={{background:"linear-gradient(135deg,#0369a1,#0ea5e9)",borderRadius:16,padding:"18px 24px",marginBottom:24,boxShadow:"0 4px 20px rgba(3,105,161,0.25)"}}>
-            <div style={{display:"flex",justifyContent:"space-between",alignItems:"center"}}>
+        {/* ═══════════════════════════════════════════════════════════
+             قسم KPI الديناميكي لعُمانتل 2
+        ═══════════════════════════════════════════════════════════ */}
+        {p2FileData ? (
+        <div style={{background:"#fff",borderRadius:16,margin:"16px 24px",boxShadow:"0 4px 20px rgba(0,0,0,0.08)",border:"1px solid #f0ece8",overflow:"hidden"}}>
+          {/* هيدر البطاقة */}
+          <div style={{background:"linear-gradient(120deg,#1e3a5f,#2d5a8e)",padding:"18px 28px",display:"flex",justifyContent:"space-between",alignItems:"center"}}>
+            <div style={{display:"flex",alignItems:"center",gap:14}}>
               <div>
-                <div style={{fontSize:13,color:"rgba(255,255,255,0.75)",fontWeight:700,marginBottom:6}}>
-                  💡 {ar?"قيمة شراء المديونية":"Debt Purchase Value"}
-                </div>
-                <div style={{display:"inline-flex",alignItems:"center",gap:6,background:"rgba(255,255,255,0.15)",borderRadius:20,padding:"4px 14px",marginBottom:10}}>
-                  <span style={{fontSize:11,color:"rgba(255,255,255,0.9)",fontWeight:700}}>13,595,235.153 OMR × 16%</span>
-                </div>
-                <div style={{marginTop:6}}>
-                  <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:3}}>
-                    <span style={{fontSize:13,color:"rgba(255,255,255,0.85)",fontWeight:800}}>{ar?"نسبة شراء المحفظة":"Portfolio Purchase Rate"}</span>
-                    <span style={{fontSize:15,color:"#fff",fontWeight:900}}>16%</span>
-                  </div>
-                  <div style={{background:"rgba(255,255,255,0.15)",borderRadius:6,height:8,width:"100%"}}>
-                    <div style={{width:"16%",background:"rgba(255,255,255,0.85)",height:"100%",borderRadius:6}}/>
-                  </div>
-                </div>
-              </div>
-              <div style={{textAlign:"right"}}>
-                <div style={{display:"flex",alignItems:"baseline",gap:5,direction:"ltr",justifyContent:"flex-end"}}>
-                  <span style={{fontSize:34,fontWeight:900,color:"#fff",letterSpacing:0.5,lineHeight:1}}>2,175,237.624</span>
-                  <span style={{fontSize:14,color:"rgba(255,255,255,0.75)",fontWeight:700}}>OMR</span>
-                </div>
+                <div style={{fontSize:22,fontWeight:900,color:"#fff",lineHeight:1.1}}>{ar?"محفظة عُمانتل 2":"Omantel Portfolio 2"}</div>
+                <div style={{fontSize:12,color:"rgba(255,255,255,0.65)",fontWeight:600,marginTop:3}}>Omantel Debt Collection Portfolio</div>
               </div>
             </div>
+            {p2FileName && (
+              <div style={{textAlign:"left",direction:"ltr"}}>
+                <div style={{fontSize:10,color:"rgba(255,255,255,0.55)",fontWeight:600,marginBottom:2}}>{ar?"آخر تحديث للملف":"Last File Update"}</div>
+                <div style={{fontSize:13,color:"rgba(255,255,255,0.9)",fontWeight:800}}>
+                  {new Date().toLocaleDateString(ar?'ar-OM':'en-GB')}
+                </div>
+              </div>
+            )}
           </div>
+
+          {/* ─── الشبكة الرئيسية: المحفظة + التحصيل ─── */}
+          <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:0}}>
+
+            {/* ─── يسار: المحفظة ─── */}
+            {(()=>{
+              const _p2p = p2FileData.paid||0;
+              const _p2a = p2FileData.adj||0;
+              const _p2m = p2FileData.portAmt||13595235.153;
+              const _p2pv = _p2m * 0.16;
+              const _p2pct = _p2m > 0 ? Math.min(100,((_p2p+_p2a)/_p2m*100)) : 0;
+              const _p2pctStr = _p2pct.toFixed(1)+'%';
+              const r2=52,cx2=60,cy2=60,circ2=2*Math.PI*r2,off2=circ2-(_p2pct/100)*circ2;
+              return (
+              <div style={{padding:"20px 28px",borderRight:"1.5px solid #f0ece8",display:"flex",flexDirection:"column",gap:10}}>
+                <div><span style={{background:"#1e3a5f",color:"#fff",borderRadius:8,padding:"3px 14px",fontSize:13,fontWeight:900}}>📋 {ar?"المحفظة":"Portfolio"}</span></div>
+
+                {/* عدد الحسابات */}
+                <div style={{background:"#f8f9fc",borderRadius:12,padding:"14px 18px",display:"flex",justifyContent:"space-between",alignItems:"center",border:"1px solid #e8f0fe"}}>
+                  <div style={{fontSize:15,color:"#555",fontWeight:700}}>{ar?"عدد الحسابات":"Accounts"}</div>
+                  <div style={{fontSize:26,fontWeight:900,color:"#1e3a5f",direction:"ltr",textAlign:"right"}}>
+                    {(p2FileData.portCnt||105287).toLocaleString('en')} <span style={{fontSize:13,color:"#888",fontWeight:600}}>{ar?"حساب":"acct"}</span>
+                  </div>
+                </div>
+
+                {/* قيمة المحفظة */}
+                <div style={{background:"#f8faff",borderRadius:12,padding:"14px 18px",display:"flex",justifyContent:"space-between",alignItems:"center",border:"1px solid #ffe4d4"}}>
+                  <div style={{fontSize:15,color:"#555",fontWeight:700}}>{ar?"قيمة المحفظة":"Portfolio Value"}</div>
+                  <div style={{fontSize:26,fontWeight:900,color:"#e85d20",direction:"ltr",textAlign:"right"}}>
+                    {_p2m.toLocaleString('en',{minimumFractionDigits:3,maximumFractionDigits:3})} <span style={{fontSize:13,color:"#aaa",fontWeight:600}}>OMR</span>
+                  </div>
+                </div>
+
+                {/* قيمة شراء المديونية */}
+                <div style={{background:"#eef6ff",borderRadius:12,padding:"14px 18px",border:"1px solid #bfdbfe"}}>
+                  <div style={{display:"flex",justifyContent:"space-between",alignItems:"flex-start"}}>
+                    <div>
+                      <div style={{fontSize:15,color:"#1e3a5f",fontWeight:700,marginBottom:4}}>{ar?"قيمة شراء المديونية":"Purchase Value of Debt"}</div>
+                      <div style={{fontSize:9,color:"#60a5fa",fontWeight:700,background:"#dbeafe",borderRadius:20,padding:"2px 10px",display:"inline-block"}}>
+                        {_p2m.toLocaleString('en',{minimumFractionDigits:3,maximumFractionDigits:3})} × 16%
+                      </div>
+                    </div>
+                    <div style={{textAlign:"right"}}>
+                      <div style={{display:"flex",alignItems:"baseline",gap:5,direction:"ltr",justifyContent:"flex-end"}}>
+                        <div style={{fontSize:26,fontWeight:900,color:"#1e3a5f",letterSpacing:0.3}}>{_p2pv.toLocaleString('en',{minimumFractionDigits:3,maximumFractionDigits:3})}</div>
+                        <div style={{fontSize:11,color:"#60a5fa",fontWeight:700}}>OMR</div>
+                      </div>
+                    </div>
+                  </div>
+                  {/* شريط نسبة شراء المحفظة */}
+                  <div style={{marginTop:10}}>
+                    <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:3}}>
+                      <span style={{fontSize:13,color:"#60a5fa",fontWeight:800}}>{ar?"نسبة شراء المحفظة":"Portfolio Purchase Rate"}</span>
+                      <span style={{fontSize:15,color:"#1e3a5f",fontWeight:900}}>{_p2pctStr}</span>
+                    </div>
+                    <div style={{background:"#bfdbfe",borderRadius:6,height:8}}>
+                      <div style={{width:_p2pctStr,background:"#1e3a5f",height:"100%",borderRadius:6}}/>
+                    </div>
+                  </div>
+                </div>
+
+                {/* نسبة الإنجاز الكلي - دائرة */}
+                <div style={{display:"flex",justifyContent:"center",paddingTop:4}}>
+                  <div style={{display:"flex",flexDirection:"column",alignItems:"center",gap:4}}>
+                    <svg width={120} height={120} viewBox="0 0 120 120">
+                      <defs><linearGradient id="p2Grad" x1="0%" y1="0%" x2="100%" y2="0%"><stop offset="0%" stopColor="#4ade80"/><stop offset="100%" stopColor="#16a34a"/></linearGradient></defs>
+                      <circle cx={cx2} cy={cy2} r={r2} fill="#f0fdf4" stroke="#dcfce7" strokeWidth="1"/>
+                      <circle cx={cx2} cy={cy2} r={r2} fill="none" stroke="#e8f5e9" strokeWidth="12"/>
+                      <circle cx={cx2} cy={cy2} r={r2} fill="none" stroke="url(#p2Grad)" strokeWidth="12" strokeDasharray={circ2} strokeDashoffset={off2} strokeLinecap="round" transform={`rotate(-90 ${cx2} ${cy2})`}/>
+                      <text x={cx2} y={cy2-6} textAnchor="middle" fontSize="20" fontWeight="900" fill="#1e3a5f" fontFamily="Cairo">{_p2pctStr}</text>
+                      <text x={cx2} y={cy2+14} textAnchor="middle" fontSize="11" fontWeight="700" fill="#16a34a" fontFamily="Cairo">{ar?"إنجاز":"Progress"}</text>
+                    </svg>
+                    <div style={{fontSize:11,color:"#888",fontWeight:700}}>{ar?"نسبة الإنجاز الكلي":"Overall Achievement Rate"}</div>
+                  </div>
+                </div>
+              </div>
+            );})()}
+
+            {/* ─── يمين: التحصيل ─── */}
+            {(()=>{
+              const _p2p = p2FileData.paid||0;
+              const _p2a = p2FileData.adj||0;
+              const _p2m = p2FileData.portAmt||13595235.153;
+              const _p2over = p2FileData.over||0;
+              const _p2disc = p2FileData.disc||0;
+              const _p2tot = _p2p + _p2a;
+              const _p2rem = _p2m - _p2tot;
+              const omr2 = v => v.toLocaleString('en',{minimumFractionDigits:3,maximumFractionDigits:3});
+              return (
+              <div style={{padding:"20px 28px"}}>
+                <div style={{marginBottom:12}}><span style={{background:"#16a34a",color:"#fff",borderRadius:8,padding:"3px 14px",fontSize:13,fontWeight:900}}>💰 {ar?"التحصيل":"Collection"}</span></div>
+                <div style={{display:"flex",flexDirection:"column",gap:8}}>
+                  {[
+                    [ar?"المدفوع":"Paid",                          omr2(_p2p),    "#16a34a"],
+                    [ar?"تسويات عُمانتل":"Omantel Adj.",          omr2(_p2a),    "#d97706"],
+                    [ar?"الإجمالي":"Total",                        omr2(_p2tot),  "#1e3a5f"],
+                    [ar?"المتبقي من المحفظة":"Remaining",          omr2(_p2rem),  "#e85d20"],
+                    [ar?"دفعات زائدة (Over Recovery)":"Over Recovery", omr2(_p2over),"#0891b2"],
+                    [ar?"خصومات أونك":"ONEIC Discount",           omr2(_p2disc), "#7c3aed"],
+                    [ar?"تسويات عُمانتل 16%":"Omantel Adj. 16%", omr2(_p2a*0.17),"#b45309"],
+                  ].map(([lbl,val,clr])=>(
+                    <div key={lbl} style={{display:"flex",justifyContent:"space-between",alignItems:"center",padding:"11px 14px",borderRadius:10,background:"#fafafa",border:"1px solid #f0ece8"}}>
+                      <div style={{fontSize:15,color:"#555",fontWeight:700}}>{lbl}</div>
+                      <div style={{fontSize:26,fontWeight:900,color:clr,direction:"ltr",textAlign:"right"}}>{val} <span style={{fontSize:13,color:"#aaa",fontWeight:600}}>OMR</span></div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            );})()}
+          </div>
+        </div>
+        ) : (
+        <div style={{background:"#fff",borderRadius:16,margin:"16px 24px",padding:"36px 24px",textAlign:"center",boxShadow:"0 2px 12px rgba(0,0,0,0.06)",border:"2px dashed #e2e8f0"}}>
+          <div style={{fontSize:36,marginBottom:12}}>📂</div>
+          <div style={{fontSize:16,fontWeight:900,color:"#1e3a5f",marginBottom:6}}>{ar?"ارفع ملف عُمانتل 2 اليومي":"Upload Omantel 2 Daily File"}</div>
+          <div style={{fontSize:12,color:"#6b7280"}}>{ar?"اضغط على زر رفع الملف في الأعلى لتحميل ملف التقرير اليومي":"Click the Upload File button above to load the daily report file"}</div>
+        </div>
+        )}
+
+        {/* ─── المحتوى الثابت ─── */}
+        <div style={{padding:"24px 28px",maxWidth:1400,margin:"0 auto"}}>
           <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:20,marginBottom:24}}>
             {[
               {title:ar?"توزيع الجنسية":"Nationality Distribution",icon:"👤",grad:"linear-gradient(135deg,#1e3a5f,#1a7a6b)",rows:[
