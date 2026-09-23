@@ -12261,7 +12261,7 @@ export default function Dashboard() {
                     [ar?"المتبقي من المحفظة":"Remaining",          omr2(_p2rem),  "#e85d20"],
                     [ar?"دفعات زائدة (Over Recovery)":"Over Recovery", omr2(_p2over),"#0891b2"],
                     [ar?"خصومات أونك":"ONEIC Discount",           omr2(_p2disc), "#7c3aed"],
-                    [ar?"تسويات عُمانتل 16%":"Omantel Adj. 16%", omr2(_p2a*0.17),"#b45309"],
+                    [ar?"تسويات عُمانتل 17%":"Omantel Adj. 17%", omr2(_p2a*0.17),"#b45309"],
                   ].map(([lbl,val,clr])=>(
                     <div key={lbl} style={{display:"flex",justifyContent:"space-between",alignItems:"center",padding:"11px 14px",borderRadius:10,background:"#fafafa",border:"1px solid #f0ece8"}}>
                       <div style={{fontSize:15,color:"#555",fontWeight:700}}>{lbl}</div>
