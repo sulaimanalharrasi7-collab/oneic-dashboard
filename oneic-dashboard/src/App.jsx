@@ -11786,12 +11786,15 @@ export default function Dashboard() {
 
   // == شاشة كلمة المرور (بعد اختيار المشروع) ============================
   if (!unlocked) {
-    const isP2 = projectChoice==='p2';
+    const isP2    = projectChoice==='p2';
+    const isLegal = projectChoice==='legal';
     return (
       <div style={{
         height:"100vh", display:"flex", flexDirection:"column",
         alignItems:"center", justifyContent:"center",
-        background:"linear-gradient(135deg,#1e3a5f 0%,#2d5a8e 50%,#1e3a5f 100%)",
+        background: isLegal
+          ? "linear-gradient(135deg,#064e3b 0%,#16a34a 50%,#064e3b 100%)"
+          : "linear-gradient(135deg,#1e3a5f 0%,#2d5a8e 50%,#1e3a5f 100%)",
         fontFamily:"'Cairo','Tajawal',sans-serif", direction:"rtl"
       }}>
         <div style={{
@@ -11799,12 +11802,19 @@ export default function Dashboard() {
           boxShadow:"0 20px 60px rgba(0,0,0,0.3)",
           width:"100%", maxWidth:400, textAlign:"center"
         }}>
-          <img src={LOGO} alt="ONEIC" style={{height:60,objectFit:"contain",marginBottom:14}}/>
-          <div style={{fontSize:20,fontWeight:900,color:"#1e3a5f",marginBottom:3}}>
-            {isP2 ? (lang==='ar'?"محفظة عُمانتل 2":"Omantel Portfolio 2") : t("محفظة عُمانتل 1",lang)}
+          {isLegal
+            ? <div style={{fontSize:56,marginBottom:10}}>⚖️</div>
+            : <img src={LOGO} alt="ONEIC" style={{height:60,objectFit:"contain",marginBottom:14}}/>
+          }
+          <div style={{fontSize:20,fontWeight:900,color: isLegal?"#064e3b":"#1e3a5f",marginBottom:3}}>
+            {isLegal ? (lang==='ar'?"تسويات القانوني":"Legal Settlements")
+             : isP2  ? (lang==='ar'?"محفظة عُمانتل 2":"Omantel Portfolio 2")
+             : t("محفظة عُمانتل 1",lang)}
           </div>
-          <div style={{fontSize:11,color:isP2?"#d97706":"#888",fontWeight:600,marginBottom:16}}>
-            {isP2 ? (lang==='ar'?"تحليل ما قبل الإطلاق":"Pre-Launch Analysis") : "Omantel Debt Collection Dashboard"}
+          <div style={{fontSize:11,color: isLegal?"#16a34a":isP2?"#d97706":"#888",fontWeight:600,marginBottom:16}}>
+            {isLegal ? "Legal - DR. Sarhaan"
+             : isP2  ? (lang==='ar'?"تحليل ما قبل الإطلاق":"Pre-Launch Analysis")
+             : "Omantel Debt Collection Dashboard"}
           </div>
           <button onClick={()=>{setProjectChoice(null);setPwInput('');setPwError(false);}} style={{
             background:"#f3f4f6",color:"#6b7280",border:"none",borderRadius:8,
@@ -11837,10 +11847,10 @@ export default function Dashboard() {
             if (pwInput==='Welcome@93360229##'){setUnlocked(true);}
             else{setPwError(true);setPwInput('');}
           }} style={{width:"100%",padding:"13px",
-            background:isP2?"linear-gradient(120deg,#92400e,#d97706)":"linear-gradient(120deg,#1e3a5f,#2d5a8e)",
+            background:isLegal?"linear-gradient(120deg,#064e3b,#16a34a)":isP2?"linear-gradient(120deg,#92400e,#d97706)":"linear-gradient(120deg,#1e3a5f,#2d5a8e)",
             color:"#fff",border:"none",borderRadius:12,fontSize:15,fontWeight:900,cursor:"pointer",
             fontFamily:"'Cairo',sans-serif",
-            boxShadow:isP2?"0 4px 15px rgba(217,119,6,0.4)":"0 4px 15px rgba(30,58,95,0.4)"}}>
+            boxShadow:isLegal?"0 4px 15px rgba(22,163,74,0.4)":isP2?"0 4px 15px rgba(217,119,6,0.4)":"0 4px 15px rgba(30,58,95,0.4)"}}>
             🔓 {lang==='ar'?"دخول":"Login"}
           </button>
           <div style={{marginTop:20,fontSize:11,color:"#bbb",fontWeight:600}}>
