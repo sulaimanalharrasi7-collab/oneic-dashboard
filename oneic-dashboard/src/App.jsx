@@ -13141,7 +13141,8 @@ export default function Dashboard() {
                   textAlign:"center",direction:"ltr",letterSpacing:3,marginBottom:8}}/>
               {lPwError&&<div style={{color:"#ef4444",fontSize:12,fontWeight:700,textAlign:"center",marginBottom:8}}>❌ {ar?"كلمة المرور غير صحيحة":"Incorrect password"}</div>}
               <button onClick={()=>{
-                if(lPwInput==='Sulaiman1992'){setLPwModal(false);setLPwInput('');setLPwError(false);lPwAction&&lPwAction();}
+                const _okPw2 = lPwModal==='upload' ? lPwInput===LEGAL_UPLOAD_PW : lPwInput===LEGAL_PW;
+                if(_okPw2){setLPwModal(false);setLPwInput('');setLPwError(false);lPwAction&&lPwAction();}
                 else{setLPwError(true);setLPwInput('');}
               }} style={{width:"100%",padding:"12px",background:"linear-gradient(120deg,#1e3a5f,#16a34a)",color:"#fff",border:"none",borderRadius:12,fontSize:14,fontWeight:900,cursor:"pointer",marginBottom:8,fontFamily:"'Cairo',sans-serif"}}>
                 ✅ {ar?"تأكيد":"Confirm"}
