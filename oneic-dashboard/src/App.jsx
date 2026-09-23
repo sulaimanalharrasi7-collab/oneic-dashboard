@@ -11886,12 +11886,19 @@ export default function Dashboard() {
                     const buf = ev.target.result;
                     const bytes = new Uint8Array(buf);
                     let text;
-                    if (bytes[0]===0xFF&&bytes[1]===0xFE) {
-                      let raw=new TextDecoder('utf-16-le').decode(buf);
-                      let skip=0; while(skip<raw.length&&(raw[skip]===' '||raw[skip]==='﻿'))skip++;
-                      text=raw.slice(skip);
-                    } else if (bytes[0]===0xFE&&bytes[1]===0xFF) {
-                      text=new TextDecoder('utf-16-be').decode(buf);
+                    // البحث عن BOM في أول 10 بايت — الملف يبدأ بـ 5 مسافات قبل BOM
+                    let _bomLE=-1, _bomBE=-1;
+                    for(let _b=0;_b<Math.min(10,bytes.length-1);_b++){
+                      if(bytes[_b]===0xFF&&bytes[_b+1]===0xFE&&_bomLE<0) _bomLE=_b;
+                      if(bytes[_b]===0xFE&&bytes[_b+1]===0xFF&&_bomBE<0) _bomBE=_b;
+                    }
+                    if(_bomLE>=0){
+                      // UTF-16 LE — نقرأ من بعد BOM مباشرةً
+                      text=new TextDecoder('utf-16-le').decode(buf.slice(_bomLE+2));
+                      let _s=0; while(_s<text.length&&(text[_s]===' '||text[_s]==='\uFEFF'))_s++;
+                      text=text.slice(_s);
+                    } else if(_bomBE>=0){
+                      text=new TextDecoder('utf-16-be').decode(buf.slice(_bomBE+2));
                     } else {
                       text=new TextDecoder('utf-8').decode(buf);
                     }
