@@ -13163,9 +13163,9 @@ export default function Dashboard() {
               <div style={{fontSize:15,fontWeight:900,color:"#1e3a5f",marginBottom:4}}>✏️ {ar?ar?"تعديل الحساب":"Edit Account":"Edit Account"}</div>
               <div style={{fontSize:12,color:"#888",marginBottom:18}}>{lEditModal.agreementNo} — {lEditModal.name||'-'}</div>
               {[
-                {label:"Legal Expenses (OMR)", key:"legalExpenses"},
-                {label:"Translate (OMR)",      key:"translate"},
-                {label:"Attorney Fees (OMR)",  key:"attorneyFees"},
+                {label:ar?"المصاريف القانونية (OMR)":"Legal Expenses (OMR)", key:"legalExpenses"},
+                {label:ar?"ترجمة (OMR)":"Translate (OMR)",      key:"translate"},
+                {label:ar?"أتعاب المحامي (OMR)":"Attorney Fees (OMR)",  key:"attorneyFees"},
               ].map(f=>(
                 <div key={f.key} style={{marginBottom:14}}>
                   <div style={{fontSize:12,fontWeight:700,color:"#374151",marginBottom:6}}>{f.label}</div>
@@ -13310,49 +13310,57 @@ export default function Dashboard() {
                 </div>
                 {lNewAccounts.map(acc=>(
                   <div key={acc.agreementNo} style={{background:"#fff",borderRadius:16,padding:"20px",boxShadow:"0 2px 14px rgba(0,0,0,0.08)",border:`2px solid ${acc.isFull?'#16a34a':'#d97706'}30`}}>
-                    {/* ── Card Header: Name + Badge ── */}
-                    <div style={{display:"flex",justifyContent:"space-between",alignItems:"flex-start",marginBottom:16,gap:12}}>
-                      {/* Name + Agreement */}
-                      <div style={{flex:1,minWidth:0}}>
-                        <div style={{display:"flex",alignItems:"center",gap:8,marginBottom:6}}>
-                          <div style={{width:38,height:38,borderRadius:12,background:acc.isFull?"linear-gradient(135deg,#16a34a,#4ade80)":"linear-gradient(135deg,#d97706,#fbbf24)",display:"flex",alignItems:"center",justifyContent:"center",fontSize:18,flexShrink:0}}>
-                            {acc.isFull?"✅":"⏳"}
-                          </div>
-                          <div style={{minWidth:0}}>
-                            {lNameEdit[acc.agreementNo]!==undefined ? (
-                              <div style={{display:"flex",gap:6,alignItems:"center"}}>
-                                <input value={lNameEdit[acc.agreementNo]} autoFocus
-                                  onChange={e=>setLNameEdit(p=>({...p,[acc.agreementNo]:e.target.value}))}
-                                  onKeyDown={e=>{
-                                    if(e.key==='Enter'){ setLNewAccounts(prev=>prev.map(a=>a.agreementNo===acc.agreementNo?{...a,name:lNameEdit[acc.agreementNo]}:a)); setLNameEdit(p=>{const n={...p};delete n[acc.agreementNo];return n;}); }
-                                    if(e.key==='Escape'){ setLNameEdit(p=>{const n={...p};delete n[acc.agreementNo];return n;}); }
-                                  }}
-                                  style={{fontSize:15,fontWeight:900,color:"#1e3a5f",border:"2px solid #16a34a",borderRadius:8,padding:"4px 10px",outline:"none",fontFamily:"'Cairo',sans-serif",width:"100%"}}/>
-                                <button onClick={()=>{ setLNewAccounts(prev=>prev.map(a=>a.agreementNo===acc.agreementNo?{...a,name:lNameEdit[acc.agreementNo]}:a)); setLNameEdit(p=>{const n={...p};delete n[acc.agreementNo];return n;}); }}
-                                  style={{background:"#16a34a",color:"#fff",border:"none",borderRadius:8,padding:"5px 12px",fontSize:12,fontWeight:700,cursor:"pointer",whiteSpace:"nowrap"}}>✓</button>
-                                <button onClick={()=>setLNameEdit(p=>{const n={...p};delete n[acc.agreementNo];return n;})}
-                                  style={{background:"#f3f4f6",color:"#6b7280",border:"none",borderRadius:8,padding:"5px 10px",fontSize:12,fontWeight:700,cursor:"pointer"}}>✕</button>
-                              </div>
-                            ) : (
-                              <div style={{display:"flex",alignItems:"center",gap:6}}>
-                                <div style={{fontSize:16,fontWeight:900,color:"#1e3a5f",overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{acc.name||(ar?"(بدون اسم)":"(No Name)")}</div>
-                                <button onClick={()=>setLNameEdit(p=>({...p,[acc.agreementNo]:acc.name||''}))}
-                                  style={{background:"#dbeafe",color:"#1e40af",border:"none",borderRadius:6,padding:"3px 8px",fontSize:11,fontWeight:700,cursor:"pointer",flexShrink:0}}>✏️</button>
-                              </div>
-                            )}
-                            <div style={{fontSize:11,color:"#6b7280",fontWeight:600,direction:"ltr",marginTop:2}}>{acc.agreementNo}</div>
+                    {/* ── Card Header: رقم الحساب + الاسم + نوع التسوية ── */}
+                    <div style={{background:acc.isFull?"linear-gradient(135deg,#f0fdf4,#dcfce7)":"linear-gradient(135deg,#fffbeb,#fef3c7)",borderRadius:12,padding:"14px 16px",marginBottom:14,border:`1.5px solid ${acc.isFull?"#16a34a":"#d97706"}30`}}>
+                      {/* الصف الأول: رقم الحساب + شارة النوع */}
+                      <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:10}}>
+                        <div style={{display:"flex",alignItems:"center",gap:8}}>
+                          <div style={{background:acc.isFull?"#16a34a":"#d97706",borderRadius:8,padding:"3px 10px"}}>
+                            <span style={{fontSize:10,color:"rgba(255,255,255,0.8)",fontWeight:600,marginLeft:4}}>{ar?"رقم الحساب :":"Account #:"}</span>
+                            <span style={{fontSize:12,fontWeight:900,color:"#fff",direction:"ltr",letterSpacing:0.5}}>{acc.agreementNo}</span>
                           </div>
                         </div>
+                        <span style={{
+                          background:acc.isFull?"linear-gradient(135deg,#16a34a,#22c55e)":"linear-gradient(135deg,#d97706,#f59e0b)",
+                          color:"#fff",borderRadius:20,padding:"5px 16px",fontSize:12,fontWeight:900,
+                          boxShadow:acc.isFull?"0 2px 8px rgba(22,163,74,0.35)":"0 2px 8px rgba(217,119,6,0.35)",
+                          display:"flex",alignItems:"center",gap:6
+                        }}>
+                          {acc.isFull?"✅":"⏳"} {acc.isFull?(ar?"تسوية كاملة":"Full Settlement"):(ar?"تسوية جزئية":"Partial Settlement")}
+                        </span>
                       </div>
-                      {/* Type Badge */}
-                      <span style={{
-                        background:acc.isFull?"linear-gradient(135deg,#16a34a,#22c55e)":"linear-gradient(135deg,#d97706,#f59e0b)",
-                        color:"#fff",borderRadius:12,padding:"6px 16px",fontSize:11,fontWeight:900,
-                        flexShrink:0,boxShadow:acc.isFull?"0 2px 8px rgba(22,163,74,0.3)":"0 2px 8px rgba(217,119,6,0.3)",
-                        display:"flex",alignItems:"center",gap:4
-                      }}>
-                        {acc.isFull?(ar?"تسوية كاملة":"Full Settlement"):(ar?"تسوية جزئية":"Partial Settlement")}
-                      </span>
+                      {/* الصف الثاني: الاسم مع زر التعديل */}
+                      <div style={{display:"flex",alignItems:"center",gap:8}}>
+                        <div style={{width:36,height:36,borderRadius:10,background:"rgba(0,0,0,0.06)",display:"flex",alignItems:"center",justifyContent:"center",fontSize:16,flexShrink:0}}>👤</div>
+                        <div style={{flex:1,minWidth:0}}>
+                          {lNameEdit[acc.agreementNo]!==undefined ? (
+                            <div style={{display:"flex",gap:6,alignItems:"center"}}>
+                              <input value={lNameEdit[acc.agreementNo]} autoFocus
+                                onChange={e=>setLNameEdit(p=>({...p,[acc.agreementNo]:e.target.value}))}
+                                onKeyDown={e=>{
+                                  if(e.key==='Enter'){ setLNewAccounts(prev=>prev.map(a=>a.agreementNo===acc.agreementNo?{...a,name:lNameEdit[acc.agreementNo]}:a)); setLNameEdit(p=>{const n={...p};delete n[acc.agreementNo];return n;}); }
+                                  if(e.key==='Escape'){ setLNameEdit(p=>{const n={...p};delete n[acc.agreementNo];return n;}); }
+                                }}
+                                placeholder={ar?"اكتب الاسم...":"Type name..."}
+                                style={{fontSize:15,fontWeight:800,color:"#1e3a5f",border:`2px solid ${acc.isFull?"#16a34a":"#d97706"}`,borderRadius:8,padding:"5px 12px",outline:"none",fontFamily:"'Cairo',sans-serif",flex:1}}/>
+                              <button onClick={()=>{ setLNewAccounts(prev=>prev.map(a=>a.agreementNo===acc.agreementNo?{...a,name:lNameEdit[acc.agreementNo]}:a)); setLNameEdit(p=>{const n={...p};delete n[acc.agreementNo];return n;}); }}
+                                style={{background:"#16a34a",color:"#fff",border:"none",borderRadius:8,padding:"6px 14px",fontSize:13,fontWeight:900,cursor:"pointer"}}>✓</button>
+                              <button onClick={()=>setLNameEdit(p=>{const n={...p};delete n[acc.agreementNo];return n;})}
+                                style={{background:"#f3f4f6",color:"#6b7280",border:"none",borderRadius:8,padding:"6px 12px",fontSize:13,fontWeight:700,cursor:"pointer"}}>✕</button>
+                            </div>
+                          ) : (
+                            <div style={{display:"flex",alignItems:"center",gap:8}}>
+                              <div style={{fontSize:acc.name?17:14,fontWeight:900,color:acc.name?"#1e3a5f":"#9ca3af",overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>
+                                {acc.name||(ar?"اضغط ✏️ لإضافة الاسم":"Click ✏️ to add name")}
+                              </div>
+                              <button onClick={()=>askPw(()=>setLNameEdit(p=>({...p,[acc.agreementNo]:acc.name||''})))}
+                                style={{background:acc.name?"#dbeafe":"#fef3c7",color:acc.name?"#1e40af":"#d97706",border:"none",borderRadius:6,padding:"4px 10px",fontSize:12,fontWeight:800,cursor:"pointer",flexShrink:0}}>
+                                ✏️ {acc.name?(ar?"تعديل":"Edit"):(ar?"إضافة":"Add")}
+                              </button>
+                            </div>
+                          )}
+                        </div>
+                      </div>
                     </div>
                     <div style={{display:"grid",gridTemplateColumns:"repeat(3,1fr)",gap:10,marginBottom:16}}>
                       {[
@@ -13368,9 +13376,9 @@ export default function Dashboard() {
                     </div>
                     <div style={{display:"grid",gridTemplateColumns:"repeat(3,1fr)",gap:10,marginBottom:16}}>
                       {[
-                        {lbl:"Legal Expenses (OMR)", key:"legalExpenses"},
-                        {lbl:"Translate (OMR)",      key:"translate"},
-                        {lbl:"Attorney Fees (OMR)",  key:"attorneyFees"},
+                        {lbl:ar?"المصاريف القانونية (OMR)":"Legal Expenses (OMR)", key:"legalExpenses"},
+                        {lbl:ar?"ترجمة (OMR)":"Translate (OMR)",      key:"translate"},
+                        {lbl:ar?"أتعاب المحامي (OMR)":"Attorney Fees (OMR)",  key:"attorneyFees"},
                       ].map(f=>(
                         <div key={f.key}>
                           <div style={{fontSize:11,fontWeight:700,color:"#374151",marginBottom:6}}>{f.lbl}</div>
@@ -13426,7 +13434,7 @@ export default function Dashboard() {
                         <td style={{padding:"10px 8px",fontSize:11,color:"#9ca3af",textAlign:"center"}}>{r.savedAt||"-"}</td>
                         <td style={{padding:"6px 8px",textAlign:"center"}}>
                           <div style={{display:"flex",gap:6,justifyContent:"center"}}>
-                            <button onClick={()=>{setLEditModal(r);setLEditInputs({name:r.name||'',legalExpenses:r.legalExpenses||0,translate:r.translate||0,attorneyFees:r.attorneyFees||0});}}
+                            <button onClick={()=>askPw(()=>{setLEditModal(r);setLEditInputs({name:r.name||'',legalExpenses:r.legalExpenses||0,translate:r.translate||0,attorneyFees:r.attorneyFees||0});})}
                               style={{background:"#dbeafe",color:"#1e40af",border:"none",borderRadius:8,padding:"4px 10px",fontSize:11,fontWeight:700,cursor:"pointer"}}>✏️</button>
                             <button onClick={()=>{
                               setLPwInput('');setLPwError(false);
@@ -13494,7 +13502,7 @@ export default function Dashboard() {
                         <td style={{padding:"10px 8px",fontSize:11,color:"#9ca3af",textAlign:"center"}}>{r.savedAt||"-"}</td>
                         <td style={{padding:"6px 8px",textAlign:"center"}}>
                           <div style={{display:"flex",gap:6,justifyContent:"center"}}>
-                            <button onClick={()=>{setLEditModal(r);setLEditInputs({name:r.name||'',legalExpenses:r.legalExpenses||0,translate:r.translate||0,attorneyFees:r.attorneyFees||0});}}
+                            <button onClick={()=>askPw(()=>{setLEditModal(r);setLEditInputs({name:r.name||'',legalExpenses:r.legalExpenses||0,translate:r.translate||0,attorneyFees:r.attorneyFees||0});})}
                               style={{background:"#dbeafe",color:"#1e40af",border:"none",borderRadius:8,padding:"4px 10px",fontSize:11,fontWeight:700,cursor:"pointer"}}>✏️</button>
                             <button onClick={()=>{
                               setLPwInput('');setLPwError(false);
