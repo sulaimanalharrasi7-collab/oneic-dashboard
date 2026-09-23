@@ -12814,25 +12814,37 @@ export default function Dashboard() {
       const idxCol  = headers.findIndex(h=>/^collector$/i.test(h));
       const existingIds = new Set(lRecords.map(r=>String(r.agreementNo)));
       const newAccs = [];
-      for(let i=1;i<lines.length;i++){
-        const row = lines[i].split('\t');
-        if(!row[0]||!row[0].trim()) continue;
-        const collector = (row[idxCol]||'').trim();
-        if(!/legal.*sarhaan/i.test(collector)) continue;
-        const adj = parseFloat(row[idxAdj]||0)||0;
-        if(adj <= 0) continue;
-        const agrNo = String((row[idxAgr]||'').trim());
-        if(existingIds.has(agrNo)) continue;
-        newAccs.push({ agreementNo:agrNo, name:(row[idxName]||'').trim(),
-          principal:parseFloat(row[idxPrin]||0)||0, osAmount:parseFloat(row[idxOS]||0)||0,
-          adjustment:adj, isFull:(parseFloat(row[idxOS]||0)||0)===0 });
-      }
-      setLNewAccounts(newAccs); setLNewBadge(newAccs.length);
-      const d = new Date().toLocaleDateString('en-GB');
-      setLUploadDate(d);
-      try{ localStorage.setItem('oneic_legal_uploaddate',d); }catch(e){}
-      showToast(ar?`تم رفع الملف — ${newAccs.length} حساب جديد`:`Uploaded — ${newAccs.length} new accounts`);
-      if(newAccs.length>0) setLTab('new');
+      // معالجة الملف على دفعات لمنع تجميد الصفحة
+      const CHUNK = 2000;
+      let i = 1;
+      const processChunk = () => {
+        const end = Math.min(i + CHUNK, lines.length);
+        for(; i < end; i++){
+          const row = lines[i].split('\t');
+          if(!row[0]||!row[0].trim()) continue;
+          const collector = (row[idxCol]||'').trim();
+          if(!/legal.*sarhaan/i.test(collector)) continue;
+          const adj = parseFloat(row[idxAdj]||0)||0;
+          if(adj <= 0) continue;
+          const agrNo = String((row[idxAgr]||'').trim());
+          if(existingIds.has(agrNo)) continue;
+          newAccs.push({ agreementNo:agrNo, name:(row[idxName]||'').trim(),
+            principal:parseFloat(row[idxPrin]||0)||0, osAmount:parseFloat(row[idxOS]||0)||0,
+            adjustment:adj, isFull:(parseFloat(row[idxOS]||0)||0)===0 });
+        }
+        if(i < lines.length){
+          setTimeout(processChunk, 0); // يتيح للمتصفح التنفس بين الدفعات
+        } else {
+          setLNewAccounts(newAccs); setLNewBadge(newAccs.length);
+          const d = new Date().toLocaleString('en-GB',{day:'2-digit',month:'2-digit',year:'numeric',hour:'2-digit',minute:'2-digit',hour12:false}).replace(',','');
+          setLUploadDate(d);
+          try{ localStorage.setItem('oneic_legal_uploaddate',d); }catch(e){}
+          showToast(ar?`✅ تم الرفع — ${newAccs.length} حساب جديد`:`✅ Uploaded — ${newAccs.length} new accounts`);
+          if(newAccs.length>0) setLTab('new');
+        }
+      };
+      showToast(ar?'⏳ جاري تحليل الملف...':'⏳ Processing file...');
+      setTimeout(processChunk, 50);
     };
 
     const handleLegalUpload = (file) => {
@@ -12921,7 +12933,7 @@ export default function Dashboard() {
     const inputStyle={width:'100%',padding:'10px 12px',border:'1.5px solid #e2e8f0',borderRadius:10,fontSize:14,fontFamily:"'Cairo',sans-serif",outline:'none',textAlign:'center',direction:'ltr'};
 
     return (
-      <div style={{minHeight:"100vh",background:"linear-gradient(160deg,#f0f4f8 0%,#e8f5f0 100%)",fontFamily:"'Cairo','Tajawal',sans-serif",direction:ar?"rtl":"ltr",overflowX:"hidden",paddingBottom:60}}>
+      <div style={{minHeight:"100vh",background:"linear-gradient(160deg,#f0f4f8 0%,#e8f5f0 100%)",fontFamily:"'Cairo','Tajawal',sans-serif",direction:ar?"rtl":"ltr",paddingBottom:80}}>
         <style>{`
           @keyframes scaleSwing {
             0%   { transform: rotate(0deg) scale(1); }
@@ -13216,7 +13228,7 @@ export default function Dashboard() {
             {icon:"✅",val:fullRecs.length,lbl:ar?"تسوية كاملة":"Full Settlements",col:"#166534",grad:"linear-gradient(135deg,#166534,#22c55e)",bg:"linear-gradient(135deg,#f0fdf4,#dcfce7)"},
             {icon:"⏳",val:partialRecs.length,lbl:ar?"تسوية جزئية":"Partial Settlements",col:"#92400e",grad:"linear-gradient(135deg,#92400e,#f59e0b)",bg:"linear-gradient(135deg,#fffbeb,#fef3c7)"},
           ].map((k,i)=>(
-            <div key={i} className="legal-kpi-card" style={{background:k.bg,borderRadius:18,padding:"20px 16px",border:`1.5px solid ${k.col}30`,boxShadow:"0 4px 20px rgba(0,0,0,0.08)",textAlign:"center",cursor:"default",transition:"all 0.25s ease",position:"relative",overflow:"hidden"}}>
+            <div key={i} className="legal-kpi-card" style={{background:k.bg,borderRadius:18,padding:"20px 16px",border:`1.5px solid ${k.col}30`,boxShadow:"0 4px 20px rgba(0,0,0,0.08)",textAlign:"center",cursor:"default",transition:"all 0.25s ease",position:"relative"}}>
               {/* gradient bar top */}
               <div style={{position:"absolute",top:0,left:0,right:0,height:4,background:k.grad,borderRadius:"18px 18px 0 0"}}/>
               {/* icon circle */}
@@ -13243,7 +13255,7 @@ export default function Dashboard() {
           .legal-tab-btn { transition: all 0.2s ease; }
           .legal-tab-btn:hover { background: rgba(22,163,74,0.06) !important; }
         `}</style>
-        <div style={{background:"#fff",position:"sticky",top:62,zIndex:90,boxShadow:"0 3px 12px rgba(0,0,0,0.08)",borderBottom:"1px solid #e8f5e9"}}>
+        <div style={{background:"#fff",position:"sticky",top:62,zIndex:90,boxShadow:"0 3px 12px rgba(0,0,0,0.08)",borderBottom:"1px solid #e8f5e9",WebkitTransform:"translateZ(0)"}}>
           <div style={{display:"flex",padding:"0 16px",gap:4}}>
             {[
               {key:'new',   icon:"🔔", label:ar?"الجديد":"New",          badge:lNewBadge, activeCol:"#dc2626", activeBg:"#fef2f2"},
