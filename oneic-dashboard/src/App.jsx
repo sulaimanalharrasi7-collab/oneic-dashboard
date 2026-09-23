@@ -11882,7 +11882,7 @@ export default function Dashboard() {
           <div style={{display:"flex",gap:8,alignItems:"center"}}>
             {/* زر رفع الملف - محمي بكلمة مرور */}
             <label style={{background:"linear-gradient(120deg,#16a34a,#15803d)",color:"#fff",borderRadius:10,padding:"7px 16px",fontSize:12,fontWeight:700,cursor:"pointer",display:"flex",alignItems:"center",gap:6}}
-              onClick={(ev)=>{ ev.preventDefault(); setP2PwInput(''); setP2PwError(false); setP2PwModal(true); }}>
+              onClick={(ev)=>{ ev.preventDefault(); setP2PwInput(''); setP2PwError(false); setP2PwModal('upload'); }}>
               📂 {ar?"رفع ملف":"Upload File"}
             </label>
             {/* مربع اختيار الملف المخفي */}
@@ -11941,14 +11941,16 @@ export default function Dashboard() {
                 e.target.value='';
               }}/>
             {/* مودال كلمة المرور */}
-            {p2PwModal && (
+            {(p2PwModal==='upload'||p2PwModal==='clear') && (
               <div style={{position:"fixed",inset:0,zIndex:99999,background:"rgba(0,0,0,0.55)",display:"flex",alignItems:"center",justifyContent:"center"}}
                 onClick={()=>{setP2PwModal(false);setP2PwError(false);setP2PwInput('');}}>
                 <div style={{background:"#fff",borderRadius:20,padding:"32px 28px",width:320,boxShadow:"0 20px 60px rgba(0,0,0,0.4)"}}
                   onClick={e=>e.stopPropagation()}>
                   <div style={{textAlign:"center",marginBottom:20}}>
                     <div style={{fontSize:32,marginBottom:8}}>🔐</div>
-                    <div style={{fontSize:16,fontWeight:900,color:"#1e3a5f"}}>{ar?"رفع ملف عُمانتل 2":"Upload Omantel 2 File"}</div>
+                    <div style={{fontSize:16,fontWeight:900,color:p2PwModal==='clear'?"#dc2626":"#1e3a5f"}}>
+                      {p2PwModal==='clear'?(ar?"تأكيد مسح الملف":"Confirm Clear File"):(ar?"رفع ملف عُمانتل 2":"Upload Omantel 2 File")}
+                    </div>
                     <div style={{fontSize:12,color:"#888",marginTop:4}}>{ar?"أدخل كلمة المرور للمتابعة":"Enter password to continue"}</div>
                   </div>
                   <input
@@ -11959,8 +11961,12 @@ export default function Dashboard() {
                     onKeyDown={e=>{
                       if(e.key==='Enter'){
                         if(p2PwInput==='Sulaiman1992'){
+                          const _mode=p2PwModal;
                           setP2PwModal(false);setP2PwError(false);setP2PwInput('');
-                          document.getElementById('p2FileInput').click();
+                          if(_mode==='upload') document.getElementById('p2FileInput').click();
+                          else{ setP2FileData(null);setP2FileName('');setP2UploadDate('');
+                            try{localStorage.removeItem('oneic_p2data');localStorage.removeItem('oneic_p2filename');localStorage.removeItem('oneic_p2date');}catch(e){}
+                          }
                         } else { setP2PwError(true); setP2PwInput(''); }
                       }
                     }}
@@ -11977,11 +11983,15 @@ export default function Dashboard() {
                   )}
                   <button onClick={()=>{
                     if(p2PwInput==='Sulaiman1992'){
+                      const _mode=p2PwModal;
                       setP2PwModal(false);setP2PwError(false);setP2PwInput('');
-                      document.getElementById('p2FileInput').click();
+                      if(_mode==='upload') document.getElementById('p2FileInput').click();
+                      else{ setP2FileData(null);setP2FileName('');setP2UploadDate('');
+                        try{localStorage.removeItem('oneic_p2data');localStorage.removeItem('oneic_p2filename');localStorage.removeItem('oneic_p2date');}catch(e){}
+                      }
                     } else { setP2PwError(true); setP2PwInput(''); }
-                  }} style={{width:"100%",padding:"12px",background:"linear-gradient(120deg,#16a34a,#15803d)",color:"#fff",border:"none",borderRadius:12,fontSize:14,fontWeight:900,cursor:"pointer",marginBottom:8,fontFamily:"'Cairo',sans-serif"}}>
-                    ✅ {ar?"تأكيد":"Confirm"}
+                  }} style={{width:"100%",padding:"12px",background:p2PwModal==='clear'?"linear-gradient(120deg,#dc2626,#b91c1c)":"linear-gradient(120deg,#16a34a,#15803d)",color:"#fff",border:"none",borderRadius:12,fontSize:14,fontWeight:900,cursor:"pointer",marginBottom:8,fontFamily:"'Cairo',sans-serif"}}>
+                    {p2PwModal==='clear'?'🗑️ '+(ar?'حذف':'Delete'):'✅ '+(ar?'تأكيد':'Confirm')}
                   </button>
                   <button onClick={()=>{setP2PwModal(false);setP2PwError(false);setP2PwInput('');}}
                     style={{width:"100%",padding:"10px",background:"#f3f4f6",color:"#6b7280",border:"none",borderRadius:12,fontSize:13,fontWeight:700,cursor:"pointer",fontFamily:"'Cairo',sans-serif"}}>
@@ -11991,10 +12001,8 @@ export default function Dashboard() {
               </div>
             )}
             {p2FileData && (
-              <button onClick={()=>{
-                setP2FileData(null); setP2FileName(''); setP2UploadDate('');
-                try{localStorage.removeItem('oneic_p2data');localStorage.removeItem('oneic_p2filename');localStorage.removeItem('oneic_p2date');}catch(e){}
-              }} style={{background:"rgba(239,68,68,0.15)",color:"#fca5a5",border:"1px solid rgba(239,68,68,0.3)",borderRadius:10,padding:"7px 14px",fontSize:12,fontWeight:700,cursor:"pointer"}}>
+              <button onClick={()=>{ setP2PwInput(''); setP2PwError(false); setP2PwModal('clear'); }}
+                style={{background:"rgba(239,68,68,0.15)",color:"#fca5a5",border:"1px solid rgba(239,68,68,0.3)",borderRadius:10,padding:"7px 14px",fontSize:12,fontWeight:700,cursor:"pointer"}}>
                 🗑️ {ar?"مسح الملف":"Clear"}
               </button>
             )}
