@@ -10949,6 +10949,7 @@ export default function Dashboard() {
   const [lToast,      setLToast]      = useState('');
   const [lNewBadge,   setLNewBadge]   = useState(0);
   const [lUploadDate, setLUploadDate] = useState(()=>{ try{return localStorage.getItem('oneic_legal_uploaddate')||'';}catch(e){return '';} });
+  const [lPrintModal, setLPrintModal] = useState(false);
 
   const [syncing, setSyncing] = useState(false);
   const [showUploadAuth, setShowUploadAuth] = useState(false);
@@ -11699,7 +11700,7 @@ export default function Dashboard() {
             onMouseEnter={e=>{e.currentTarget.style.transform="translateY(-3px)";e.currentTarget.style.boxShadow="0 8px 30px rgba(0,0,0,0.3)"}}
             onMouseLeave={e=>{e.currentTarget.style.transform="translateY(0)";e.currentTarget.style.boxShadow="0 4px 20px rgba(0,0,0,0.2)"}}>
             <div style={{fontSize:40}}>⚖️</div>
-            <div style={{fontSize:17,fontWeight:900,color:"#1e3a5f"}}>{lang==='ar'?"تسويات القانوني":"Legal Settlements"}</div>
+            <div style={{fontSize:17,fontWeight:900,color:"#1e3a5f"}}>{lang==='ar'?"خصومات القانونية":"Legal Discounts"}</div>
             <div style={{fontSize:10,color:"#374151"}}>{lang==='ar'?"Legal - DR. Sarhaan":"Legal - DR. Sarhaan"}</div>
             <div style={{background:"#16a34a",color:"#fff",borderRadius:20,padding:"3px 12px",fontSize:10,fontWeight:700}}>✅ {lang==='ar'?"نشط":"Active"}</div>
           </button>
@@ -11807,7 +11808,7 @@ export default function Dashboard() {
             : <img src={LOGO} alt="ONEIC" style={{height:60,objectFit:"contain",marginBottom:14}}/>
           }
           <div style={{fontSize:20,fontWeight:900,color: isLegal?"#064e3b":"#1e3a5f",marginBottom:3}}>
-            {isLegal ? (lang==='ar'?"تسويات القانوني":"Legal Settlements")
+            {isLegal ? (lang==='ar'?"خصومات القانونية":"Legal Discounts")
              : isP2  ? (lang==='ar'?"محفظة عُمانتل 2":"Omantel Portfolio 2")
              : t("محفظة عُمانتل 1",lang)}
           </div>
@@ -12735,7 +12736,7 @@ export default function Dashboard() {
               <span style={{fontSize:22}}>🏆</span>
               <span style={{fontSize:15,fontWeight:900,color:"#fff"}}>{ar?"أعلى 10 حسابات برصيد":"Top 10 Accounts by Outstanding Balance"}</span>
             </div>
-            <table style={{width:"100%",borderCollapse:"collapse"}}>
+            <table style={{width:"100%",minWidth:750,borderCollapse:"collapse"}}>
               <thead>
                 <tr style={{background:"#f0f4f8"}}>
                   {["#",ar?"اسم العميل":"Customer Name",ar?"الجنسية":"Nationality",ar?"الخدمة":"Service Type",ar?"قيمة المديونية":"Balance (OMR)"].map((h,i)=>(
@@ -12804,7 +12805,7 @@ export default function Dashboard() {
       if(lines.length < 2) return;
       const headers = lines[0].split('\t').map(h=>h.trim().replace(/^\uFEFF/,''));
       const idxAgr  = headers.findIndex(h=>/agreement.no/i.test(h));
-      const idxName = headers.findIndex(h=>/first.name/i.test(h));
+      const idxName = headers.findIndex(h=>/first.name/i.test(h)||/^name$/i.test(h));
       const idxPrin = headers.findIndex(h=>/principal.amount/i.test(h));
       const idxOS   = headers.findIndex(h=>/o.?s.amount/i.test(h));
       const idxAdj  = headers.findIndex(h=>/^adjustment$/i.test(h));
@@ -12890,58 +12891,204 @@ export default function Dashboard() {
     const totalTr     = lRecords.reduce((s,r)=>s+(r.translate||0),0);
     const totalAtt    = lRecords.reduce((s,r)=>s+(r.attorneyFees||0),0);
 
-    const handleLegalPrint = () => {
-      const w = window.open('','_blank','width=1200,height=900');
-      w.document.write(`<!DOCTYPE html><html dir="rtl" lang="ar"><head><meta charset="UTF-8">
-<title>تسويات القانوني</title><style>
-*{box-sizing:border-box;margin:0;padding:0;font-family:Arial,sans-serif;-webkit-print-color-adjust:exact}
-body{background:#f5f7fa;padding:20px;direction:rtl}@page{size:A4;margin:8mm 10mm}
-@media print{.np{display:none}}
-.hdr{background:linear-gradient(135deg,#1e3a5f,#16a34a);border-radius:12px;padding:18px 24px;color:#fff;margin-bottom:16px;display:flex;justify-content:space-between;align-items:center}
-.kpi-g{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-bottom:14px}
-.kpi{background:#fff;border-radius:10px;padding:12px;text-align:center;border:1px solid #e2e8f0}
-.kv{font-size:16px;font-weight:900;margin-bottom:2px}.kl{font-size:9px;color:#6b7280;font-weight:700}
-.sh{padding:8px 14px;border-radius:8px 8px 0 0;font-size:12px;font-weight:900;margin-top:12px;color:#fff}
-table{width:100%;border-collapse:collapse;background:#fff}
-th{background:#f0f4f8;padding:7px 10px;font-size:9px;font-weight:900;color:#374151;text-align:right;border-bottom:1px solid #e2e8f0}
-td{padding:7px 10px;font-size:10px;border-bottom:1px solid #f5f7fa;color:#111}
-.pb{background:#1e3a5f;color:#fff;border:none;border-radius:8px;padding:8px 20px;font-size:12px;cursor:pointer;display:block;margin:0 auto 14px}
-</style></head><body>
-<button class="np pb" onclick="window.print()">🖨️ طباعة</button>
-<div class="hdr"><div><div style="font-size:22px;font-weight:900;color:#e85d20">ONEIC</div><div style="font-size:11px;color:#93c5fd">تسويات القانوني — Legal DR. Sarhaan</div></div>
-<div style="text-align:left;font-size:10px;color:#93c5fd"><strong style="font-size:13px;color:#fff;display:block">تقرير التسويات القانونية</strong>تاريخ الطباعة: ${new Date().toLocaleDateString('ar-OM')}</div></div>
-<div class="kpi-g">
-<div class="kpi"><div class="kv" style="color:#1e3a5f">${lRecords.length}</div><div class="kl">إجمالي الحسابات</div></div>
-<div class="kpi"><div class="kv" style="color:#16a34a">${omrL(totalAdj)}</div><div class="kl">إجمالي التسوية OMR</div></div>
-<div class="kpi"><div class="kv" style="color:#e85d20">${fullRecs.length}</div><div class="kl">تسوية كاملة ✅</div></div>
-<div class="kpi"><div class="kv" style="color:#d97706">${partialRecs.length}</div><div class="kl">تسوية جزئية ⏳</div></div></div>
-<div class="sh" style="background:#064e3b">✅ تسوية كاملة (${fullRecs.length} حساب)</div>
-<table><tr><th>#</th><th>رقم الاتفاقية</th><th>الاسم</th><th>المبلغ الأصلي</th><th>التسوية</th><th>Legal Exp.</th><th>Translate</th><th>Attorney</th><th>التاريخ</th></tr>
-${fullRecs.map((r,i)=>`<tr><td>${i+1}</td><td>${r.agreementNo}</td><td>${r.name||'-'}</td><td>${omrL(r.principal)}</td><td style="color:#16a34a;font-weight:700">${omrL(r.adjustment)}</td><td>${omrL(r.legalExpenses||0)}</td><td>${omrL(r.translate||0)}</td><td>${omrL(r.attorneyFees||0)}</td><td>${r.savedAt||'-'}</td></tr>`).join('')}
-</table>
-<div class="sh" style="background:#78350f;margin-top:14px">⏳ تسوية جزئية (${partialRecs.length} حساب)</div>
-<table><tr><th>#</th><th>رقم الاتفاقية</th><th>الاسم</th><th>المبلغ الأصلي</th><th>المتبقي</th><th>التسوية</th><th>Legal Exp.</th><th>Translate</th><th>Attorney</th><th>التاريخ</th></tr>
-${partialRecs.map((r,i)=>`<tr><td>${i+1}</td><td>${r.agreementNo}</td><td>${r.name||'-'}</td><td>${omrL(r.principal)}</td><td style="color:#e85d20">${omrL(r.osAmount||0)}</td><td style="color:#d97706;font-weight:700">${omrL(r.adjustment)}</td><td>${omrL(r.legalExpenses||0)}</td><td>${omrL(r.translate||0)}</td><td>${omrL(r.attorneyFees||0)}</td><td>${r.savedAt||'-'}</td></tr>`).join('')}
-</table></body></html>`);
-      w.document.close();
-    };
+
+    const handleLegalPrint = () => setLPrintModal(true);;
 
     const handleLegalExcel = () => {
-      const hdr=['#','Agreement No','Name','Principal','OS Amount','Adjustment','Legal Expenses','Translate','Attorney Fees','Type','Saved At'];
-      const rows2=[...fullRecs.map((r,i)=>[i+1,r.agreementNo,r.name,r.principal,r.osAmount||0,r.adjustment,r.legalExpenses||0,r.translate||0,r.attorneyFees||0,'Full',r.savedAt||'']),
-        ...partialRecs.map((r,i)=>[fullRecs.length+i+1,r.agreementNo,r.name,r.principal,r.osAmount||0,r.adjustment,r.legalExpenses||0,r.translate||0,r.attorneyFees||0,'Partial',r.savedAt||''])];
-      const tsv=[hdr,...rows2].map(r=>r.join('\t')).join('\n');
-      const blob=new Blob(['\uFEFF'+tsv],{type:'text/tab-separated-values;charset=utf-8'});
-      const url=URL.createObjectURL(blob);
-      const a=document.createElement('a');
-      a.href=url; a.download=`legal_settlements_${new Date().toLocaleDateString('en-GB').replace(/\//g,'-')}.xls`;
-      a.click(); URL.revokeObjectURL(url);
+      const esc = v => {
+        const s = String(v==null?'':v);
+        return s.includes(',') || s.includes('"') || s.includes('\n') ? `"${s.replace(/"/g,'""')}"` : s;
+      };
+      const rows = [
+        ['#','رقم الاتفاقية','الاسم','المبلغ الأصلي','المتبقي','التسوية','Legal Expenses','Translate','Attorney Fees','النوع','تاريخ الحفظ'],
+        ...fullRecs.map((r,i)=>[i+1,r.agreementNo,r.name||'',r.principal,r.osAmount||0,r.adjustment,r.legalExpenses||0,r.translate||0,r.attorneyFees||0,'تسوية كاملة ✅',r.savedAt||'']),
+        ['','','','','','','','','','',''],
+        ...partialRecs.map((r,i)=>[fullRecs.length+i+1,r.agreementNo,r.name||'',r.principal,r.osAmount||0,r.adjustment,r.legalExpenses||0,r.translate||0,r.attorneyFees||0,'تسوية جزئية ⏳',r.savedAt||'']),
+      ];
+      const csv = rows.map(r=>r.map(esc).join(',')).join('\n');
+      const blob = new Blob(['\uFEFF'+csv],{type:'text/csv;charset=utf-8'});
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href=url;
+      a.download=`legal_settlements_${new Date().toLocaleDateString('en-GB').replace(/\//g,'-')}.csv`;
+      document.body.appendChild(a); a.click(); document.body.removeChild(a);
+      setTimeout(()=>URL.revokeObjectURL(url),1000);
     };
 
     const inputStyle={width:'100%',padding:'10px 12px',border:'1.5px solid #e2e8f0',borderRadius:10,fontSize:14,fontFamily:"'Cairo',sans-serif",outline:'none',textAlign:'center',direction:'ltr'};
 
     return (
-      <div style={{minHeight:"100vh",background:"#f0f4f8",fontFamily:"'Cairo','Tajawal',sans-serif",direction:ar?"rtl":"ltr"}}>
+      <div style={{minHeight:"100vh",background:"linear-gradient(160deg,#f0f4f8 0%,#e8f5f0 100%)",fontFamily:"'Cairo','Tajawal',sans-serif",direction:ar?"rtl":"ltr"}}>
+        <style>{`
+          @keyframes scaleSwing {
+            0%   { transform: rotate(0deg) scale(1); }
+            20%  { transform: rotate(-12deg) scale(1.08); }
+            40%  { transform: rotate(12deg) scale(1.08); }
+            60%  { transform: rotate(-6deg) scale(1.04); }
+            80%  { transform: rotate(6deg) scale(1.04); }
+            100% { transform: rotate(0deg) scale(1); }
+          }
+          @keyframes pulse-glow {
+            0%,100% { box-shadow: 0 0 0 0 rgba(22,163,74,0.4); }
+            50%      { box-shadow: 0 0 0 10px rgba(22,163,74,0); }
+          }
+          @keyframes countUp {
+            from { opacity:0; transform:translateY(8px); }
+            to   { opacity:1; transform:translateY(0); }
+          }
+          @keyframes shimmer {
+            0%   { background-position: -200% center; }
+            100% { background-position:  200% center; }
+          }
+          .legal-scale-icon {
+            animation: scaleSwing 3s ease-in-out infinite;
+            display: inline-block;
+            transform-origin: center top;
+          }
+          .legal-kpi-val {
+            animation: countUp 0.6s ease forwards;
+          }
+          .legal-kpi-card:hover {
+            transform: translateY(-3px) scale(1.02);
+            transition: all 0.25s ease;
+          }
+          .legal-row:hover td {
+            background: rgba(22,163,74,0.04) !important;
+            transition: background 0.15s;
+          }
+          @media print {
+            .no-print { display: none !important; }
+            .print-only { display: block !important; }
+            body > *:not(#legal-print-area) { display: none !important; }
+            #legal-print-area { display: block !important; position: fixed; inset: 0; background: #fff; z-index: 999999; padding: 16px; }
+          }
+          .print-only { display: none; }
+        `}</style>
+
+        {/* ─── Print Modal ─── */}
+        {lPrintModal && (
+          <div style={{position:"fixed",inset:0,zIndex:99996,background:"rgba(0,0,0,0.7)",display:"flex",flexDirection:"column",alignItems:"center",justifyContent:"flex-start",overflowY:"auto",padding:"20px 16px"}}>
+            {/* Toolbar */}
+            <div className="no-print" style={{background:"#1e3a5f",borderRadius:12,padding:"12px 20px",display:"flex",gap:12,alignItems:"center",marginBottom:16,boxShadow:"0 4px 20px rgba(0,0,0,0.4)",position:"sticky",top:0,zIndex:1}}>
+              <button onClick={()=>window.print()} style={{background:"#16a34a",color:"#fff",border:"none",borderRadius:10,padding:"10px 22px",fontSize:14,fontWeight:900,cursor:"pointer",display:"flex",alignItems:"center",gap:8,fontFamily:"'Cairo',sans-serif"}}>
+                🖨️ {ar?"طباعة / PDF":"Print / PDF"}
+              </button>
+              <button onClick={()=>setLPrintModal(false)} style={{background:"rgba(255,255,255,0.1)",color:"#fff",border:"1px solid rgba(255,255,255,0.2)",borderRadius:10,padding:"10px 18px",fontSize:13,fontWeight:700,cursor:"pointer",fontFamily:"'Cairo',sans-serif"}}>
+                ✕ {ar?"إغلاق":"Close"}
+              </button>
+              <span style={{color:"rgba(255,255,255,0.6)",fontSize:11}}>{ar?"معاينة قبل الطباعة — اضغط طباعة للحفظ كـ PDF":"Print Preview — click Print to save as PDF"}</span>
+            </div>
+            {/* Print Content */}
+            <div id="legal-print-area" style={{background:"#fff",borderRadius:12,padding:"24px",width:"100%",maxWidth:900,boxShadow:"0 8px 40px rgba(0,0,0,0.3)",fontFamily:"Arial,sans-serif",direction:"rtl",fontSize:11}}>
+              {/* Header */}
+              <div style={{background:"linear-gradient(135deg,#1e3a5f,#16a34a)",borderRadius:10,padding:"16px 20px",color:"#fff",marginBottom:14,display:"flex",justifyContent:"space-between",alignItems:"center"}}>
+                <div>
+                  <div style={{fontSize:20,fontWeight:900,color:"#e85d20"}}>ONEIC ⚖️</div>
+                  <div style={{fontSize:10,color:"#93c5fd"}}>خصومات القانونية — Legal DR. Sarhaan</div>
+                </div>
+                <div style={{textAlign:"left",fontSize:10,color:"#93c5fd",lineHeight:1.8}}>
+                  <strong style={{fontSize:13,color:"#fff",display:"block"}}>تقرير الخصومات القانونية</strong>
+                  {new Date().toLocaleDateString('ar-OM')}
+                </div>
+              </div>
+              {/* KPIs */}
+              <div style={{display:"grid",gridTemplateColumns:"repeat(4,1fr)",gap:8,marginBottom:14}}>
+                {[
+                  {lbl:"إجمالي الحسابات",val:lRecords.length,col:"#1e3a5f"},
+                  {lbl:"إجمالي التسوية OMR",val:omrL(totalAdj),col:"#16a34a"},
+                  {lbl:"تسوية كاملة ✅",val:fullRecs.length,col:"#166534"},
+                  {lbl:"تسوية جزئية ⏳",val:partialRecs.length,col:"#92400e"},
+                ].map((k,i)=>(
+                  <div key={i} style={{background:"#f8faff",borderRadius:8,padding:"10px",textAlign:"center",border:"1px solid #e2e8f0"}}>
+                    <div style={{fontSize:20,fontWeight:900,color:k.col,marginBottom:3}}>{k.val}</div>
+                    <div style={{fontSize:9,color:"#6b7280",fontWeight:700}}>{k.lbl}</div>
+                  </div>
+                ))}
+              </div>
+              {/* Full table */}
+              <div style={{background:"#064e3b",borderRadius:"6px 6px 0 0",padding:"7px 12px",color:"#fff",fontSize:11,fontWeight:900,marginTop:10}}>
+                ✅ {ar?"تسوية كاملة":"Full Settlements"} — {fullRecs.length} {ar?"حساب":"accts"} · {omrL(totalFull)} OMR
+              </div>
+              <div style={{overflowX:"auto"}}>
+              <table style={{width:"100%",minWidth:650,borderCollapse:"collapse",marginBottom:14,background:"#fff"}}>
+                <thead><tr style={{background:"#f0f4f8"}}>
+                  {["#",ar?"رقم الاتفاقية / التاريخ":"Agreement / Date",ar?"الاسم / النوع":"Name / Type",ar?"المبلغ الأصلي":"Principal",ar?"التسوية":"Adjustment","Legal Exp.","Translate","Attorney"].map((h,i)=>(
+                    <th key={i} style={{padding:"7px 10px",fontSize:10,fontWeight:900,color:"#374151",textAlign:"center",borderBottom:"2px solid #dcfce7",whiteSpace:"nowrap",background:"#f0fdf4"}}>{h}</th>
+                  ))}
+                </tr></thead>
+                <tbody>
+                  {fullRecs.map((r,i)=>(
+                    <tr key={r.id} style={{borderBottom:"1px solid #f0fdf4",background:i%2===0?"#fff":"#f9fffe"}}>
+                      <td style={{padding:"7px 10px",fontSize:11,textAlign:"center",color:"#9ca3af",fontWeight:600}}>{i+1}</td>
+                      <td style={{padding:"7px 10px",textAlign:"center"}}>
+                        <div style={{fontSize:12,fontWeight:900,color:"#1e3a5f",direction:"ltr",letterSpacing:0.3}}>{r.agreementNo}</div>
+                        <div style={{fontSize:9,color:"#6b7280",marginTop:2}}>{r.savedAt||"-"}</div>
+                      </td>
+                      <td style={{padding:"7px 10px",textAlign:"center"}}>
+                        <div style={{fontSize:12,fontWeight:700,color:"#111"}}>{r.name||"-"}</div>
+                        <span style={{background:"#dcfce7",color:"#166534",borderRadius:20,padding:"2px 10px",fontSize:9,fontWeight:800}}>✅ {ar?"تسوية كاملة":"Full Settlement"}</span>
+                      </td>
+                      <td style={{padding:"7px 10px",fontSize:11,textAlign:"center",color:"#6b7280"}}>{omrL(r.principal)}</td>
+                      <td style={{padding:"7px 10px",textAlign:"center"}}>
+                        <div style={{fontSize:14,fontWeight:900,color:"#16a34a",direction:"ltr"}}>{omrL(r.adjustment)}</div>
+                        <div style={{fontSize:9,color:"#16a34a",opacity:0.7}}>OMR</div>
+                      </td>
+                      <td style={{padding:"7px 10px",fontSize:11,textAlign:"center",color:"#4f46e5"}}>{omrL(r.legalExpenses||0)}</td>
+                      <td style={{padding:"7px 10px",fontSize:11,textAlign:"center",color:"#0891b2"}}>{omrL(r.translate||0)}</td>
+                      <td style={{padding:"7px 10px",fontSize:11,textAlign:"center",color:"#e85d20"}}>{omrL(r.attorneyFees||0)}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+              </div>
+              {/* Partial table */}
+              <div style={{background:"#78350f",borderRadius:"6px 6px 0 0",padding:"7px 12px",color:"#fff",fontSize:11,fontWeight:900}}>
+                ⏳ {ar?"تسوية جزئية":"Partial Settlements"} — {partialRecs.length} {ar?"حساب":"accts"} · {omrL(totalPartial)} OMR
+              </div>
+              <div style={{overflowX:"auto"}}>
+              <table style={{width:"100%",minWidth:700,borderCollapse:"collapse",background:"#fff"}}>
+                <thead><tr style={{background:"#fffbeb"}}>
+                  {["#",ar?"رقم الاتفاقية / التاريخ":"Agreement / Date",ar?"الاسم / النوع":"Name / Type",ar?"المبلغ الأصلي":"Principal","OS Amount",ar?"التسوية":"Adjustment","Legal Exp.","Translate","Attorney"].map((h,i)=>(
+                    <th key={i} style={{padding:"7px 10px",fontSize:10,fontWeight:900,color:"#374151",textAlign:"center",borderBottom:"2px solid #fde68a",whiteSpace:"nowrap",background:"#fffbeb"}}>{h}</th>
+                  ))}
+                </tr></thead>
+                <tbody>
+                  {partialRecs.map((r,i)=>(
+                    <tr key={r.id} style={{borderBottom:"1px solid #fffbeb",background:i%2===0?"#fff":"#fffef5"}}>
+                      <td style={{padding:"7px 10px",fontSize:11,textAlign:"center",color:"#9ca3af",fontWeight:600}}>{i+1}</td>
+                      <td style={{padding:"7px 10px",textAlign:"center"}}>
+                        <div style={{fontSize:12,fontWeight:900,color:"#92400e",direction:"ltr",letterSpacing:0.3}}>{r.agreementNo}</div>
+                        <div style={{fontSize:9,color:"#6b7280",marginTop:2}}>{r.savedAt||"-"}</div>
+                      </td>
+                      <td style={{padding:"7px 10px",textAlign:"center"}}>
+                        <div style={{fontSize:12,fontWeight:700,color:"#111"}}>{r.name||"-"}</div>
+                        <span style={{background:"#fef3c7",color:"#92400e",borderRadius:20,padding:"2px 10px",fontSize:9,fontWeight:800}}>⏳ {ar?"تسوية جزئية":"Partial Settlement"}</span>
+                      </td>
+                      <td style={{padding:"7px 10px",fontSize:11,textAlign:"center",color:"#6b7280"}}>{omrL(r.principal)}</td>
+                      <td style={{padding:"7px 10px",textAlign:"center"}}>
+                        <div style={{fontSize:12,fontWeight:700,color:"#e85d20",direction:"ltr"}}>{omrL(r.osAmount||0)}</div>
+                        <div style={{fontSize:9,color:"#e85d20",opacity:0.7}}>OS</div>
+                      </td>
+                      <td style={{padding:"7px 10px",textAlign:"center"}}>
+                        <div style={{fontSize:14,fontWeight:900,color:"#92400e",direction:"ltr"}}>{omrL(r.adjustment)}</div>
+                        <div style={{fontSize:9,color:"#92400e",opacity:0.7}}>OMR</div>
+                      </td>
+                      <td style={{padding:"7px 10px",fontSize:11,textAlign:"center",color:"#4f46e5"}}>{omrL(r.legalExpenses||0)}</td>
+                      <td style={{padding:"7px 10px",fontSize:11,textAlign:"center",color:"#0891b2"}}>{omrL(r.translate||0)}</td>
+                      <td style={{padding:"7px 10px",fontSize:11,textAlign:"center",color:"#e85d20"}}>{omrL(r.attorneyFees||0)}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+              </div>
+              {/* Footer */}
+              <div style={{marginTop:14,borderTop:"1px solid #e2e8f0",paddingTop:8,display:"flex",justifyContent:"space-between",fontSize:9,color:"#9ca3af"}}>
+                <span>ONEIC — نظام إدارة تحصيل الديون</span>
+                <span>Legal DR. Sarhaan · {new Date().getFullYear()}</span>
+              </div>
+            </div>
+          </div>
+        )}
 
         {/* ─── Toast ─── */}
         {lToast && (
@@ -13026,9 +13173,9 @@ ${partialRecs.map((r,i)=>`<tr><td>${i+1}</td><td>${r.agreementNo}</td><td>${r.na
         {/* ─── Header ─── */}
         <div style={{background:"linear-gradient(120deg,#1e3a5f,#16a34a)",padding:"14px 24px",display:"flex",justifyContent:"space-between",alignItems:"center",position:"sticky",top:0,zIndex:100,boxShadow:"0 4px 20px rgba(0,0,0,0.3)"}}>
           <div style={{display:"flex",alignItems:"center",gap:14}}>
-            <div style={{width:44,height:44,background:"rgba(255,255,255,0.15)",borderRadius:12,display:"flex",alignItems:"center",justifyContent:"center",fontSize:24}}>⚖️</div>
+            <div style={{width:52,height:52,background:"rgba(255,255,255,0.18)",borderRadius:14,display:"flex",alignItems:"center",justifyContent:"center",fontSize:30,boxShadow:"0 2px 12px rgba(0,0,0,0.2)"}}><span className="legal-scale-icon">⚖️</span></div>
             <div>
-              <div style={{fontSize:18,fontWeight:900,color:"#fff"}}>تسويات القانوني</div>
+              <div style={{fontSize:18,fontWeight:900,color:"#fff"}}>خصومات القانونية</div>
               <div style={{fontSize:11,color:"rgba(255,255,255,0.7)",fontWeight:600}}>
                 Legal - DR. Sarhaan {lUploadDate?`· آخر رفع: ${lUploadDate}`:''}
               </div>
@@ -13060,15 +13207,21 @@ ${partialRecs.map((r,i)=>`<tr><td>${i+1}</td><td>${r.agreementNo}</td><td>${r.na
         {/* ─── KPI Summary ─── */}
         <div style={{display:"grid",gridTemplateColumns:"repeat(4,1fr)",gap:14,padding:"20px 24px 0"}}>
           {[
-            {icon:"📋",val:lRecords.length,lbl:ar?"إجمالي الحسابات":"Total Accounts",col:"#1e3a5f",bg:"#eff6ff"},
-            {icon:"💰",val:omrL(totalAdj)+" OMR",lbl:ar?"إجمالي التسوية":"Total Adjustment",col:"#16a34a",bg:"#f0fdf4"},
-            {icon:"✅",val:fullRecs.length,lbl:ar?"تسوية كاملة":"Full Settlements",col:"#16a34a",bg:"#f0fdf4"},
-            {icon:"⏳",val:partialRecs.length,lbl:ar?"تسوية جزئية":"Partial Settlements",col:"#d97706",bg:"#fefce8"},
+            {icon:"📁",val:lRecords.length,lbl:ar?"إجمالي الحسابات":"Total Accounts",col:"#1e40af",grad:"linear-gradient(135deg,#1e40af,#3b82f6)",bg:"linear-gradient(135deg,#eff6ff,#dbeafe)"},
+            {icon:"💰",val:omrL(totalAdj),sub:"OMR",lbl:ar?"إجمالي التسوية":"Total Adjustment",col:"#065f46",grad:"linear-gradient(135deg,#065f46,#16a34a)",bg:"linear-gradient(135deg,#ecfdf5,#d1fae5)"},
+            {icon:"✅",val:fullRecs.length,lbl:ar?"تسوية كاملة":"Full Settlements",col:"#166534",grad:"linear-gradient(135deg,#166534,#22c55e)",bg:"linear-gradient(135deg,#f0fdf4,#dcfce7)"},
+            {icon:"⏳",val:partialRecs.length,lbl:ar?"تسوية جزئية":"Partial Settlements",col:"#92400e",grad:"linear-gradient(135deg,#92400e,#f59e0b)",bg:"linear-gradient(135deg,#fffbeb,#fef3c7)"},
           ].map((k,i)=>(
-            <div key={i} style={{background:k.bg,borderRadius:14,padding:"18px 16px",border:`1px solid ${k.col}22`,boxShadow:"0 2px 10px rgba(0,0,0,0.06)",textAlign:"center"}}>
-              <div style={{fontSize:28,marginBottom:6}}>{k.icon}</div>
-              <div style={{fontSize:i===1?18:26,fontWeight:900,color:k.col,marginBottom:4}}>{k.val}</div>
-              <div style={{fontSize:11,color:"#6b7280",fontWeight:700}}>{k.lbl}</div>
+            <div key={i} className="legal-kpi-card" style={{background:k.bg,borderRadius:18,padding:"20px 16px",border:`1.5px solid ${k.col}30`,boxShadow:"0 4px 20px rgba(0,0,0,0.08)",textAlign:"center",cursor:"default",transition:"all 0.25s ease",position:"relative",overflow:"hidden"}}>
+              {/* gradient bar top */}
+              <div style={{position:"absolute",top:0,left:0,right:0,height:4,background:k.grad,borderRadius:"18px 18px 0 0"}}/>
+              {/* icon circle */}
+              <div style={{width:52,height:52,borderRadius:"50%",background:k.grad,display:"flex",alignItems:"center",justifyContent:"center",margin:"8px auto 12px",boxShadow:`0 4px 14px ${k.col}40`,fontSize:24}}>
+                <span style={{filter:"brightness(0) invert(1)"}}>{k.icon}</span>
+              </div>
+              <div className="legal-kpi-val" style={{fontSize:i===1?16:28,fontWeight:900,color:k.col,marginBottom:4,lineHeight:1,letterSpacing:-0.5}}>{k.val}</div>
+              {k.sub && <div style={{fontSize:11,color:k.col,fontWeight:700,opacity:0.7,marginBottom:4}}>{k.sub}</div>}
+              <div style={{fontSize:11,color:"#374151",fontWeight:800,marginTop:4,letterSpacing:0.3}}>{k.lbl}</div>
             </div>
           ))}
         </div>
@@ -13111,7 +13264,7 @@ ${partialRecs.map((r,i)=>`<tr><td>${i+1}</td><td>${r.agreementNo}</td><td>${r.na
                   <div key={acc.agreementNo} style={{background:"#fff",borderRadius:16,padding:"20px",boxShadow:"0 2px 14px rgba(0,0,0,0.08)",border:`2px solid ${acc.isFull?'#16a34a':'#d97706'}30`}}>
                     <div style={{display:"flex",justifyContent:"space-between",alignItems:"flex-start",marginBottom:14}}>
                       <div>
-                        <div style={{fontSize:16,fontWeight:900,color:"#1e3a5f"}}>{acc.name||ar?"(بدون اسم)":"(No Name)"}</div>
+                        <div style={{fontSize:16,fontWeight:900,color:"#1e3a5f"}}>{acc.name||(ar?"(بدون اسم)":"(No Name)")}</div>
                         <div style={{fontSize:12,color:"#888",direction:"ltr",textAlign:"right"}}>{acc.agreementNo}</div>
                       </div>
                       <span style={{background:acc.isFull?"#dcfce7":"#fef3c7",color:acc.isFull?"#16a34a":"#d97706",borderRadius:20,padding:"4px 14px",fontSize:11,fontWeight:800}}>
@@ -13167,29 +13320,29 @@ ${partialRecs.map((r,i)=>`<tr><td>${i+1}</td><td>${r.agreementNo}</td><td>${r.na
                   {fullRecs.length} {ar?"حساب":"accounts"} · {omrL(totalFull)} OMR
                 </span>
               </div>
-              <div style={{background:"#fff",borderRadius:"0 0 12px 12px",overflow:"hidden",boxShadow:"0 2px 14px rgba(0,0,0,0.06)"}}>
-                <table style={{width:"100%",borderCollapse:"collapse"}}>
+              <div style={{background:"#fff",borderRadius:"0 0 12px 12px",overflow:"hidden",boxShadow:"0 2px 14px rgba(0,0,0,0.06)"}}><div style={{overflowX:"auto",WebkitOverflowScrolling:"touch"}}>
+                <table style={{width:"100%",minWidth:750,borderCollapse:"collapse"}}>
                   <thead>
                     <tr style={{background:"#f0fdf4"}}>
-                      {["#","رقم الاتفاقية","الاسم","المبلغ الأصلي","التسوية","Legal Exp.","Translate","Attorney","التاريخ",""].map((h,i)=>(
-                        <th key={i} style={{padding:"10px 12px",fontSize:11,fontWeight:900,color:"#374151",textAlign:"right",borderBottom:"1px solid #dcfce7"}}>{h}</th>
+                      {[ar?"#":"#",ar?"رقم الاتفاقية":"Agreement No",ar?"الاسم":"Name",ar?"المبلغ الأصلي":"Principal",ar?"التسوية":"Adjustment","Legal Exp.","Translate","Attorney",ar?"التاريخ":"Date",""].map((h,i)=>(
+                        <th key={i} style={{padding:"10px 8px",fontSize:11,fontWeight:900,color:"#374151",textAlign:"center",borderBottom:"1px solid #dcfce7",whiteSpace:"nowrap"}}>{h}</th>
                       ))}
                     </tr>
                   </thead>
                   <tbody>
                     {fullRecs.map((r,i)=>(
-                      <tr key={r.id} style={{borderBottom:"1px solid #f0fdf4",background:i%2===0?"#fff":"#f9fffe"}}>
-                        <td style={{padding:"10px 12px",fontSize:12,color:"#888"}}>{i+1}</td>
-                        <td style={{padding:"10px 12px",fontSize:12,fontWeight:700,direction:"ltr"}}>{r.agreementNo}</td>
-                        <td style={{padding:"10px 12px",fontSize:12}}>{r.name||"-"}</td>
-                        <td style={{padding:"10px 12px",fontSize:12,direction:"ltr"}}>{omrL(r.principal)}</td>
-                        <td style={{padding:"10px 12px",fontSize:13,fontWeight:900,color:"#16a34a",direction:"ltr"}}>{omrL(r.adjustment)}</td>
-                        <td style={{padding:"10px 12px",fontSize:12,direction:"ltr"}}>{omrL(r.legalExpenses||0)}</td>
-                        <td style={{padding:"10px 12px",fontSize:12,direction:"ltr"}}>{omrL(r.translate||0)}</td>
-                        <td style={{padding:"10px 12px",fontSize:12,direction:"ltr"}}>{omrL(r.attorneyFees||0)}</td>
-                        <td style={{padding:"10px 12px",fontSize:11,color:"#888"}}>{r.savedAt||"-"}</td>
-                        <td style={{padding:"10px 12px"}}>
-                          <div style={{display:"flex",gap:6}}>
+                      <tr key={r.id} style={{borderBottom:"1px solid #f0fdf4",background:i%2===0?"#fff":"#f9fffe",transition:"background 0.15s"}}>
+                        <td style={{padding:"10px 8px",fontSize:12,color:"#9ca3af",textAlign:"center",fontWeight:600}}>{i+1}</td>
+                        <td style={{padding:"10px 8px",fontSize:12,fontWeight:800,textAlign:"center",direction:"ltr",letterSpacing:0.3}}>{r.agreementNo}</td>
+                        <td style={{padding:"10px 8px",fontSize:12,textAlign:"center",fontWeight:600,color:"#374151"}}>{r.name||"-"}</td>
+                        <td style={{padding:"10px 8px",fontSize:12,textAlign:"center",direction:"ltr",color:"#6b7280"}}>{omrL(r.principal)}</td>
+                        <td style={{padding:"10px 8px",fontSize:13,fontWeight:900,color:"#16a34a",textAlign:"center",direction:"ltr"}}>{omrL(r.adjustment)}</td>
+                        <td style={{padding:"10px 8px",fontSize:12,textAlign:"center",direction:"ltr",color:"#4f46e5"}}>{omrL(r.legalExpenses||0)}</td>
+                        <td style={{padding:"10px 8px",fontSize:12,textAlign:"center",direction:"ltr",color:"#0891b2"}}>{omrL(r.translate||0)}</td>
+                        <td style={{padding:"10px 8px",fontSize:12,textAlign:"center",direction:"ltr",color:"#e85d20"}}>{omrL(r.attorneyFees||0)}</td>
+                        <td style={{padding:"10px 8px",fontSize:11,color:"#9ca3af",textAlign:"center"}}>{r.savedAt||"-"}</td>
+                        <td style={{padding:"6px 8px",textAlign:"center"}}>
+                          <div style={{display:"flex",gap:6,justifyContent:"center"}}>
                             <button onClick={()=>{setLEditModal(r);setLEditInputs({legalExpenses:r.legalExpenses||0,translate:r.translate||0,attorneyFees:r.attorneyFees||0});}}
                               style={{background:"#dbeafe",color:"#1e40af",border:"none",borderRadius:8,padding:"4px 10px",fontSize:11,fontWeight:700,cursor:"pointer"}}>✏️</button>
                             <button onClick={()=>askPw(()=>deleteRecord(r.id))}
@@ -13200,6 +13353,7 @@ ${partialRecs.map((r,i)=>`<tr><td>${i+1}</td><td>${r.agreementNo}</td><td>${r.na
                     ))}
                   </tbody>
                 </table>
+              </div>
               </div>
             </div>
 
@@ -13211,30 +13365,30 @@ ${partialRecs.map((r,i)=>`<tr><td>${i+1}</td><td>${r.agreementNo}</td><td>${r.na
                   {partialRecs.length} {ar?"حساب":"accounts"} · {omrL(totalPartial)} OMR
                 </span>
               </div>
-              <div style={{background:"#fff",borderRadius:"0 0 12px 12px",overflow:"hidden",boxShadow:"0 2px 14px rgba(0,0,0,0.06)"}}>
-                <table style={{width:"100%",borderCollapse:"collapse"}}>
+              <div style={{background:"#fff",borderRadius:"0 0 12px 12px",overflow:"hidden",boxShadow:"0 2px 14px rgba(0,0,0,0.06)"}}><div style={{overflowX:"auto",WebkitOverflowScrolling:"touch"}}>
+                <table style={{width:"100%",minWidth:750,borderCollapse:"collapse"}}>
                   <thead>
                     <tr style={{background:"#fffbeb"}}>
-                      {["#","رقم الاتفاقية","الاسم","المبلغ الأصلي","المتبقي","التسوية","Legal Exp.","Translate","Attorney","التاريخ",""].map((h,i)=>(
-                        <th key={i} style={{padding:"10px 12px",fontSize:11,fontWeight:900,color:"#374151",textAlign:"right",borderBottom:"1px solid #fde68a"}}>{h}</th>
+                      {["#",ar?"رقم الاتفاقية":"Agreement No",ar?"الاسم":"Name",ar?"المبلغ الأصلي":"Principal",ar?"المتبقي":"OS Amount",ar?"التسوية":"Adjustment","Legal Exp.","Translate","Attorney",ar?"التاريخ":"Date",""].map((h,i)=>(
+                        <th key={i} style={{padding:"10px 8px",fontSize:11,fontWeight:900,color:"#374151",textAlign:"center",borderBottom:"1px solid #fde68a",whiteSpace:"nowrap"}}>{h}</th>
                       ))}
                     </tr>
                   </thead>
                   <tbody>
                     {partialRecs.map((r,i)=>(
-                      <tr key={r.id} style={{borderBottom:"1px solid #fffbeb",background:i%2===0?"#fff":"#fffef5"}}>
-                        <td style={{padding:"10px 12px",fontSize:12,color:"#888"}}>{i+1}</td>
-                        <td style={{padding:"10px 12px",fontSize:12,fontWeight:700,direction:"ltr"}}>{r.agreementNo}</td>
-                        <td style={{padding:"10px 12px",fontSize:12}}>{r.name||"-"}</td>
-                        <td style={{padding:"10px 12px",fontSize:12,direction:"ltr"}}>{omrL(r.principal)}</td>
-                        <td style={{padding:"10px 12px",fontSize:12,color:"#e85d20",direction:"ltr"}}>{omrL(r.osAmount||0)}</td>
-                        <td style={{padding:"10px 12px",fontSize:13,fontWeight:900,color:"#d97706",direction:"ltr"}}>{omrL(r.adjustment)}</td>
-                        <td style={{padding:"10px 12px",fontSize:12,direction:"ltr"}}>{omrL(r.legalExpenses||0)}</td>
-                        <td style={{padding:"10px 12px",fontSize:12,direction:"ltr"}}>{omrL(r.translate||0)}</td>
-                        <td style={{padding:"10px 12px",fontSize:12,direction:"ltr"}}>{omrL(r.attorneyFees||0)}</td>
-                        <td style={{padding:"10px 12px",fontSize:11,color:"#888"}}>{r.savedAt||"-"}</td>
-                        <td style={{padding:"10px 12px"}}>
-                          <div style={{display:"flex",gap:6}}>
+                      <tr key={r.id} style={{borderBottom:"1px solid #fffbeb",background:i%2===0?"#fff":"#fffef5",transition:"background 0.15s"}}>
+                        <td style={{padding:"10px 8px",fontSize:12,color:"#9ca3af",textAlign:"center",fontWeight:600}}>{i+1}</td>
+                        <td style={{padding:"10px 8px",fontSize:12,fontWeight:800,textAlign:"center",direction:"ltr",letterSpacing:0.3}}>{r.agreementNo}</td>
+                        <td style={{padding:"10px 8px",fontSize:12,textAlign:"center",fontWeight:600,color:"#374151"}}>{r.name||"-"}</td>
+                        <td style={{padding:"10px 8px",fontSize:12,textAlign:"center",direction:"ltr",color:"#6b7280"}}>{omrL(r.principal)}</td>
+                        <td style={{padding:"10px 8px",fontSize:12,fontWeight:700,color:"#e85d20",textAlign:"center",direction:"ltr"}}>{omrL(r.osAmount||0)}</td>
+                        <td style={{padding:"10px 8px",fontSize:13,fontWeight:900,color:"#d97706",textAlign:"center",direction:"ltr"}}>{omrL(r.adjustment)}</td>
+                        <td style={{padding:"10px 8px",fontSize:12,textAlign:"center",direction:"ltr",color:"#4f46e5"}}>{omrL(r.legalExpenses||0)}</td>
+                        <td style={{padding:"10px 8px",fontSize:12,textAlign:"center",direction:"ltr",color:"#0891b2"}}>{omrL(r.translate||0)}</td>
+                        <td style={{padding:"10px 8px",fontSize:12,textAlign:"center",direction:"ltr",color:"#e85d20"}}>{omrL(r.attorneyFees||0)}</td>
+                        <td style={{padding:"10px 8px",fontSize:11,color:"#9ca3af",textAlign:"center"}}>{r.savedAt||"-"}</td>
+                        <td style={{padding:"6px 8px",textAlign:"center"}}>
+                          <div style={{display:"flex",gap:6,justifyContent:"center"}}>
                             <button onClick={()=>{setLEditModal(r);setLEditInputs({legalExpenses:r.legalExpenses||0,translate:r.translate||0,attorneyFees:r.attorneyFees||0});}}
                               style={{background:"#dbeafe",color:"#1e40af",border:"none",borderRadius:8,padding:"4px 10px",fontSize:11,fontWeight:700,cursor:"pointer"}}>✏️</button>
                             <button onClick={()=>askPw(()=>deleteRecord(r.id))}
@@ -13245,6 +13399,7 @@ ${partialRecs.map((r,i)=>`<tr><td>${i+1}</td><td>${r.agreementNo}</td><td>${r.na
                     ))}
                   </tbody>
                 </table>
+              </div>
               </div>
             </div>
           </div>
