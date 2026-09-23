@@ -11885,29 +11885,27 @@ export default function Dashboard() {
                   try {
                     const buf = ev.target.result;
                     const bytes = new Uint8Array(buf);
-                    let text;
+                    let text = '';
                     // البحث عن BOM في أول 10 بايت — الملف يبدأ بـ 5 مسافات قبل BOM
-                    let _bomLE=-1, _bomBE=-1;
-                    for(let _b=0;_b<Math.min(10,bytes.length-1);_b++){
-                      if(bytes[_b]===0xFF&&bytes[_b+1]===0xFE&&_bomLE<0) _bomLE=_b;
-                      if(bytes[_b]===0xFE&&bytes[_b+1]===0xFF&&_bomBE<0) _bomBE=_b;
+                    let bomPos=-1, bomEnc='utf-16-le';
+                    for(let _i=0; _i<Math.min(10,bytes.length-1); _i++){
+                      if(bytes[_i]===0xFF && bytes[_i+1]===0xFE){ bomPos=_i; bomEnc='utf-16-le'; break; }
+                      if(bytes[_i]===0xFE && bytes[_i+1]===0xFF){ bomPos=_i; bomEnc='utf-16-be'; break; }
                     }
-                    if(_bomLE>=0){
-                      // UTF-16 LE — نقرأ من بعد BOM مباشرةً
-                      text=new TextDecoder('utf-16-le').decode(buf.slice(_bomLE+2));
-                      let _s=0; while(_s<text.length&&(text[_s]===' '||text[_s]==='\uFEFF'))_s++;
-                      text=text.slice(_s);
-                    } else if(_bomBE>=0){
-                      text=new TextDecoder('utf-16-be').decode(buf.slice(_bomBE+2));
+                    if(bomPos >= 0){
+                      const start = bomPos + 2;
+                      const view = new Uint8Array(buf, start, bytes.length - start);
+                      text = new TextDecoder(bomEnc).decode(view);
                     } else {
-                      text=new TextDecoder('utf-8').decode(buf);
+                      text = new TextDecoder('utf-8').decode(buf);
                     }
+                    text = text.replace(/^[\s\uFEFF\u0020]+/, '');
                     parseP2File(text,(result,err)=>{
                       setP2Syncing(false);
-                      if (err) { alert('خطأ: '+err); return; }
+                      if(err){ alert('خطأ: '+err); return; }
                       setP2FileData(result);
                     });
-                  } catch(ex) { setP2Syncing(false); alert('خطأ في قراءة الملف'); }
+                  } catch(ex){ setP2Syncing(false); alert('خطأ: '+ex.message); }
                 };
                 reader.readAsArrayBuffer(file);
                 e.target.value='';
