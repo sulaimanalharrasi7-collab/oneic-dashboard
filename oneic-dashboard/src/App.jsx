@@ -381,6 +381,7 @@ const SEED = {
     { name:"High Speed Company",            paid:5927.788,   adj:67.577,    portAmt:0,           portCnt:35,    count:35,    osAmt:0,           principalAmt:5995.160,    paidCount:28,   adjCount:5    },
     { name:"Muhanned Al Amri Law Firm",    paid:0,          adj:0,          portAmt:0,           portCnt:0,     count:0,     osAmt:0,           principalAmt:0,           paidCount:0,    adjCount:0    },
     { name:"Eemad",                           paid:10.000,     adj:0.000,     portAmt:0,           portCnt:2683,  count:2683,  osAmt:0,           principalAmt:0,           paidCount:1,    adjCount:0    },
+    { name:"Azhar alsultane trending company", paid:0.000,      adj:0.000,     portAmt:0,           portCnt:0,     count:0,     osAmt:0,           principalAmt:0,           paidCount:0,    adjCount:0    },
   ],
   headOffice: [
     { name:"Legal - DR. Sarhaan",    paid:102755.525, adj:20792.517, portAmt:3229651.681, portCnt:3973, count:3973, closed:135,  active:3838, principalAmt:3229651.681 },
@@ -6502,7 +6503,7 @@ async function parseXLS(file) {
   }));
 
   // -- شركات التحصيل -----------------------------------------------------
-  const DC_REQUIRED = ["Matrix Debt Collection","National Center","Compass Risk Support Services","Ejada","Tahseel United","High Speed Company","Eemad"];
+  const DC_REQUIRED = ["Matrix Debt Collection","National Center","Compass Risk Support Services","Ejada","Tahseel United","High Speed Company","Eemad","Azhar alsultane trending company"];
   const dcList = Object.entries(dcMap).map(([nm,d]) => {
     const p = PORT.dc[nm.trim()] || {portAmt:0,portCnt:0};
     // portAmt: من الملف (osAmt) إذا متاح، وإلا من PORT.dc
@@ -6569,7 +6570,7 @@ const FIREBASE_URL = "https://oneic-dashboard-default-rtdb.firebaseio.com";
 (function() {
   if (typeof window === 'undefined') return;
   if (localStorage.getItem('oneic_data_fixed_v13')) return;
-  var REQUIRED_DC = ['Matrix Debt Collection','National Center','Compass Risk Support Services','Ejada','Tahseel United','High Speed Company','Eemad','Muhanned Al Amri Law Firm'];
+  var REQUIRED_DC = ['Matrix Debt Collection','National Center','Compass Risk Support Services','Ejada','Tahseel United','High Speed Company','Eemad','Muhanned Al Amri Law Firm','Azhar alsultane trending company'];
   var now = new Date().toISOString();
   fetch('https://oneic-dashboard-default-rtdb.firebaseio.com/main.json')
     .then(function(r){ return r.json(); })
