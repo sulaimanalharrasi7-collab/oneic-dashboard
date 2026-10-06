@@ -6155,25 +6155,21 @@ const BULK_SEED = {
 function detectAndDecode(buffer) {
   const bytes = new Uint8Array(buffer);
 
-  // -- ابحث عن BOM (FF FE) في أول 10 بايتات -----------------------------
-  let bomPos = -1;
-  for (let i = 0; i < Math.min(10, bytes.length - 1); i++) {
-    if (bytes[i] === 0xFF && bytes[i+1] === 0xFE) { bomPos = i; break; }
+  // دالة فك UTF-16-LE يدوياً بدون TextDecoder (متوافقة مع جميع المتصفحات)
+  function manualUtf16LE(startIdx) {
+    const chars = [];
+    for (let i = startIdx; i + 1 < bytes.length; i += 2) {
+      const c = bytes[i] | (bytes[i+1] << 8);
+      if (c === 0xFEFF) continue; // تجاهل BOM
+      if (c !== 0) chars.push(String.fromCharCode(c));
+    }
+    return chars.join('');
   }
 
-  if (bomPos >= 0) {
-    try {
-      const decoder = new TextDecoder("utf-16-le");
-      const slice = buffer.slice(bomPos + 2);
-      return decoder.decode(slice);
-    } catch(e) {
-      const start = bomPos + 2;
-      const chars = [];
-      for (let i = start; i + 1 < bytes.length; i += 2) {
-        const c = bytes[i] | (bytes[i+1] << 8);
-        if (c !== 0) chars.push(String.fromCharCode(c));
-      }
-      return chars.join('');
+  // -- ابحث عن BOM (FF FE) في أول 10 بايتات -----------------------------
+  for (let i = 0; i < Math.min(10, bytes.length - 1); i++) {
+    if (bytes[i] === 0xFF && bytes[i+1] === 0xFE) {
+      return manualUtf16LE(i + 2);
     }
   }
 
@@ -6186,19 +6182,7 @@ function detectAndDecode(buffer) {
   }
 
   if (nullCount > 5) {
-    try {
-      const decoder = new TextDecoder("utf-16-le");
-      const slice = buffer.slice(scanStart);
-      const text = decoder.decode(slice);
-      return text.replace(/^\uFEFF/, '');
-    } catch(e) {
-      const chars = [];
-      for (let i = scanStart; i + 1 < bytes.length; i += 2) {
-        const c = bytes[i] | (bytes[i+1] << 8);
-        if (c !== 0 && c !== 0xFEFF) chars.push(String.fromCharCode(c));
-      }
-      return chars.join('');
-    }
+    return manualUtf16LE(scanStart);
   }
 
   // -- UTF-8 / Latin-1 ----------------------------------------------------
